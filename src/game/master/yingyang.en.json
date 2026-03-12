@@ -1,0 +1,20 @@
+{
+  "meta": {
+    "name": "Master Ying-Yang",
+    
+    "version": "1.0",
+    "lang": "en"
+  },
+  "phrases": [
+  { "when": "start", "text": "The wheel turns whether you act or not. Step gently into the current." },
+  { "when": "start", "text": "You do not begin the game. The game begins through you." },
+  { "when": "cross", "text": "Cross {from} → {to} (Δ {dif}). The board shifts, but the witness remains." },
+  { "when": "karma", "text": "{evento}. Every action echoes beyond the square you see." },
+  { "when": "dharma", "text": "{evento}. When alignment is true, movement requires no force." },
+  { "when": "cross", "text": "Cross {from} → {to} (Δ {dif}). Distance is illusion; awareness is the real step." },
+  { "when": "karma", "text": "What resists returns. What is understood dissolves." },
+  { "when": "dharma", "text": "Advance without grasping. The center does not move." },
+  { "when": "start", "text": "The dice fall in matter. The meaning falls in consciousness." },
+  { "when": "start", "text": "Nirvana is not ahead of you. It is behind the illusion of ahead." }
+]
+  }

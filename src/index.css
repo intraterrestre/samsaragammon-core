@@ -1,0 +1,115 @@
+:root {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  --bg-dark: #1f5f3f;
+  --bg-mid: #2e8b57;
+  --bg-light: #3fae73;
+
+  --text-main: #f4fff8;
+  --panel-dark: #1e3f2d;
+  --panel-hover: #24583a;
+  --panel-border: #2e6a48;
+}
+
+/* ===== RESET SANO ===== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100vh;
+}
+
+body {
+  background: linear-gradient(
+    135deg,
+    var(--bg-dark) 0%,
+    var(--bg-mid) 45%,
+    var(--bg-light) 100%
+  );
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* evita barras raras por sombras/animaciones */
+  overflow-x: hidden;
+}
+
+/* ===== BUTTONS ===== */
+button {
+  background: var(--panel-dark);
+  color: var(--text-main);
+  border: 1px solid var(--panel-border);
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+button:hover {
+  background: var(--panel-hover);
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ===== HALO FUERTE POR REINO (blindado) ===== */
+.pieceTag {
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 2px solid rgba(0, 0, 0, 0.25);
+  transition: filter 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+/* IMPORTANTE:
+   Hacemos el selector MÁS específico para que gane a .p1Tag/.p2Tag
+*/
+.pieceTag.realm-HUMAN {
+  background: #f2c94c;
+  color: #222;
+  box-shadow: 0 0 22px rgba(242, 201, 76, 0.95);
+}
+
+.pieceTag.realm-PRETA {
+  background: #9e9e9e;
+  color: #111;
+  box-shadow: 0 0 22px rgba(158, 158, 158, 0.95);
+}
+
+.pieceTag.realm-NARAKA {
+  background: #e74c3c;
+  color: #fff;
+  box-shadow: 0 0 24px rgba(231, 76, 60, 0.95);
+}
+
+.pieceTag.realm-ANIMAL {
+  background: #3498db;
+  color: #fff;
+  box-shadow: 0 0 24px rgba(52, 152, 219, 0.95);
+}
+
+.pieceTag.realm-ASURA {
+  background: #2ecc71;
+  color: #0a2616;
+  box-shadow: 0 0 26px rgba(46, 204, 113, 0.95);
+}
+
+.pieceTag.realm-DEVA {
+  background: #ffffff;
+  color: #222;
+  box-shadow: 0 0 28px rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 0, 0, 0.18);
+}

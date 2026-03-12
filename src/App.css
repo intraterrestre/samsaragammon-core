@@ -1,0 +1,414 @@
+/* src/App.css */
+
+/* =========================
+   BASE / APP SHELL
+   ========================= */
+:root{
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  /* Fondo verde */
+  --bg-dark: #1f5f3f;
+  --bg-mid:  #2e8b57;
+  --bg-light:#3fae73;
+
+  --text-main: #f4fff8;
+
+  /* Colores jugador */
+  --p1-color: #ff7a2f;   /* naranja/rojo */
+  --p2-color: #c8ff3d;   /* limón */
+
+  /* Panel / bordes */
+  --panel-bg: rgba(255,255,255,0.04);
+  --panel-br: rgba(255,255,255,0.12);
+}
+
+html, body, #root{
+  margin: 0;
+  min-height: 100vh;
+}
+
+body{
+  background: linear-gradient(135deg,
+    var(--bg-dark) 0%,
+    var(--bg-mid) 45%,
+    var(--bg-light) 100%
+  );
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tu layout original */
+#root{
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+/* =========================
+   BUTTONS (GENÉRICO)
+   ========================= */
+button{
+  background: rgba(0,0,0,0.18);
+  color: var(--text-main);
+  border: 1px solid rgba(255,255,255,0.14);
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+button:hover{
+  filter: brightness(1.05);
+}
+
+button:disabled{
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* =========================
+   MINI STATUS (debajo del TurnDock)
+   ========================= */
+.miniStatus{
+  margin: 12px auto 6px;
+  width: fit-content;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  font-size: 14px;
+  opacity: 0.92;
+}
+
+.miniStatus .sep{ opacity: 0.35; }
+
+.turnPill{
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.04);
+}
+
+.turnPill.p1{
+  border-color: rgba(255,122,47,0.30);
+  box-shadow: 0 0 18px rgba(255,122,47,0.14);
+}
+
+.turnPill.p2{
+  border-color: rgba(200,255,61,0.30);
+  box-shadow: 0 0 18px rgba(200,255,61,0.14);
+}
+
+/* =========================
+   BOARD / CELLS (IGUALADAS)
+   ========================= */
+.cellBtn{
+  background: rgba(255,255,255,0.03) !important;
+  border: 1px solid rgba(255,255,255,0.18) !important;
+  transition: transform 160ms ease, filter 160ms ease, opacity 160ms ease;
+  overflow: visible;
+}
+
+.cellBtn.cellBtnDisabled{
+  opacity: 0.78;
+}
+
+.cellBtn:not(.cellBtnDisabled):hover{
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+/* NO “premio” A/B/AB/ECO: todo parejo */
+.cellBtn[data-move]{
+  background: rgba(255,255,255,0.03) !important;
+  border-color: rgba(255,255,255,0.22) !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+
+/* =========================
+   PIECE TAGS (P1/P2)
+   IMPORTANTE: P1/P2 NO DECIDEN BACKGROUND.
+   El REINO manda.
+   ========================= */
+.pieceTag{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  font-weight: 900;
+  font-size: 12px;
+  line-height: 1;
+
+  padding: 4px 9px;
+  border-radius: 999px;
+
+  border: 2px solid rgba(0,0,0,0.35);
+
+  z-index: 20;
+  pointer-events: none;
+  will-change: left, top;
+  transition: left 0.35s ease, top 0.35s ease;
+}
+/* P1/P2 solo aportan “identidad” por borde/texto */
+.pieceTag.p1Tag{
+  color: rgba(255,255,255,0.98) !important;
+  border-color: rgba(255,122,47,0.65) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.pieceTag.p2Tag{
+  color: rgba(10,20,10,0.92) !important;
+  border-color: rgba(200,255,61,0.65) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* =========================
+   HALO POR REINO (SIEMPRE GANA)
+   Usa: class="pieceTag p1Tag realm-HUMAN" etc
+   ========================= */
+.pieceTag.realm-HUMAN{
+  background: #f2c94c !important;
+  color: #1b1b1b !important;
+  box-shadow: 0 0 34px rgba(242,201,76,0.95) !important;
+}
+
+.pieceTag.realm-PRETA{
+  background: #9e9e9e !important;
+  color: #111 !important;
+  box-shadow: 0 0 34px rgba(158,158,158,0.95) !important;
+}
+
+.pieceTag.realm-NARAKA{
+  background: #e74c3c !important;
+  color: #fff !important;
+  box-shadow: 0 0 40px rgba(231,76,60,0.95) !important;
+}
+
+.pieceTag.realm-ANIMAL{
+  background: #3498db !important;
+  color: #fff !important;
+  box-shadow: 0 0 40px rgba(52,152,219,0.95) !important;
+}
+
+.pieceTag.realm-ASURA{
+  background: #2ecc71 !important;
+  color: #072013 !important;
+  box-shadow: 0 0 40px rgba(46,204,113,0.95) !important;
+}
+
+.pieceTag.realm-DEVA{
+  background: #ffffff !important;
+  color: #222 !important;
+  box-shadow: 0 0 44px rgba(255,255,255,0.95) !important;
+}
+
+/* =========================
+   TURNDock (deja el tuyo, pero sin duplicados)
+   ========================= */
+.turnDock{
+  width: min(780px, 92vw);
+  margin: 0 auto 14px;
+}
+
+/* =========================
+   VESTIGIUM (una sola vez)
+   ========================= */
+
+.vestigiumCincel{
+  font-family: "Cinzel", "Trajan Pro", "Times New Roman", serif;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-weight: 800;
+  color: rgba(255,255,255,0.92);
+  text-shadow:
+    0 2px 18px rgba(0,0,0,0.55),
+    0 0 1px rgba(255,255,255,0.25);
+}/* =========================
+   Realms UI (6×4) — casillas pintadas por reino
+   ========================= */
+
+.cellBtn.realmCell {
+  position: relative;
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+/* Banda superior tipo “cinta” por reino */
+.cellBtn.realmCell::before{
+  content:"";
+  position:absolute;
+  left:8px; right:8px; top:6px;
+  height:6px;
+  border-radius: 999px;
+  opacity: 0.85;
+}
+
+/* NARAKA (Hell / Black) */
+.cellBtn.realmCell-NARAKA { background: rgba(0,0,0,0.22); }
+.cellBtn.realmCell-NARAKA::before { background: rgba(0,0,0,0.55); }
+
+/* PRETA (Hungry Ghost / Purple) */
+.cellBtn.realmCell-PRETA { background: rgba(120,0,160,0.16); }
+.cellBtn.realmCell-PRETA::before { background: rgba(170,60,220,0.60); }
+
+/* ANIMAL (Yellow / Gold) */
+.cellBtn.realmCell-ANIMAL { background: rgba(255,190,0,0.16); }
+.cellBtn.realmCell-ANIMAL::before { background: rgba(255,210,80,0.70); }
+
+/* HUMAN (Blue) */
+.cellBtn.realmCell-HUMAN { background: rgba(0,140,255,0.14); }
+.cellBtn.realmCell-HUMAN::before { background: rgba(70,180,255,0.70); }
+
+/* ASURA (Red) */
+.cellBtn.realmCell-ASURA { background: rgba(220,40,40,0.14); }
+.cellBtn.realmCell-ASURA::before { background: rgba(255,90,90,0.70); }
+
+/* DEVA (White) */
+.cellBtn.realmCell-DEVA { background: rgba(255,255,255,0.10); }
+.cellBtn.realmCell-DEVA::before { background: rgba(255,255,255,0.60); }
+.moveConsequences{
+  width: min(560px, 92vw);
+  margin: 14px auto 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(0,0,0,0.18);
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(4px);
+}
+
+.mcTitle{
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  opacity: 0.85;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.mcHint{
+  opacity: 0.8;
+  font-size: 13px;
+}
+
+.mcRow{
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.mcKey{
+  width: 42px;
+  font-weight: 700;
+  opacity: 0.95;
+}
+
+.mcVal{
+  flex: 1;
+  opacity: 0.92;
+}
+/* Panel consequences (always visible) */
+.moveConsequences{
+  width: min(560px, 92vw);
+  margin: 14px auto 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(0,0,0,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(4px);
+}
+.mcTitle{
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  opacity: 0.85;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.mcHint{ opacity: 0.8; font-size: 13px; }
+.mcRow{ display: flex; align-items: baseline; gap: 10px; padding: 4px 0; }
+.mcKey{ width: 48px; font-weight: 700; opacity: 0.95; }
+.mcVal{ flex: 1; opacity: 0.92; }
+
+/* Make sure ring stays centered on small screens */
+.ringWrap{
+  width: min(560px, 92vw);
+  aspect-ratio: 1 / 1;
+  margin: 10px auto 0;
+  position: relative;
+  border-radius: 50%;
+}
+
+.ringCenter{
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 44%;
+  height: 44%;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.08);
+}
+
+/* ===== Realms palette (canonical) =====
+   0–3 NARAKA (Hell)   -> VERDE
+   4–7 PRETA          -> NEGRO/CARBÓN
+   8–11 ANIMAL        -> AMARILLO ORO
+   12–15 HUMAN        -> AZUL
+   16–19 ASURA        -> ROJO
+   20–23 DEVA         -> BLANCO/MARFIL
+*/
+
+.cell.realm-naraka { background: #1f3d2b; }
+.cell.realm-preta  { background: #1a1a1a; }
+.cell.realm-animal { background: #c9a227; }
+.cell.realm-human  { background: #2e6f95; }
+.cell.realm-asura  { background: #a83232; }
+.cell.realm-deva   { background: #f2f2f2; }
+
+/* Mantén el look “pintura” (vidrio/overlay) */
+.cell.realm-naraka,
+.cell.realm-preta,
+.cell.realm-animal,
+.cell.realm-human,
+.cell.realm-asura,
+.cell.realm-deva {
+  background-clip: padding-box;
+  opacity: 0.92;              /* ajusta si lo quieres más fuerte */
+  border: 1px solid rgba(255,255,255,0.18);
+}
+
+/* Texto legible según fondo */
+.cell.realm-preta,
+.cell.realm-naraka,
+.cell.realm-asura,
+.cell.realm-human { color: rgba(255,255,255,0.92); }
+
+.cell.realm-animal { color: rgba(0,0,0,0.85); }
+.cell.realm-deva   { color: rgba(0,0,0,0.75); }
+
+/* Hover (para sentir “vida”) */
+.cell.realm-naraka:hover { filter: brightness(1.08); }
+.cell.realm-preta:hover  { filter: brightness(1.18); }
+.cell.realm-animal:hover { filter: brightness(1.08); }
+.cell.realm-human:hover  { filter: brightness(1.08); }
+.cell.realm-asura:hover  { filter: brightness(1.08); }
+.cell.realm-deva:hover   { filter: brightness(0.98); }
+@keyframes pieceHop{
+  0%   { transform: translate(-50%, -50%) scale(1); }
+  40%  { transform: translate(-50%, -65%) scale(1.1); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+.pieceTag.move{
+  animation: pieceHop 420ms ease;
+}

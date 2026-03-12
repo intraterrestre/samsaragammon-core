@@ -1,0 +1,106 @@
+{
+  "meta": {
+    "name": "Master Ying-Yang",
+    "version": "1.0",
+    "lang": "es"
+  },
+  "templates": [
+    "{saludo} {llamado} {respira} {observa}. {proverbio} {remate}",
+    "{saludo} {llamado} {evento}. {enseñanza} {remate}",
+    "{saludo} {llamado} Cruce {from} → {to} (dif. {dif}). {direccion} {enseñanza}",
+    "{saludo} {llamado} {karma_dharma}. {accion_compasiva} {remate}",
+    "{saludo} {llamado} {quietud}. {proverbio} {accion_concreta}"
+  ],
+  "lexicon": {
+    "saludo": [
+      "Escucha con calma,",
+      "Inclina el corazón,",
+      "Deja el ruido fuera,",
+      "Vuelve al centro,",
+      "Pon las manos juntas"
+    ],
+    "llamado": [
+      "pequeño saltamontes,",
+      "discípulo del camino,",
+      "viajero de la rueda,",
+      "hijo del vacío,",
+      "guerrero paciente"
+    ],
+    "respira": [
+      "respira hondo",
+      "deja que el aire te atraviese",
+      "vuelve al aliento",
+      "contabiliza tres respiraciones",
+      "escucha tu pecho"
+    ],
+    "observa": [
+      "observa sin juicio",
+      "mira con compasión",
+      "no apartes la mirada",
+      "mira la luna interior",
+      "ve el origen, no el ruido"
+    ],
+    "proverbio": [
+      "El ojo que juzga se ciega a sí mismo.",
+      "La rama que se dobla no se quiebra.",
+      "La taza llena no aprende.",
+      "Quien empuja la puerta del vacío la encuentra abierta.",
+      "El agua enseña: cede y vence."
+    ],
+    "remate": [
+      "Suelta y avanza.",
+      "Camina sin prisa.",
+      "Haz menos, ve más.",
+      "Pisa con ligereza.",
+      "Agradece y continúa."
+    ],
+    "enseñanza": [
+      "No compitas con tu sombra, abrázala.",
+      "La victoria sin humildad es otra cárcel.",
+      "El error es un maestro con buen oído.",
+      "Ayuda a levantar a otro y el peso se divide."
+    ],
+    "direccion": [
+      "El viento es propicio.",
+      "Nada te empuja: decide tú.",
+      "Los bordes hieren, el centro cura.",
+      "La curva te protege."
+    ],
+    "karma_dharma": [
+      "veo carga: acepta tu caída y endereza la espalda",
+      "veo bendición: comparte sin orgullo",
+      "la rueda cruje: escucha antes de actuar",
+      "la lección insiste: esta vez responde con paciencia"
+    ],
+    "accion_compasiva": [
+      "Pide perdón antes de explicar.",
+      "Regala un turno a quien va detrás.",
+      "Ofrece silencio donde haya ruido.",
+      "Elige la palabra más corta y verdadera."
+    ],
+    "quietud": [
+      "Quédate un instante en el borde del impulso",
+      "Deja caer los hombros y vacía la lengua",
+      "No respondas a la primera emoción",
+      "Encuentra el punto medio del pecho"
+    ],
+    "accion_concreta": [
+      "Retrocede un espacio si tu orgullo va delante.",
+      "Cambia un movimiento por una pregunta sincera.",
+      "Tira de nuevo solo si tu corazón está quieto.",
+      "Regala tu mejor posición durante un turno."
+    ]
+  },
+  "phrases": [
+    { "when": "start", "text": "Respira hondo, pequeño saltamontes. No persigas la victoria: deja que te encuentre." },
+    { "when": "start", "text": "Cuando el dado es ruidoso, que tu mente sea agua quieta." },
+    { "when": "cross", "text": "Cruce {from} → {to} (dif. {dif}). Camina ligero; el borde corta, la curva abraza." },
+    { "when": "karma", "text": "{evento}. Aprende rápido, suelta más rápido." },
+    { "when": "dharma", "text": "{evento}. Comparte el avance y será tuyo de verdad." },
+    { "when": "cross", "text": "Cruce {from} → {to} (dif. {dif}). No corras; el camino ya te está esperando." },
+    { "when": "karma", "text": "Pierde un movimiento, gana una lección." },
+    { "when": "dharma", "text": "Avanza un paso sin moverte del centro." },
+    { "when": "start", "text": "El dado no miente, pero el ego traduce mal." },
+    { "when": "start", "text": "No apures el destino; el Nirvana no tiene prisa." }
+  ]
+}
