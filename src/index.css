@@ -113,3 +113,25 @@ button:disabled {
   box-shadow: 0 0 28px rgba(255, 255, 255, 0.95);
   border-color: rgba(0, 0, 0, 0.18);
 }
+.cellBtn.moveAB {
+  background: rgba(160, 120, 255, 0.22); /* violeta */
+  border-color: rgba(160, 120, 255, 0.85);
+  box-shadow:
+    0 0 0 1px rgba(160, 120, 255, 0.2),
+    0 0 16px rgba(160, 120, 255, 0.45);
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes breathe {
+  0% { transform: scale(1); opacity: 0.95; }
+  50% { transform: scale(1.01); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.95; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

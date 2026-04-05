@@ -1,25 +1,36 @@
 // src/game/state/reducer.ts
-import type { GameState, PlayerId } from "../types";
-import { previewMove } from "../rules/preview";
+import type {
+  GameState,
+  MoveOption,
+  PieceKind,
+  PlayerId,
+} from "../types";
 import { initialState } from "./state";
 import { applyRealmEffect } from "../realm/realmEffects";
 import { behaviorAfterMove } from "../behavior/behavior";
-
-// 🔥 pattern engine
 import { recordMove } from "../behavior/patternEngine";
-
-// ⚠️ ideal mover esto a utils, pero por ahora sirve
 import { realmFromPos } from "../../UI/realm";
+
+function clampCurvature(value: number): number {
+  return Math.max(0, Math.min(100, value));
+}
 
 type Action =
   | { type: "RESET" }
   | { type: "ROLL" }
-  | { type: "CHOOSE_ROLL"; value: number };
+  | { type: "SELECT_PIECE"; player: PlayerId; piece: PieceKind }
+  | { type: "SHOW_LEDGER"; entry: string }
+  | { type: "CLOSE_LEDGER" }
+  | {
+      type: "CONSCIOUS_MOVE";
+      option: MoveOption;
+      allOptions: MoveOption[];
+    };
 
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 const rollDie = () => 1 + Math.floor(Math.random() * 6);
 
-type Choice = "A" | "B" | "AB" | "ECO";
+const ALL_PIECES: PieceKind[] = ["pig", "snake", "rooster"];
 
 export function reducer(state: GameState, action: Action): GameState {
   switch (action.type) {
@@ -36,58 +47,60 @@ export function reducer(state: GameState, action: Action): GameState {
       };
     }
 
-    case "CHOOSE_ROLL": {
+    case "SELECT_PIECE": {
+      if (action.player !== state.turn) return state;
+
+      return {
+        ...state,
+        selectedPiece: {
+          ...state.selectedPiece,
+          [action.player]: action.piece,
+        },
+      };
+    }
+
+    case "SHOW_LEDGER":
+      return {
+        ...state,
+        ledgerOpen: true,
+        ledgerEntry: action.entry,
+      };
+
+    case "CLOSE_LEDGER":
+      return {
+        ...state,
+        ledgerOpen: false,
+        ledgerEntry: null,
+      };
+
+    case "CONSCIOUS_MOVE": {
       if (state.phase !== "rolled" || !state.rollOptions) return state;
 
       const me = state.turn;
       const opp = otherPlayer(me);
 
+      const { option, allOptions } = action;
+
+      // Seguridad: no dejar ejecutar opciones del jugador equivocado
+      if (!option) return state;
+
+      const activePiece = option.pieceKind;
+      const fromPos = option.fromPos;
+      const toBase = option.toPos;
+
       const [a, b] = state.rollOptions;
 
-      // ===== infer choice from value =====
-      const prevA = previewMove(state.pieces[me].pos, a, state.trackSize);
-      const prevB = previewMove(state.pieces[me].pos, b, state.trackSize);
+      const nextCurvature = {
+        ...(state.curvature ?? { P1: 0, P2: 0 }),
+      };
 
-      const capA = prevA === state.pieces[opp].pos;
-      const capB = prevB === state.pieces[opp].pos;
-
-      const allowSum = state.level >= 3 && !capA && !capB;
-      const sumRoll = allowSum ? a + b : null;
-
-      const prevAB =
-        allowSum && sumRoll !== null
-          ? previewMove(state.pieces[me].pos, sumRoll, state.trackSize)
-          : null;
-
-      const isEcho = prevA === prevB;
-
-      let chosenChoice: Choice = "A";
-      if (sumRoll !== null && action.value === sumRoll) chosenChoice = "AB";
-      else if (isEcho && action.value === a) chosenChoice = "ECO";
-      else if (action.value === b) chosenChoice = "B";
-      else chosenChoice = "A";
-
-      const hadAlternative = !isEcho; // A y B llevan a distinto sitio
-
-      // si existía captura posible en A o B, pero elegiste algo que NO captura
-      const chosenTargetPreview =
-        chosenChoice === "AB" ? prevAB : chosenChoice === "B" ? prevB : prevA;
-
-      const chosenWasCapture =
-        chosenTargetPreview !== null && chosenTargetPreview === state.pieces[opp].pos;
-
-      const captureWasAvoidable = (capA || capB) && !chosenWasCapture;
-
-          // ===== Snapshot BEFORE move =====
-      const fromPos = state.pieces[me].pos;
-
+      // ===== progreso de reino / loops =====
       const prevRealmProgress = state.realmProgress[me];
 
       let nextLoopProgress =
-        prevRealmProgress.currentLoopProgress + action.value;
+        prevRealmProgress.currentLoopProgress + option.value;
 
-      let nextCompletedLoops =
-        prevRealmProgress.completedLoopsInRealm;
+      let nextCompletedLoops = prevRealmProgress.completedLoopsInRealm;
 
       if (nextLoopProgress >= state.trackSize) {
         nextCompletedLoops += 1;
@@ -112,13 +125,18 @@ export function reducer(state: GameState, action: Action): GameState {
         nextLoopProgress = 0;
       }
 
-      // 1) Base movement (preview)
-      const toBase = previewMove(fromPos, action.value, state.trackSize);
-
-      // 2) Clone next state pieces/captures
+      // ===== clonar piezas =====
       const nextPieces = {
-        P1: { ...state.pieces.P1 },
-        P2: { ...state.pieces.P2 },
+        P1: {
+          pig: { ...state.pieces.P1.pig },
+          snake: { ...state.pieces.P1.snake },
+          rooster: { ...state.pieces.P1.rooster },
+        },
+        P2: {
+          pig: { ...state.pieces.P2.pig },
+          snake: { ...state.pieces.P2.snake },
+          rooster: { ...state.pieces.P2.rooster },
+        },
       };
 
       const nextCaptures = {
@@ -126,17 +144,27 @@ export function reducer(state: GameState, action: Action): GameState {
         P2: state.captures.P2,
       };
 
-      // 3) Apply base move
-      nextPieces[me].pos = toBase;
+      // ===== aplicar movimiento base =====
+      nextPieces[me][activePiece].pos = toBase;
 
-      // 4) Capture check (base)
+      // ===== captura =====
       let didCapture = false;
-      if (nextPieces[opp].pos === nextPieces[me].pos) {
-        didCapture = true;
-        nextCaptures[me] += 1;
-        nextPieces[opp].pos = 0;
+      let capturedPieceKind: PieceKind | null = null;
+
+      for (const enemyKind of ALL_PIECES) {
+        if (nextPieces[opp][enemyKind].pos === nextPieces[me][activePiece].pos) {
+          didCapture = true;
+          capturedPieceKind = enemyKind;
+          nextCaptures[me] += 1;
+          nextPieces[opp][enemyKind].pos = 0;
+
+          nextCurvature[me] = clampCurvature((nextCurvature[me] ?? 0) + 6);
+          nextCurvature[opp] = clampCurvature((nextCurvature[opp] ?? 0) - 8);
+          break;
+        }
       }
 
+      // ===== progreso de reino tras captura =====
       let nextRealmProgress = {
         ...state.realmProgress,
         [me]: {
@@ -164,41 +192,18 @@ export function reducer(state: GameState, action: Action): GameState {
         };
       }
 
-      // 5) Realm Effect (progressive by level)
-      const eff = applyRealmEffect({
+      // ===== realm effect =====
+      applyRealmEffect({
         level: state.level,
         trackSize: state.trackSize,
-        toPos: nextPieces[me].pos,
+        toPos: nextPieces[me][activePiece].pos,
         didCapture,
         mover: me,
       });
 
-      nextPieces[me].pos = eff.finalPos;
+      const toPos = nextPieces[me][activePiece].pos;
 
-      // 6) Capture check AGAIN (after realm shift)
-      if (nextPieces[opp].pos === nextPieces[me].pos) {
-        didCapture = true;
-        nextCaptures[me] += 1;
-        nextPieces[opp].pos = 0;
-
-        const oppPrev = state.realmProgress[opp];
-
-        nextRealmProgress = {
-          ...nextRealmProgress,
-          [opp]: {
-            ...oppPrev,
-            completedLoopsInRealm: Math.max(
-              0,
-              oppPrev.completedLoopsInRealm - 1
-            ),
-            currentLoopProgress: 0,
-          },
-        };
-      }
-
-      const toPos = nextPieces[me].pos;
-
-      // 7) Behavior update
+      // ===== behavior =====
       const nextBehavior = behaviorAfterMove({
         behavior: state.behavior,
         player: me,
@@ -208,16 +213,27 @@ export function reducer(state: GameState, action: Action): GameState {
         trackSize: state.trackSize,
       });
 
-      // 8) Win condition
+      // ===== win =====
       const didWin = toPos === state.trackSize - 1;
 
-      // 9) Pattern engine record
+      // ===== pattern engine =====
+      const samePieceAlternatives = allOptions.filter(
+        (o) => o.pieceKind === activePiece
+      );
+
+      const hadAlternative = samePieceAlternatives.length > 1;
+
+      const chosenWasCapture = option.meaning === "IMPACT";
+
+      const captureWasAvoidable =
+        allOptions.some((o) => o.meaning === "IMPACT") && !chosenWasCapture;
+
       const patternNext = recordMove(state.pattern, {
         player: me,
         turnIndex: state.turnIndex,
         cycleIndex: state.cycleIndex,
 
-        choice: chosenChoice,
+        choice: option.choice,
         hadAlternative,
         chosenWasCapture,
         captureWasAvoidable,
@@ -229,16 +245,22 @@ export function reducer(state: GameState, action: Action): GameState {
       });
 
       const nextTurn = didWin ? me : opp;
-
-      // incrementa cycleIndex cuando termina el turno de P2 (vuelta completa)
       const nextTurnIndex = state.turnIndex + 1;
       const nextCycleIndex =
         state.turn === "P2" ? state.cycleIndex + 1 : state.cycleIndex;
+      // ===== Ledger trigger =====
+      let nextLedgerOpen = state.ledgerOpen;
+      let nextLedgerEntry = state.ledgerEntry;
 
+      if (option.meaning === "IMPACT") {
+        nextLedgerOpen = true;
+        nextLedgerEntry = "mara";
+      }
       return {
         ...state,
         pieces: nextPieces,
         captures: nextCaptures,
+        curvature: nextCurvature,
         realmProgress: nextRealmProgress,
 
         behavior: nextBehavior,
@@ -250,20 +272,24 @@ export function reducer(state: GameState, action: Action): GameState {
         turn: nextTurn,
         winner: didWin ? me : state.winner,
 
-        // ✅ DATA PRO (C): guarda el movimiento real elegido
         lastMove: {
           at: Date.now(),
+
           player: me,
+          pieceKind: activePiece,
 
           a,
           b,
 
-          chosenValue: action.value,
-          choice: chosenChoice,
+          chosenValue: option.value,
+          choice: option.choice,
+          meaning: option.meaning,
 
           fromPos,
           toPos,
+
           didCapture,
+          capturedPieceKind,
 
           fromRealm: realmFromPos(fromPos),
           toRealm: realmFromPos(toPos),
@@ -272,9 +298,14 @@ export function reducer(state: GameState, action: Action): GameState {
           cycleIndex: nextCycleIndex,
 
           level: state.level,
-        },
 
-               phase: "idle",
+          availableOptions: allOptions,
+          availableOptionsCount: allOptions.length,
+        },
+        ledgerOpen: nextLedgerOpen,
+        ledgerEntry: nextLedgerEntry,
+        
+        phase: "idle",
         rollOptions: null,
       };
     }

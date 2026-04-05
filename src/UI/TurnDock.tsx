@@ -1,4 +1,3 @@
-// src/UI/TurnDock.tsx
 import React from "react";
 import type { PlayerId } from "../game/types";
 
@@ -41,11 +40,10 @@ export function TurnDock({
     <div className="turnDock">
       {showVestigium && <div className="vestigiumStamp">VESTIGIUM TUUM</div>}
 
-      {/* P2 */}
+      {/* Black */}
       <div className={`dockSide p2 ${leftActive ? "active" : "inactive"}`}>
         <div className="dockHeader">
-          <span className="dockTitle">P2</span>
-          <span className="dockBadge">LEMON</span>
+          <span className="dockTitle">⚫ Black</span>
         </div>
 
         <div className="dockDice">
@@ -77,27 +75,40 @@ export function TurnDock({
         </button>
 
         <div className="dockRead">
-          {rollA === null || rollB === null ? (
-            <span>🎲 Roll to generate A and B</span>
-          ) : (
-            <span>
-              A={rollA} · B={rollB}
-              {sum !== null && (
-                <>
-                  {" "}
-                  · <b className="sum">A+B={sum}</b>
-                </>
-              )}
-            </span>
-          )}
-        </div>
+  {rollA === null || rollB === null ? (
+    <span>🎲 Roll to generate your moves</span>
+  ) : (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 4,
+        fontWeight: 600,
+      }}
+    >
+      <div>
+        Choose your move:
       </div>
 
-      {/* P1 */}
+      <div style={{ opacity: 0.9 }}>
+        A = {rollA} · B = {rollB}
+        {sum !== null && (
+          <>
+            {" "}
+            · <b className="sum">A+B = {sum}</b>
+          </>
+        )}
+      </div>
+    </div>
+  )}
+</div>
+      </div>
+
+      {/* White */}
       <div className={`dockSide p1 ${rightActive ? "active" : "inactive"}`}>
         <div className="dockHeader">
-          <span className="dockTitle">P1</span>
-          <span className="dockBadge">RED</span>
+          <span className="dockTitle">⚪ White</span>
         </div>
 
         <div className="dockDice">
