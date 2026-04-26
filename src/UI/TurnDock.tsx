@@ -2,7 +2,7 @@ import React from "react";
 import type { PlayerId } from "../game/types";
 
 type Props = {
-  turn: PlayerId; // "P1" | "P2"
+  turn: PlayerId;
   phase: "idle" | "rolled";
   rollA: number | null;
   rollB: number | null;
@@ -14,9 +14,39 @@ type Props = {
 
 function DieBox({ label, value }: { label: string; value: number | null }) {
   return (
-    <div className="dieBox">
-      <div className="dieLabel">{label}</div>
-      <div className="dieValue">{value ?? "?"}</div>
+    <div
+      className="dieBox"
+      style={{
+        minWidth: 48,
+        padding: "6px 8px",
+        borderRadius: 10,
+        background: "rgba(255,255,255,0.06)",
+        border: "1px solid rgba(255,255,255,0.10)",
+        textAlign: "center",
+      }}
+    >
+      <div
+        className="dieLabel"
+        style={{
+          fontSize: 11,
+          opacity: 0.7,
+          marginBottom: 2,
+          letterSpacing: 0.4,
+        }}
+      >
+        {label}
+      </div>
+
+      <div
+        className="dieValue"
+        style={{
+          fontSize: 18,
+          fontWeight: 800,
+          lineHeight: 1.1,
+        }}
+      >
+        {value !== null ? value : "–"}
+      </div>
     </div>
   );
 }
@@ -34,7 +64,11 @@ export function TurnDock({
   const canRoll = phase !== "rolled";
   const leftActive = turn === "P2";
   const rightActive = turn === "P1";
-  const sum = rollA !== null && rollB !== null ? rollA + rollB : null;
+
+  const centerMessage =
+    rollA === null || rollB === null
+      ? "🎲 🎲 Roll to generate your moves"
+      : "Pig · Snake · Rooster — choose your path";
 
   return (
     <div className="turnDock">
@@ -43,12 +77,20 @@ export function TurnDock({
       {/* Black */}
       <div className={`dockSide p2 ${leftActive ? "active" : "inactive"}`}>
         <div className="dockHeader">
-          <span className="dockTitle">⚫ Black</span>
+          <span className="dockTitle">Black</span>
         </div>
 
-        <div className="dockDice">
-          <DieBox label="A" value={leftActive ? rollA : null} />
-          <DieBox label="B" value={leftActive ? rollB : null} />
+        <div
+          className="dockDice"
+          style={{
+            display: "flex",
+            gap: 8,
+            justifyContent: "center",
+            opacity: leftActive ? 1 : 0.45,
+          }}
+        >
+          <DieBox label="A" value={rollA} />
+          <DieBox label="B" value={rollB} />
         </div>
 
         <div className="dockMeta">
@@ -75,45 +117,27 @@ export function TurnDock({
         </button>
 
         <div className="dockRead">
-  {rollA === null || rollB === null ? (
-    <span>🎲 Roll to generate your moves</span>
-  ) : (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 4,
-        fontWeight: 600,
-      }}
-    >
-      <div>
-        Choose your move:
-      </div>
-
-      <div style={{ opacity: 0.9 }}>
-        A = {rollA} · B = {rollB}
-        {sum !== null && (
-          <>
-            {" "}
-            · <b className="sum">A+B = {sum}</b>
-          </>
-        )}
-      </div>
-    </div>
-  )}
-</div>
+          <span>{centerMessage}</span>
+        </div>
       </div>
 
       {/* White */}
       <div className={`dockSide p1 ${rightActive ? "active" : "inactive"}`}>
         <div className="dockHeader">
-          <span className="dockTitle">⚪ White</span>
+          <span className="dockTitle">White</span>
         </div>
 
-        <div className="dockDice">
-          <DieBox label="A" value={rightActive ? rollA : null} />
-          <DieBox label="B" value={rightActive ? rollB : null} />
+        <div
+          className="dockDice"
+          style={{
+            display: "flex",
+            gap: 8,
+            justifyContent: "center",
+            opacity: rightActive ? 1 : 0.45,
+          }}
+        >
+          <DieBox label="A" value={rollA} />
+          <DieBox label="B" value={rollB} />
         </div>
 
         <div className="dockMeta">

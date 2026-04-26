@@ -1,11 +1,15 @@
 // src/game/types.ts
 import type { PatternEngineState } from "./behavior/patternEngine";
 import type { BehaviorState } from "./behavior/types";
+import type { NidanaId } from "./nidanas";
 
 export type PlayerId = "P1" | "P2";
-
 export type Phase = "idle" | "rolled";
-
+export type EmojiEvent = {
+  player: PlayerId;
+  emoji: string;
+  at: number;
+};
 /**
  * Tipos de ficha por jugador
  */
@@ -16,6 +20,14 @@ export type PieceKind = "pig" | "snake" | "rooster";
  */
 export type SinglePieceState = {
   pos: number;
+  inLimbo: boolean;
+  maraLevel: number | null; // 0..6
+};
+export type VenomTrioState = {
+  pos: number;
+  kind: "PURE" | "MIXED";
+  owners: PlayerId[];
+  pieces: { player: PlayerId; kind: PieceKind }[];
 };
 
 /**
@@ -34,16 +46,16 @@ export type SelectedPieceState = Record<PlayerId, PieceKind>;
 
 /**
  * Reinos del Samsara
- * Ordenados según REALM_CANON
+ * Alineados con REALM_CANON / REALMS
  */
 export type Realm =
   | "HUNGRY_GHOST"
   | "HELL"
   | "ANIMALS"
   | "HUMANS"
-  | "TITANS"
-  | "SEMIGODS"
-  | "BUDDHA";
+  | "ASURA"
+  | "DEVA"
+  | "NIRVANA";
 
 /**
  * Opciones de movimiento
@@ -75,7 +87,6 @@ export type MoveOption = {
 
 /**
  * Snapshot del último movimiento
- * Se usa para UI + logging + análisis de patrones
  */
 export type LastMove = {
   at: number;
@@ -83,50 +94,42 @@ export type LastMove = {
   player: PlayerId;
   pieceKind: PieceKind;
 
-  // dados originales
   a: number;
   b: number;
 
-  // decisión tomada
   chosenValue: number;
   choice: Choice;
   meaning: MoveMeaning;
 
-  // movimiento
   fromPos: number;
   toPos: number;
 
-  // captura
   didCapture: boolean;
   capturedPieceKind: PieceKind | null;
 
-  // reinos
   fromRealm: Realm;
   toRealm: Realm;
 
-  // tiempo / progreso
   turnIndex: number;
   cycleIndex: number;
   level: number;
 
-  // contexto de decisión
   availableOptions: MoveOption[];
   availableOptionsCount: number;
-}; 
+};
 
 /**
  * Progreso espiritual dentro del reino actual
  */
 export type RealmProgress = {
-  currentRealmStep: number; // 1..7 según REALM_CANON
-  completedLoopsInRealm: number; // vueltas completas dentro del reino
-  currentLoopProgress: number; // progreso dentro de la vuelta actual
-  realmTransitions: number; // cuántas veces ha ascendido de reino
+  currentRealmStep: number;
+  completedLoopsInRealm: number;
+  currentLoopProgress: number;
+  realmTransitions: number;
 };
 
 /**
  * Curvatura / morph visual por jugador
- * Lo dejamos por jugador por ahora, no por ficha.
  */
 export type CurvatureState = {
   P1: number;
@@ -184,50 +187,58 @@ export type KarmaReport = {
  * Estado completo del juego
  */
 export type GameState = {
-  // telemetría / psicología
   behavior: BehaviorState;
   pattern: PatternEngineState;
 
-  // firma conductual
   decisionSignature: Record<PlayerId, DecisionSignature>;
 
-  // contadores del motor
   turnIndex: number;
   cycleIndex: number;
+  globalRollCount: number;
 
-  // tablero
   trackSize: number;
 
-  // turno
   turn: PlayerId;
   phase: Phase;
 
-  // dados
   rollOptions: [number, number] | null;
+  emojiEvents: EmojiEvent[];
 
-  // piezas
+  
   pieces: Record<PlayerId, PlayerPiecesState>;
   selectedPiece: SelectedPieceState;
 
-  // capturas
   captures: Record<PlayerId, number>;
 
-  // progreso samsárico
   realmProgress: Record<PlayerId, RealmProgress>;
 
-  // nivel del motor
   level: number;
+  currentNidana: NidanaId | null;
 
-  // snapshot del último movimiento
   lastMove: LastMove | null;
 
-  // ledger / revelaciones
+  lastKarma: {
+    combo: number;
+    context: number;
+    realm: number;
+    pattern: number;
+    purification: number;
+    total: number;
+  } | null;
+
+  karmaTotal: Record<PlayerId, number>;
+
   ledgerOpen: boolean;
   ledgerEntry: string | null;
 
-  // ganador
+  introSeen: boolean;
+
   winner: PlayerId | null;
 
-  // curvatura visual
   curvature: CurvatureState;
+venomTrio: VenomTrioState | null;
+
+coinBank: {
+  karma: number;
+  dharma: number;
 };

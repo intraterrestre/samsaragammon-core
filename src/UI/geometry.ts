@@ -1,3 +1,4 @@
+// src/UI/geometry.ts
 import type React from "react";
 
 /**
@@ -16,7 +17,9 @@ export const RADIUS = RING_SIZE / 2 - CELL / 2 - 14;
  */
 export function cellStyle(i: number, size: number): React.CSSProperties {
   const n = Math.max(1, size);
-  const angle = (i / n) * (Math.PI * 2) + Math.PI / 2;
+  const safeIndex = ((i % n) + n) % n;
+
+  const angle = (safeIndex / n) * (Math.PI * 2) + Math.PI / 2;
 
   const x = CENTER + RADIUS * Math.cos(angle);
   const y = CENTER + RADIUS * Math.sin(angle);
@@ -31,21 +34,18 @@ export function cellStyle(i: number, size: number): React.CSSProperties {
 }
 
 /**
- * Piece uses the SAME box geometry as the cell,
- * but pushed slightly outward so it doesn't cover the cell center.
+ * Piece uses the SAME geometry as the cell.
+ * No outward push here.
+ * Visual separation between pig/snake/rooster should be handled in Board.tsx via pieceOffset().
  */
 export function piecePosition(pos: number, size: number): React.CSSProperties {
   const n = Math.max(1, size);
-  const angle = (pos / n) * (Math.PI * 2) + Math.PI / 2;
+  const safePos = ((pos % n) + n) % n;
 
-  const baseX = CENTER + RADIUS * Math.cos(angle);
-  const baseY = CENTER + RADIUS * Math.sin(angle);
+  const angle = (safePos / n) * (Math.PI * 2) + Math.PI / 2;
 
-  // empuje hacia afuera
-  const outwardOffset = 14;
-
-  const x = baseX + Math.cos(angle) * outwardOffset;
-  const y = baseY + Math.sin(angle) * outwardOffset;
+  const x = CENTER + RADIUS * Math.cos(angle);
+  const y = CENTER + RADIUS * Math.sin(angle);
 
   return {
     position: "absolute",

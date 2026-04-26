@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import "./App.css";
 
+import { getGameDerivedState } from "./game/getGameDerivedState";
 import type { PieceKind } from "./game/types";
 import { reducer } from "./game/state/reducer";
 import { initialState } from "./game/state/state";
@@ -16,16 +17,39 @@ import { initialState } from "./game/state/state";
 import { masterOracleLine } from "./game/master/masterEngine";
 import { supabase } from "./lib/supabaseClient";
 import { KarmaEngine } from "./game/engine/KarmaEngine";
-import { REALM_CANON } from "./game/realm/realmCanon";
-import { karmaOracle } from "./game/karma/karmaOracle";
-import { karmaMirror } from "./game/karma/karmaMirror";
 
 import { GameShell } from "./UI/GameShell";
 import { LoginScreen } from "./UI/LoginScreen";
 import { useGameController } from "./game/hooks/useGameController";
+import { getMasterLine } from "./game/master/masterVoices";
 
 import diceRollSound from "./assets/sounds/dice_roll.mp3";
 
+const nidanaImages = import.meta.glob("./assets/nidanas/*.jpg", {
+  eager: true,
+  import: "default",
+}) as Record<string, string>;
+
+const NIDANAS = [
+  "ignorance",
+  "formations",
+  "consciousness",
+  "name_form",
+  "six_senses",
+  "contact",
+  "feeling",
+  "craving",
+  "clinging",
+  "identity",
+  "birth",
+  "death",
+];
+
+function getNidanaImage(id: number, side: "front" | "back") {
+  const num = String(id).padStart(2, "0");
+  const name = NIDANAS[id - 1];
+  return nidanaImages[`./assets/nidanas/nidana_${num}_${name}_${side}.jpg`];
+}
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { error: Error | null }
@@ -420,6 +444,27 @@ export default function App() {
   const [rollsCount, setRollsCount] = useState(0);
   const prevPhaseRef = useRef<string>(state.phase);
 
+  const [activeNidanaId, setActiveNidanaId] = useState<number | null>(null);
+const [nidanaSide, setNidanaSide] = useState<"front" | "back">("front");
+const [showNidana, setShowNidana] = useState(false);
+
+const nidanaTimersRef = useRef<number[]>([]);
+
+const triggerNidanaCoin = () => {
+  nidanaTimersRef.current.forEach((t) => window.clearTimeout(t));
+  nidanaTimersRef.current = [];
+
+  const id = 1 + Math.floor(Math.random() * 12);
+
+  setActiveNidanaId(id);
+  setNidanaSide("front");
+  setShowNidana(true);
+
+  nidanaTimersRef.current.push(
+    window.setTimeout(() => setNidanaSide("back"), 1000),
+    window.setTimeout(() => setShowNidana(false), 4200)
+  );
+};
   useEffect(() => {
     const prev = prevPhaseRef.current;
     const now = state.phase;
@@ -537,75 +582,33 @@ export default function App() {
     ensureRun,
     selectedPos,
   ]);
-
-  /** =========================
-   *  Realm / Oracle / Mirror
-   *  ========================= */
-  const hasRolled = state.phase === "rolled";
-  const a = state.rollOptions?.[0] ?? null;
-  const b = state.rollOptions?.[1] ?? null;
-
-  const sum = useMemo(() => {
-    if (a == null || b == null) return null;
-    return a + b;
-  }, [a, b]);
-
-  const realmIndexFromPos = (pos: number) => {
-    return Math.max(0, Math.min(Math.floor(pos / 4), REALM_CANON.length - 1));
-  };
-
-  const realmIndexP1 = realmIndexFromPos(selectedPos("P1"));
-  const realmIndexP2 = realmIndexFromPos(selectedPos("P2"));
-
-  const realmDataP1 = REALM_CANON[realmIndexP1];
-  const realmDataP2 = REALM_CANON[realmIndexP2];
-
-  const activeRealmData = state.turn === "P1" ? realmDataP1 : realmDataP2;
-  const activeEra = activeRealmData?.era ?? "Unknown";
-  const activePlayer = state.turn;
-
-  const activeProgress = state.realmProgress[activePlayer];
-  const cyclesDone = activeProgress.completedLoopsInRealm;
-
-  const loopsRequiredForRealmStep = (step: number) => {
-    if (step >= 7) return 0;
-    return step * 7;
-  };
-
-  const cyclesNeeded = loopsRequiredForRealmStep(activeProgress.currentRealmStep);
-  const transitions = activeProgress.realmTransitions;
-
-  const activePatternRaw =
-    state.turn === "P1"
-      ? (state.pattern as any)?.players?.P1?.label ??
-        (state.pattern as any)?.P1?.label ??
-        "UNKNOWN"
-      : (state.pattern as any)?.players?.P2?.label ??
-        (state.pattern as any)?.P2?.label ??
-        "UNKNOWN";
-
-  const activeChoice = state.lastMove?.choice ?? null;
-
-  const oracleReading = karmaOracle({
-    pattern: activePatternRaw,
-    realm: activeRealmData?.id ?? "UNKNOWN",
-    didCapture: state.lastMove?.didCapture ?? false,
-    choice: activeChoice,
-  });
-
-  const oracleText = masterOracleLine(oracleReading, state.level);
-
-  const mirrorData = karmaMirror({
-    player: state.turn,
-    patternLabel: activePatternRaw,
-    choice: activeChoice as "A" | "B" | "AB" | "ECO" | null,
-    didCapture: state.lastMove?.didCapture ?? false,
+    const {
+    hasRolled,
+    a,
+    b,
+    sum,
+    realmDataP1,
+    realmDataP2,
+    activeRealmData,
+    activeEra,
     cyclesDone,
+    cyclesNeeded,
     transitions,
-    realmLabel: activeRealmData?.label ?? "Unknown",
-    oracle: oracleReading,
+    oracleText,
+    mirrorData,
+  } = getGameDerivedState({
+    state,
+    selectedPos,
   });
-
+  const masterDisplayText = state.lastMove
+  ? getMasterLine({
+      didCapture: state.lastMove.didCapture,
+      patternScore: state.lastKarma?.pattern ?? 0,
+      realm: state.lastMove.toRealm,
+      fromPos: state.lastMove.fromPos,
+      toPos: state.lastMove.toPos,
+    })
+  : "The wheel waits.";
   /** =========================
    *  Dispatch wrapper
    *  ========================= */
@@ -637,39 +640,49 @@ export default function App() {
   }, [state.phase, state.rollOptions]);
 
   return (
-    <ErrorBoundary>
-      {!session ? (
-        <LoginScreen onLogin={handleLogin} />
-      ) : (
-        <GameShell
-          state={state}
-          a={a}
-          b={b}
-          sum={sum}
-          hasRolled={hasRolled}
-          rollsCount={rollsCount}
-          karmaSnap={karmaSnap}
-          activeRealmData={activeRealmData}
-          activeEra={activeEra}
-          cyclesDone={cyclesDone}
-          cyclesNeeded={cyclesNeeded}
-          transitions={transitions ?? 0}
-          oracleText={oracleText}
-          mirrorData={mirrorData}
-          showVestigium={showVestigium}
-          onVestigiumDone={() => setShowVestigium(false)}
-          onLogout={async () => {
-            await supabase.auth.signOut();
-            setRunId(null);
-            setProfile(null);
-          }}
-          onExportRun={debugPrintRunExport}
-onRoll={() => {
+ <ErrorBoundary>
+  {!session ? (
+    <LoginScreen onLogin={handleLogin} />
+  ) : (
+    <GameShell
+      state={state}
+      a={a}
+      b={b}
+      sum={sum}
+      hasRolled={hasRolled}
+      rollsCount={rollsCount}
+      karmaSnap={karmaSnap}
+      activeRealmData={activeRealmData}
+      activeEra={activeEra}
+      cyclesDone={cyclesDone}
+      cyclesNeeded={cyclesNeeded}
+      transitions={transitions ?? 0}
+      oracleText={oracleText}
+      mirrorData={mirrorData}
+      showVestigium={showVestigium}
+      currentNidana={state.currentNidana}   // 👈 ESTA ES LA CLAVE
+      nidanaCoinSrc={
+  showNidana && activeNidanaId
+    ? getNidanaImage(activeNidanaId, nidanaSide)
+    : null
+}
+nidanaCoinId={activeNidanaId}
+nidanaCoinSide={nidanaSide}
+      onVestigiumDone={() => setShowVestigium(false)}
+      onCloseLedger={() => dispatch({ type: "CLOSE_LEDGER" })}
+      onIntroDone={() => dispatch({ type: "INTRO_DONE" })}
+      onLogout={async () => {
+        await supabase.auth.signOut();
+        setRunId(null);
+        setProfile(null);
+      }}
+  onExportRun={debugPrintRunExport}
+ onRoll={() => {
   playDiceSound();
+  triggerNidanaCoin();
   dispatch({ type: "ROLL" });
-  dispatch({ type: "SHOW_LEDGER", entry: "mara" });
 }}
-onReset={() => dispatch({ type: "RESET" })}
+  onReset={() => dispatch({ type: "RESET" })}
 onConsciousMove={(option, allOptions) =>
   dispatch({
     type: "CONSCIOUS_MOVE",
@@ -680,9 +693,12 @@ onConsciousMove={(option, allOptions) =>
 onSelectPiece={(piece: PieceKind) =>
   dispatch({ type: "SELECT_PIECE", player: state.turn, piece })
 }
+onSendEmoji={(emoji: string) =>
+  dispatch({ type: "EMOJI", emoji, player: state.turn })
+}
 realmDataP1={realmDataP1}
 realmDataP2={realmDataP2}
-        />
+/>
       )}
     </ErrorBoundary>
   );

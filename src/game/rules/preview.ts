@@ -1,10 +1,13 @@
-export function previewMove(from: number, roll: number, trackSize: number): number {
-  const last = trackSize - 1;
-  const target = from + roll;
-
-  if (target <= last) return target;
-
-  // rebote: si te pasas, vuelves hacia atrás
-  const overflow = target - last;
-  return Math.max(0, last - overflow);
+/**
+ * Calcula la nueva posición en una rueda circular (Samsara)
+ * - No hay rebote
+ * - Movimiento continuo
+ * - La casilla actual NO cuenta como paso
+ */
+export function previewMove(
+  from: number,
+  roll: number,
+  trackSize: number
+): number {
+  return (from + roll) % trackSize;
 }

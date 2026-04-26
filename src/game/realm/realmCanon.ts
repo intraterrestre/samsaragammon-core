@@ -1,4 +1,17 @@
-export const REALM_CANON = [
+// src/game/realm/realmCanon.ts
+import type { RealmId } from "../realms";
+
+export type RealmCanonEntry = {
+  step: number;
+  id: RealmId;
+  label: string;
+  color: string;
+  hex: string;
+  era: string;
+  state: string;
+};
+
+export const REALM_CANON: RealmCanonEntry[] = [
   {
     step: 1,
     id: "HUNGRY_GHOST",
@@ -37,7 +50,7 @@ export const REALM_CANON = [
   },
   {
     step: 5,
-    id: "TITANS",
+    id: "ASURA",
     label: "Titans",
     color: "Red",
     hex: "#dc2626",
@@ -46,7 +59,7 @@ export const REALM_CANON = [
   },
   {
     step: 6,
-    id: "SEMIGODS",
+    id: "DEVA",
     label: "SemiGods",
     color: "White",
     hex: "#f3f4f6",
@@ -55,11 +68,11 @@ export const REALM_CANON = [
   },
   {
     step: 7,
-    id: "BUDDHA",
+    id: "NIRVANA",
     label: "Buddha",
     color: "Rainbow",
     hex: "#22c55e",
     era: "Curvist Golden Era",
     state: "Liberation",
   },
-] as const;
+];

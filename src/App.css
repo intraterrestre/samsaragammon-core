@@ -503,7 +503,9 @@ button:disabled{
   font-weight: 800;
   letter-spacing: 0.02em;
   text-shadow: 0 1px 2px rgba(0,0,0,0.35);
- .cellBtn.hit {
+}
+
+.cellBtn.hit {
   animation: none !important;
   transform: scale(1.22) !important;
   border-color: rgba(255,255,255,0.95) !important;
@@ -513,6 +515,7 @@ button:disabled{
     0 0 38px rgba(255,255,255,0.95) !important;
   filter: brightness(1.55);
 }
+
 .cellFlash {
   animation: none !important;
   transform: scale(1.35) !important;
@@ -523,7 +526,7 @@ button:disabled{
     0 0 42px rgba(255,255,255,1) !important;
   filter: brightness(1.8);
 }
-}
+
 .moveMeaning {
   position: absolute;
   bottom: -12px;
@@ -569,7 +572,153 @@ button:disabled{
     transform: translateY(4px);
   }
   to {
-    opacity: 0.95;
+    opacity: 0.85;
     transform: translateY(0);
+  }
+}
+.nidanaStage {
+  margin: 18px auto 14px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.nidanaCoin {
+  width: min(360px, 72vw);
+  height: auto;
+  border-radius: 50%;
+  animation: nidanaAppear 0.45s ease-out, nidanaPulse 1.8s ease-in-out infinite;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.38);
+}
+
+@keyframes nidanaAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.72) rotateY(90deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotateY(0deg);
+  }
+}
+
+@keyframes nidanaPulse {
+  0%, 100% {
+    transform: scale(1) rotateY(0deg);
+  }
+  50% {
+    transform: scale(1.035) rotateY(10deg);
+  }
+}
+/* =========================
+   NIDANA COIN OVERLAY
+   ========================= */
+
+.nidanaCoinStage {
+  margin: 18px auto 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 390px;
+  pointer-events: none;
+}
+
+.nidanaCoinImage {
+  width: min(390px, 82vw);
+  height: auto;
+  border-radius: 50%;
+  object-fit: contain;
+  animation:
+    nidanaCoinEnter 0.45s ease-out,
+    nidanaCoinFloat 1.7s ease-in-out infinite;
+  box-shadow:
+    0 20px 55px rgba(0, 0, 0, 0.45),
+    0 0 36px rgba(255, 230, 160, 0.18);
+}
+
+.nidanaCoinImage.isBack {
+  animation:
+    nidanaCoinFlip 0.55s ease-out,
+    nidanaCoinFloat 1.7s ease-in-out infinite;
+}
+
+@keyframes nidanaCoinEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.68) rotateY(85deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotateY(0deg);
+  }
+}
+
+@keyframes nidanaCoinFlip {
+  from {
+    opacity: 0.65;
+    transform: scale(0.95) rotateY(90deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotateY(0deg);
+  }
+}
+
+@keyframes nidanaCoinFloat {
+  0%, 100% {
+    transform: scale(1) rotateZ(0deg);
+  }
+  50% {
+    transform: scale(1.035) rotateZ(1.5deg);
+  }
+}
+/* =========================
+   WATCHER MEME
+   ========================= */
+
+.watcherOverlay {
+  position: fixed;
+  left: calc(50% - 650px);   /* más a la izquierda */
+  top: 78%;                  /* mucho más abajo */
+  transform: translate(-50%, -50%);
+  z-index: 20000;
+  pointer-events: none;
+  text-align: center;
+  animation: watcherPop 1.8s ease-out forwards;
+}
+
+.watcherVideo {
+  width: min(190px, 34vw);
+  border-radius: 18px;
+  box-shadow:
+    0 20px 60px rgba(0,0,0,0.55),
+    0 0 30px rgba(255,255,255,0.18);
+}
+
+.watcherText {
+  margin-top: 8px;
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  color: white;
+  text-shadow: 0 2px 14px rgba(0,0,0,0.8);
+}
+
+@keyframes watcherPop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.75);
+  }
+  12% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+  78% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.92);
   }
 }

@@ -8,22 +8,35 @@ import {
 } from "../UI/geometry";
 import { realmFromPos, REALM_LABEL, pickLine } from "../UI/realm";
 import { ExplainModal } from "../UI/ExplainModal";
-import pawnWhite from "../assets/pieces/pawn_white.png";
-import pawnBlack from "../assets/pieces/pawn_black.png";
+import { MoveEmanations } from "../UI/MoveEmanations";
+
+// 🔥 FICHAS
+import pigWhite from "../assets/pieces/pig_white.png";
+import pigBlack from "../assets/pieces/pig_black.png";
+import roosterWhite from "../assets/pieces/rooster_white.png";
+import roosterBlack from "../assets/pieces/rooster_black.png";
+import cobraWhite from "../assets/pieces/cobra_white.png";
+import cobraBlack from "../assets/pieces/cobra_black.png";
+
+// 🔊 SONIDOS
 import captureWhite from "../assets/sounds/capture_white.mp3";
 import captureBlack from "../assets/sounds/capture_black.mp3";
 import moveSound from "../assets/sounds/move.mp3";
-
 type Props = {
   state: GameState;
   onSelectPiece?: (piece: PieceKind) => void;
   hoveredOption?: MoveOption | null;
+  moveOptions?: MoveOption[];
+  onChooseMove?: (option: MoveOption, allOptions: MoveOption[]) => void;
+  onSendEmoji?: (emoji: string) => void;
+  nidanaCoinSrc?: string | null;
+  nidanaCoinSide?: "front" | "back";
 };
-
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 
 const playerLabel = (p: PlayerId) => (p === "P1" ? "⚪ White" : "⚫ Black");
 const PIECE_KINDS: PieceKind[] = ["pig", "snake", "rooster"];
+const EMOJIS = ["😴", "🔥", "🐷", "🐍", "⚔️", "🧘", "😂", "😡"];
 
 const pieceLabel = (k: PieceKind) => {
   if (k === "pig") return "Pig";
@@ -37,58 +50,109 @@ const pieceShort = (k: PieceKind) => {
   return "R";
 };
 
-const pieceOffset = (kind: PieceKind) => {
-  switch (kind) {
-    case "pig":
-      return { x: -8, y: -8 };
-    case "snake":
-      return { x: 0, y: 8 };
-    case "rooster":
-      return { x: 8, y: -8 };
-  }
-};
-export function Board({ state, onSelectPiece, hoveredOption }: Props) {
-const captureAudioWhite = useRef<HTMLAudioElement | null>(null);
-const captureAudioBlack = useRef<HTMLAudioElement | null>(null);
-const moveAudio = useRef<HTMLAudioElement | null>(null);
+function pieceSortKey(player: PlayerId, kind: PieceKind) {
+  const playerOrder = player === "P1" ? 0 : 10;
+  const kindOrder = kind === "pig" ? 0 : kind === "snake" ? 1 : 2;
+  return playerOrder + kindOrder;
+}
 
-// 🔊 INICIALIZAR AUDIOS
-useEffect(() => {
-  captureAudioWhite.current = new Audio(captureWhite);
-  captureAudioBlack.current = new Audio(captureBlack);
-  moveAudio.current = new Audio(moveSound);
-  if (moveAudio.current) moveAudio.current.volume = 0.03;
-  if (captureAudioWhite.current) captureAudioWhite.current.volume = 0.35;
-  if (captureAudioBlack.current) captureAudioBlack.current.volume = 0.35;
+function stackOffset(index: number, total: number) {
+  if (total <= 1) return { x: 0, y: 0 };
+
+  if (total === 2) {
+    return index === 0 ? { x: -10, y: 0 } : { x: 10, y: 0 };
+  }
+
+  if (total === 3) {
+    const offsets = [
+      { x: 0, y: -10 },
+      { x: -9, y: 8 },
+      { x: 9, y: 8 },
+    ];
+    return offsets[index] ?? { x: 0, y: 0 };
+  }
+
+  const radius = 10;
+  const angle = (index / total) * Math.PI * 2 - Math.PI / 2;
+
+  return {
+    x: Math.cos(angle) * radius,
+    y: Math.sin(angle) * radius,
+  };
+}
+
+export function Board({
+  state,
+  onSelectPiece,
+  hoveredOption,
+  moveOptions,
+  onChooseMove,
+  onSendEmoji,
+  nidanaCoinSrc,
+  nidanaCoinSide,
+}: Props){
+  const captureAudioWhite = useRef<HTMLAudioElement | null>(null);
+  const captureAudioBlack = useRef<HTMLAudioElement | null>(null);
+  const moveAudio = useRef<HTMLAudioElement | null>(null);
+
+const [lastEmojiAt, setLastEmojiAt] = useState(0);
+const [showNidanaSpinner, setShowNidanaSpinner] = useState(false);
+const [visibleNidana, setVisibleNidana] = useState<string | null>(null);
+const [nidanaEffect, setNidanaEffect] = useState<string | null>(null);
+const nidanaTimerRef = useRef<number | null>(null);
+const prevNidanaRef = useRef<string | null>(null);
+  // 🔊 INICIALIZAR AUDIOS
+
+  useEffect(() => {
+    captureAudioWhite.current = new Audio(captureWhite);
+    captureAudioBlack.current = new Audio(captureBlack);
+    moveAudio.current = new Audio(moveSound);
+
+    if (moveAudio.current) moveAudio.current.volume = 0.03;
+    if (captureAudioWhite.current) captureAudioWhite.current.volume = 0.35;
+    if (captureAudioBlack.current) captureAudioBlack.current.volume = 0.35;
+    
 }, []);
 
-// 🔊 DISPARAR SONIDO (CAPTURA)
 useEffect(() => {
-  if (!state.lastMove?.didCapture) return;
+  if (!state.currentNidana) return;
 
-  const player = state.lastMove.player;
+  setVisibleNidana(state.currentNidana);
+  setShowNidanaSpinner(true);
+  setNidanaEffect(state.currentNidana);
 
-  if (player === "P1") {
-    if (captureAudioWhite.current) {
-      captureAudioWhite.current.currentTime = 0;
-      captureAudioWhite.current.play().catch(() => {});
-    }
-  } else {
-    if (captureAudioBlack.current) {
-      captureAudioBlack.current.currentTime = 0;
-      captureAudioBlack.current.play().catch(() => {});
-    }
+  if (nidanaTimerRef.current) {
+    window.clearTimeout(nidanaTimerRef.current);
   }
-}, [state.lastMove]);
 
-// 👇 continúa tu código
+  // FASE 1: giro
+  nidanaTimerRef.current = window.setTimeout(() => {
+    setShowNidanaSpinner(false);
+
+    // FASE 2: tiempo de lectura
+    nidanaTimerRef.current = window.setTimeout(() => {
+      setVisibleNidana(null);
+    }, 3000); // ← aquí está el tiempo REAL de lectura
+
+  }, 1200); // ← duración del giro
+
+  return () => {
+    if (nidanaTimerRef.current) {
+      window.clearTimeout(nidanaTimerRef.current);
+    }
+  };
+}, [state.currentNidana]);
+
   const size = state.trackSize;
   const me = state.turn;
   const other = otherPlayer(me);
   const rolls = state.phase === "rolled" ? state.rollOptions : null;
   const activePiece = state.selectedPiece[me];
   const activePos = state.pieces[me][activePiece].pos;
-  const enemyPositions = PIECE_KINDS.map((k) => state.pieces[other][k].pos);
+
+  const enemyPositions = PIECE_KINDS
+    .filter((k) => !state.pieces[other][k].inLimbo)
+    .map((k) => state.pieces[other][k].pos);
 
   // ===== Explain modal state =====
   const [explainOpen, setExplainOpen] = useState(false);
@@ -103,7 +167,7 @@ useEffect(() => {
   const [beat, setBeat] = useState(false);
   const beatTimer = useRef<number | null>(null);
 
-  // ===== Move previews sobre la ficha activa =====
+  // ===== Previews sobre la ficha activa =====
   const prevA =
     rolls !== null ? previewMove(activePos, rolls[0], state.trackSize) : null;
 
@@ -123,7 +187,8 @@ useEffect(() => {
 
   const isSameAB = prevA !== null && prevB !== null && prevA === prevB;
 
-  // ===== Snapshot + animation logic (basado en lastMove) =====
+
+  // 🔊 DISPARAR SONIDO / FX POR LAST MOVE
   useEffect(() => {
     if (!state.lastMove) return;
 
@@ -181,59 +246,179 @@ useEffect(() => {
   const turnClass = state.turn === "P1" ? "turnP1" : "turnP2";
   const beatClass = beat ? "beat" : "";
 
+  const piecesByPos: Record<number, { player: PlayerId; kind: PieceKind }[]> =
+    {};
+
+  (["P1", "P2"] as PlayerId[]).forEach((player) => {
+    PIECE_KINDS.forEach((kind) => {
+      const pieceState = state.pieces[player][kind];
+      if (pieceState.inLimbo) return;
+
+      const pos = pieceState.pos;
+      if (!piecesByPos[pos]) piecesByPos[pos] = [];
+      piecesByPos[pos].push({ player, kind });
+    });
+  });
+
+  Object.values(piecesByPos).forEach((stack) => {
+    stack.sort(
+      (a, b) => pieceSortKey(a.player, a.kind) - pieceSortKey(b.player, b.kind)
+    );
+  });
+
+  const limboPieces = (["P1", "P2"] as PlayerId[]).flatMap((player) =>
+    PIECE_KINDS.filter((kind) => state.pieces[player][kind].inLimbo).map(
+      (kind) => ({ player, kind })
+    )
+  );
+
+  const renderedPieces = (["P1", "P2"] as PlayerId[]).flatMap((player) => {
+    return PIECE_KINDS.map((kind) => {
+      const pieceState = state.pieces[player][kind];
+      if (pieceState.inLimbo) return null;
+
+      const pos = pieceState.pos;
+
+      const isCurrentSelected =
+        player === state.turn && state.selectedPiece[player] === kind;
+
+      const base = piecePosition(pos, size);
+      const stack = piecesByPos[pos] ?? [];
+      const stackIndex = stack.findIndex(
+        (p) => p.player === player && p.kind === kind
+      );
+      const offset = stackOffset(stackIndex, stack.length);
+
+      let src = player === "P1" ? pigWhite : pigBlack;
+
+      if (kind === "rooster") {
+        src = player === "P1" ? roosterWhite : roosterBlack;
+      } else if (kind === "snake") {
+        src = player === "P1" ? cobraWhite : cobraBlack;
+      }
+
+      return (
+        <div
+          key={`${player}-${kind}`}
+          onClick={() => {
+            if (player === state.turn && !pieceState.inLimbo) {
+              onSelectPiece?.(kind);
+            }
+          }}
+          style={{
+            ...base,
+            left: (base.left as number) + offset.x,
+            top: (base.top as number) + offset.y,
+            width: 36,
+            height: 36,
+            zIndex: isCurrentSelected ? 45 : 40,
+            pointerEvents: player === state.turn ? "auto" : "none",
+            position: "absolute",
+            cursor: player === state.turn ? "pointer" : "default",
+            borderRadius: 18,
+            boxShadow: isCurrentSelected
+              ? "0 0 0 2px rgba(255,255,255,0.18)"
+              : "none",
+          }}
+        >
+<img
+  src={src}
+  alt=""
+  onError={(e) => {
+    e.currentTarget.remove();
+  }}
+  className={impactPos === pos ? "pieceHit" : ""}
+  style={{
+    width: 36,
+    height: 36,
+    objectFit: "contain",
+    pointerEvents: "none",
+    transform: isCurrentSelected
+      ? "scale(1.08) translateY(-4px)"
+      : "translateY(-1px)",
+    filter: isCurrentSelected
+      ? "drop-shadow(0 0 8px rgba(255,255,255,0.4))"
+      : "none",
+  }}
+/>
+
+          <div
+            style={{
+              position: "absolute",
+              right: -3,
+              bottom: -3,
+              minWidth: 14,
+              height: 14,
+              borderRadius: 7,
+              background: "rgba(0,0,0,0.72)",
+              border: "1px solid rgba(255,255,255,0.2)",
+              color: "white",
+              fontSize: 9,
+              fontWeight: 800,
+              lineHeight: "12px",
+              textAlign: "center",
+              padding: "0 3px",
+              pointerEvents: "none",
+            }}
+          >
+            {pieceShort(kind)}
+          </div>
+        </div>
+      );
+    });
+  });
+
   return (
     <div className={`board ${turnClass} ${beatClass}`}>
       {ghost && <div className="ghostWord">{ghost}</div>}
+      {state.emojiEvents?.length ? (
+  <div
+    style={{
+      textAlign: "center",
+      fontSize: 26,
+      margin: "6px 0 10px",
+      minHeight: 32,
+    }}
+  >
+    {state.emojiEvents[state.emojiEvents.length - 1].emoji}
+  </div>
+) : null}
 
-      {/* ===== Active piece selector ===== */}
+      {/* ===== Emoji bar ===== */}
       <div
         style={{
           width: "min(560px, 92vw)",
-          margin: "8px auto 8px",
-          padding: "8px 10px",
-          borderRadius: 12,
-          background: "rgba(0,0,0,0.12)",
-          border: "1px solid rgba(255,255,255,0.12)",
+          margin: "8px auto 10px",
           display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: 10,
+          justifyContent: "center",
+          gap: 6,
+          flexWrap: "wrap",
         }}
       >
-        <div style={{ fontSize: 13, fontWeight: 700 }}>
-          {playerLabel(me)} moving:{" "}
-          <span style={{ opacity: 0.9 }}>{pieceLabel(activePiece)}</span>
-        </div>
-
-        <div style={{ display: "flex", gap: 8 }}>
-          {PIECE_KINDS.map((kind) => {
-            const selected = state.selectedPiece[me] === kind;
-            return (
-              <button
-                key={kind}
-                type="button"
-                onClick={() => onSelectPiece?.(kind)}
-                style={{
-                  height: 30,
-                  padding: "0 10px",
-                  borderRadius: 10,
-                  border: selected
-                    ? "1px solid rgba(255,255,255,0.45)"
-                    : "1px solid rgba(255,255,255,0.14)",
-                  background: selected
-                    ? "rgba(255,255,255,0.12)"
-                    : "rgba(0,0,0,0.18)",
-                  color: "rgba(255,255,255,0.92)",
-                  cursor: "pointer",
-                  fontWeight: selected ? 800 : 600,
-                  fontSize: 12,
-                }}
-              >
-                {pieceLabel(kind)}
-              </button>
-            );
-          })}
-        </div>
+        {EMOJIS.map((emoji) => (
+          <button
+            key={emoji}
+            type="button"
+            onClick={() => {
+              const now = Date.now();
+              if (now - lastEmojiAt < 1800) return;
+              setLastEmojiAt(now);
+              onSendEmoji?.(emoji);
+            }}
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 10,
+              border: "1px solid rgba(255,255,255,0.16)",
+              background: "rgba(0,0,0,0.16)",
+              color: "white",
+              fontSize: 18,
+              cursor: "pointer",
+            }}
+          >
+            {emoji}
+          </button>
+        ))}
       </div>
 
       {/* ===== Behavior / Patterns HUD ===== */}
@@ -307,6 +492,32 @@ useEffect(() => {
           borderRadius: "50%",
         }}
       >
+     {nidanaCoinSrc && (
+  <div
+    style={{
+      position: "absolute",
+      left: "50%",
+      top: "50%",
+      transform: "translate(-50%, -50%)",
+      zIndex: 9999,
+      pointerEvents: "none",
+    }}
+  >
+    <img
+      src={nidanaCoinSrc}
+      className={`nidanaCoinImage ${
+        nidanaCoinSide === "back" ? "isBack" : ""
+      }`}
+      style={{
+        width: Math.min(RING_SIZE * 0.55, 320),
+        height: "auto",
+        borderRadius: "50%",
+        boxShadow:
+          "0 0 50px rgba(0,0,0,0.5), 0 0 30px rgba(255,220,120,0.25)",
+      }}
+    />
+  </div>
+)}
         {Array.from({ length: size }, (_, i) => {
           const cellRealm = realmFromPos(i);
           const isHoveredTarget = hoveredOption?.toPos === i;
@@ -342,74 +553,22 @@ useEffect(() => {
           );
         })}
 
-        {/* ===== Render all 6 pieces ===== */}
-        {(["P1", "P2"] as PlayerId[]).flatMap((player) =>
-          PIECE_KINDS.map((kind) => {
-            const pos = state.pieces[player][kind].pos;
-            const offset = pieceOffset(kind);
-            const isCurrentSelected =
-              player === state.turn && state.selectedPiece[player] === kind;
-
-            const base = piecePosition(pos, size);
-            const src = player === "P1" ? pawnWhite : pawnBlack;
-
-            return (
-              <div
-                key={`${player}-${kind}`}
-                style={{
-                  ...base,
-                  left: (base.left as number) + offset.x,
-                  top: (base.top as number) + offset.y,
-                  width: 36,
-                  height: 36,
-                  zIndex: isCurrentSelected ? 45 : 40,
-                  pointerEvents: "none",
-                  position: "absolute",
-                }}
-              >
-                <img
-                  src={src}
-                  alt={`${player}-${kind}`}
-                  className={impactPos === pos ? "pieceHit" : ""}
-                  style={{
-                    width: 36,
-                    height: 36,
-                    objectFit: "contain",
-                    pointerEvents: "none",
-                    transform: isCurrentSelected
-                      ? "translateZ(0) translateY(-3px)"
-                      : "translateZ(0) translateY(-1px)",
-                    filter: isCurrentSelected
-                      ? "drop-shadow(0 0 6px rgba(255,255,255,0.35))"
-                      : "none",
-                  }}
-                />
-
-                <div
-                  style={{
-                    position: "absolute",
-                    right: -3,
-                    bottom: -3,
-                    minWidth: 14,
-                    height: 14,
-                    borderRadius: 7,
-                    background: "rgba(0,0,0,0.72)",
-                    border: "1px solid rgba(255,255,255,0.2)",
-                    color: "white",
-                    fontSize: 9,
-                    fontWeight: 800,
-                    lineHeight: "12px",
-                    textAlign: "center",
-                    padding: "0 3px",
-                  }}
-                >
-                  {pieceShort(kind)}
-                </div>
-              </div>
-            );
-          })
+       
+ {state.phase === "rolled" && moveOptions.length > 0 && onChooseMove && (
+          <MoveEmanations
+            options={moveOptions}
+            player={state.turn}
+            trackSize={size}
+            selectedPiece={state.selectedPiece[state.turn]}
+            onChoose={onChooseMove}
+          />
         )}
+      
+        {renderedPieces}
+
+  
       </div>
+
       <ExplainModal
         open={explainOpen}
         onClose={() => setExplainOpen(false)}

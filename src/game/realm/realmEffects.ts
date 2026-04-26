@@ -4,17 +4,27 @@ import type { PlayerId, Realm } from "../types";
 export type RealmEffectResult = {
   tier: number;
   realm: Realm;
-  delta: number;           // how many squares to shift (can be negative)
-  label: string;           // short UI label
+  delta: number;
+  label: string;
   applied: boolean;
+  finalPos: number;
 };
 
-/** Canonical 6 realms (6×4 = 24). Keep consistent with your board mapping. */
-const REALMS: Realm[] = ["NARAKA", "PRETA", "ANIMAL", "HUMAN", "ASURA", "DEVA"];
+/**
+ * 6 reinos × 4 casillas = 24
+ */
+const REALMS: Realm[] = [
+  "HELL",
+  "HUNGRY_GHOST",
+  "ANIMALS",
+  "HUMANS",
+  "TITANS",
+  "SEMIGODS",
+];
 
 export function realmFromPos(pos: number): Realm {
   const idx = Math.max(0, Math.min(5, Math.floor(pos / 4)));
-  return REALMS[idx] ?? "HUMAN";
+  return REALMS[idx] ?? "HUMANS";
 }
 
 export function tierFromLevel(level: number): number {
@@ -24,78 +34,78 @@ export function tierFromLevel(level: number): number {
   return 0;
 }
 
-function wrap(pos: number, size: number) {
+function wrap(pos: number, size: number): number {
   return ((pos % size) + size) % size;
 }
 
 /**
- * Realm effect is applied AFTER the base move is resolved.
- * We keep it deterministic: a shift forward/back based on realm + capture.
+ * El reino ya NO mueve físicamente la ficha.
+ * Solo interpreta la caída.
  */
 export function applyRealmEffect(params: {
   level: number;
   trackSize: number;
-  toPos: number;           // landing position after base move
+  toPos: number;
   didCapture: boolean;
   mover: PlayerId;
-}): RealmEffectResult & { finalPos: number } {
+}): RealmEffectResult {
   const { level, trackSize, toPos, didCapture } = params;
   const tier = tierFromLevel(level);
   const realm = realmFromPos(toPos);
 
-  if (tier === 0) {
-    return { tier, realm, delta: 0, label: "—", applied: false, finalPos: toPos };
-  }
-
-  // Progressive strength: delta scales with tier.
-  // Rules (simple, readable, and feels like "gravity"):
-  // NARAKA: pulls back always
-  // PRETA: pulls forward if you didn't capture (hunger chasing)
-  // ANIMAL: pulls back if you didn't capture (instinct stagnation)
-  // HUMAN: small forward nudge always (agency)
-  // ASURA: forward surge if you captured (war momentum)
-  // DEVA: forward nudge if you didn't capture (blessing, but not predatory)
   let delta = 0;
-  let label = "";
+  let label = "—";
 
   switch (realm) {
-    case "NARAKA":
-      delta = -tier;
-      label = `NARAKA drag (-${tier})`;
+    case "HELL":
+      delta = 0;
+      label = "HELL drag";
       break;
 
-    case "PRETA":
-      delta = didCapture ? 0 : tier;
-      label = didCapture ? "PRETA quiet (0)" : `PRETA hunger (+${tier})`;
+    case "HUNGRY_GHOST":
+      delta = 0;
+      label = didCapture
+        ? "HUNGRY GHOST quiet"
+        : "HUNGRY GHOST hunger";
       break;
 
-    case "ANIMAL":
-      delta = didCapture ? 0 : -tier;
-      label = didCapture ? "ANIMAL still (0)" : `ANIMAL rut (-${tier})`;
+    case "ANIMALS":
+      delta = 0;
+      label = didCapture
+        ? "ANIMALS still"
+        : "ANIMALS rut";
       break;
 
-    case "HUMAN":
-      delta = +1; // keep it subtle even at high tiers
-      label = "HUMAN agency (+1)";
+    case "HUMANS":
+      delta = 0;
+      label = "HUMANS agency";
       break;
 
-    case "ASURA":
-      delta = didCapture ? tier : 0;
-      label = didCapture ? `ASURA surge (+${tier})` : "ASURA idle (0)";
+    case "TITANS":
+      delta = 0;
+      label = didCapture ? "TITANS surge" : "TITANS idle";
       break;
 
-    case "DEVA":
-      delta = didCapture ? 0 : 1; // always gentle
-      label = didCapture ? "DEVA veil (0)" : "DEVA blessing (+1)";
+    case "SEMIGODS":
+      delta = 0;
+      label = didCapture ? "SEMIGODS veil" : "SEMIGODS blessing";
       break;
 
     default:
       delta = 0;
       label = "—";
+      break;
   }
 
   const finalPos = wrap(toPos + delta, trackSize);
   const applied = delta !== 0;
 
-  return { tier, realm, delta, label, applied, finalPos };
+  return {
+    tier,
+    realm,
+    delta,
+    label,
+    applied,
+    finalPos,
+  };
 }

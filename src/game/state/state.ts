@@ -46,6 +46,7 @@ export const initialState: GameState = {
   // counters
   turnIndex: 0,
   cycleIndex: 0,
+  globalRollCount: 0,
 
   // board / turn
   trackSize: 24,
@@ -54,18 +55,18 @@ export const initialState: GameState = {
   rollOptions: null,
 
   // 3 fichas por jugador
-  pieces: {
-    P1: {
-      pig: { pos: 0 },
-      snake: { pos: 1 },
-      rooster: { pos: 2 },
-    },
-    P2: {
-      pig: { pos: 12 },
-      snake: { pos: 13 },
-      rooster: { pos: 14 },
-    },
+ pieces: {
+  P1: {
+    pig: { pos: 0, inLimbo: false, maraLevel: null },
+    snake: { pos: 1, inLimbo: false, maraLevel: null },
+    rooster: { pos: 2, inLimbo: false, maraLevel: null },
   },
+  P2: {
+    pig: { pos: 12, inLimbo: false, maraLevel: null },
+    snake: { pos: 13, inLimbo: false, maraLevel: null },
+    rooster: { pos: 14, inLimbo: false, maraLevel: null },
+  },
+},
 
   // ficha seleccionada por jugador
   selectedPiece: {
@@ -94,19 +95,31 @@ export const initialState: GameState = {
       realmTransitions: 0,
     },
   },
-
+emojiEvents: [],
   level: 3,
+  currentNidana: null,
 
   // last movement snapshot
   lastMove: null,
+  lastKarma: null,
+
+  karmaTotal: {
+    P1: 0,
+    P2: 0,
+  },
+
   ledgerOpen: false,
   ledgerEntry: null,
+
+  introSeen: false,
+
   winner: null,
 
   curvature: {
     P1: 20,
     P2: 80,
   },
+  venomTrio: null,
 };
 
 /**
@@ -195,16 +208,42 @@ export function makeInitialState(
       },
     },
 
-    curvature: {
-      ...initialState.curvature,
-      ...(overrides.curvature ?? {}),
-    },
+   curvature: {
+  ...initialState.curvature,
+  ...(overrides.curvature ?? {}),
+},
+
+globalRollCount:
+  overrides.globalRollCount === undefined
+    ? initialState.globalRollCount
+    : overrides.globalRollCount,
+
+emojiEvents:
+  overrides.emojiEvents === undefined
+    ? initialState.emojiEvents
+    : overrides.emojiEvents,
+
+currentNidana:
+  overrides.currentNidana === undefined
+    ? initialState.currentNidana
+    : overrides.currentNidana,
 
     lastMove:
       overrides.lastMove === undefined
         ? initialState.lastMove
         : overrides.lastMove,
-            ledgerOpen:
+
+    lastKarma:
+      overrides.lastKarma === undefined
+        ? initialState.lastKarma
+        : overrides.lastKarma,
+
+    karmaTotal: {
+      ...initialState.karmaTotal,
+      ...(overrides.karmaTotal ?? {}),
+    },
+
+    ledgerOpen:
       overrides.ledgerOpen === undefined
         ? initialState.ledgerOpen
         : overrides.ledgerOpen,
@@ -213,5 +252,15 @@ export function makeInitialState(
       overrides.ledgerEntry === undefined
         ? initialState.ledgerEntry
         : overrides.ledgerEntry,
+
+    introSeen:
+      overrides.introSeen === undefined
+        ? initialState.introSeen
+        : overrides.introSeen,
+        
+        venomTrio:
+      overrides.venomTrio === undefined
+       ? initialState.venomTrio
+       : overrides.venomTrio,
   };
 }

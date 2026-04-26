@@ -1,21 +1,23 @@
 import React from "react";
-import { TopBar } from "./TopBar";
-import { RunExportButton } from "./RunExportButton";
-import { EvolutionStatus } from "./EvolutionStatus";
-import { GameHUD } from "./GameHUD";
 
+import { TopBar } from "./TopBar";
+import { EvolutionStatus } from "./EvolutionStatus";
+import { TurnDock } from "./TurnDock";
+import { MoveOptionsPanel } from "./MoveOptionsPanel";
 import { MasterPanel } from "./MasterPanel";
 import { MirrorPanel } from "./MirrorPanel";
-import { TurnDock } from "./TurnDock";
 import { VestigiumOverlay } from "./VestigiumOverlay";
 import { LedgerModal } from "./LedgerModal";
-import { Board } from "../game/Board";
-import { CoinBank } from "./CoinBank";
-import { RealmInsightPanel } from "./RealmInsightPanel";
 
-import type { MoveOption, PieceKind } from "../game/types";
+import { Board } from "../game/Board";
 import { getMoveOptionsForPlayer } from "../game/rules/getMoveOptionsForPlayer";
-import { MoveOptionsPanel } from "./MoveOptionsPanel";
+import { resolveNidanaOutcome } from "../game/karma/resolveNidanaOutcome";
+import { RING_SIZE } from "../UI/geometry";
+import { MaraPanel } from "./MaraPanel";
+import watcherVideo from "../assets/video/jesus_watch.mp4";
+import type { MoveOption, PieceKind } from "../game/types";
+import type { RealmId } from "../game/realms";
+import type { NidanaId } from "../game/nidanas";
 
 type MirrorData = {
   title: string;
@@ -23,14 +25,10 @@ type MirrorData = {
   tags: string[];
 };
 
-type GameShellProps = {
+type Props = {
   state: any;
   a: number | null;
   b: number | null;
-  sum: number | null;
-  hasRolled: boolean;
-  rollsCount: number;
-  karmaSnap: any;
   activeRealmData: any;
   activeEra: string;
   cyclesDone: number;
@@ -38,31 +36,28 @@ type GameShellProps = {
   transitions: number;
   oracleText: string;
   mirrorData: MirrorData;
+  currentNidana: string | null;
+  nidanaCoinSrc: string | null;
+nidanaCoinId: number | null;
+nidanaCoinSide: "front" | "back";
   showVestigium: boolean;
 
   onVestigiumDone: () => void;
-  onCloseLedger: () => void;
-  onLogout: () => void | Promise<void>;
-  onExportRun: () => void;
+  onLogout: () => void;
   onRoll: () => void;
   onReset: () => void;
 
-  // sistema de decisión
-  onConsciousMove: (option: MoveOption, allOptions: MoveOption[]) => void;
+  onConsciousMove: (option: MoveOption, all: MoveOption[]) => void;
   onSelectPiece: (piece: PieceKind) => void;
+  onSendEmoji: (emoji: string) => void;
 
-  realmDataP1: any;
-  realmDataP2: any;
+  onCloseLedger: () => void;
 };
 
 export function GameShell({
   state,
   a,
   b,
-  sum,
-  hasRolled,
-  rollsCount,
-  karmaSnap,
   activeRealmData,
   activeEra,
   cyclesDone,
@@ -70,417 +65,181 @@ export function GameShell({
   transitions,
   oracleText,
   mirrorData,
+  currentNidana,
+  nidanaCoinSrc,
+  nidanaCoinId,
+  nidanaCoinSide,
   showVestigium,
   onVestigiumDone,
   onLogout,
-  onExportRun,
   onRoll,
   onReset,
   onConsciousMove,
   onSelectPiece,
+  onSendEmoji,
   onCloseLedger,
-  realmDataP1,
-  realmDataP2,
-}: GameShellProps) {
-  const activePiece = state.selectedPiece[state.turn];
-  const activePos = state.pieces[state.turn][activePiece].pos;
+}: Props) {
+  const [hoveredOption, setHoveredOption] = React.useState<MoveOption | null>(null);
+const [showWatcher, setShowWatcher] = React.useState(false);
 
-  const [insightOpen, setInsightOpen] = React.useState(false);
-  const [showMaster, setShowMaster] = React.useState(false);
-  const [masterText, setMasterText] = React.useState("");
-const [hoveredOption, setHoveredOption] = React.useState<MoveOption | null>(null);
+const triggerWatcher = () => {
+  setShowWatcher(true);
+  window.setTimeout(() => setShowWatcher(false), 1800);
+};
+  const [showNidanaSpinner, setShowNidanaSpinner] = React.useState(false);
+  const [visibleNidana, setVisibleNidana] = React.useState<string | null>(null);
+  const nidanaTimerRef = React.useRef<number | null>(null);
+  const prevNidanaRef = React.useRef<string | null>(null);
+
   const moveOptions =
     state.phase === "rolled"
       ? getMoveOptionsForPlayer(state, state.turn)
       : [];
 
-  const handleConsciousMove = (
-    option: MoveOption,
-    allOptions: MoveOption[]
-  ) => {
-    onConsciousMove(option, allOptions);
+  const handleMove = (opt: MoveOption, all: MoveOption[]) => {
+    setHoveredOption(null);
+    onConsciousMove(opt, all);
   };
+React.useEffect(() => {
+  if (state.phase !== "rolled") setHoveredOption(null);
+}, [state.phase]);
+React.useEffect(() => {
+  if (!state.lastMove) return;
 
-  const playerCoins = [
-    {
-      id: "hungry_ghost",
-      label: "Hungry Ghost",
-      front: "/assets/coins/coin_hungry_ghost_front.png",
-      back: "/assets/coins/coin_hungry_ghost_back.png",
-      unlocked: true,
-    },
-    {
-      id: "hell",
-      label: "Hell",
-      front: "/assets/coins/coin_hell_front.png",
-      back: "/assets/coins/coin_hell_back.png",
-      unlocked: true,
-    },
-    {
-      id: "animal",
-      label: "Animal",
-      front: "/assets/coins/coin_animal_front.png",
-      back: "/assets/coins/coin_animal_back.png",
-      unlocked: true,
-    },
-    {
-      id: "human",
-      label: "Human",
-      front: "/assets/coins/coin_human_front.png",
-      back: "/assets/coins/coin_human_back.png",
-      unlocked: true,
-    },
-    {
-      id: "asura",
-      label: "Asura",
-      front: "/assets/coins/coin_asura_front.png",
-      back: "/assets/coins/coin_asura_back.png",
-      unlocked: true,
-    },
-    {
-      id: "deva",
-      label: "Deva",
-      front: "/assets/coins/coin_deva_front.png",
-      back: "/assets/coins/coin_deva_back.png",
-      unlocked: true,
-    },
-    {
-      id: "nirvana",
-      label: "Nirvana",
-      front: "/assets/coins/coin_nirvana_front.png",
-      back: "/assets/coins/coin_nirvana_back.png",
-      unlocked: false,
-    },
-  ];
+  // aparece siempre si hay captura
+  if (state.lastMove.didCapture) {
+    triggerWatcher();
+    return;
+  }
 
-  const [selectedCoin, setSelectedCoin] = React.useState<null | {
-    id: string;
-    label: string;
-    front: string;
-    back: string;
-    unlocked: boolean;
-  }>(null);
+  // aparece a veces (sorpresa)
+  if (Math.random() < 0.18) {
+    triggerWatcher();
+  }
+}, [state.lastMove]);
 
-  const [selectedCoinSide, setSelectedCoinSide] = React.useState<"front" | "back">("front");
+React.useEffect(() => {
+  if (!currentNidana) return;
+
+  
+  prevNidanaRef.current = currentNidana;
+  setVisibleNidana(currentNidana);
+  setShowNidanaSpinner(true);
+
+  if (nidanaTimerRef.current) {
+    window.clearTimeout(nidanaTimerRef.current);
+  }
+
+  nidanaTimerRef.current = window.setTimeout(() => {
+    setShowNidanaSpinner(false);
+
+    nidanaTimerRef.current = window.setTimeout(() => {
+      setVisibleNidana(null);
+    }, 3000);
+  }, 1200);
+
+  return () => {
+    if (nidanaTimerRef.current) {
+      window.clearTimeout(nidanaTimerRef.current);
+    }
+  };
+}, [currentNidana]);
+
+  const nidanaPreviewByOption = Object.fromEntries(
+    moveOptions.map((opt) => {
+      if (!currentNidana || !activeRealmData?.id) {
+        return [`${opt.pieceKind}-${opt.choice}-${opt.toPos}`, null];
+      }
+
+      const result = resolveNidanaOutcome({
+        realm: activeRealmData.id as RealmId,
+        nidana: currentNidana as NidanaId,
+        creature: opt.pieceKind,
+        tacticalMeaning: opt.meaning,
+      });
+
+      return [`${opt.pieceKind}-${opt.choice}-${opt.toPos}`, result];
+    })
+  );
 
   return (
     <>
       <TopBar onLogout={onLogout} />
       <VestigiumOverlay show={showVestigium} onDone={onVestigiumDone} />
+{showWatcher && (
+  <div className="watcherOverlay">
+    <video
+      src={watcherVideo}
+      autoPlay
+      muted
+      playsInline
+      className="watcherVideo"
+    />
+    <div className="watcherText">I see you.</div>
+  </div>
+)}
 
-      <div style={{ padding: 24 }}>
-        <h1 className={`mainTitle ${showVestigium ? "vestigiumCincel" : ""}`}>
-          {showVestigium ? "VESTIGIUM TUUM" : "Samsaragammon Core"}
-        </h1>
+     <div style={{ padding: 24, position: "relative" }}>
+
+
+        <h1 className="mainTitle">Samsaragammon Core</h1>
 
         <EvolutionStatus
           realmLabel={activeRealmData?.label ?? "Unknown"}
-          realmHex={activeRealmData?.hex ?? "#ffffff"}
+          realmHex={activeRealmData?.hex ?? "#fff"}
           era={activeEra}
           cyclesDone={cyclesDone}
           cyclesNeeded={cyclesNeeded}
-          transitions={transitions ?? 0}
+          transitions={transitions}
         />
 
-        <RunExportButton onClick={onExportRun} />
-
-        <TurnDock
-          turn={state.turn}
-          phase={state.phase}
-          rollA={a}
-          rollB={b}
-          level={state.level}
-          onRoll={onRoll}
-          onReset={onReset}
-        />
-
-        <GameHUD
-          state={state}
-          rollsCount={rollsCount}
-          karmaSnap={karmaSnap}
-          realmDataP1={realmDataP1}
-          realmDataP2={realmDataP2}
-        />
-
-        <CoinBank
-          coins={playerCoins}
-          onOpenCoin={(coin) => {
-            if (coin.id === "nirvana" && !coin.unlocked) {
-              setMasterText(`You reach for the final coin…
-
-Nirvana is not unlocked.
-
-Your pattern still binds you.
-Break the cycle to reveal it.
-
-Transcend.
-Or remain.`);
-              setShowMaster(true);
-              return;
-            }
-
-            setSelectedCoin(coin);
-            setSelectedCoinSide("front");
-          }}
-        />
-       <MoveOptionsPanel
-  options={moveOptions}
-  player={state.turn}
-  onChoose={handleConsciousMove}
-  onHoverOption={setHoveredOption}
+   <TurnDock
+  turn={state.turn}
+  phase={state.phase}
+  rollA={a}
+  rollB={b}
+  level={state.level}
+  onRoll={onRoll}
+  onReset={onReset}
 />
+
+        {false && (
+          <MoveOptionsPanel
+            options={moveOptions}
+            player={state.turn}
+            onChoose={handleMove}
+            onHoverOption={setHoveredOption}
+            nidanaPreviewByOption={nidanaPreviewByOption}
+          />
+        )}
 
         <MasterPanel text={oracleText} />
 
-        <MirrorPanel
-          title={mirrorData.title}
-          body={mirrorData.body}
-          tags={mirrorData.tags}
-        />
+<MirrorPanel
+  title={mirrorData.title}
+  body={mirrorData.body}
+  tags={mirrorData.tags}
+/>
 
-        <RealmInsightPanel
-          open={insightOpen}
-          realm="HUNGRY_GHOST"
-          onClose={() => setInsightOpen(false)}
-        />
+<MaraPanel state={state} />
 
-        <Board
+<Board
   state={state}
   onSelectPiece={onSelectPiece}
   hoveredOption={hoveredOption}
+  moveOptions={moveOptions}
+  onChooseMove={handleMove}
+  onSendEmoji={onSendEmoji}
+  nidanaCoinSrc={nidanaCoinSrc}
+  nidanaCoinSide={nidanaCoinSide}
 />
-      </div>
+</div>
 
-      {selectedCoin && (
-        <div
-          onClick={() => setSelectedCoin(null)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.72)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 2200,
-            padding: 24,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: "min(92vw, 560px)",
-              borderRadius: 24,
-              background: "rgba(20,20,20,0.96)",
-              border: "1px solid rgba(255,255,255,0.14)",
-              boxShadow: "0 20px 80px rgba(0,0,0,0.45)",
-              padding: 24,
-              textAlign: "center",
-            }}
-          >
-            <div
-              style={{
-                fontSize: 24,
-                fontWeight: 800,
-                marginBottom: 8,
-                color: "rgba(255,255,255,0.95)",
-              }}
-            >
-              {selectedCoin.label}
-            </div>
-
-            <img
-              src={selectedCoinSide === "front" ? selectedCoin.front : selectedCoin.back}
-              alt={selectedCoin.label}
-              style={{
-                width: 320,
-                height: 320,
-                objectFit: "contain",
-                aspectRatio: "1 / 1",
-                display: "block",
-                margin: "0 auto 20px",
-                filter: "drop-shadow(0 14px 26px rgba(0,0,0,0.38))",
-              }}
-            />
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                gap: 12,
-                flexWrap: "wrap",
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setSelectedCoinSide("front")}
-                style={{
-                  height: 40,
-                  padding: "0 16px",
-                  borderRadius: 12,
-                  border: "1px solid rgba(255,255,255,0.14)",
-                  background:
-                    selectedCoinSide === "front"
-                      ? "rgba(255,255,255,0.14)"
-                      : "rgba(255,255,255,0.06)",
-                  color: "rgba(255,255,255,0.92)",
-                  cursor: "pointer",
-                  fontWeight: 700,
-                }}
-              >
-                Front
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSelectedCoinSide("back")}
-                style={{
-                  height: 40,
-                  padding: "0 16px",
-                  borderRadius: 12,
-                  border: "1px solid rgba(255,255,255,0.14)",
-                  background:
-                    selectedCoinSide === "back"
-                      ? "rgba(255,255,255,0.14)"
-                      : "rgba(255,255,255,0.06)",
-                  color: "rgba(255,255,255,0.92)",
-                  cursor: "pointer",
-                  fontWeight: 700,
-                }}
-              >
-                Back
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setSelectedCoinSide((s) => (s === "front" ? "back" : "front"))
-                }
-                style={{
-                  height: 40,
-                  padding: "0 16px",
-                  borderRadius: 12,
-                  border: "1px solid rgba(255,255,255,0.14)",
-                  background: "rgba(255,255,255,0.08)",
-                  color: "rgba(255,255,255,0.95)",
-                  cursor: "pointer",
-                  fontWeight: 800,
-                }}
-              >
-                Flip
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSelectedCoin(null)}
-                style={{
-                  height: 40,
-                  padding: "0 16px",
-                  borderRadius: 12,
-                  border: "1px solid rgba(255,255,255,0.14)",
-                  background: "rgba(255,255,255,0.06)",
-                  color: "rgba(255,255,255,0.92)",
-                  cursor: "pointer",
-                  fontWeight: 700,
-                }}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showMaster && (
-        <div
-          onClick={() => setShowMaster(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.72)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 4000,
-            padding: 24,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: "min(92vw, 560px)",
-              borderRadius: 24,
-              background: "rgba(20,20,20,0.96)",
-              border: "1px solid rgba(255,255,255,0.14)",
-              boxShadow: "0 20px 80px rgba(0,0,0,0.5)",
-              padding: 24,
-              textAlign: "center",
-            }}
-          >
-            <img
-              src={masterImg}
-              alt="Master Ying-Yang"
-              style={{
-                width: 260,
-                height: 260,
-                objectFit: "contain",
-                display: "block",
-                margin: "0 auto 18px",
-                filter: "drop-shadow(0 10px 30px rgba(0,0,0,0.5))",
-                animation: "float 3s ease-in-out infinite",
-              }}
-            />
-
-            <div
-              style={{
-                fontWeight: 800,
-                fontSize: 24,
-                color: "rgba(255,255,255,0.95)",
-                marginBottom: 10,
-              }}
-            >
-              Master Ying-Yang
-            </div>
-
-            <div
-              style={{
-                fontSize: 16,
-                lineHeight: 1.6,
-                color: "rgba(255,255,255,0.86)",
-                maxWidth: 420,
-                margin: "0 auto 20px",
-                whiteSpace: "pre-line",
-              }}
-            >
-                           {masterText}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setShowMaster(false)}
-              style={{
-                height: 40,
-                padding: "0 16px",
-                borderRadius: 12,
-                border: "1px solid rgba(255,255,255,0.14)",
-                background: "rgba(255,255,255,0.08)",
-                color: "rgba(255,255,255,0.95)",
-                cursor: "pointer",
-                fontWeight: 800,
-              }}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* 🪟 LEDGER MODAL */}
-      <LedgerModal
-        open={state.ledgerOpen}
-        entryId={state.ledgerEntry}
-        onClose={onCloseLedger}
-      />
-
-    </>
-  );
+<LedgerModal
+  open={state.ledgerOpen}
+  entryId={state.ledgerEntry}
+  onClose={onCloseLedger}
+/>
+</>
+);
 }

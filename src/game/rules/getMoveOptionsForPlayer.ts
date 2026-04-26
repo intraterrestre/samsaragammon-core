@@ -1,5 +1,4 @@
 import type {
-  Choice,
   GameState,
   MoveMeaning,
   MoveOption,
@@ -7,18 +6,56 @@ import type {
   PlayerId,
 } from "../types";
 import { previewMove } from "./preview";
+import { applyRealmEffect } from "../realm/realmEffects";
 
 const ALL_PIECES: PieceKind[] = ["pig", "snake", "rooster"];
 
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 
+function resolveFinalPreviewPos(params: {
+  fromPos: number;
+  value: number;
+  trackSize: number;
+  level: number;
+  player: PlayerId;
+}): number {
+  const basePos = previewMove(params.fromPos, params.value, params.trackSize);
+
+  const realmEffect = applyRealmEffect({
+    level: params.level,
+    trackSize: params.trackSize,
+    toPos: basePos,
+    didCapture: false,
+    mover: params.player,
+  });
+
+  return typeof realmEffect.finalPos === "number"
+    ? realmEffect.finalPos
+    : basePos;
+}
+
+function countEnemyPiecesAtPos(
+  state: GameState,
+  player: PlayerId,
+  targetPos: number
+): number {
+  const opp = otherPlayer(player);
+
+  return ALL_PIECES.filter((kind) => {
+    const piece = state.pieces[opp][kind];
+    return !piece.inLimbo && piece.pos === targetPos;
+  }).length;
+}
+
 function inferMeaning(
   target: number,
+  enemyCountAtTarget: number,
   enemyPositions: number[],
   isSame: boolean
 ): MoveMeaning {
   if (isSame) return "SAME";
-  if (enemyPositions.includes(target)) return "IMPACT";
+  if (enemyCountAtTarget === 1) return "IMPACT";
+  if (enemyCountAtTarget >= 2) return "";
   if (enemyPositions.some((p) => Math.abs(p - target) <= 1)) return "RISK";
   return "";
 }
@@ -30,60 +67,100 @@ export function getMoveOptionsForPlayer(
   if (!state.rollOptions) return [];
 
   const [a, b] = state.rollOptions;
+  const isDouble = a === b;
   const opp = otherPlayer(player);
 
-  const enemyPositions = ALL_PIECES.map((k) => state.pieces[opp][k].pos);
+  const enemyPositions = ALL_PIECES
+    .filter((kind) => !state.pieces[opp][kind].inLimbo)
+    .map((kind) => state.pieces[opp][kind].pos);
 
   const options: MoveOption[] = [];
 
   for (const pieceKind of ALL_PIECES) {
-    const fromPos = state.pieces[player][pieceKind].pos;
+    const piece = state.pieces[player][pieceKind];
+    if (piece.inLimbo) continue;
 
-    const toA = previewMove(fromPos, a, state.trackSize);
-    const toB = previewMove(fromPos, b, state.trackSize);
+    const fromPos = piece.pos;
 
-    const capA = enemyPositions.includes(toA);
-    const capB = enemyPositions.includes(toB);
+    const toA = resolveFinalPreviewPos({
+      fromPos,
+      value: a,
+      trackSize: state.trackSize,
+      level: state.level,
+      player,
+    });
 
-    const isSame = toA === toB;
+    const enemyCountA = countEnemyPiecesAtPos(state, player, toA);
 
-    // A
+    // A siempre existe
     options.push({
       pieceKind,
       choice: "A",
       value: a,
       fromPos,
       toPos: toA,
-      meaning: inferMeaning(toA, enemyPositions, false),
+      meaning: inferMeaning(toA, enemyCountA, enemyPositions, false),
     });
 
-    // B
-    options.push({
-      pieceKind,
-      choice: "B",
-      value: b,
-      fromPos,
-      toPos: toB,
-      meaning: inferMeaning(toB, enemyPositions, false),
-    });
+    // B solo si no es doble
+    if (!isDouble) {
+      const toB = resolveFinalPreviewPos({
+        fromPos,
+        value: b,
+        trackSize: state.trackSize,
+        level: state.level,
+        player,
+      });
 
-    // SAME (extra semántico; sustituye lectura A/B cuando convergen)
-    if (isSame) {
+      const enemyCountB = countEnemyPiecesAtPos(state, player, toB);
+
       options.push({
         pieceKind,
-        choice: "ECO",
-        value: a,
+        choice: "B",
+        value: b,
         fromPos,
-        toPos: toA,
-        meaning: inferMeaning(toA, enemyPositions, true),
+        toPos: toB,
+        meaning: inferMeaning(toB, enemyCountB, enemyPositions, false),
       });
     }
 
-    // A+B
-    const allowSum = state.level >= 3 && !capA && !capB;
-    if (allowSum) {
+    // ECO solo si los dados son distintos pero el destino coincide
+    if (!isDouble) {
+      const toB = resolveFinalPreviewPos({
+        fromPos,
+        value: b,
+        trackSize: state.trackSize,
+        level: state.level,
+        player,
+      });
+
+      if (toA === toB) {
+        const enemyCountSame = countEnemyPiecesAtPos(state, player, toA);
+
+        options.push({
+          pieceKind,
+          choice: "ECO",
+          value: a,
+          fromPos,
+          toPos: toA,
+          meaning: inferMeaning(toA, enemyCountSame, enemyPositions, true),
+        });
+      }
+    }
+
+    // AB siempre permitida a partir del nivel 3
+    if (state.level >= 3) {
       const sum = a + b;
-      const toAB = previewMove(fromPos, sum, state.trackSize);
+
+      const toAB = resolveFinalPreviewPos({
+        fromPos,
+        value: sum,
+        trackSize: state.trackSize,
+        level: state.level,
+        player,
+      });
+
+      const enemyCountAB = countEnemyPiecesAtPos(state, player, toAB);
 
       options.push({
         pieceKind,
@@ -91,7 +168,7 @@ export function getMoveOptionsForPlayer(
         value: sum,
         fromPos,
         toPos: toAB,
-        meaning: inferMeaning(toAB, enemyPositions, false),
+        meaning: inferMeaning(toAB, enemyCountAB, enemyPositions, false),
       });
     }
   }
