@@ -677,10 +677,10 @@ button:disabled{
    ========================= */
 
 .watcherOverlay {
-  position: fixed;
-  left: calc(50% - 650px);   /* más a la izquierda */
-  top: 78%;                  /* mucho más abajo */
-  transform: translate(-50%, -50%);
+  position: absolute;   /* 🔥 antes era fixed */
+  left: -220px;         /* distancia desde la rueda */
+  top: 65%;             /* baja el watcher */
+  transform: translateY(-50%);
   z-index: 20000;
   pointer-events: none;
   text-align: center;
@@ -721,4 +721,204 @@ button:disabled{
     opacity: 0;
     transform: translate(-50%, -50%) scale(0.92);
   }
+}
+.watcherTextTop {
+  margin-bottom: 8px;
+  font-weight: 900;
+  font-size: 32px;
+  letter-spacing: 0.05em;
+  color: white;
+  text-shadow:
+    0 0 12px rgba(0,0,0,1),
+    0 3px 16px rgba(0,0,0,0.9),
+    0 0 28px rgba(255,255,255,0.25);
+}
+.emojiBar {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 12px 0 6px;
+}
+
+.emojiBtn {
+  font-size: 22px;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 10px;
+  transition: all 0.15s ease;
+}
+
+.emojiBtn:hover {
+  transform: scale(1.25);
+  background: rgba(255,255,255,0.12);
+  box-shadow: 0 0 12px rgba(255,255,255,0.25);
+}
+
+filter: drop-shadow(0 0 18px gold);
+/* ===== REALM MEDAL FLIP ===== */
+
+.realmMedalFlip {
+  position: fixed;
+  top: 52%;
+  left: 50%;
+  width: 320px;
+  height: 320px;
+  transform: translate(-50%, -50%);
+  z-index: 99999;
+  pointer-events: none;
+  animation: realmMedalFloat 4.8s ease-in-out forwards;
+}
+
+.realmMedalInner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  animation: coinFakeSpin 0.85s ease-in-out infinite;
+  filter:
+    drop-shadow(0 0 22px rgba(255, 220, 120, 0.75))
+    drop-shadow(0 18px 32px rgba(0, 0, 0, 0.45));
+}
+
+.realmMedalFace {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.realmMedalFace:first-child {
+  animation: coinFrontFace 0.85s steps(1, end) infinite;
+}
+
+.realmMedalBack {
+  animation: coinBackFace 0.85s steps(1, end) infinite;
+}
+
+@keyframes coinFakeSpin {
+  0% {
+    transform: scaleX(1) rotateZ(-3deg);
+  }
+  25% {
+    transform: scaleX(0.08) rotateZ(0deg);
+  }
+  50% {
+    transform: scaleX(1) rotateZ(3deg);
+  }
+  75% {
+    transform: scaleX(0.08) rotateZ(0deg);
+  }
+  100% {
+    transform: scaleX(1) rotateZ(-3deg);
+  }
+}
+
+@keyframes coinFrontFace {
+  0%, 49% {
+    opacity: 1;
+  }
+  50%, 100% {
+    opacity: 0;
+  }
+}
+
+@keyframes coinBackFace {
+  0%, 49% {
+    opacity: 0;
+  }
+  50%, 100% {
+    opacity: 1;
+  }
+}
+
+@keyframes realmMedalFloat {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -40%) scale(0.65);
+  }
+  12% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  75% {
+    opacity: 1;
+    transform: translate(-50%, -55%) scale(1.08);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -70%) scale(0.9);
+  }
+}
+
+/* ===== NIDANA CENTER TITLE ===== */
+
+.nidanaCenterTitle {
+  position: absolute;
+  top: 86%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  text-align: center;
+  pointer-events: none;
+
+  animation: fadeIn 0.6s ease;
+}
+
+.nidanaCenterMain {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.nidanaCenterSub {
+  font-size: 14px;
+  opacity: 0.8;
+  margin-top: 4px;
+}
+.realmPieceToken {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 22px;
+  font-weight: 900;
+  color: white;
+  background: rgba(255, 215, 0, 0.22);
+  border: 2px solid rgba(255, 230, 140, 0.8);
+  box-shadow:
+    0 0 16px rgba(255, 220, 120, 0.65),
+    0 8px 18px rgba(0, 0, 0, 0.35);
+}
+
+.realmPieceP1 {
+  outline: 2px solid rgba(255, 122, 47, 0.75);
+}
+
+.realmPieceP2 {
+  outline: 2px solid rgba(200, 255, 61, 0.75);
+}
+
+.realmPiece-hungry_ghost {
+  background: rgba(150, 80, 200, 0.35);
+}
+
+.realmPiece-hell {
+  background: rgba(40, 40, 40, 0.55);
+}
+
+.realmPiece-animals {
+  background: rgba(255, 190, 0, 0.35);
+}
+
+.realmPiece-humans {
+  background: rgba(70, 170, 255, 0.35);
+}
+
+.realmPiece-asura {
+  background: rgba(255, 70, 70, 0.35);
+}
+
+.realmPiece-deva {
+  background: rgba(255, 255, 255, 0.45);
+  color: #222;
 }

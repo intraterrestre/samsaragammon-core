@@ -1,9 +1,11 @@
 // src/game/state/reducer.ts
 import type {
+  BasePieceKind,
   GameState,
   MoveOption,
   PieceKind,
   PlayerId,
+  RealmPieceKind,
 } from "../types";
 import { initialState } from "./state";
 
@@ -28,6 +30,10 @@ type Action =
   | { type: "INTRO_DONE" }
   | { type: "SET_NIDANA"; nidana: NidanaId }
   | {
+      type: "SET_NIDANA_EFFECT";
+      effect: "CLARITY" | "DISTORTION" | "TENSION" | null;
+    }
+  | {
       type: "CONSCIOUS_MOVE";
       option: MoveOption;
       allOptions: MoveOption[];
@@ -37,19 +43,31 @@ type Action =
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 const rollDie = () => 1 + Math.floor(Math.random() * 6);
 
-const ALL_PIECES: PieceKind[] = ["pig", "snake", "rooster"];
+// Las 3 fichas base / venenos.
+const BASE_PIECES: BasePieceKind[] = ["pig", "snake", "rooster"];
+
+// Las 6 fichas nuevas de reino. Todavía no se mueven aquí;
+// primero las dejamos separadas para no mezclar sistemas.
+const REALM_PIECE_ORDER: RealmPieceKind[] = [
+  "hungry_ghost",
+  "hell",
+  "animals",
+  "humans",
+  "asura",
+  "deva",
+];
 
 function playerHasActivePiece(state: GameState, player: PlayerId): boolean {
-  return ALL_PIECES.some((kind) => !state.pieces[player][kind].inLimbo);
+  return BASE_PIECES.some((kind) => !state.pieces[player][kind].inLimbo);
 }
 
 function detectVenomTrio(
   pieces: GameState["pieces"]
 ): GameState["venomTrio"] {
-  const visible: { player: PlayerId; kind: PieceKind; pos: number }[] = [];
+  const visible: { player: PlayerId; kind: BasePieceKind; pos: number }[] = [];
 
   for (const player of ["P1", "P2"] as PlayerId[]) {
-    for (const kind of ALL_PIECES) {
+    for (const kind of BASE_PIECES) {
       const piece = pieces[player][kind];
       if (!piece.inLimbo) {
         visible.push({ player, kind, pos: piece.pos });
@@ -106,7 +124,7 @@ function applyCollapseIfNeeded(
     {};
 
   for (const player of ["P1", "P2"] as PlayerId[]) {
-    for (const kind of ALL_PIECES) {
+    for (const kind of BASE_PIECES) {
       const p = nextPieces[player][kind];
       if (p.inLimbo) continue;
 
@@ -163,7 +181,7 @@ export function reducer(state: GameState, action: Action): GameState {
 for (const player of ["P1", "P2"] as PlayerId[]) {
   const opp = otherPlayer(player);
 
-  for (const kind of ALL_PIECES) {
+  for (const kind of BASE_PIECES) {
     const piece = releasedPieces[player][kind];
 
     if (piece.inLimbo && piece.maraLevel !== null) {
@@ -173,7 +191,7 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
         let spawnPos: number | null = null;
 
         for (let i = 0; i < state.trackSize; i++) {
-          const occupied = ALL_PIECES.some((k) => {
+          const occupied = BASE_PIECES.some((k) => {
             const e = releasedPieces[opp][k];
             return !e.inLimbo && e.pos === i;
           });
@@ -254,6 +272,11 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
         ...state,
         currentNidana: action.nidana,
       };
+    case "SET_NIDANA_EFFECT":
+    return {
+    ...state,
+    activeNidanaEffect: action.effect,
+  };
 
     case "INTRO_DONE":
       return {
@@ -286,12 +309,24 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
       const activePiece = option.pieceKind;
       const fromPos = option.fromPos;
       const toPos = option.toPos;
+const activeEffect = state.activeNidanaEffect;
+const meaning = option.meaning;
 
+// TEMPORAL: la nidana NO cambia la casilla final.
+// Así la raya visual coincide con donde cae la ficha.
+const nidanaShift = 0;
+
+const finalToPos = toPos;
+const captureCheckPos = option.meaning === "IMPACT" ? toPos : finalToPos;
       const [a, b] = state.rollOptions;
 
       const nextCurvature = {
         ...(state.curvature ?? { P1: 0, P2: 0 }),
       };
+      const nextPiecesRealm = {
+  P1: { ...state.realmPieces.P1 },
+  P2: { ...state.realmPieces.P2 },
+};
 
       // ===== progreso de reino / loops =====
       const prevRealmProgress = state.realmProgress[me];
@@ -309,20 +344,39 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
       let nextRealmStep = prevRealmProgress.currentRealmStep;
       let nextRealmTransitions = prevRealmProgress.realmTransitions;
 
-      const loopsNeeded =
-        prevRealmProgress.currentRealmStep >= 7
-          ? 0
-          : prevRealmProgress.currentRealmStep * 7;
+     const loopsNeeded = 1;
+    if (
+  prevRealmProgress.currentRealmStep < 7 &&
+  nextCompletedLoops >= loopsNeeded
+) {
+  const nextRealmStepValue = Math.min(
+    prevRealmProgress.currentRealmStep + 1,
+    7
+  );
 
-      if (
-        prevRealmProgress.currentRealmStep < 7 &&
-        nextCompletedLoops >= loopsNeeded
-      ) {
-        nextRealmStep = Math.min(prevRealmProgress.currentRealmStep + 1, 7);
-        nextRealmTransitions += 1;
-        nextCompletedLoops = 0;
-        nextLoopProgress = 0;
-      }
+  nextRealmStep = nextRealmStepValue;
+  nextRealmTransitions += 1;
+  nextCompletedLoops = 0;
+  nextLoopProgress = 0;
+
+  // ===== CREAR FICHA DE REINO =====
+  const nextRealmKey = REALM_PIECE_ORDER[nextRealmStepValue - 1];
+
+  if (nextRealmKey) {
+    const alreadyExists = state.realmPieces[me]?.[nextRealmKey];
+
+    if (!alreadyExists) {
+      nextPiecesRealm[me][nextRealmKey] = {
+        id: `${me}-${nextRealmKey}-${Date.now()}`,
+        kind: nextRealmKey,
+        pos: finalToPos, // 
+        inLimbo: false,
+        maraLevel: null,
+        unlocked: true,
+      };
+    }
+  }
+}
 
       // ===== clonar piezas =====
       const nextPieces = {
@@ -342,44 +396,61 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
         P1: state.captures.P1,
         P2: state.captures.P2,
       };
+// ===== captura sobre posición final real =====
+let didCapture = false;
+let capturedPieceKind: PieceKind | null = null;
 
-      // ===== movimiento final =====
-      nextPieces[me][activePiece].pos = toPos;
-      nextPieces[me][activePiece].inLimbo = false;
-      nextPieces[me][activePiece].maraLevel = null;
+const enemiesAtFinalPos = BASE_PIECES.filter((enemyKind) => {
+  const enemy = nextPieces[opp][enemyKind];
+  return !enemy.inLimbo && enemy.pos === finalToPos;
+});
 
-      const currentRealm = realmFromPos(toPos);
+// 2+ enemigos en destino final = casilla bloqueada.
+// El movimiento queda prohibido aunque la UI se equivoque.
+if (enemiesAtFinalPos.length >= 2) {
+  return state;
+}
 
-      // ===== captura sobre posición final real =====
-      let didCapture = false;
-      let capturedPieceKind: PieceKind | null = null;
+const possibleCapturePositions = Array.from(new Set([toPos, finalToPos]));
 
-      const enemyPiecesAtTarget = ALL_PIECES.filter(
-        (enemyKind) =>
-          !nextPieces[opp][enemyKind].inLimbo &&
-          nextPieces[opp][enemyKind].pos === toPos
-      );
+const enemyPiecesAtTarget = BASE_PIECES.filter((enemyKind) => {
+  const enemy = nextPieces[opp][enemyKind];
 
-      // solo se captura si hay exactamente 1 enemiga en la casilla
-      if (enemyPiecesAtTarget.length === 1) {
-        const enemyKind = enemyPiecesAtTarget[0];
+  return !enemy.inLimbo && possibleCapturePositions.includes(enemy.pos);
+});
 
-        didCapture = true;
-        capturedPieceKind = enemyKind;
-        nextCaptures[me] += 1;
+// se captura si hay 1 enemiga sola en la casilla
+if (enemyPiecesAtTarget.length >= 1) {
+ const enemyKind = enemyPiecesAtTarget.slice(-1)[0];
 
-nextPieces[opp][enemyKind] = {
-  ...nextPieces[opp][enemyKind],
-  pos: -1,
-  inLimbo: true,
-  maraLevel: 1,
-};
+  didCapture = true;
+  capturedPieceKind = enemyKind;
+  nextCaptures[me] += 1;
 
-        nextCurvature[me] = clampCurvature((nextCurvature[me] ?? 0) + 6);
-        nextCurvature[opp] = clampCurvature((nextCurvature[opp] ?? 0) - 8);
-      }
+  nextPieces[opp][enemyKind] = {
+    ...nextPieces[opp][enemyKind],
+    pos: -1,
+    inLimbo: true,
+    maraLevel: 1,
+  };
 
-      // ===== progreso de reino tras captura =====
+  nextCurvature[me] = clampCurvature((nextCurvature[me] ?? 0) + 6);
+  nextCurvature[opp] = clampCurvature((nextCurvature[opp] ?? 0) - 8);
+}
+
+// ===== movimiento final =====
+// Por ahora este reducer SOLO mueve fichas base.
+// Las fichas de reino ya se crean, pero todavía no se mueven.
+if (!BASE_PIECES.includes(activePiece as BasePieceKind)) {
+  return state;
+}
+
+const activeBasePiece = activePiece as BasePieceKind;
+
+nextPieces[me][activeBasePiece].pos = finalToPos;
+nextPieces[me][activeBasePiece].inLimbo = false;
+nextPieces[me][activeBasePiece].maraLevel = null;
+const currentRealm = realmFromPos(finalToPos);
       let nextRealmProgress = {
         ...state.realmProgress,
         [me]: {
@@ -406,7 +477,21 @@ nextPieces[opp][enemyKind] = {
           },
         };
       }
+// ===== presión sobre el rival cuando avanzas =====
+if (!didCapture) {
+  const oppProgress = nextRealmProgress[opp];
 
+  nextRealmProgress = {
+    ...nextRealmProgress,
+    [opp]: {
+      ...oppProgress,
+      currentLoopProgress: Math.max(
+        0,
+        oppProgress.currentLoopProgress - Math.ceil(option.value * 0.25)
+      ),
+    },
+  };
+}
       const nextDecisionSignature = {
         ...state.decisionSignature,
         [me]: updateDecisionSignature(state.decisionSignature[me], {
@@ -431,12 +516,12 @@ nextPieces[opp][enemyKind] = {
         behavior: state.behavior,
         player: me,
         from: fromPos,
-        to: toPos,
+        to: finalToPos,
         didCapture,
         trackSize: state.trackSize,
       });
 
-      const didWin = toPos === state.trackSize - 1;
+      const didWin = finalToPos === state.trackSize - 1;
 
       const samePieceAlternatives = allOptions.filter(
         (o) => o.pieceKind === activePiece
@@ -459,7 +544,7 @@ nextPieces[opp][enemyKind] = {
         fromPos,
         toPos,
         fromRealm: realmFromPos(fromPos),
-        toRealm: realmFromPos(toPos),
+        toRealm: realmFromPos(finalToPos),
       });
 
       const nextTurn = didWin ? me : opp;
@@ -477,7 +562,7 @@ nextPieces[opp][enemyKind] = {
 const countByPos: Record<number, number> = {};
 
 for (const player of ["P1", "P2"] as PlayerId[]) {
-  for (const kind of ALL_PIECES) {
+  for (const kind of BASE_PIECES) {
     const p = nextPieces[player][kind];
     if (p.inLimbo) continue;
 
@@ -495,6 +580,7 @@ if (shouldCollapse) {
       return {
         ...state,
         pieces: nextPiecesAfterCollapse,
+        realmPieces: nextPiecesRealm,
         captures: nextCaptures,
         curvature: nextCurvature,
         realmProgress: nextRealmProgress,
@@ -521,17 +607,18 @@ if (shouldCollapse) {
           choice: option.choice,
           meaning: option.meaning,
           fromPos,
-          toPos,
+          toPos: finalToPos,
           didCapture,
           capturedPieceKind,
           fromRealm: realmFromPos(fromPos),
-          toRealm: realmFromPos(toPos),
+         toRealm: realmFromPos(finalToPos),
           turnIndex: nextTurnIndex,
           cycleIndex: nextCycleIndex,
           level: state.level,
           availableOptions: allOptions,
           availableOptionsCount: allOptions.length,
         },
+        activeNidanaEffect: null,
         ledgerOpen: nextLedgerOpen,
         ledgerEntry: nextLedgerEntry,
         phase: "idle",

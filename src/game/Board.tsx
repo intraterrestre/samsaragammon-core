@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { GameState, MoveOption, PieceKind, PlayerId } from "./types";
-import { previewMove } from "./rules/preview";
+
 import {
   cellStyle as ringCellStyle,
   RING_SIZE,
@@ -35,14 +35,14 @@ type Props = {
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 
 const playerLabel = (p: PlayerId) => (p === "P1" ? "⚪ White" : "⚫ Black");
-const PIECE_KINDS: PieceKind[] = ["pig", "snake", "rooster"];
+import type {
+  BasePieceKind,
+  GameState,
+  MoveOption,
+  PieceKind,
+  PlayerId,
+} from "./types";
 const EMOJIS = ["😴", "🔥", "🐷", "🐍", "⚔️", "🧘", "😂", "😡"];
-
-const pieceLabel = (k: PieceKind) => {
-  if (k === "pig") return "Pig";
-  if (k === "snake") return "Snake";
-  return "Rooster";
-};
 
 const pieceShort = (k: PieceKind) => {
   if (k === "pig") return "P";
@@ -96,11 +96,18 @@ export function Board({
   const moveAudio = useRef<HTMLAudioElement | null>(null);
 
 const [lastEmojiAt, setLastEmojiAt] = useState(0);
-const [showNidanaSpinner, setShowNidanaSpinner] = useState(false);
-const [visibleNidana, setVisibleNidana] = useState<string | null>(null);
-const [nidanaEffect, setNidanaEffect] = useState<string | null>(null);
-const nidanaTimerRef = useRef<number | null>(null);
-const prevNidanaRef = useRef<string | null>(null);
+const [explainOpen, setExplainOpen] = useState(false);
+const [explainPlayer, setExplainPlayer] = useState<PlayerId>("P1");
+
+const [impactPos, setImpactPos] = useState<number | null>(null);
+const [flashCell, setFlashCell] = useState<number | null>(null);
+
+const [ghost, setGhost] = useState<string | null>(null);
+const ghostTimer = useRef<number | null>(null);
+
+const [beat, setBeat] = useState(false);
+const beatTimer = useRef<number | null>(null);
+
   // 🔊 INICIALIZAR AUDIOS
 
   useEffect(() => {
@@ -113,79 +120,12 @@ const prevNidanaRef = useRef<string | null>(null);
     if (captureAudioBlack.current) captureAudioBlack.current.volume = 0.35;
     
 }, []);
-
-useEffect(() => {
-  if (!state.currentNidana) return;
-
-  setVisibleNidana(state.currentNidana);
-  setShowNidanaSpinner(true);
-  setNidanaEffect(state.currentNidana);
-
-  if (nidanaTimerRef.current) {
-    window.clearTimeout(nidanaTimerRef.current);
-  }
-
-  // FASE 1: giro
-  nidanaTimerRef.current = window.setTimeout(() => {
-    setShowNidanaSpinner(false);
-
-    // FASE 2: tiempo de lectura
-    nidanaTimerRef.current = window.setTimeout(() => {
-      setVisibleNidana(null);
-    }, 3000); // ← aquí está el tiempo REAL de lectura
-
-  }, 1200); // ← duración del giro
-
-  return () => {
-    if (nidanaTimerRef.current) {
-      window.clearTimeout(nidanaTimerRef.current);
-    }
-  };
-}, [state.currentNidana]);
-
   const size = state.trackSize;
   const me = state.turn;
   const other = otherPlayer(me);
   const rolls = state.phase === "rolled" ? state.rollOptions : null;
   const activePiece = state.selectedPiece[me];
   const activePos = state.pieces[me][activePiece].pos;
-
-  const enemyPositions = PIECE_KINDS
-    .filter((k) => !state.pieces[other][k].inLimbo)
-    .map((k) => state.pieces[other][k].pos);
-
-  // ===== Explain modal state =====
-  const [explainOpen, setExplainOpen] = useState(false);
-  const [explainPlayer, setExplainPlayer] = useState<PlayerId>("P1");
-
-  const [impactPos, setImpactPos] = useState<number | null>(null);
-  const [flashCell, setFlashCell] = useState<number | null>(null);
-
-  const [ghost, setGhost] = useState<string | null>(null);
-  const ghostTimer = useRef<number | null>(null);
-
-  const [beat, setBeat] = useState(false);
-  const beatTimer = useRef<number | null>(null);
-
-  // ===== Previews sobre la ficha activa =====
-  const prevA =
-    rolls !== null ? previewMove(activePos, rolls[0], state.trackSize) : null;
-
-  const prevB =
-    rolls !== null ? previewMove(activePos, rolls[1], state.trackSize) : null;
-
-  const capA = prevA !== null && enemyPositions.includes(prevA);
-  const capB = prevB !== null && enemyPositions.includes(prevB);
-
-  const allowSum = state.level >= 3 && rolls !== null && !capA && !capB;
-  const sumRoll = allowSum && rolls ? rolls[0] + rolls[1] : null;
-
-  const prevC =
-    allowSum && sumRoll !== null
-      ? previewMove(activePos, sumRoll, state.trackSize)
-      : null;
-
-  const isSameAB = prevA !== null && prevB !== null && prevA === prevB;
 
 
   // 🔊 DISPARAR SONIDO / FX POR LAST MOVE
@@ -265,12 +205,6 @@ useEffect(() => {
       (a, b) => pieceSortKey(a.player, a.kind) - pieceSortKey(b.player, b.kind)
     );
   });
-
-  const limboPieces = (["P1", "P2"] as PlayerId[]).flatMap((player) =>
-    PIECE_KINDS.filter((kind) => state.pieces[player][kind].inLimbo).map(
-      (kind) => ({ player, kind })
-    )
-  );
 
   const renderedPieces = (["P1", "P2"] as PlayerId[]).flatMap((player) => {
     return PIECE_KINDS.map((kind) => {
@@ -482,6 +416,23 @@ useEffect(() => {
       </div>
 
       {/* ===== Ring ===== */}
+{state.activeNidanaEffect && (
+  <div className="nidanaLivingBanner">
+    <div className="nidanaLivingTitle">
+      {state.activeNidanaEffect === "CLARITY" && "🔔 CLARITY ACTIVE"}
+      {state.activeNidanaEffect === "DISTORTION" && "🫠 DISTORTION ACTIVE"}
+      {state.activeNidanaEffect === "TENSION" && "⚔️ TENSION ACTIVE"}
+    </div>
+
+    <div className="nidanaLivingBody">
+      {state.activeNidanaEffect === "CLARITY" && "PROGRESS gets a bonus."}
+      {state.activeNidanaEffect === "DISTORTION" && "RISK may punish you."}
+      {state.activeNidanaEffect === "TENSION" &&
+        "IMPACT is rewarded. Everything else costs."}
+    </div>
+  </div>
+)}
+
       <div
         className="ringWrap"
         style={{
@@ -518,29 +469,40 @@ useEffect(() => {
     />
   </div>
 )}
-        {Array.from({ length: size }, (_, i) => {
-          const cellRealm = realmFromPos(i);
-          const isHoveredTarget = hoveredOption?.toPos === i;
+  {Array.from({ length: size }, (_, i) => {
+  const cellRealm = realmFromPos(i);
+  const isHoveredTarget = hoveredOption?.toPos === i;
 
-          return (
-            <button
-              key={i}
-              type="button"
-              disabled={true}
-              className={`cellBtn ${
-                isHoveredTarget
-                  ? hoveredOption?.meaning === "IMPACT"
-                    ? "moveB"
-                    : hoveredOption?.meaning === "RISK"
-                    ? "moveAB"
-                    : "moveA"
-                  : ""
-              } ${flashCell === i ? "cellFlash" : ""}`}
-              style={ringCellStyle(i, size)}
-              onClick={() => {}}
-              title={`${REALM_LABEL[cellRealm]}`}
-            >
-              {i}
+  const enemyPlayer = state.turn === "P1" ? "P2" : "P1";
+
+  const enemiesOnCell = PIECE_KINDS.filter((kind) => {
+    const piece = state.pieces[enemyPlayer][kind];
+    return !piece.inLimbo && piece.pos === i;
+  });
+
+  const isBlockedCell = enemiesOnCell.length >= 2;
+
+  return (
+    <button
+      key={i}
+      type="button"
+      disabled={true}
+      className={`cellBtn ${
+        isHoveredTarget
+          ? hoveredOption?.meaning === "IMPACT"
+            ? "moveB"
+            : hoveredOption?.meaning === "RISK"
+            ? "moveAB"
+            : "moveA"
+          : ""
+      } ${flashCell === i ? "cellFlash" : ""} ${
+        isBlockedCell ? "blockedCell" : ""
+      }`}
+      style={ringCellStyle(i, size)}
+      onClick={() => {}}
+      title={`${REALM_LABEL[cellRealm]}`}
+    >
+      {i}
               {isHoveredTarget && (
                 <>
                   <div className="moveTag">{hoveredOption?.choice}</div>
@@ -563,7 +525,33 @@ useEffect(() => {
             onChoose={onChooseMove}
           />
         )}
-      
+      {(["P1", "P2"] as PlayerId[]).flatMap((player) =>
+  Object.values(state.realmPieces[player] ?? {}).map((piece) => {
+    if (!piece || piece.inLimbo || !piece.unlocked) return null;
+
+    const base = piecePosition(piece.pos, size);
+
+    return (
+      <div
+        key={piece.id}
+        className={`realmPieceToken realmPiece-${piece.kind} ${
+          player === "P1" ? "realmPieceP1" : "realmPieceP2"
+        }`}
+        style={{
+          ...base,
+          width: 34,
+          height: 34,
+          zIndex: 38,
+          position: "absolute",
+          pointerEvents: "none",
+        }}
+        title={`${player} ${piece.kind}`}
+      >
+        ✦
+      </div>
+    );
+  })
+)}
         {renderedPieces}
 
   

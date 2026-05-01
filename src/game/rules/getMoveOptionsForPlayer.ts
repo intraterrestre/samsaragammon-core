@@ -55,9 +55,44 @@ function inferMeaning(
 ): MoveMeaning {
   if (isSame) return "SAME";
   if (enemyCountAtTarget === 1) return "IMPACT";
-  if (enemyCountAtTarget >= 2) return "";
   if (enemyPositions.some((p) => Math.abs(p - target) <= 1)) return "RISK";
   return "";
+}
+
+function pushMoveIfLegal(params: {
+  state: GameState;
+  options: MoveOption[];
+  player: PlayerId;
+  pieceKind: PieceKind;
+  choice: MoveOption["choice"];
+  value: number;
+  fromPos: number;
+  toPos: number;
+  enemyPositions: number[];
+  isSame?: boolean;
+}) {
+  const enemyCount = countEnemyPiecesAtPos(
+    params.state,
+    params.player,
+    params.toPos
+  );
+
+  // 2+ enemigos = casilla bloqueada. NO se muestra opción.
+  if (enemyCount >= 2) return;
+
+  params.options.push({
+    pieceKind: params.pieceKind,
+    choice: params.choice,
+    value: params.value,
+    fromPos: params.fromPos,
+    toPos: params.toPos,
+    meaning: inferMeaning(
+      params.toPos,
+      enemyCount,
+      params.enemyPositions,
+      params.isSame ?? false
+    ),
+  });
 }
 
 export function getMoveOptionsForPlayer(
@@ -90,19 +125,18 @@ export function getMoveOptionsForPlayer(
       player,
     });
 
-    const enemyCountA = countEnemyPiecesAtPos(state, player, toA);
-
-    // A siempre existe
-    options.push({
+    pushMoveIfLegal({
+      state,
+      options,
+      player,
       pieceKind,
       choice: "A",
       value: a,
       fromPos,
       toPos: toA,
-      meaning: inferMeaning(toA, enemyCountA, enemyPositions, false),
+      enemyPositions,
     });
 
-    // B solo si no es doble
     if (!isDouble) {
       const toB = resolveFinalPreviewPos({
         fromPos,
@@ -112,43 +146,34 @@ export function getMoveOptionsForPlayer(
         player,
       });
 
-      const enemyCountB = countEnemyPiecesAtPos(state, player, toB);
-
-      options.push({
+      pushMoveIfLegal({
+        state,
+        options,
+        player,
         pieceKind,
         choice: "B",
         value: b,
         fromPos,
         toPos: toB,
-        meaning: inferMeaning(toB, enemyCountB, enemyPositions, false),
-      });
-    }
-
-    // ECO solo si los dados son distintos pero el destino coincide
-    if (!isDouble) {
-      const toB = resolveFinalPreviewPos({
-        fromPos,
-        value: b,
-        trackSize: state.trackSize,
-        level: state.level,
-        player,
+        enemyPositions,
       });
 
       if (toA === toB) {
-        const enemyCountSame = countEnemyPiecesAtPos(state, player, toA);
-
-        options.push({
+        pushMoveIfLegal({
+          state,
+          options,
+          player,
           pieceKind,
           choice: "ECO",
           value: a,
           fromPos,
           toPos: toA,
-          meaning: inferMeaning(toA, enemyCountSame, enemyPositions, true),
+          enemyPositions,
+          isSame: true,
         });
       }
     }
 
-    // AB siempre permitida a partir del nivel 3
     if (state.level >= 3) {
       const sum = a + b;
 
@@ -160,15 +185,16 @@ export function getMoveOptionsForPlayer(
         player,
       });
 
-      const enemyCountAB = countEnemyPiecesAtPos(state, player, toAB);
-
-      options.push({
+      pushMoveIfLegal({
+        state,
+        options,
+        player,
         pieceKind,
         choice: "AB",
         value: sum,
         fromPos,
         toPos: toAB,
-        meaning: inferMeaning(toAB, enemyCountAB, enemyPositions, false),
+        enemyPositions,
       });
     }
   }

@@ -18,6 +18,13 @@ import watcherVideo from "../assets/video/jesus_watch.mp4";
 import type { MoveOption, PieceKind } from "../game/types";
 import type { RealmId } from "../game/realms";
 import type { NidanaId } from "../game/nidanas";
+import cheeringSound from "../assets/sounds/cheering.mp3";
+import fireworksSound from "../assets/sounds/fireworks.wav";
+
+import claritySound from "../assets/sounds/clarity.mp3";
+import distortionSound from "../assets/sounds/distortion.wav";
+import tensionSound from "../assets/sounds/tension.mp3";
+
 
 type MirrorData = {
   title: string;
@@ -79,10 +86,27 @@ export function GameShell({
   onSendEmoji,
   onCloseLedger,
 }: Props) {
-  const [hoveredOption, setHoveredOption] = React.useState<MoveOption | null>(null);
+const [hoveredOption, setHoveredOption] = React.useState<MoveOption | null>(null);
+
 const [showWatcher, setShowWatcher] = React.useState(false);
+const [watcherLine, setWatcherLine] = React.useState("I see you.");
+const [showRealmMedal, setShowRealmMedal] = React.useState(false);
+
+const WATCHER_LINES = [
+  "I saw that.",
+  "Not random.",
+  "Again?",
+  "Careful.",
+  "You chose that.",
+  "I see you.",
+];
 
 const triggerWatcher = () => {
+  const line =
+    WATCHER_LINES[Math.floor(Math.random() * WATCHER_LINES.length)];
+
+  setWatcherLine(line);
+
   setShowWatcher(true);
   window.setTimeout(() => setShowWatcher(false), 1800);
 };
@@ -90,7 +114,88 @@ const triggerWatcher = () => {
   const [visibleNidana, setVisibleNidana] = React.useState<string | null>(null);
   const nidanaTimerRef = React.useRef<number | null>(null);
   const prevNidanaRef = React.useRef<string | null>(null);
+const clarityAudio = React.useRef<HTMLAudioElement | null>(null);
+const distortionAudio = React.useRef<HTMLAudioElement | null>(null);
+const tensionAudio = React.useRef<HTMLAudioElement | null>(null);
+const cheeringAudio = React.useRef<HTMLAudioElement | null>(null);
+const fireworksAudio = React.useRef<HTMLAudioElement | null>(null);
 
+
+const [showNidanaTitle, setShowNidanaTitle] = React.useState(false);
+
+React.useEffect(() => {
+   clarityAudio.current = new Audio(claritySound);
+  distortionAudio.current = new Audio(distortionSound);
+  tensionAudio.current = new Audio(tensionSound);
+
+  cheeringAudio.current = new Audio(cheeringSound);
+  fireworksAudio.current = new Audio(fireworksSound);
+
+  if (cheeringAudio.current) cheeringAudio.current.volume = 0.45;
+  if (fireworksAudio.current) fireworksAudio.current.volume = 0.35;
+}, []);
+
+const prevTransitionsRef = React.useRef({
+  P1: state.realmProgress.P1.realmTransitions,
+  P2: state.realmProgress.P2.realmTransitions,
+});
+
+const triggerCelebrationSound = () => {
+  if (cheeringAudio.current) {
+    cheeringAudio.current.currentTime = 0;
+    cheeringAudio.current.play().catch(() => {});
+  }
+
+  if (fireworksAudio.current) {
+    fireworksAudio.current.currentTime = 0;
+    fireworksAudio.current.play().catch(() => {});
+  }
+};
+React.useEffect(() => {
+  const p1Now = state.realmProgress.P1.realmTransitions;
+  const p2Now = state.realmProgress.P2.realmTransitions;
+
+  const ascended =
+    p1Now > prevTransitionsRef.current.P1 ||
+    p2Now > prevTransitionsRef.current.P2;
+
+  if (ascended) {
+    triggerCelebrationSound();
+
+    setShowRealmMedal(true);
+    window.setTimeout(() => setShowRealmMedal(false), 4800);
+  }
+
+  prevTransitionsRef.current = {
+    P1: p1Now,
+    P2: p2Now,
+  };
+}, [
+  state.realmProgress.P1.realmTransitions,
+  state.realmProgress.P2.realmTransitions,
+]);
+React.useEffect(() => {
+  if (!state.activeNidanaEffect) return;
+
+  const play = (audio: HTMLAudioElement | null) => {
+    if (!audio) return;
+    audio.currentTime = 0;
+    audio.volume = 0.25;
+    audio.play().catch(() => {});
+  };
+
+  if (state.activeNidanaEffect === "CLARITY") {
+    play(clarityAudio.current);
+  }
+
+  if (state.activeNidanaEffect === "DISTORTION") {
+    play(distortionAudio.current);
+  }
+
+  if (state.activeNidanaEffect === "TENSION") {
+    play(tensionAudio.current);
+  }
+}, [state.activeNidanaEffect]);
   const moveOptions =
     state.phase === "rolled"
       ? getMoveOptionsForPlayer(state, state.turn)
@@ -106,14 +211,12 @@ React.useEffect(() => {
 React.useEffect(() => {
   if (!state.lastMove) return;
 
-  // aparece siempre si hay captura
   if (state.lastMove.didCapture) {
     triggerWatcher();
     return;
   }
 
-  // aparece a veces (sorpresa)
-  if (Math.random() < 0.18) {
+  if (Math.random() < 0.35) {
     triggerWatcher();
   }
 }, [state.lastMove]);
@@ -121,7 +224,6 @@ React.useEffect(() => {
 React.useEffect(() => {
   if (!currentNidana) return;
 
-  
   prevNidanaRef.current = currentNidana;
   setVisibleNidana(currentNidana);
   setShowNidanaSpinner(true);
@@ -132,6 +234,16 @@ React.useEffect(() => {
 
   nidanaTimerRef.current = window.setTimeout(() => {
     setShowNidanaSpinner(false);
+
+setShowNidanaTitle(true);
+
+window.setTimeout(() => {
+  setShowNidanaTitle(true);
+
+  window.setTimeout(() => {
+    setShowNidanaTitle(false);
+  }, 8000);
+}, 1800);
 
     nidanaTimerRef.current = window.setTimeout(() => {
       setVisibleNidana(null);
@@ -145,6 +257,56 @@ React.useEffect(() => {
   };
 }, [currentNidana]);
 
+const activeEffect = state.activeNidanaEffect as
+  | "CLARITY"
+  | "DISTORTION"
+  | "TENSION"
+  | null;
+
+const getNidanaEffectText = () => {
+  if (activeEffect === "CLARITY") {
+    return {
+      title: "🔔 CLARITY ACTIVE",
+      body: "PROGRESS gets a bonus.",
+    };
+  }
+
+  if (activeEffect === "DISTORTION") {
+    return {
+      title: "🎚️ DISTORTION ACTIVE",
+      body: "RISK may punish you.",
+    };
+  }
+
+  if (activeEffect === "TENSION") {
+    return {
+      title: "⚔️ TENSION ACTIVE",
+      body: "IMPACT is rewarded. Everything else costs.",
+    };
+  }
+
+  return null;
+};
+
+const getOptionEffectText = (opt: MoveOption) => {
+  if (!activeEffect) return opt.meaning;
+
+  if (activeEffect === "CLARITY") {
+    return opt.meaning === "PROGRESS" ? "✅ +1 bonus" : "normal";
+  }
+
+  if (activeEffect === "DISTORTION") {
+    return opt.meaning === "RISK" ? "⚠️ -2 penalty" : "normal";
+  }
+
+  if (activeEffect === "TENSION") {
+    return opt.meaning === "IMPACT" ? "✅ +1 reward" : "⚠️ -1 cost";
+  }
+
+  return opt.meaning;
+};
+
+const nidanaEffectInfo = getNidanaEffectText();
   const nidanaPreviewByOption = Object.fromEntries(
     moveOptions.map((opt) => {
       if (!currentNidana || !activeRealmData?.id) {
@@ -164,10 +326,13 @@ React.useEffect(() => {
 
   return (
     <>
-      <TopBar onLogout={onLogout} />
-      <VestigiumOverlay show={showVestigium} onDone={onVestigiumDone} />
+    <TopBar onLogout={onLogout} />
+<VestigiumOverlay show={showVestigium} onDone={onVestigiumDone} />
+
 {showWatcher && (
   <div className="watcherOverlay">
+    <div className="watcherTextTop">{watcherLine}</div>
+
     <video
       src={watcherVideo}
       autoPlay
@@ -175,23 +340,49 @@ React.useEffect(() => {
       playsInline
       className="watcherVideo"
     />
-    <div className="watcherText">I see you.</div>
   </div>
 )}
 
      <div style={{ padding: 24, position: "relative" }}>
-
-
+{showRealmMedal && (
+  <div className="realmMedalFlip">
+    <div className="realmMedalInner">
+      <img
+        src="/assets/coins/coin_hungry_ghost_front.png"
+        className="realmMedalFace"
+      />
+      <img
+        src="/assets/coins/coin_hungry_ghost_back.png"
+        className="realmMedalFace realmMedalBack"
+      />
+    </div>
+  </div>
+)}
         <h1 className="mainTitle">Samsaragammon Core</h1>
 
-        <EvolutionStatus
-          realmLabel={activeRealmData?.label ?? "Unknown"}
-          realmHex={activeRealmData?.hex ?? "#fff"}
-          era={activeEra}
-          cyclesDone={cyclesDone}
-          cyclesNeeded={cyclesNeeded}
-          transitions={transitions}
-        />
+    <div style={{ display: "flex", gap: 20, justifyContent: "center" }}>
+  
+  <EvolutionStatus
+   player="P1"   isActive={state.turn === "P1"}
+    realmLabel={activeRealmData.label}
+    realmHex={activeRealmData.color}
+    era={activeEra}
+    cyclesDone={state.realmProgress.P1.completedLoopsInRealm}
+    cyclesNeeded={state.realmProgress.P1.currentRealmStep * 2}
+    transitions={state.realmProgress.P1.realmTransitions}
+  />
+
+  <EvolutionStatus
+   player="P2"   isActive={state.turn === "P2"}
+    realmLabel={activeRealmData.label}
+    realmHex={activeRealmData.color}
+    era={activeEra}
+    cyclesDone={state.realmProgress.P2.completedLoopsInRealm}
+    cyclesNeeded={state.realmProgress.P2.currentRealmStep * 2}
+    transitions={state.realmProgress.P2.realmTransitions}
+  />
+
+</div>
 
    <TurnDock
   turn={state.turn}
@@ -202,7 +393,6 @@ React.useEffect(() => {
   onRoll={onRoll}
   onReset={onReset}
 />
-
         {false && (
           <MoveOptionsPanel
             options={moveOptions}
@@ -215,31 +405,43 @@ React.useEffect(() => {
 
         <MasterPanel text={oracleText} />
 
-<MirrorPanel
-  title={mirrorData.title}
-  body={mirrorData.body}
-  tags={mirrorData.tags}
-/>
+        <MirrorPanel
+          title={
+            state.globalRollCount > 0 && state.globalRollCount % 5 === 0
+              ? "GOAL"
+              : mirrorData.title
+          }
+          body={
+            state.globalRollCount > 0 && state.globalRollCount % 5 === 0
+              ? "Collect 6 Realm Tokens → Unite them in the Human Realm → Achieve Nirvana"
+              : mirrorData.body
+          }
+          tags={
+            state.globalRollCount > 0 && state.globalRollCount % 5 === 0
+              ? ["realm tokens", "human realm", "nirvana"]
+              : mirrorData.tags
+          }
+        />
 
-<MaraPanel state={state} />
+        <MaraPanel state={state} />
 
-<Board
-  state={state}
-  onSelectPiece={onSelectPiece}
-  hoveredOption={hoveredOption}
-  moveOptions={moveOptions}
-  onChooseMove={handleMove}
-  onSendEmoji={onSendEmoji}
-  nidanaCoinSrc={nidanaCoinSrc}
+        <Board
+          state={state}
+          onSelectPiece={onSelectPiece}
+          hoveredOption={hoveredOption}
+          moveOptions={moveOptions}
+          onChooseMove={handleMove}
+          onSendEmoji={onSendEmoji}
+          nidanaCoinSrc={nidanaCoinSrc}
   nidanaCoinSide={nidanaCoinSide}
-/>
-</div>
+        />
+      </div>
 
-<LedgerModal
-  open={state.ledgerOpen}
-  entryId={state.ledgerEntry}
-  onClose={onCloseLedger}
-/>
-</>
-);
+      <LedgerModal
+        open={state.ledgerOpen}
+        entryId={state.ledgerEntry}
+        onClose={onCloseLedger}
+      />
+    </>
+  );
 }

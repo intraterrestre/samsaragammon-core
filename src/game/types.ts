@@ -5,24 +5,37 @@ import type { NidanaId } from "./nidanas";
 
 export type PlayerId = "P1" | "P2";
 export type Phase = "idle" | "rolled";
+
 export type EmojiEvent = {
   player: PlayerId;
   emoji: string;
   at: number;
 };
-/**
- * Tipos de ficha por jugador
- */
-export type PieceKind = "pig" | "snake" | "rooster";
 
-/**
- * Estado de una ficha individual
- */
+export type BasePieceKind = "pig" | "snake" | "rooster";
+
+export type RealmPieceKind =
+  | "hungry_ghost"
+  | "hell"
+  | "animals"
+  | "humans"
+  | "asura"
+  | "deva";
+
+export type PieceKind = BasePieceKind | RealmPieceKind;
+
 export type SinglePieceState = {
   pos: number;
   inLimbo: boolean;
-  maraLevel: number | null; // 0..6
+  maraLevel: number | null;
 };
+
+export type RealmPieceState = SinglePieceState & {
+  id: string;
+  kind: RealmPieceKind;
+  unlocked: boolean;
+};
+
 export type VenomTrioState = {
   pos: number;
   kind: "PURE" | "MIXED";
@@ -30,24 +43,17 @@ export type VenomTrioState = {
   pieces: { player: PlayerId; kind: PieceKind }[];
 };
 
-/**
- * Las 3 fichas de un jugador
- */
 export type PlayerPiecesState = {
   pig: SinglePieceState;
   snake: SinglePieceState;
   rooster: SinglePieceState;
 };
+export type PlayerRealmPiecesState = Partial<
+  Record<RealmPieceKind, RealmPieceState>
+>;
 
-/**
- * Qué ficha tiene seleccionada cada jugador
- */
 export type SelectedPieceState = Record<PlayerId, PieceKind>;
 
-/**
- * Reinos del Samsara
- * Alineados con REALM_CANON / REALMS
- */
 export type Realm =
   | "HUNGRY_GHOST"
   | "HELL"
@@ -57,14 +63,8 @@ export type Realm =
   | "DEVA"
   | "NIRVANA";
 
-/**
- * Opciones de movimiento
- */
 export type Choice = "A" | "B" | "AB" | "ECO";
 
-/**
- * Significado táctico / kármico de una opción
- */
 export type MoveMeaning =
   | "IMPACT"
   | "RISK"
@@ -73,9 +73,6 @@ export type MoveMeaning =
   | "PROGRESS"
   | "";
 
-/**
- * Una posibilidad concreta de movimiento antes de elegir
- */
 export type MoveOption = {
   pieceKind: PieceKind;
   choice: Choice;
@@ -85,9 +82,6 @@ export type MoveOption = {
   meaning: MoveMeaning;
 };
 
-/**
- * Snapshot del último movimiento
- */
 export type LastMove = {
   at: number;
 
@@ -118,9 +112,6 @@ export type LastMove = {
   availableOptionsCount: number;
 };
 
-/**
- * Progreso espiritual dentro del reino actual
- */
 export type RealmProgress = {
   currentRealmStep: number;
   completedLoopsInRealm: number;
@@ -128,17 +119,11 @@ export type RealmProgress = {
   realmTransitions: number;
 };
 
-/**
- * Curvatura / morph visual por jugador
- */
 export type CurvatureState = {
   P1: number;
   P2: number;
 };
 
-/**
- * Firma conductual de una partida
- */
 export type DecisionSignature = {
   pigTrace: number;
   snakeTrace: number;
@@ -163,9 +148,6 @@ export type DecisionSignature = {
   totalMoves: number;
 };
 
-/**
- * Lectura resumida del estilo de decisión del jugador
- */
 export type KarmaReport = {
   dominantAnimal: "pig" | "snake" | "rooster" | "balanced";
   dominantStyle: "impact" | "risk" | "safe" | "progress" | "mixed";
@@ -183,9 +165,6 @@ export type KarmaReport = {
   };
 };
 
-/**
- * Estado completo del juego
- */
 export type GameState = {
   behavior: BehaviorState;
   pattern: PatternEngineState;
@@ -204,8 +183,10 @@ export type GameState = {
   rollOptions: [number, number] | null;
   emojiEvents: EmojiEvent[];
 
-  
   pieces: Record<PlayerId, PlayerPiecesState>;
+  realmPieces: Record<PlayerId, PlayerRealmPiecesState>;
+  realmTokens: Record<PlayerId, RealmPieceKind[]>;
+
   selectedPiece: SelectedPieceState;
 
   captures: Record<PlayerId, number>;
@@ -214,6 +195,7 @@ export type GameState = {
 
   level: number;
   currentNidana: NidanaId | null;
+  activeNidanaEffect: "CLARITY" | "DISTORTION" | "TENSION" | null;
 
   lastMove: LastMove | null;
 
@@ -236,9 +218,10 @@ export type GameState = {
   winner: PlayerId | null;
 
   curvature: CurvatureState;
-venomTrio: VenomTrioState | null;
+  venomTrio: VenomTrioState | null;
 
-coinBank: {
-  karma: number;
-  dharma: number;
+  coinBank: {
+    karma: number;
+    dharma: number;
+  };
 };

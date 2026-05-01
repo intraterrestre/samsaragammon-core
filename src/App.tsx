@@ -677,9 +677,19 @@ nidanaCoinSide={nidanaSide}
         setProfile(null);
       }}
   onExportRun={debugPrintRunExport}
- onRoll={() => {
+
+onRoll={() => {
   playDiceSound();
   triggerNidanaCoin();
+
+  const r = Math.random();
+  const effect =
+    r < 0.33 ? "CLARITY" :
+    r < 0.66 ? "DISTORTION" :
+    "TENSION";
+
+  dispatch({ type: "SET_NIDANA_EFFECT", effect });
+
   dispatch({ type: "ROLL" });
 }}
   onReset={() => dispatch({ type: "RESET" })}

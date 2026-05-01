@@ -1,5 +1,5 @@
 // src/game/state/state.ts
-import type { DecisionSignature, GameState } from "../types";
+
 import { createBehaviorState } from "../behavior/behavior";
 import { createPatternEngine } from "../behavior/patternEngine";
 
@@ -26,61 +26,61 @@ const initialDecisionSignature = (): DecisionSignature => ({
 
   totalMoves: 0,
 });
-
 /**
  * Estado inicial del juego
- * - trackSize: 24 (6 reinos × 4 casillas)
- * - level: 3 (A+B ya disponible)
  */
 export const initialState: GameState = {
-  // invisible engines
   behavior: createBehaviorState(),
   pattern: createPatternEngine(),
 
-  // firma conductual
   decisionSignature: {
     P1: initialDecisionSignature(),
     P2: initialDecisionSignature(),
   },
 
-  // counters
   turnIndex: 0,
   cycleIndex: 0,
   globalRollCount: 0,
 
-  // board / turn
   trackSize: 24,
   turn: "P1",
   phase: "idle",
   rollOptions: null,
+  emojiEvents: [],
 
-  // 3 fichas por jugador
- pieces: {
-  P1: {
-    pig: { pos: 0, inLimbo: false, maraLevel: null },
-    snake: { pos: 1, inLimbo: false, maraLevel: null },
-    rooster: { pos: 2, inLimbo: false, maraLevel: null },
+  pieces: {
+    P1: {
+      pig: { pos: 0, inLimbo: false, maraLevel: null },
+      snake: { pos: 1, inLimbo: false, maraLevel: null },
+      rooster: { pos: 2, inLimbo: false, maraLevel: null },
+    },
+    P2: {
+      pig: { pos: 12, inLimbo: false, maraLevel: null },
+      snake: { pos: 13, inLimbo: false, maraLevel: null },
+      rooster: { pos: 14, inLimbo: false, maraLevel: null },
+    },
   },
-  P2: {
-    pig: { pos: 12, inLimbo: false, maraLevel: null },
-    snake: { pos: 13, inLimbo: false, maraLevel: null },
-    rooster: { pos: 14, inLimbo: false, maraLevel: null },
-  },
+
+realmPieces: {
+  P1: {},
+  P2: {},
 },
 
-  // ficha seleccionada por jugador
+  realmTokens: {
+    P1: [],
+    P2: [],
+  },
+
   selectedPiece: {
     P1: "pig",
     P2: "pig",
   },
 
-  // capturas totales por jugador
   captures: {
     P1: 0,
     P2: 0,
   },
 
-  // realm loop progress
   realmProgress: {
     P1: {
       currentRealmStep: 1,
@@ -95,11 +95,11 @@ export const initialState: GameState = {
       realmTransitions: 0,
     },
   },
-emojiEvents: [],
+
   level: 3,
   currentNidana: null,
+  activeNidanaEffect: null,
 
-  // last movement snapshot
   lastMove: null,
   lastKarma: null,
 
@@ -112,14 +112,19 @@ emojiEvents: [],
   ledgerEntry: null,
 
   introSeen: false,
-
   winner: null,
 
   curvature: {
     P1: 20,
     P2: 80,
   },
+
   venomTrio: null,
+
+  coinBank: {
+    karma: 0,
+    dharma: 0,
+  },
 };
 
 /**
@@ -154,35 +159,29 @@ export function makeInitialState(
       P1: {
         ...initialState.pieces.P1,
         ...(overrides.pieces?.P1 ?? {}),
-        pig: {
-          ...initialState.pieces.P1.pig,
-          ...(overrides.pieces?.P1?.pig ?? {}),
-        },
-        snake: {
-          ...initialState.pieces.P1.snake,
-          ...(overrides.pieces?.P1?.snake ?? {}),
-        },
-        rooster: {
-          ...initialState.pieces.P1.rooster,
-          ...(overrides.pieces?.P1?.rooster ?? {}),
-        },
       },
       P2: {
         ...initialState.pieces.P2,
         ...(overrides.pieces?.P2 ?? {}),
-        pig: {
-          ...initialState.pieces.P2.pig,
-          ...(overrides.pieces?.P2?.pig ?? {}),
-        },
-        snake: {
-          ...initialState.pieces.P2.snake,
-          ...(overrides.pieces?.P2?.snake ?? {}),
-        },
-        rooster: {
-          ...initialState.pieces.P2.rooster,
-          ...(overrides.pieces?.P2?.rooster ?? {}),
-        },
       },
+    },
+
+    realmPieces: {
+      ...initialState.realmPieces,
+      ...(overrides.realmPieces ?? {}),
+      P1: {
+        ...initialState.realmPieces.P1,
+        ...(overrides.realmPieces?.P1 ?? {}),
+      },
+      P2: {
+        ...initialState.realmPieces.P2,
+        ...(overrides.realmPieces?.P2 ?? {}),
+      },
+    },
+
+    realmTokens: {
+      ...initialState.realmTokens,
+      ...(overrides.realmTokens ?? {}),
     },
 
     selectedPiece: {
@@ -208,59 +207,19 @@ export function makeInitialState(
       },
     },
 
-   curvature: {
-  ...initialState.curvature,
-  ...(overrides.curvature ?? {}),
-},
-
-globalRollCount:
-  overrides.globalRollCount === undefined
-    ? initialState.globalRollCount
-    : overrides.globalRollCount,
-
-emojiEvents:
-  overrides.emojiEvents === undefined
-    ? initialState.emojiEvents
-    : overrides.emojiEvents,
-
-currentNidana:
-  overrides.currentNidana === undefined
-    ? initialState.currentNidana
-    : overrides.currentNidana,
-
-    lastMove:
-      overrides.lastMove === undefined
-        ? initialState.lastMove
-        : overrides.lastMove,
-
-    lastKarma:
-      overrides.lastKarma === undefined
-        ? initialState.lastKarma
-        : overrides.lastKarma,
+    curvature: {
+      ...initialState.curvature,
+      ...(overrides.curvature ?? {}),
+    },
 
     karmaTotal: {
       ...initialState.karmaTotal,
       ...(overrides.karmaTotal ?? {}),
     },
 
-    ledgerOpen:
-      overrides.ledgerOpen === undefined
-        ? initialState.ledgerOpen
-        : overrides.ledgerOpen,
-
-    ledgerEntry:
-      overrides.ledgerEntry === undefined
-        ? initialState.ledgerEntry
-        : overrides.ledgerEntry,
-
-    introSeen:
-      overrides.introSeen === undefined
-        ? initialState.introSeen
-        : overrides.introSeen,
-        
-        venomTrio:
-      overrides.venomTrio === undefined
-       ? initialState.venomTrio
-       : overrides.venomTrio,
+    coinBank: {
+      ...initialState.coinBank,
+      ...(overrides.coinBank ?? {}),
+    },
   };
 }
