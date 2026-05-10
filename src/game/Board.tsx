@@ -24,7 +24,7 @@ import captureBlack from "../assets/sounds/capture_black.mp3";
 import moveSound from "../assets/sounds/move.mp3";
 type Props = {
   state: GameState;
-  onSelectPiece?: (piece: PieceKind) => void;
+  onSelectPiece?: (piece: string) => void;
   hoveredOption?: MoveOption | null;
   moveOptions?: MoveOption[];
   onChooseMove?: (option: MoveOption, allOptions: MoveOption[]) => void;
@@ -35,15 +35,8 @@ type Props = {
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 
 const playerLabel = (p: PlayerId) => (p === "P1" ? "⚪ White" : "⚫ Black");
-import type {
-  BasePieceKind,
-  GameState,
-  MoveOption,
-  PieceKind,
-  PlayerId,
-} from "./types";
+const PIECE_KINDS: PieceKind[] = ["pig", "snake", "rooster"];
 const EMOJIS = ["😴", "🔥", "🐷", "🐍", "⚔️", "🧘", "😂", "😡"];
-
 const pieceShort = (k: PieceKind) => {
   if (k === "pig") return "P";
   if (k === "snake") return "S";
@@ -121,12 +114,24 @@ const beatTimer = useRef<number | null>(null);
     
 }, []);
   const size = state.trackSize;
-  const me = state.turn;
-  const other = otherPlayer(me);
-  const rolls = state.phase === "rolled" ? state.rollOptions : null;
-  const activePiece = state.selectedPiece[me];
-  const activePos = state.pieces[me][activePiece].pos;
+const me = state.turn;
+const other = otherPlayer(me);
+const rolls = state.phase === "rolled" ? state.rollOptions : null;
 
+const activePiece = state.selectedPiece[me];
+
+const activeBasePiece = PIECE_KINDS.includes(activePiece as PieceKind)
+  ? (activePiece as PieceKind)
+  : null;
+
+const activeRealmPiece =
+  state.realmPieces?.[me]?.[
+    activePiece as keyof typeof state.realmPieces.P1
+  ];
+
+const activePos = activeBasePiece
+  ? state.pieces[me][activeBasePiece].pos
+  : activeRealmPiece?.pos ?? null;
 
   // 🔊 DISPARAR SONIDO / FX POR LAST MOVE
   useEffect(() => {
@@ -190,7 +195,7 @@ const beatTimer = useRef<number | null>(null);
     {};
 
   (["P1", "P2"] as PlayerId[]).forEach((player) => {
-    PIECE_KINDS.forEach((kind) => {
+   PIECE_KINDS.forEach((kind) => {
       const pieceState = state.pieces[player][kind];
       if (pieceState.inLimbo) return;
 
@@ -525,15 +530,24 @@ const beatTimer = useRef<number | null>(null);
             onChoose={onChooseMove}
           />
         )}
-      {(["P1", "P2"] as PlayerId[]).flatMap((player) =>
-  Object.values(state.realmPieces[player] ?? {}).map((piece) => {
-    if (!piece || piece.inLimbo || !piece.unlocked) return null;
+{(["P1", "P2"] as PlayerId[]).flatMap((player) => {
+  const realmList = Object.values(state.realmPieces[player] ?? {});
+
+  return realmList.map((piece) => {
+    if (!piece || piece.inLimbo || !piece.unlocked) {
+      return null;
+    }
 
     const base = piecePosition(piece.pos, size);
 
     return (
       <div
         key={piece.id}
+        onClick={() => {
+          if (player === state.turn) {
+            onSelectPiece?.(piece.kind);
+          }
+        }}
         className={`realmPieceToken realmPiece-${piece.kind} ${
           player === "P1" ? "realmPieceP1" : "realmPieceP2"
         }`}
@@ -543,15 +557,16 @@ const beatTimer = useRef<number | null>(null);
           height: 34,
           zIndex: 38,
           position: "absolute",
-          pointerEvents: "none",
+          pointerEvents: player === state.turn ? "auto" : "none",
+          cursor: player === state.turn ? "pointer" : "default",
         }}
         title={`${player} ${piece.kind}`}
       >
         ✦
       </div>
     );
-  })
-)}
+  });
+})}
         {renderedPieces}
 
   

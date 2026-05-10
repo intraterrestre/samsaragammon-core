@@ -52,7 +52,7 @@ export type PlayerRealmPiecesState = Partial<
   Record<RealmPieceKind, RealmPieceState>
 >;
 
-export type SelectedPieceState = Record<PlayerId, PieceKind>;
+export type SelectedPieceState = Record<PlayerId, string>;
 
 export type Realm =
   | "HUNGRY_GHOST"
@@ -224,4 +224,10 @@ export type GameState = {
     karma: number;
     dharma: number;
   };
+
+  realmAscension: {
+  player: PlayerId;
+  realmStep: number;
+  at: number;
+} | null;
 };

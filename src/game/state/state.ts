@@ -125,7 +125,7 @@ realmPieces: {
     karma: 0,
     dharma: 0,
   },
-};
+realmAscension: null,};
 
 /**
  * Helper para crear estados iniciales personalizados

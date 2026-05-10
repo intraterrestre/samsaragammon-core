@@ -309,15 +309,12 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
       const activePiece = option.pieceKind;
       const fromPos = option.fromPos;
       const toPos = option.toPos;
-const activeEffect = state.activeNidanaEffect;
-const meaning = option.meaning;
 
 // TEMPORAL: la nidana NO cambia la casilla final.
 // Así la raya visual coincide con donde cae la ficha.
-const nidanaShift = 0;
 
 const finalToPos = toPos;
-const captureCheckPos = option.meaning === "IMPACT" ? toPos : finalToPos;
+
       const [a, b] = state.rollOptions;
 
       const nextCurvature = {
@@ -343,6 +340,7 @@ const captureCheckPos = option.meaning === "IMPACT" ? toPos : finalToPos;
 
       let nextRealmStep = prevRealmProgress.currentRealmStep;
       let nextRealmTransitions = prevRealmProgress.realmTransitions;
+      let didAscendRealm = false;
 
      const loopsNeeded = 1;
     if (
@@ -355,6 +353,7 @@ const captureCheckPos = option.meaning === "IMPACT" ? toPos : finalToPos;
   );
 
   nextRealmStep = nextRealmStepValue;
+  didAscendRealm = true;
   nextRealmTransitions += 1;
   nextCompletedLoops = 0;
   nextLoopProgress = 0;
@@ -584,6 +583,13 @@ if (shouldCollapse) {
         captures: nextCaptures,
         curvature: nextCurvature,
         realmProgress: nextRealmProgress,
+        realmAscension: didAscendRealm
+  ? {
+      player: me,
+      realmStep: nextRealmStep,
+      at: Date.now(),
+    }
+  : null,
         behavior: nextBehavior,
         pattern: patternNext,
         decisionSignature: nextDecisionSignature,

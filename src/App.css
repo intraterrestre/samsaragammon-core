@@ -681,7 +681,7 @@ button:disabled{
   left: -220px;         /* distancia desde la rueda */
   top: 65%;             /* baja el watcher */
   transform: translateY(-50%);
-  z-index: 20000;
+  z-index: 1000000;
   pointer-events: none;
   text-align: center;
   animation: watcherPop 1.8s ease-out forwards;
@@ -754,7 +754,6 @@ button:disabled{
   box-shadow: 0 0 12px rgba(255,255,255,0.25);
 }
 
-filter: drop-shadow(0 0 18px gold);
 /* ===== REALM MEDAL FLIP ===== */
 
 .realmMedalFlip {
