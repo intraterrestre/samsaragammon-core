@@ -22,7 +22,7 @@ import { GameShell } from "./UI/GameShell";
 import { LoginScreen } from "./UI/LoginScreen";
 import { useGameController } from "./game/hooks/useGameController";
 import { getMasterLine } from "./game/master/masterVoices";
-
+import brunoIntro from "./assets/cinematics/realms/bruno_origin_intro.mp4";
 import diceRollSound from "./assets/sounds/dice_roll.mp3";
 
 const nidanaImages = import.meta.glob("./assets/nidanas/*.jpg", {
@@ -183,7 +183,8 @@ type RunExport = {
 export default function App() {
   const { handleLogin } = useGameController();
   const [state, dispatchBase] = useReducer(reducer, initialState);
-
+const [showBrunoIntro, setShowBrunoIntro] = useState(false);
+const brunoIntroPlayedRef = useRef(false);
   const karmaRef = useRef<KarmaEngine | null>(null);
   const [karmaSnap, setKarmaSnap] = useState<any>(null);
 
@@ -365,7 +366,16 @@ export default function App() {
     pushExportEvent,
     selectedPos,
   ]);
+useEffect(() => {
+  if (!state.realmAscension) return;
+  if (brunoIntroPlayedRef.current) return;
 
+  brunoIntroPlayedRef.current = true;
+
+  window.setTimeout(() => {
+    setShowBrunoIntro(true);
+  }, 1400);
+}, [state.realmAscension]);
   /** =========================
    *  Export + Karma ingest: move
    *  ========================= */
@@ -640,8 +650,22 @@ const triggerNidanaCoin = () => {
   }, [state.phase, state.rollOptions]);
 
   return (
- <ErrorBoundary>
+  <ErrorBoundary>
+  {showBrunoIntro && (
+    <div className="realmIntroOverlay">
+      <video
+        className="realmIntroVideo"
+        src={brunoIntro}
+        autoPlay
+        muted
+        playsInline
+        onEnded={() => setShowBrunoIntro(false)}
+      />
+    </div>
+  )}
+
   {!session ? (
+  
     <LoginScreen onLogin={handleLogin} />
   ) : (
     <GameShell

@@ -358,23 +358,25 @@ const finalToPos = toPos;
   nextCompletedLoops = 0;
   nextLoopProgress = 0;
 
-  // ===== CREAR FICHA DE REINO =====
-  const nextRealmKey = REALM_PIECE_ORDER[nextRealmStepValue - 1];
+ // ===== DESBLOQUEAR FICHA DE REINO =====
+const nextRealmKey = REALM_PIECE_ORDER[nextRealmStepValue - 2];
 
-  if (nextRealmKey) {
-    const alreadyExists = state.realmPieces[me]?.[nextRealmKey];
-
-    if (!alreadyExists) {
-      nextPiecesRealm[me][nextRealmKey] = {
-        id: `${me}-${nextRealmKey}-${Date.now()}`,
-        kind: nextRealmKey,
-        pos: finalToPos, // 
-        inLimbo: false,
-        maraLevel: null,
-        unlocked: true,
-      };
-    }
-  }
+if (nextRealmKey) {
+  nextPiecesRealm[me][nextRealmKey] = {
+    ...(state.realmPieces[me]?.[nextRealmKey] ?? {
+      id: `${me}-${nextRealmKey}`,
+      kind: nextRealmKey,
+      pos: finalToPos,
+      inLimbo: true,
+      maraLevel: null,
+      unlocked: false,
+    }),
+    pos: finalToPos,
+    inLimbo: false,
+    maraLevel: null,
+    unlocked: true,
+  };
+}
 }
 
       // ===== clonar piezas =====

@@ -22,6 +22,25 @@ import cobraBlack from "../assets/pieces/cobra_black.png";
 import captureWhite from "../assets/sounds/capture_white.mp3";
 import captureBlack from "../assets/sounds/capture_black.mp3";
 import moveSound from "../assets/sounds/move.mp3";
+
+import brunoP1 from "../assets/tokens/bruno_P1.png";
+import brunoP2 from "../assets/tokens/bruno_P2.png";
+
+import margotP1 from "../assets/tokens/margot_P1.png";
+import margotP2 from "../assets/tokens/margot_P2.png";
+
+import marinoP1 from "../assets/tokens/marino_P1.png";
+import marinoP2 from "../assets/tokens/marino_P2.png";
+
+import oriolP1 from "../assets/tokens/oriol_P1.png";
+import oriolP2 from "../assets/tokens/oriol_P2.png";
+
+import rufusP1 from "../assets/tokens/rufus_P1.png";
+import rufusP2 from "../assets/tokens/rufus_P2.png";
+
+import whitmanP1 from "../assets/tokens/whitman_P1.png";
+import whitmanP2 from "../assets/tokens/whitman_P2.png";
+
 type Props = {
   state: GameState;
   onSelectPiece?: (piece: string) => void;
@@ -42,6 +61,14 @@ const pieceShort = (k: PieceKind) => {
   if (k === "snake") return "S";
   return "R";
 };
+const REALM_TOKEN_MAP = {
+  origin: { P1: brunoP1, P2: brunoP2 },
+  hell: { P1: margotP1, P2: margotP2 },
+  animal: { P1: oriolP1, P2: oriolP2 },
+  human: { P1: marinoP1, P2: marinoP2 },
+  titan: { P1: rufusP1, P2: rufusP2 },
+  deva: { P1: whitmanP1, P2: whitmanP2 },
+} as const;
 
 function pieceSortKey(player: PlayerId, kind: PieceKind) {
   const playerOrder = player === "P1" ? 0 : 10;
@@ -551,18 +578,38 @@ const activePos = activeBasePiece
         className={`realmPieceToken realmPiece-${piece.kind} ${
           player === "P1" ? "realmPieceP1" : "realmPieceP2"
         }`}
-        style={{
-          ...base,
-          width: 34,
-          height: 34,
-          zIndex: 38,
-          position: "absolute",
-          pointerEvents: player === state.turn ? "auto" : "none",
-          cursor: player === state.turn ? "pointer" : "default",
-        }}
+      style={{
+  ...base,
+  width: 48,
+  height: 48,
+
+  border:
+player==="P1"
+ ? "3px solid #fff"
+ : "3px solid #000",
+
+  borderRadius: "50%",
+
+ boxShadow:
+player==="P1"
+? "0 0 0 2px gold,0 0 14px white"
+: "0 0 0 2px #500,0 0 14px black",
+
+  zIndex: 38,
+  position: "absolute",
+  pointerEvents: player === state.turn ? "auto" : "none",
+  cursor: player === state.turn ? "pointer" : "default",
+}}
         title={`${player} ${piece.kind}`}
-      >
-        ✦
+           >
+      <img
+  src={
+    REALM_TOKEN_MAP[piece.kind as keyof typeof REALM_TOKEN_MAP]?.[player] ??
+    brunoP1
+  }
+  alt={`${piece.kind} token`}
+  className="realmPieceTokenImg"
+/>
       </div>
     );
   });
