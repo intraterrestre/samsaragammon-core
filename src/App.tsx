@@ -22,8 +22,14 @@ import { GameShell } from "./UI/GameShell";
 import { LoginScreen } from "./UI/LoginScreen";
 import { useGameController } from "./game/hooks/useGameController";
 import { getMasterLine } from "./game/master/masterVoices";
-import brunoIntro from "./assets/cinematics/realms/bruno_origin_intro.mp4";
 import diceRollSound from "./assets/sounds/dice_roll.mp3";
+
+import brunoIntro from "./assets/cinematics/realms/bruno_origin_intro.mp4";
+import margotIntro from "./assets/cinematics/realms/margot_hell_intro.mp4";
+import oriolIntro from "./assets/cinematics/realms/oriol_animal_intro.mp4";
+import marinoIntro from "./assets/cinematics/realms/marino_human_intro.mov";
+import rufusIntro from "./assets/cinematics/realms/rufus_titan_intro.mp4";
+import whitmanIntro from "./assets/cinematics/realms/whitman_deva_intro.mp4";
 
 const nidanaImages = import.meta.glob("./assets/nidanas/*.jpg", {
   eager: true,
@@ -44,7 +50,14 @@ const NIDANAS = [
   "birth",
   "death",
 ];
-
+const REALM_INTRO_MAP = {
+  hungry_ghost: brunoIntro,
+  hell: margotIntro,
+  animals: oriolIntro,
+  humans: marinoIntro,
+  asura: rufusIntro,
+  deva: whitmanIntro,
+} as const;
 function getNidanaImage(id: number, side: "front" | "back") {
   const num = String(id).padStart(2, "0");
   const name = NIDANAS[id - 1];
@@ -183,8 +196,8 @@ type RunExport = {
 export default function App() {
   const { handleLogin } = useGameController();
   const [state, dispatchBase] = useReducer(reducer, initialState);
-const [showBrunoIntro, setShowBrunoIntro] = useState(false);
-const brunoIntroPlayedRef = useRef(false);
+const [activeRealmIntro, setActiveRealmIntro] = useState<string | null>(null);
+const playedRealmIntrosRef = useRef<Record<string, boolean>>({});
   const karmaRef = useRef<KarmaEngine | null>(null);
   const [karmaSnap, setKarmaSnap] = useState<any>(null);
 
@@ -198,13 +211,24 @@ const brunoIntroPlayedRef = useRef(false);
   /** =========================
    *  Helpers
    *  ========================= */
-  const selectedPos = useCallback(
-    (player: "P1" | "P2") => {
-      const selected = state.selectedPiece[player];
-      return state.pieces[player][selected].pos;
-    },
-    [state.pieces, state.selectedPiece]
-  );
+ const selectedPos = useCallback(
+  (player: "P1" | "P2") => {
+    const selected = state.selectedPiece[player];
+
+    const basePiece =
+      state.pieces[player][selected as keyof typeof state.pieces.P1];
+
+    if (basePiece) return basePiece.pos;
+
+    const realmPiece =
+      state.realmPieces[player]?.[
+        selected as keyof typeof state.realmPieces.P1
+      ];
+
+    return realmPiece?.pos ?? 0;
+  },
+  [state.pieces, state.realmPieces, state.selectedPiece]
+);
 
   const playDiceSound = useCallback(() => {
     const audio = new Audio(diceRollSound);
@@ -367,15 +391,32 @@ const brunoIntroPlayedRef = useRef(false);
     selectedPos,
   ]);
 useEffect(() => {
-  if (!state.realmAscension) return;
-  if (brunoIntroPlayedRef.current) return;
+  const realmKey = state.realmAscension?.realmKey as
+    | keyof typeof REALM_INTRO_MAP
+    | undefined;
 
-  brunoIntroPlayedRef.current = true;
+  const player = state.realmAscension?.player;
+
+  console.log("REALM ASCENSION:", state.realmAscension);
+
+  if (!realmKey || !player) return;
+
+  const introId = `${player}-${realmKey}`;
+
+  if (playedRealmIntrosRef.current[introId]) return;
+
+  const introSrc = REALM_INTRO_MAP[realmKey];
+
+  if (!introSrc) return;
+
+  playedRealmIntrosRef.current[introId] = true;
 
   window.setTimeout(() => {
-    setShowBrunoIntro(true);
-  }, 1400);
+    setActiveRealmIntro(introSrc);
+  }, 2200);
+
 }, [state.realmAscension]);
+
   /** =========================
    *  Export + Karma ingest: move
    *  ========================= */
@@ -624,17 +665,21 @@ const triggerNidanaCoin = () => {
    *  ========================= */
   const dispatch = useCallback(
     (action: any) => {
-      if (action?.type === "RESET") {
-        setRollsCount(0);
-        setShowVestigium(false);
-        prevPhaseRef.current = "idle";
-        setRunId(null);
-        resetRunExport();
+   if (action?.type === "RESET") {
 
-        karmaRef.current = new KarmaEngine(["P1", "P2"]);
-        setKarmaSnap(karmaRef.current.snapshot(0));
-        lastLoggedRollRef.current = null;
-      }
+  playedRealmIntrosRef.current = {};
+  setActiveRealmIntro(null);
+
+  setRollsCount(0);
+  setShowVestigium(false);
+  prevPhaseRef.current = "idle";
+  setRunId(null);
+  resetRunExport();
+
+  karmaRef.current = new KarmaEngine(["P1", "P2"]);
+  setKarmaSnap(karmaRef.current.snapshot(0));
+  lastLoggedRollRef.current = null;
+}
 
       dispatchBase(action);
     },
@@ -651,18 +696,25 @@ const triggerNidanaCoin = () => {
 
   return (
   <ErrorBoundary>
-  {showBrunoIntro && (
-    <div className="realmIntroOverlay">
-      <video
-        className="realmIntroVideo"
-        src={brunoIntro}
-        autoPlay
-        muted
-        playsInline
-        onEnded={() => setShowBrunoIntro(false)}
-      />
-    </div>
-  )}
+{activeRealmIntro && (
+  <div className="realmIntroOverlay">
+  <video
+  className="realmIntroVideo"
+  src={activeRealmIntro}
+  autoPlay
+  playsInline
+  muted={false}
+  onLoadedMetadata={(e) => {
+    e.currentTarget.volume = 1;
+    e.currentTarget.muted = false;
+    e.currentTarget.play().catch((err) => {
+      console.warn("Intro video play blocked:", err);
+    });
+  }}
+  onEnded={() => setActiveRealmIntro(null)}
+/>
+  </div>
+)}
 
   {!session ? (
   

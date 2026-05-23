@@ -41,6 +41,9 @@ import rufusP2 from "../assets/tokens/rufus_P2.png";
 import whitmanP1 from "../assets/tokens/whitman_P1.png";
 import whitmanP2 from "../assets/tokens/whitman_P2.png";
 
+import diceWhitePortal from "../assets/dice/dice_white_portal.png";
+import diceBlackPortal from "../assets/dice/dice_black_portal.png";
+
 type Props = {
   state: GameState;
   onSelectPiece?: (piece: string) => void;
@@ -48,6 +51,7 @@ type Props = {
   moveOptions?: MoveOption[];
   onChooseMove?: (option: MoveOption, allOptions: MoveOption[]) => void;
   onSendEmoji?: (emoji: string) => void;
+  onRoll?: () => void;
   nidanaCoinSrc?: string | null;
   nidanaCoinSide?: "front" | "back";
 };
@@ -62,14 +66,13 @@ const pieceShort = (k: PieceKind) => {
   return "R";
 };
 const REALM_TOKEN_MAP = {
-  origin: { P1: brunoP1, P2: brunoP2 },
+  hungry_ghost: { P1: brunoP1, P2: brunoP2 },
   hell: { P1: margotP1, P2: margotP2 },
-  animal: { P1: oriolP1, P2: oriolP2 },
-  human: { P1: marinoP1, P2: marinoP2 },
-  titan: { P1: rufusP1, P2: rufusP2 },
+  animals: { P1: oriolP1, P2: oriolP2 },
+  humans: { P1: marinoP1, P2: marinoP2 },
+  asura: { P1: rufusP1, P2: rufusP2 },
   deva: { P1: whitmanP1, P2: whitmanP2 },
 } as const;
-
 function pieceSortKey(player: PlayerId, kind: PieceKind) {
   const playerOrder = player === "P1" ? 0 : 10;
   const kindOrder = kind === "pig" ? 0 : kind === "snake" ? 1 : 2;
@@ -108,6 +111,7 @@ export function Board({
   moveOptions,
   onChooseMove,
   onSendEmoji,
+  onRoll,
   nidanaCoinSrc,
   nidanaCoinSide,
 }: Props){
@@ -475,6 +479,20 @@ const activePos = activeBasePiece
           borderRadius: "50%",
         }}
       >
+        {state.phase === "idle" && onRoll && (
+  <button
+    type="button"
+    className="samsaraDicePortalButton"
+    onClick={onRoll}
+    title="Roll dice"
+  >
+    <img
+      src={state.turn === "P1" ? diceWhitePortal : diceBlackPortal}
+      alt="Roll dice"
+      className="samsaraDicePortalImg"
+    />
+  </button>
+)}
      {nidanaCoinSrc && (
   <div
     style={{
@@ -558,7 +576,35 @@ const activePos = activeBasePiece
           />
         )}
 {(["P1", "P2"] as PlayerId[]).flatMap((player) => {
-  const realmList = Object.values(state.realmPieces[player] ?? {});
+ const realmOrder = [
+  "hungry_ghost",
+  "hell",
+  "animals",
+  "humans",
+  "asura",
+  "deva",
+] as const;
+
+const seen = new Set<number>();
+
+const realmList = realmOrder
+  .map((key) => state.realmPieces[player]?.[key])
+  .filter((piece) => {
+    if (!piece || piece.inLimbo || !piece.unlocked) return false;
+
+    if (seen.has(piece.pos)) {
+      console.log(
+        "🚨 DUPLICATE REALM PIECE:",
+        player,
+        piece.kind,
+        piece.pos
+      );
+      return false;
+    }
+
+    seen.add(piece.pos);
+    return true;
+  });
 
   return realmList.map((piece) => {
     if (!piece || piece.inLimbo || !piece.unlocked) {

@@ -337,10 +337,10 @@ const finalToPos = toPos;
         nextCompletedLoops += 1;
         nextLoopProgress = nextLoopProgress % state.trackSize;
       }
-
-      let nextRealmStep = prevRealmProgress.currentRealmStep;
-      let nextRealmTransitions = prevRealmProgress.realmTransitions;
-      let didAscendRealm = false;
+let nextRealmStep = prevRealmProgress.currentRealmStep;
+let nextRealmTransitions = prevRealmProgress.realmTransitions;
+let didAscendRealm = false;
+let unlockedRealmKey: RealmPieceKind | null = null;
 
      const loopsNeeded = 1;
     if (
@@ -359,25 +359,28 @@ const finalToPos = toPos;
   nextLoopProgress = 0;
 
  // ===== DESBLOQUEAR FICHA DE REINO =====
-const nextRealmKey = REALM_PIECE_ORDER[nextRealmStepValue - 2];
+unlockedRealmKey =
+  REALM_PIECE_ORDER[nextRealmStepValue - 2] ?? null;
+
+const nextRealmKey = unlockedRealmKey;
 
 if (nextRealmKey) {
-  nextPiecesRealm[me][nextRealmKey] = {
-    ...(state.realmPieces[me]?.[nextRealmKey] ?? {
+  const existingRealmPiece = state.realmPieces[me]?.[nextRealmKey];
+
+  if (!existingRealmPiece?.unlocked) {
+    nextPiecesRealm[me][nextRealmKey] = {
       id: `${me}-${nextRealmKey}`,
       kind: nextRealmKey,
       pos: finalToPos,
-      inLimbo: true,
+      inLimbo: false,
       maraLevel: null,
-      unlocked: false,
-    }),
-    pos: finalToPos,
-    inLimbo: false,
-    maraLevel: null,
-    unlocked: true,
-  };
+      unlocked: true,
+    };
 }
 }
+}
+
+
 
       // ===== clonar piezas =====
       const nextPieces = {
@@ -440,17 +443,37 @@ if (enemyPiecesAtTarget.length >= 1) {
 }
 
 // ===== movimiento final =====
-// Por ahora este reducer SOLO mueve fichas base.
-// Las fichas de reino ya se crean, pero todavía no se mueven.
-if (!BASE_PIECES.includes(activePiece as BasePieceKind)) {
-  return state;
+// ===== movimiento final =====
+const isBasePiece =
+  BASE_PIECES.includes(activePiece as BasePieceKind);
+
+if (isBasePiece) {
+  const activeBasePiece =
+    activePiece as BasePieceKind;
+
+  nextPieces[me][activeBasePiece].pos = finalToPos;
+  nextPieces[me][activeBasePiece].inLimbo = false;
+  nextPieces[me][activeBasePiece].maraLevel = null;
+
+} else {
+  const activeRealmPiece =
+    activePiece as RealmPieceKind;
+
+  const realmPiece =
+    nextPiecesRealm[me]?.[activeRealmPiece];
+
+  if (!realmPiece) {
+    return state;
+  }
+
+  nextPiecesRealm[me][activeRealmPiece] = {
+    ...realmPiece,
+    pos: finalToPos,
+    inLimbo: false,
+    maraLevel: null,
+    unlocked: true,
+  };
 }
-
-const activeBasePiece = activePiece as BasePieceKind;
-
-nextPieces[me][activeBasePiece].pos = finalToPos;
-nextPieces[me][activeBasePiece].inLimbo = false;
-nextPieces[me][activeBasePiece].maraLevel = null;
 const currentRealm = realmFromPos(finalToPos);
       let nextRealmProgress = {
         ...state.realmProgress,
@@ -585,10 +608,11 @@ if (shouldCollapse) {
         captures: nextCaptures,
         curvature: nextCurvature,
         realmProgress: nextRealmProgress,
-        realmAscension: didAscendRealm
+realmAscension: didAscendRealm && unlockedRealmKey
   ? {
       player: me,
       realmStep: nextRealmStep,
+      realmKey: unlockedRealmKey,
       at: Date.now(),
     }
   : null,
@@ -635,6 +659,7 @@ if (shouldCollapse) {
     }
 
     default:
+
       return state;
   }
 }

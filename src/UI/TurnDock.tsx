@@ -67,7 +67,7 @@ export function TurnDock({
 
   const centerMessage =
     rollA === null || rollB === null
-      ? "🎲 🎲 Roll to generate your moves"
+      ? ""
       : "Pig · Snake · Rooster — choose your path";
 
   return (
@@ -103,14 +103,16 @@ export function TurnDock({
 
       {/* Center */}
       <div className="dockCenter">
-        <button
-          className="dockBtn"
-          type="button"
-          onClick={onRoll}
-          disabled={!canRoll}
-        >
-          Roll the dice
-        </button>
+       {false && (
+  <button
+    className="dockBtn"
+    type="button"
+    onClick={onRoll}
+    disabled={!canRoll}
+  >
+    Roll the dice
+  </button>
+)}
 
         <button className="dockBtn ghost" type="button" onClick={onReset}>
           Reset

@@ -131,8 +131,8 @@ React.useEffect(() => {
   cheeringAudio.current = new Audio(cheeringSound);
   fireworksAudio.current = new Audio(fireworksSound);
 
-  if (cheeringAudio.current) cheeringAudio.current.volume = 0.45;
-  if (fireworksAudio.current) fireworksAudio.current.volume = 0.35;
+  if (cheeringAudio.current) cheeringAudio.current.volume = 0.18;
+  if (fireworksAudio.current) fireworksAudio.current.volume = 0.12;
 }, []);
 
 const prevTransitionsRef = React.useRef({
@@ -163,7 +163,7 @@ React.useEffect(() => {
     triggerCelebrationSound();
 
     setShowRealmMedal(true);
-    window.setTimeout(() => setShowRealmMedal(false), 4800);
+    window.setTimeout(() => setShowRealmMedal(false), 6000);
   }
 
   prevTransitionsRef.current = {
@@ -323,7 +323,45 @@ const nidanaEffectInfo = getNidanaEffectText();
       return [`${opt.pieceKind}-${opt.choice}-${opt.toPos}`, result];
     })
   );
+const realmCoinMap = {
+  hungry_ghost: {
+    front: "/assets/coins/coin_hungry_ghost_front.png",
+    back: "/assets/coins/coin_hungry_ghost_back.png",
+  },
 
+  hell: {
+    front: "/assets/coins/coin_hell_front.png",
+    back: "/assets/coins/coin_hell_back.png",
+  },
+
+  animals: {
+    front: "/assets/coins/coin_animal_front.png",
+    back: "/assets/coins/coin_animal_back.png",
+  },
+
+  humans: {
+    front: "/assets/coins/coin_human_front.png",
+    back: "/assets/coins/coin_human_back.png",
+  },
+
+  asura: {
+  front: "/assets/coins/coin_asura_front.png",
+  back: "/assets/coins/coin_asura_back.png",
+},
+
+  deva: {
+    front: "/assets/coins/coin_deva_front.png",
+    back: "/assets/coins/coin_deva_back.png",
+  },
+} as const;
+
+const currentRealmKey =
+  state.realmAscension?.realmKey as keyof typeof realmCoinMap | undefined;
+
+const currentRealmCoin =
+  currentRealmKey && realmCoinMap[currentRealmKey]
+    ? realmCoinMap[currentRealmKey]
+    : realmCoinMap.hungry_ghost;
   return (
     <>
     <TopBar onLogout={onLogout} />
@@ -347,14 +385,15 @@ const nidanaEffectInfo = getNidanaEffectText();
 {showRealmMedal && (
   <div className="realmMedalFlip">
     <div className="realmMedalInner">
-      <img
-        src="/assets/coins/coin_hungry_ghost_front.png"
-        className="realmMedalFace"
-      />
-      <img
-        src="/assets/coins/coin_hungry_ghost_back.png"
-        className="realmMedalFace realmMedalBack"
-      />
+  <img
+  src={currentRealmCoin.front}
+  className="realmMedalFace"
+/>
+
+<img
+  src={currentRealmCoin.back}
+  className="realmMedalFace realmMedalBack"
+/>
     </div>
   </div>
 )}
@@ -432,6 +471,7 @@ const nidanaEffectInfo = getNidanaEffectText();
           moveOptions={moveOptions}
           onChooseMove={handleMove}
           onSendEmoji={onSendEmoji}
+          onRoll={onRoll}
           nidanaCoinSrc={nidanaCoinSrc}
   nidanaCoinSide={nidanaCoinSide}
         />
