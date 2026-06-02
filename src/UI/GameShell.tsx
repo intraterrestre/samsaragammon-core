@@ -3,7 +3,7 @@ import React from "react";
 import { TopBar } from "./TopBar";
 import { EvolutionStatus } from "./EvolutionStatus";
 import { TurnDock } from "./TurnDock";
-import { MoveOptionsPanel } from "./MoveOptionsPanel";
+
 import { MasterPanel } from "./MasterPanel";
 import { MirrorPanel } from "./MirrorPanel";
 import { VestigiumOverlay } from "./VestigiumOverlay";
@@ -11,20 +11,20 @@ import { LedgerModal } from "./LedgerModal";
 
 import { Board } from "../game/Board";
 import { getMoveOptionsForPlayer } from "../game/rules/getMoveOptionsForPlayer";
-import { resolveNidanaOutcome } from "../game/karma/resolveNidanaOutcome";
-import { RING_SIZE } from "../UI/geometry";
+
+import { FandangoKarma } from "../fandango/FandangoKarma";
 import { MaraPanel } from "./MaraPanel";
+import { SamsaraStage } from "../samsara/SamsaraStage";
+
 import watcherVideo from "../assets/video/jesus_watch.mp4";
 import type { MoveOption, PieceKind } from "../game/types";
-import type { RealmId } from "../game/realms";
-import type { NidanaId } from "../game/nidanas";
+
 import cheeringSound from "../assets/sounds/cheering.mp3";
 import fireworksSound from "../assets/sounds/fireworks.wav";
 
 import claritySound from "../assets/sounds/clarity.mp3";
 import distortionSound from "../assets/sounds/distortion.wav";
 import tensionSound from "../assets/sounds/tension.mp3";
-
 
 type MirrorData = {
   title: string;
@@ -38,14 +38,10 @@ type Props = {
   b: number | null;
   activeRealmData: any;
   activeEra: string;
-  cyclesDone: number;
-  cyclesNeeded: number;
-  transitions: number;
   oracleText: string;
   mirrorData: MirrorData;
   currentNidana: string | null;
-  nidanaCoinSrc: string | null;
-nidanaCoinId: number | null;
+  nidanaCoinId: number | null;
 nidanaCoinSide: "front" | "back";
   showVestigium: boolean;
 
@@ -61,20 +57,18 @@ nidanaCoinSide: "front" | "back";
   onCloseLedger: () => void;
 };
 
+
 export function GameShell({
   state,
   a,
   b,
   activeRealmData,
   activeEra,
-  cyclesDone,
-  cyclesNeeded,
-  transitions,
   oracleText,
   mirrorData,
   currentNidana,
   nidanaCoinSrc,
-  nidanaCoinId,
+
   nidanaCoinSide,
   showVestigium,
   onVestigiumDone,
@@ -91,6 +85,8 @@ const [hoveredOption, setHoveredOption] = React.useState<MoveOption | null>(null
 const [showWatcher, setShowWatcher] = React.useState(false);
 const [watcherLine, setWatcherLine] = React.useState("I see you.");
 const [showRealmMedal, setShowRealmMedal] = React.useState(false);
+const [realmMedalKey, setRealmMedalKey] =
+  React.useState<string | null>(null);
 
 const WATCHER_LINES = [
   "I saw that.",
@@ -159,12 +155,16 @@ React.useEffect(() => {
     p1Now > prevTransitionsRef.current.P1 ||
     p2Now > prevTransitionsRef.current.P2;
 
-  if (ascended) {
-    triggerCelebrationSound();
+ if (ascended) {
+  const key = state.realmAscension?.realmKey ?? null;
 
-    setShowRealmMedal(true);
-    window.setTimeout(() => setShowRealmMedal(false), 6000);
-  }
+  setRealmMedalKey(key);
+
+  triggerCelebrationSound();
+
+  setShowRealmMedal(true);
+  window.setTimeout(() => setShowRealmMedal(false), 6000);
+}
 
   prevTransitionsRef.current = {
     P1: p1Now,
@@ -287,42 +287,6 @@ const getNidanaEffectText = () => {
 
   return null;
 };
-
-const getOptionEffectText = (opt: MoveOption) => {
-  if (!activeEffect) return opt.meaning;
-
-  if (activeEffect === "CLARITY") {
-    return opt.meaning === "PROGRESS" ? "✅ +1 bonus" : "normal";
-  }
-
-  if (activeEffect === "DISTORTION") {
-    return opt.meaning === "RISK" ? "⚠️ -2 penalty" : "normal";
-  }
-
-  if (activeEffect === "TENSION") {
-    return opt.meaning === "IMPACT" ? "✅ +1 reward" : "⚠️ -1 cost";
-  }
-
-  return opt.meaning;
-};
-
-const nidanaEffectInfo = getNidanaEffectText();
-  const nidanaPreviewByOption = Object.fromEntries(
-    moveOptions.map((opt) => {
-      if (!currentNidana || !activeRealmData?.id) {
-        return [`${opt.pieceKind}-${opt.choice}-${opt.toPos}`, null];
-      }
-
-      const result = resolveNidanaOutcome({
-        realm: activeRealmData.id as RealmId,
-        nidana: currentNidana as NidanaId,
-        creature: opt.pieceKind,
-        tacticalMeaning: opt.meaning,
-      });
-
-      return [`${opt.pieceKind}-${opt.choice}-${opt.toPos}`, result];
-    })
-  );
 const realmCoinMap = {
   hungry_ghost: {
     front: "/assets/coins/coin_hungry_ghost_front.png",
@@ -356,20 +320,36 @@ const realmCoinMap = {
 } as const;
 
 const currentRealmKey =
-  state.realmAscension?.realmKey as keyof typeof realmCoinMap | undefined;
+  realmMedalKey as keyof typeof realmCoinMap | null;
+
+console.log("REALM ASCENSION:", currentRealmKey);
+
+const coinRealmKey =
+  currentRealmKey === "asura"
+    ? "deva"
+    : currentRealmKey === "deva"
+    ? "asura"
+    : currentRealmKey;
 
 const currentRealmCoin =
-  currentRealmKey && realmCoinMap[currentRealmKey]
-    ? realmCoinMap[currentRealmKey]
+  coinRealmKey && realmCoinMap[coinRealmKey]
+    ? realmCoinMap[coinRealmKey]
     : realmCoinMap.hungry_ghost;
-  return (
-    <>
-    <TopBar onLogout={onLogout} />
-<VestigiumOverlay show={showVestigium} onDone={onVestigiumDone} />
+
+return (
+<>
+<TopBar onLogout={onLogout} />
+
+<VestigiumOverlay
+  show={showVestigium}
+  onDone={onVestigiumDone}
+/>
 
 {showWatcher && (
   <div className="watcherOverlay">
-    <div className="watcherTextTop">{watcherLine}</div>
+    <div className="watcherTextTop">
+      {watcherLine}
+    </div>
 
     <video
       src={watcherVideo}
@@ -432,56 +412,58 @@ const currentRealmCoin =
   onRoll={onRoll}
   onReset={onReset}
 />
-        {false && (
-          <MoveOptionsPanel
-            options={moveOptions}
-            player={state.turn}
-            onChoose={handleMove}
-            onHoverOption={setHoveredOption}
-            nidanaPreviewByOption={nidanaPreviewByOption}
-          />
-        )}
+     
+<MasterPanel text={oracleText} />
 
-        <MasterPanel text={oracleText} />
+<MirrorPanel
+  title={
+    state.globalRollCount > 0 && state.globalRollCount % 5 === 0
+      ? "GOAL"
+      : mirrorData.title
+  }
+  body={
+    state.globalRollCount > 0 && state.globalRollCount % 5 === 0
+      ? "Collect 6 Realm Tokens → Unite them in the Human Realm → Achieve Nirvana"
+      : mirrorData.body
+  }
+  tags={
+    state.globalRollCount > 0 && state.globalRollCount % 5 === 0
+      ? ["realm tokens", "human realm", "nirvana"]
+      : mirrorData.tags
+  }
+/>
+<div className="samsaraScene">
+  <SamsaraStage />
 
-        <MirrorPanel
-          title={
-            state.globalRollCount > 0 && state.globalRollCount % 5 === 0
-              ? "GOAL"
-              : mirrorData.title
-          }
-          body={
-            state.globalRollCount > 0 && state.globalRollCount % 5 === 0
-              ? "Collect 6 Realm Tokens → Unite them in the Human Realm → Achieve Nirvana"
-              : mirrorData.body
-          }
-          tags={
-            state.globalRollCount > 0 && state.globalRollCount % 5 === 0
-              ? ["realm tokens", "human realm", "nirvana"]
-              : mirrorData.tags
-          }
-        />
+  <MaraPanel state={state} />
 
-        <MaraPanel state={state} />
+  <div className="fandangoLayer">
+    <FandangoKarma />
+  </div>
 
-        <Board
-          state={state}
-          onSelectPiece={onSelectPiece}
-          hoveredOption={hoveredOption}
-          moveOptions={moveOptions}
-          onChooseMove={handleMove}
-          onSendEmoji={onSendEmoji}
-          onRoll={onRoll}
-          nidanaCoinSrc={nidanaCoinSrc}
-  nidanaCoinSide={nidanaCoinSide}
-        />
-      </div>
+  <div className="boardLayer">
+    <Board
+      state={state}
+      onSelectPiece={onSelectPiece}
+      hoveredOption={hoveredOption}
+      moveOptions={moveOptions}
+      onChooseMove={handleMove}
+      onSendEmoji={onSendEmoji}
+      onRoll={onRoll}
+      nidanaCoinSrc={nidanaCoinSrc}
+      nidanaCoinSide={nidanaCoinSide}
+    />
+  </div>
+</div>
 
-      <LedgerModal
-        open={state.ledgerOpen}
-        entryId={state.ledgerEntry}
-        onClose={onCloseLedger}
-      />
-    </>
-  );
+</div>
+
+<LedgerModal
+  open={state.ledgerOpen}
+  entryId={state.ledgerEntry}
+  onClose={onCloseLedger}
+/>
+
+</>
+);
 }

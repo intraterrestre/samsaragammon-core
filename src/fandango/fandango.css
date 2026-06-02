@@ -1,0 +1,130 @@
+.fandangoLayer{
+  position:absolute;
+  left:250px;
+  top:430px;
+  z-index:20;
+}
+
+.fandangoRoot{
+  position:relative;
+  width:150px;
+  cursor:pointer;
+  text-align:center;
+  transition:transform .22s ease, filter .22s ease;
+}
+
+.fandangoRoot:hover{
+  transform:scale(1.08);
+  filter:drop-shadow(0 0 18px rgba(255,255,255,.55));
+}
+
+.fandangoImage{
+  width:150px;
+  height:auto;
+  display:block;
+  pointer-events:none;
+}
+
+.fandangoTooltip{
+  position:absolute;
+  left:120px;
+  top:72px;
+
+  min-width:210px;
+  padding:10px 12px;
+
+  border-radius:16px;
+  background:rgba(0,0,0,.42);
+  border:1px solid rgba(255,255,255,.22);
+  backdrop-filter:blur(6px);
+
+  color:white;
+  font-size:12px;
+  line-height:1.35;
+
+  opacity:0;
+  transform:translateY(8px) scale(.96);
+  pointer-events:none;
+
+  transition:opacity .2s ease, transform .2s ease;
+}
+
+.fandangoRoot:hover .fandangoTooltip{
+  opacity:1;
+  transform:translateY(0) scale(1);
+}
+.fandangoRoot{
+  position:relative;
+  z-index:20;
+  cursor:pointer;
+}
+
+.fandangoImage{
+  width:150px;
+  display:block;
+  transition:
+    transform .25s ease,
+    filter .25s ease;
+}
+.fandangoRoot:hover .fandangoImage{
+  transform:scale(1.08);
+
+  filter:
+    drop-shadow(0 0 12px rgba(255,255,255,.35))
+    drop-shadow(0 8px 18px rgba(0,0,0,.45));
+}
+
+.fandangoTooltip{
+
+  position:absolute;
+
+  left:110px;
+  top:-10px;
+
+  width:260px;
+
+  padding:12px 14px;
+
+  border-radius:14px;
+
+  background:rgba(0,0,0,.68);
+
+  border:1px solid rgba(255,255,255,.12);
+
+  backdrop-filter:blur(8px);
+
+  color:white;
+
+  opacity:0;
+
+  transform:translateY(8px);
+
+  pointer-events:none;
+
+  transition:
+    opacity .25s ease,
+    transform .25s ease;
+}
+
+.fandangoRoot:hover .fandangoTooltip{
+  opacity:1;
+  transform:translateY(0);
+}
+
+.fandangoTooltip strong{
+  display:block;
+
+  font-size:14px;
+
+  letter-spacing:.08em;
+
+  margin-bottom:6px;
+}
+
+.fandangoText{
+  font-size:13px;
+
+  line-height:1.35;
+
+  opacity:.82;
+}

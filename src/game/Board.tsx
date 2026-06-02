@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { GameState, MoveOption, PieceKind, PlayerId } from "./types";
 
+import { FandangoKarma } from "../fandango/FandangoKarma";
 import {
   cellStyle as ringCellStyle,
   RING_SIZE,
@@ -9,6 +10,8 @@ import {
 import { realmFromPos, REALM_LABEL, pickLine } from "../UI/realm";
 import { ExplainModal } from "../UI/ExplainModal";
 import { MoveEmanations } from "../UI/MoveEmanations";
+import budaKarmaER from "../assets/tokens/buda-karma-er.png";
+import BigHeadSchoolOverlay from "../UI/BigHeadSchoolOverlay";
 
 // 🔥 FICHAS
 import pigWhite from "../assets/pieces/pig_white.png";
@@ -115,6 +118,7 @@ export function Board({
   nidanaCoinSrc,
   nidanaCoinSide,
 }: Props){
+  const [showEmergencies, setShowEmergencies] = React.useState(false);
   const captureAudioWhite = useRef<HTMLAudioElement | null>(null);
   const captureAudioBlack = useRef<HTMLAudioElement | null>(null);
   const moveAudio = useRef<HTMLAudioElement | null>(null);
@@ -160,9 +164,13 @@ const activeRealmPiece =
     activePiece as keyof typeof state.realmPieces.P1
   ];
 
-const activePos = activeBasePiece
-  ? state.pieces[me][activeBasePiece].pos
-  : activeRealmPiece?.pos ?? null;
+const activePos =
+  activeBasePiece
+    ? state.pieces?.[me]?.[activeBasePiece]?.pos
+    : activeRealmPiece?.pos ?? null;
+
+  const [bigHeadSchoolBy, setBigHeadSchoolBy] =
+  useState<"white" | "black" | null>(null);
 
   // 🔊 DISPARAR SONIDO / FX POR LAST MOVE
   useEffect(() => {
@@ -354,102 +362,6 @@ const activePos = activeBasePiece
   </div>
 ) : null}
 
-      {/* ===== Emoji bar ===== */}
-      <div
-        style={{
-          width: "min(560px, 92vw)",
-          margin: "8px auto 10px",
-          display: "flex",
-          justifyContent: "center",
-          gap: 6,
-          flexWrap: "wrap",
-        }}
-      >
-        {EMOJIS.map((emoji) => (
-          <button
-            key={emoji}
-            type="button"
-            onClick={() => {
-              const now = Date.now();
-              if (now - lastEmojiAt < 1800) return;
-              setLastEmojiAt(now);
-              onSendEmoji?.(emoji);
-            }}
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: 10,
-              border: "1px solid rgba(255,255,255,0.16)",
-              background: "rgba(0,0,0,0.16)",
-              color: "white",
-              fontSize: 18,
-              cursor: "pointer",
-            }}
-          >
-            {emoji}
-          </button>
-        ))}
-      </div>
-
-      {/* ===== Behavior / Patterns HUD ===== */}
-      <div
-        style={{
-          width: "min(560px, 92vw)",
-          margin: "10px auto 8px",
-          padding: "10px 12px",
-          borderRadius: 12,
-          background: "rgba(0,0,0,0.12)",
-          border: "1px solid rgba(255,255,255,0.12)",
-          fontSize: 13,
-          display: "grid",
-          gap: 8,
-        }}
-      >
-        {(["P1", "P2"] as PlayerId[]).map((p) => {
-          const pat = state.behavior?.stablePattern?.[p] ?? "—";
-          const streak = state.behavior?.stableStreak?.[p] ?? 0;
-          const life = state.behavior?.lifeStabilized?.[p]
-            ? "stabilized"
-            : "forming";
-
-          return (
-            <div
-              key={p}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: 10,
-              }}
-            >
-              <div>
-                <b>{playerLabel(p)}</b> Pattern: {pat} | Streak: {streak} | Life:{" "}
-                {life}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setExplainPlayer(p);
-                  setExplainOpen(true);
-                }}
-                style={{
-                  height: 32,
-                  padding: "0 12px",
-                  borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.14)",
-                  background: "rgba(0,0,0,0.22)",
-                  color: "rgba(255,255,255,0.92)",
-                  cursor: "pointer",
-                  fontWeight: 800,
-                }}
-              >
-                Explain
-              </button>
-            </div>
-          );
-        })}
-      </div>
 
       {/* ===== Ring ===== */}
 {state.activeNidanaEffect && (
@@ -469,16 +381,60 @@ const activePos = activeBasePiece
   </div>
 )}
 
-      <div
-        className="ringWrap"
-        style={{
-          position: "relative",
-          width: RING_SIZE,
-          height: RING_SIZE,
-          margin: "20px auto",
-          borderRadius: "50%",
-        }}
-      >
+<div
+  className="ringWrap"
+  style={{
+    position: "absolute",
+    left: 555,
+    top: 70,
+
+    width: RING_SIZE,
+    height: RING_SIZE,
+    margin: 0,
+    borderRadius: "50%",
+
+    transform: "scale(1.12)",
+    transformOrigin: "center center",
+  }}
+>
+        <img
+src={budaKarmaER}
+onClick={() => {
+  setShowEmergencies(true);
+  setBigHeadSchoolBy(state.turn === "P1" ? "white" : "black");
+
+  setTimeout(() => {
+    setBigHeadSchoolBy(null);
+  }, 5000);
+}}
+
+onMouseEnter={(e)=>{
+e.currentTarget.style.transform="scale(1.12)"
+}}
+
+onMouseLeave={(e)=>{
+e.currentTarget.style.transform="scale(1)"
+}}
+
+style={{
+position:"absolute",
+
+left:"-10%",
+top:"70%",
+
+width:130,
+
+zIndex:90,
+
+cursor:"pointer",
+transition:"0.3s",
+
+filter:"drop-shadow(0 0 18px rgba(255,255,255,.95))"
+}}
+/>
+{bigHeadSchoolBy && (
+  <BigHeadSchoolOverlay openedBy={bigHeadSchoolBy} />
+)}
         {state.phase === "idle" && onRoll && (
   <button
     type="button"

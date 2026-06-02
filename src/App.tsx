@@ -30,6 +30,7 @@ import oriolIntro from "./assets/cinematics/realms/oriol_animal_intro.mp4";
 import marinoIntro from "./assets/cinematics/realms/marino_human_intro.mov";
 import rufusIntro from "./assets/cinematics/realms/rufus_titan_intro.mp4";
 import whitmanIntro from "./assets/cinematics/realms/whitman_deva_intro.mp4";
+import { SamsaraStage } from "./samsara/SamsaraStage";
 
 const nidanaImages = import.meta.glob("./assets/nidanas/*.jpg", {
   eager: true,
@@ -720,6 +721,7 @@ const triggerNidanaCoin = () => {
   
     <LoginScreen onLogin={handleLogin} />
   ) : (
+    <>
     <GameShell
       state={state}
       a={a}
@@ -736,7 +738,7 @@ const triggerNidanaCoin = () => {
       oracleText={oracleText}
       mirrorData={mirrorData}
       showVestigium={showVestigium}
-      currentNidana={state.currentNidana}   // 👈 ESTA ES LA CLAVE
+     currentNidana={showNidana ? state.currentNidana : null}
       nidanaCoinSrc={
   showNidana && activeNidanaId
     ? getNidanaImage(activeNidanaId, nidanaSide)
@@ -753,22 +755,33 @@ nidanaCoinSide={nidanaSide}
         setProfile(null);
       }}
   onExportRun={debugPrintRunExport}
-
 onRoll={() => {
   playDiceSound();
-  triggerNidanaCoin();
 
-  const r = Math.random();
-  const effect =
-    r < 0.33 ? "CLARITY" :
-    r < 0.66 ? "DISTORTION" :
-    "TENSION";
+  const shouldTriggerNidana = Math.random() < 0.18;
 
-  dispatch({ type: "SET_NIDANA_EFFECT", effect });
+  if (shouldTriggerNidana) {
+    triggerNidanaCoin();
 
-  dispatch({ type: "ROLL" });
+    const r = Math.random();
+
+    const effect =
+      r < 0.33 ? "CLARITY" :
+      r < 0.66 ? "DISTORTION" :
+      "TENSION";
+
+    dispatch({
+      type: "SET_NIDANA_EFFECT",
+      effect
+    });
+  }
+
+  dispatch({
+    type: "ROLL"
+  });
 }}
-  onReset={() => dispatch({ type: "RESET" })}
+onReset={() => dispatch({ type: "RESET" })}
+
 onConsciousMove={(option, allOptions) =>
   dispatch({
     type: "CONSCIOUS_MOVE",
@@ -776,16 +789,22 @@ onConsciousMove={(option, allOptions) =>
     allOptions,
   })
 }
+
 onSelectPiece={(piece: PieceKind) =>
   dispatch({ type: "SELECT_PIECE", player: state.turn, piece })
 }
+
 onSendEmoji={(emoji: string) =>
   dispatch({ type: "EMOJI", emoji, player: state.turn })
 }
+
 realmDataP1={realmDataP1}
 realmDataP2={realmDataP2}
 />
-      )}
-    </ErrorBoundary>
-  );
+
+
+</>
+  )}
+</ErrorBoundary>
+);
 }
