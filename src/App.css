@@ -765,57 +765,6 @@ button:disabled{
 
 }
 
-@keyframes coinFrontFace {
-
-  0%,49% { opacity:1; }
-
-  50%,100% { opacity:0; }
-
-}
-
-@keyframes coinBackFace {
-
-  0%,49% { opacity:0; }
-
-  50%,100% { opacity:1; }
-
-}
-
-@keyframes realmMedalFloat {
-
-  0%{
-
-    opacity:0;
-
-    transform:translate(-50%,-40%) scale(.65);
-
-  }
-
-  12%{
-
-    opacity:1;
-
-    transform:translate(-50%,-50%) scale(1);
-
-  }
-
-  75%{
-
-    opacity:1;
-
-    transform:translate(-50%,-55%) scale(1.08);
-
-  }
-
-  100%{
-
-    opacity:0;
-
-    transform:translate(-50%,-70%) scale(.9);
-
-  }
-
-}
 /* ===== NIDANA CENTER TITLE ===== */
 
 
@@ -1029,13 +978,41 @@ background: rgba(0,0,0,0.88);
     transform:translate(-50%,-50%) scale(1);
   }
 }
-.board{
-  position: relative;
-  z-index: 2;
+.samsaraScene{
+  position:relative;
+  width:1100px;
+  height:620px;
+  margin:20px auto 30px;
+  overflow:visible;
 }
+
+.samsaraAltar,
+.maraLayer{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  overflow:visible;
+}
+
+.boardLayer{
+  position:absolute;
+  inset:0;
+  z-index:5;
+}
+
+.fandangoLayer{
+  position:absolute;
+  left:90px;
+  top:420px;
+  z-index:20;
+}
+
 .board{
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  min-height: 760px;
+  position:absolute;
+  inset:0;
+  z-index:2;
+  width:100%;
+  height:100%;
+  min-height:0;
 }
