@@ -1,0 +1,21 @@
+.maraLayer{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  overflow:visible;
+}
+
+.maraPainting{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  opacity:.25;
+
+  filter:
+    blur(.4px)
+    saturate(1.1)
+    drop-shadow(0 0 30px rgba(255,255,255,.08));
+}
