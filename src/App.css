@@ -241,15 +241,6 @@ button:disabled{
 /* DEVA (White) */
 .cellBtn.realmCell-DEVA { background: rgba(255,255,255,0.10); }
 .cellBtn.realmCell-DEVA::before { background: rgba(255,255,255,0.60); }
-.moveConsequences{
-  width: min(560px, 92vw);
-  margin: 14px auto 10px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(0,0,0,0.18);
-  border: 1px solid rgba(255,255,255,0.12);
-  backdrop-filter: blur(4px);
-}
 
 .mcTitle{
   font-size: 12px;
@@ -304,13 +295,6 @@ button:disabled{
 .mcVal{ flex: 1; opacity: 0.92; }
 
 /* Make sure ring stays centered on small screens */
-.ringWrap{
-  width: min(560px, 92vw);
-  aspect-ratio: 1 / 1;
-  margin: 70px auto 0;
-  position: relative;
-  border-radius: 50%;
-}
 
 .ringCenter{
   position: absolute;
@@ -750,13 +734,6 @@ button:disabled{
 .realmMedalBack{
    animation:coinBackFace 1.65s steps(1,end) infinite;
 }
-@keyframes coinFakeSpin {
-  0% { transform: scaleX(1) rotateZ(-3deg); }
-  25% { transform: scaleX(0.06) rotateZ(0deg); }
-  50% { transform: scaleX(1) rotateZ(3deg); }
-  75% { transform: scaleX(0.06) rotateZ(0deg); }
-  100% { transform: scaleX(1) rotateZ(-3deg); }
-}
 
 @keyframes coinFrontFace {
   0%, 49% { opacity: 1; }
@@ -948,24 +925,16 @@ background: rgba(0,0,0,0.88);
   position:absolute;
   left:50%;
   top:50%;
-
   width:250px;
   height:250px;
-
   transform:translate(-50%,-50%);
-
-  background:none !important;
-  border:none !important;
+  background:transparent !important;
+  border:0 !important;
   padding:0 !important;
-
-  z-index:1200;
+  z-index:999999 !important;
   cursor:pointer;
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  overflow:visible;
+  display:block !important;
+  overflow:visible !important;
 }
 
 .samsaraDicePortalButton:hover{
@@ -976,22 +945,14 @@ background: rgba(0,0,0,0.88);
 .samsaraDicePortalImg{
   width:250px;
   height:250px;
-
   object-fit:contain;
-
   pointer-events:none;
-
   animation:
     portalSpin 22s linear infinite,
     portalBreath 3s ease-in-out infinite;
-
   transform-origin:center center;
-
-  filter:
-    drop-shadow(0 0 24px rgba(255,255,255,.25))
-    drop-shadow(0 10px 24px rgba(0,0,0,.5));
+  filter:drop-shadow(0 0 24px rgba(255,255,255,.25));
 }
-
 @keyframes portalSpin{
   from{
     transform:rotate(0deg);
@@ -1068,58 +1029,13 @@ background: rgba(0,0,0,0.88);
     transform:translate(-50%,-50%) scale(1);
   }
 }
-/* =========================
-   SAMSARA SCENE / ALTAR
-   ========================= */
-
-.samsaraScene{
+.board{
   position: relative;
-  width: min(1100px, 96vw);
-  height: 620px;
-  margin: 20px auto 30px;
-  overflow: visible;
-}
-
-.samsaraAltar{
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.samsaraPainting{
-  position: absolute;
-  left: 53%;
-  top: 52%;
-  transform: translate(-50%, -50%);
-  width: 1100px;
-  max-width: 92vw;
-  height: auto;
-  opacity: 0.25;
-  filter:
-    blur(0.4px)
-    saturate(1.1)
-    drop-shadow(0 0 30px rgba(255,255,255,.08));
-}
-
-.boardLayer{
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-}
-.fandangoLayer{
-
-  position: absolute;
-
-  left: 250px;
-
-  top: 190px;
-
-  z-index: 20;
-
+  z-index: 2;
 }
 .board{
   position: relative;
   z-index: 2;
+  width: 100%;
+  min-height: 760px;
 }

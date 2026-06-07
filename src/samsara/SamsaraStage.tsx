@@ -1,13 +1,5 @@
-import samsaraPaintingPanel from "../assets/samsara/samsara-painting-panel.png";
+import { MaraLayer } from "../game/mara/MaraLayer";
 
 export function SamsaraStage() {
-  return (
-    <div className="samsaraAltar">
-      <img
-        src={samsaraPaintingPanel}
-        alt="Samsara Stage"
-        className="samsaraPainting"
-      />
-    </div>
-  );
+  return <MaraLayer />;
 }

@@ -1,12 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { GameState, MoveOption, PieceKind, PlayerId } from "./types";
-
-import { FandangoKarma } from "../fandango/FandangoKarma";
-import {
-  cellStyle as ringCellStyle,
-  RING_SIZE,
-  piecePosition,
-} from "../UI/geometry";
+import {  cellStyle as ringCellStyle, RING_SIZE,  piecePosition,} from "../UI/geometry";
 import { realmFromPos, REALM_LABEL, pickLine } from "../UI/realm";
 import { ExplainModal } from "../UI/ExplainModal";
 import { MoveEmanations } from "../UI/MoveEmanations";
@@ -118,7 +112,7 @@ export function Board({
   nidanaCoinSrc,
   nidanaCoinSide,
 }: Props){
-  const [showEmergencies, setShowEmergencies] = React.useState(false);
+
   const captureAudioWhite = useRef<HTMLAudioElement | null>(null);
   const captureAudioBlack = useRef<HTMLAudioElement | null>(null);
   const moveAudio = useRef<HTMLAudioElement | null>(null);
@@ -390,8 +384,12 @@ const activePos =
 
     width: RING_SIZE,
     height: RING_SIZE,
+
     margin: 0,
     borderRadius: "50%",
+
+    overflow: "visible",
+    zIndex: 5000,
 
     transform: "scale(1.12)",
     transformOrigin: "center center",
@@ -400,7 +398,7 @@ const activePos =
         <img
 src={budaKarmaER}
 onClick={() => {
-  setShowEmergencies(true);
+
   setBigHeadSchoolBy(state.turn === "P1" ? "white" : "black");
 
   setTimeout(() => {
@@ -435,7 +433,7 @@ filter:"drop-shadow(0 0 18px rgba(255,255,255,.95))"
 {bigHeadSchoolBy && (
   <BigHeadSchoolOverlay openedBy={bigHeadSchoolBy} />
 )}
-        {state.phase === "idle" && onRoll && (
+{onRoll && (
   <button
     type="button"
     className="samsaraDicePortalButton"
