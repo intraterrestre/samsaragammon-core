@@ -982,17 +982,16 @@ background: rgba(0,0,0,0.88);
   position:relative;
   width:1100px;
   height:620px;
-  margin:20px auto 30px;
+  margin:120px auto 30px;
   overflow:visible;
 }
 
-.samsaraAltar,
-.maraLayer{
-  position:absolute;
-  inset:0;
-  z-index:0;
-  pointer-events:none;
-  overflow:visible;
+.samsaraAltar{
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: visible;
 }
 
 .boardLayer{
@@ -1003,8 +1002,8 @@ background: rgba(0,0,0,0.88);
 
 .fandangoLayer{
   position:absolute;
-  left:90px;
-  top:420px;
+left:210px;
+top:430px;
   z-index:20;
 }
 

@@ -443,7 +443,7 @@ if (enemyPiecesAtTarget.length >= 1) {
 }
 
 // ===== movimiento final =====
-// ===== movimiento final =====
+
 const isBasePiece =
   BASE_PIECES.includes(activePiece as BasePieceKind);
 

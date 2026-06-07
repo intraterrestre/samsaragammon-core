@@ -379,8 +379,8 @@ const activePos =
   className="ringWrap"
   style={{
     position: "absolute",
-    left: 555,
-    top: 70,
+    left: 520,
+    top: 55,
 
     width: RING_SIZE,
     height: RING_SIZE,
@@ -451,8 +451,8 @@ filter:"drop-shadow(0 0 18px rgba(255,255,255,.95))"
   <div
     style={{
       position: "absolute",
-      left: "50%",
-      top: "50%",
+      left: "190%",
+      top: "245%",
       transform: "translate(-50%, -50%)",
       zIndex: 9999,
       pointerEvents: "none",
@@ -464,7 +464,7 @@ filter:"drop-shadow(0 0 18px rgba(255,255,255,.95))"
         nidanaCoinSide === "back" ? "isBack" : ""
       }`}
       style={{
-        width: Math.min(RING_SIZE * 0.55, 320),
+        width: 120,
         height: "auto",
         borderRadius: "50%",
         boxShadow:
