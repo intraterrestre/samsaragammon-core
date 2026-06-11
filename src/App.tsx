@@ -509,12 +509,25 @@ const triggerNidanaCoin = () => {
   const id = 1 + Math.floor(Math.random() * 12);
 
   setActiveNidanaId(id);
+
+  // FASE 1: cara frontal
   setNidanaSide("front");
   setShowNidana(true);
 
   nidanaTimersRef.current.push(
-    window.setTimeout(() => setNidanaSide("back"), 1000),
-    window.setTimeout(() => setShowNidana(false), 4200)
+    // se borra la cara
+   window.setTimeout(() => {
+  setShowNidana(false);
+}, 2600),
+
+window.setTimeout(() => {
+  setNidanaSide("back");
+  setShowNidana(true);
+}, 3000),
+
+window.setTimeout(() => {
+  setShowNidana(false);
+}, 5600)
   );
 };
   useEffect(() => {
@@ -758,23 +771,28 @@ nidanaCoinSide={nidanaSide}
 onRoll={() => {
   playDiceSound();
 
-  const shouldTriggerNidana = Math.random() < 0.18;
+const shouldTriggerNidana = true;
 
-  if (shouldTriggerNidana) {
-    triggerNidanaCoin();
+if (shouldTriggerNidana) {
+  triggerNidanaCoin();
+  console.log("NIDANA LANZADA:", id);
 
-    const r = Math.random();
+  const r = Math.random();
 
-    const effect =
-      r < 0.33 ? "CLARITY" :
-      r < 0.66 ? "DISTORTION" :
-      "TENSION";
+  const effect =
+    r < 0.33 ? "CLARITY" :
+    r < 0.66 ? "DISTORTION" :
+    "TENSION";
+
+  window.setTimeout(() => {
 
     dispatch({
       type: "SET_NIDANA_EFFECT",
       effect
     });
-  }
+
+  }, 5800);
+}
 
   dispatch({
     type: "ROLL"

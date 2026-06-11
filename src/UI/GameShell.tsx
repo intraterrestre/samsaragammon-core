@@ -57,7 +57,6 @@ nidanaCoinSide: "front" | "back";
   onCloseLedger: () => void;
 };
 
-
 export function GameShell({
   state,
   a,
@@ -68,7 +67,7 @@ export function GameShell({
   mirrorData,
   currentNidana,
   nidanaCoinSrc,
-
+  nidanaCoinId,
   nidanaCoinSide,
   showVestigium,
   onVestigiumDone,
@@ -452,6 +451,7 @@ return (
       onRoll={onRoll}
       nidanaCoinSrc={nidanaCoinSrc}
       nidanaCoinSide={nidanaCoinSide}
+      
     />
   </div>
 </div>

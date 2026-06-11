@@ -51,11 +51,65 @@ type Props = {
   onRoll?: () => void;
   nidanaCoinSrc?: string | null;
   nidanaCoinSide?: "front" | "back";
+  nidanaCoinId?: number | null;
 };
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 
 const playerLabel = (p: PlayerId) => (p === "P1" ? "⚪ White" : "⚫ Black");
 const PIECE_KINDS: PieceKind[] = ["pig", "snake", "rooster"];
+const NIDANA_EFFECT_LINES: Record<number, {
+  title: string;
+  body: string;
+}> = {
+  1: {
+    title: "🌑 IGNORANCE ACTIVE",
+    body: "You mistake the shadow for the thing itself.",
+  },
+  2: {
+    title: "🔄 FORMATIONS ACTIVE",
+    body: "Old patterns begin moving before you choose.",
+  },
+  3: {
+    title: "👁️ CONSCIOUSNESS ACTIVE",
+    body: "A witness appears, but still believes the dream.",
+  },
+  4: {
+    title: "🧍 NAME & FORM ACTIVE",
+    body: "Identity hardens around what should keep flowing.",
+  },
+  5: {
+    title: "🪟 SIX SENSES ACTIVE",
+    body: "The gates open. The world rushes in.",
+  },
+  6: {
+    title: "🤝 CONTACT ACTIVE",
+    body: "Touch becomes trigger. The chain tightens.",
+  },
+  7: {
+    title: "💢 FEELING ACTIVE",
+    body: "Pleasure and pain begin choosing for you.",
+  },
+  8: {
+    title: "🔥 CRAVING ACTIVE",
+    body: "The hand reaches before wisdom arrives.",
+  },
+  9: {
+    title: "🪢 CLINGING ACTIVE",
+    body: "What you hold begins holding you.",
+  },
+  10: {
+    title: "♻️ BECOMING ACTIVE",
+    body: "A new self is being assembled.",
+  },
+  11: {
+    title: "🌱 BIRTH ACTIVE",
+    body: "A fresh form enters the wheel.",
+  },
+  12: {
+    title: "💀 DEATH ACTIVE",
+    body: "The ending prepares the next beginning.",
+  },
+};
 const EMOJIS = ["😴", "🔥", "🐷", "🐍", "⚔️", "🧘", "😂", "😡"];
 const pieceShort = (k: PieceKind) => {
   if (k === "pig") return "P";
@@ -111,6 +165,7 @@ export function Board({
   onRoll,
   nidanaCoinSrc,
   nidanaCoinSide,
+  nidanaCoinId,
 }: Props){
 
   const captureAudioWhite = useRef<HTMLAudioElement | null>(null);
@@ -223,6 +278,13 @@ const activePos =
 
   const turnClass = state.turn === "P1" ? "turnP1" : "turnP2";
   const beatClass = beat ? "beat" : "";
+  const cajaMagica = useRef<number>(1);
+
+useEffect(() => {
+  if (nidanaCoinId) {
+    cajaMagica.current = nidanaCoinId;
+  }
+}, [nidanaCoinId]);
 
   const piecesByPos: Record<number, { player: PlayerId; kind: PieceKind }[]> =
     {};
@@ -268,7 +330,8 @@ const activePos =
       } else if (kind === "snake") {
         src = player === "P1" ? cobraWhite : cobraBlack;
       }
-
+console.log("BOARD nidanaCoinId:", nidanaCoinId);
+console.log("BOARD cajaMagica:", cajaMagica.current);
       return (
         <div
           key={`${player}-${kind}`}
@@ -356,24 +419,18 @@ const activePos =
   </div>
 ) : null}
 
-
-      {/* ===== Ring ===== */}
-{state.activeNidanaEffect && (
+{cajaMagica.current && (
   <div className="nidanaLivingBanner">
     <div className="nidanaLivingTitle">
-      {state.activeNidanaEffect === "CLARITY" && "🔔 CLARITY ACTIVE"}
-      {state.activeNidanaEffect === "DISTORTION" && "🫠 DISTORTION ACTIVE"}
-      {state.activeNidanaEffect === "TENSION" && "⚔️ TENSION ACTIVE"}
+      {NIDANA_EFFECT_LINES[cajaMagica.current]?.title}
     </div>
 
     <div className="nidanaLivingBody">
-      {state.activeNidanaEffect === "CLARITY" && "PROGRESS gets a bonus."}
-      {state.activeNidanaEffect === "DISTORTION" && "RISK may punish you."}
-      {state.activeNidanaEffect === "TENSION" &&
-        "IMPACT is rewarded. Everything else costs."}
+      {NIDANA_EFFECT_LINES[cajaMagica.current]?.body}
     </div>
   </div>
 )}
+      {/* ===== Ring ===== */}
 
 <div
   className="ringWrap"
@@ -451,24 +508,24 @@ filter:"drop-shadow(0 0 18px rgba(255,255,255,.95))"
   <div
     style={{
       position: "absolute",
-      left: "190%",
-      top: "245%",
+      left: "-290px",
+      top: "160px",
       transform: "translate(-50%, -50%)",
       zIndex: 9999,
       pointerEvents: "none",
     }}
   >
     <img
+    key={`${nidanaCoinSrc}-${nidanaCoinSide}`}
       src={nidanaCoinSrc}
       className={`nidanaCoinImage ${
         nidanaCoinSide === "back" ? "isBack" : ""
       }`}
       style={{
-        width: 120,
+        width: 220,
         height: "auto",
         borderRadius: "50%",
-        boxShadow:
-          "0 0 50px rgba(0,0,0,0.5), 0 0 30px rgba(255,220,120,0.25)",
+animation: "nidanaReveal 2.6s cubic-bezier(.16,1.25,.32,1) both",
       }}
     />
   </div>
