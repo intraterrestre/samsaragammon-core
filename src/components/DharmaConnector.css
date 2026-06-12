@@ -1,0 +1,36 @@
+/* DharmaConnector.css */
+.dharma-connector {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5; /* encima de la pintura, debajo de la burbuja */
+}
+.dharma-connector-path {
+  stroke-dasharray: 6 10;
+  animation:
+    dharmaSnake 1.4s ease-in-out infinite,
+    dharmaPulse 0.9s ease-out;
+}
+
+@keyframes dharmaSnake {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -32;
+  }
+}
+
+@keyframes dharmaPulse {
+  0% {
+    stroke: rgba(120, 255, 210, 0.95);
+    stroke-width: 3;
+  }
+  100% {
+    stroke: rgba(255, 255, 255, 0.65);
+    stroke-width: 1.5;
+  }
+}

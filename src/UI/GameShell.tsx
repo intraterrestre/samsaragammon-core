@@ -335,7 +335,17 @@ const currentRealmCoin =
     ? realmCoinMap[coinRealmKey]
     : realmCoinMap.hungry_ghost;
 
+console.log("ORACLE TEXT:", oracleText);
+
+console.log("MIRROR DATA:", mirrorData);
+
+console.log(
+  "BUDDHA MESSAGE:",
+  `${oracleText}\n\n${mirrorData.title}\n${mirrorData.body}`
+);
+
 return (
+
 <>
 <TopBar onLogout={onLogout} />
 
@@ -412,7 +422,7 @@ return (
   onReset={onReset}
 />
      
-<MasterPanel text={oracleText} />
+{/* <MasterPanel text={oracleText} /> */}
 
 <MirrorPanel
   title={
@@ -432,7 +442,9 @@ return (
   }
 />
 <div className="samsaraScene">
-  <SamsaraStage />
+<SamsaraStage
+  dharmaMessage={`${oracleText}\n\n${mirrorData.title}\n${mirrorData.body}`}
+/>
 
   <MaraPanel state={state} />
 
@@ -451,7 +463,7 @@ return (
       onRoll={onRoll}
       nidanaCoinSrc={nidanaCoinSrc}
       nidanaCoinSide={nidanaCoinSide}
-      
+      nidanaCoinId={nidanaCoinId}
     />
   </div>
 </div>

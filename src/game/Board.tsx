@@ -278,13 +278,21 @@ const activePos =
 
   const turnClass = state.turn === "P1" ? "turnP1" : "turnP2";
   const beatClass = beat ? "beat" : "";
-  const cajaMagica = useRef<number>(1);
+ const cajaMagica = useRef<number | null>(null);
+const [showNidanaBanner, setShowNidanaBanner] = useState(false);
 
 useEffect(() => {
-  if (nidanaCoinId) {
+  if (nidanaCoinId && nidanaCoinSide === "front") {
     cajaMagica.current = nidanaCoinId;
+    setShowNidanaBanner(false);
+
+    const t = window.setTimeout(() => {
+      setShowNidanaBanner(true);
+    }, 5600);
+
+    return () => window.clearTimeout(t);
   }
-}, [nidanaCoinId]);
+}, [nidanaCoinId, nidanaCoinSide]);
 
   const piecesByPos: Record<number, { player: PlayerId; kind: PieceKind }[]> =
     {};
@@ -330,13 +338,13 @@ useEffect(() => {
       } else if (kind === "snake") {
         src = player === "P1" ? cobraWhite : cobraBlack;
       }
-console.log("BOARD nidanaCoinId:", nidanaCoinId);
-console.log("BOARD cajaMagica:", cajaMagica.current);
+
       return (
         <div
           key={`${player}-${kind}`}
           onClick={() => {
             if (player === state.turn && !pieceState.inLimbo) {
+              setShowNidanaBanner(false);
               onSelectPiece?.(kind);
             }
           }}
@@ -403,6 +411,14 @@ console.log("BOARD cajaMagica:", cajaMagica.current);
     });
   });
 
+  console.log("PHASE", state.phase);
+console.log("MOVE OPTIONS", moveOptions.length);
+
+console.log("BANNER", {
+  showNidanaBanner,
+  coinId: nidanaCoinId,
+  caja: cajaMagica.current,
+});
   return (
     <div className={`board ${turnClass} ${beatClass}`}>
       {ghost && <div className="ghostWord">{ghost}</div>}
@@ -418,8 +434,7 @@ console.log("BOARD cajaMagica:", cajaMagica.current);
     {state.emojiEvents[state.emojiEvents.length - 1].emoji}
   </div>
 ) : null}
-
-{cajaMagica.current && (
+{true && (
   <div className="nidanaLivingBanner">
     <div className="nidanaLivingTitle">
       {NIDANA_EFFECT_LINES[cajaMagica.current]?.title}
@@ -576,8 +591,7 @@ animation: "nidanaReveal 2.6s cubic-bezier(.16,1.25,.32,1) both",
           );
         })}
 
-       
- {state.phase === "rolled" && moveOptions.length > 0 && onChooseMove && (
+      {moveOptions.length > 0 && onChooseMove && (
           <MoveEmanations
             options={moveOptions}
             player={state.turn}
@@ -594,6 +608,7 @@ animation: "nidanaReveal 2.6s cubic-bezier(.16,1.25,.32,1) both",
   "humans",
   "asura",
   "deva",
+
 ] as const;
 
 const seen = new Set<number>();
@@ -629,6 +644,7 @@ const realmList = realmOrder
         key={piece.id}
         onClick={() => {
           if (player === state.turn) {
+              setShowNidanaBanner(false);
             onSelectPiece?.(piece.kind);
           }
         }}

@@ -1,5 +1,17 @@
-import { MaraLayer } from "../game/mara/MaraLayer";
+import MaraLayer from "../mara/MaraLayer";
 
-export function SamsaraStage() {
-  return <MaraLayer />;
+type SamsaraStageProps = {
+  dharmaMessage?: string;
+};
+
+export function SamsaraStage({
+  dharmaMessage,
+}: SamsaraStageProps) {
+  return (
+    <MaraLayer
+      dharmaMessage={dharmaMessage}
+    />
+  );
 }
+
+export default SamsaraStage;

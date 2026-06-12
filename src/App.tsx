@@ -775,7 +775,6 @@ const shouldTriggerNidana = true;
 
 if (shouldTriggerNidana) {
   triggerNidanaCoin();
-  console.log("NIDANA LANZADA:", id);
 
   const r = Math.random();
 
