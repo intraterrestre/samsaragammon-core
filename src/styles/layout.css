@@ -1,0 +1,44 @@
+:root {
+  --scene-w: 1100px;
+  --scene-h: 620px;
+  --scene-fit-margin: 0.92;
+}
+
+.samsaraStage {
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  background: #000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  box-sizing: border-box;
+}
+.samsaraScene {
+  position: relative;
+
+  width: var(--scene-w);
+  height: var(--scene-h);
+
+  flex-shrink: 0;
+  margin: 0;
+
+  transform: scale(.43) !important;
+
+  transform-origin: center center;
+
+  overflow: visible;
+
+  border: 8px solid rgba(80,255,80,.55);
+
+  box-shadow:
+    0 0 1px rgba(80,255,80,.25),
+    0 0 24px rgba(80,255,80,.12);
+}
+@media (max-width: 950px) and (orientation: landscape) {
+  .samsaraScene {
+    transform: scale(0.39);
+  }
+}

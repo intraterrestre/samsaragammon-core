@@ -1,0 +1,70 @@
+/* =========================
+   BASE / APP SHELL
+   ========================= */
+:root{
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  /* Fondo verde */
+  --bg-dark: #1f5f3f;
+  --bg-mid:  #2e8b57;
+  --bg-light:#3fae73;
+
+  --text-main: #f4fff8;
+
+  /* Colores jugador */
+  --p1-color: #ff7a2f;   /* naranja/rojo */
+  --p2-color: #c8ff3d;   /* limón */
+
+  /* Panel / bordes */
+  --panel-bg: rgba(255,255,255,0.04);
+  --panel-br: rgba(255,255,255,0.12);
+}
+
+html, body, #root{
+  margin: 0;
+  min-height: 100vh;
+}
+
+body{
+  background: linear-gradient(135deg,
+    var(--bg-dark) 0%,
+    var(--bg-mid) 45%,
+    var(--bg-light) 100%
+  );
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tu layout original */
+#root{
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+
+/* =========================
+   BUTTONS (GENÉRICO)
+   ========================= */
+button{
+  background: rgba(0,0,0,0.18);
+  color: var(--text-main);
+  border: 1px solid rgba(255,255,255,0.14);
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+button:hover{
+  filter: brightness(1.05);
+}
+
+button:disabled{
+  opacity: 0.55;
+  cursor: not-allowed;
+}
