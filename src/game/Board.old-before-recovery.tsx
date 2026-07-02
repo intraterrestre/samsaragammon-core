@@ -1,0 +1,708 @@
+import React, { useEffect, useRef, useState } from "react";
+import type { GameState, MoveOption, PieceKind, PlayerId } from "./types";
+import {  cellStyle as ringCellStyle, RING_SIZE,  piecePosition,} from "../UI/geometry";
+import { realmFromPos, REALM_LABEL, pickLine } from "../UI/realm";
+import { ExplainModal } from "../UI/ExplainModal";
+import { MoveEmanations } from "../UI/MoveEmanations";
+import budaKarmaER from "../assets/tokens/buda-karma-er.png";
+import BigHeadSchoolOverlay from "../UI/BigHeadSchoolOverlay";
+
+// 🔥 FICHAS
+import pigWhite from "../assets/pieces/pig_white.png";
+import pigBlack from "../assets/pieces/pig_black.png";
+import roosterWhite from "../assets/pieces/rooster_white.png";
+import roosterBlack from "../assets/pieces/rooster_black.png";
+import cobraWhite from "../assets/pieces/cobra_white.png";
+import cobraBlack from "../assets/pieces/cobra_black.png";
+
+// 🔊 SONIDOS
+import captureWhite from "../assets/sounds/capture_white.mp3";
+import captureBlack from "../assets/sounds/capture_black.mp3";
+import moveSound from "../assets/sounds/move.mp3";
+
+import brunoP1 from "../assets/tokens/bruno_P1.png";
+import brunoP2 from "../assets/tokens/bruno_P2.png";
+
+import margotP1 from "../assets/tokens/margot_P1.png";
+import margotP2 from "../assets/tokens/margot_P2.png";
+
+import marinoP1 from "../assets/tokens/marino_P1.png";
+import marinoP2 from "../assets/tokens/marino_P2.png";
+
+import oriolP1 from "../assets/tokens/oriol_P1.png";
+import oriolP2 from "../assets/tokens/oriol_P2.png";
+
+import rufusP1 from "../assets/tokens/rufus_P1.png";
+import rufusP2 from "../assets/tokens/rufus_P2.png";
+
+import whitmanP1 from "../assets/tokens/whitman_P1.png";
+import whitmanP2 from "../assets/tokens/whitman_P2.png";
+
+import diceWhitePortal from "../assets/dice/dice_white_portal.png";
+import diceBlackPortal from "../assets/dice/dice_black_portal.png";
+
+type Props = {
+  state: GameState;
+  onSelectPiece?: (piece: string) => void;
+  hoveredOption?: MoveOption | null;
+  moveOptions?: MoveOption[];
+  onChooseMove?: (option: MoveOption, allOptions: MoveOption[]) => void;
+  onSendEmoji?: (emoji: string) => void;
+  onRoll?: () => void;
+  nidanaCoinSrc?: string | null;
+  nidanaCoinSide?: "front" | "back";
+  nidanaCoinId?: number | null;
+};
+const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
+
+const playerLabel = (p: PlayerId) => (p === "P1" ? "⚪ White" : "⚫ Black");
+const PIECE_KINDS: PieceKind[] = ["pig", "snake", "rooster"];
+const NIDANA_EFFECT_LINES: Record<number, {
+  title: string;
+  body: string;
+}> = {
+  1: {
+    title: "🌑 IGNORANCE ACTIVE",
+    body: "You mistake the shadow for the thing itself.",
+  },
+  2: {
+    title: "🔄 FORMATIONS ACTIVE",
+    body: "Old patterns begin moving before you choose.",
+  },
+  3: {
+    title: "👁️ CONSCIOUSNESS ACTIVE",
+    body: "A witness appears, but still believes the dream.",
+  },
+  4: {
+    title: "🧍 NAME & FORM ACTIVE",
+    body: "Identity hardens around what should keep flowing.",
+  },
+  5: {
+    title: "🪟 SIX SENSES ACTIVE",
+    body: "The gates open. The world rushes in.",
+  },
+  6: {
+    title: "🤝 CONTACT ACTIVE",
+    body: "Touch becomes trigger. The chain tightens.",
+  },
+  7: {
+    title: "💢 FEELING ACTIVE",
+    body: "Pleasure and pain begin choosing for you.",
+  },
+  8: {
+    title: "🔥 CRAVING ACTIVE",
+    body: "The hand reaches before wisdom arrives.",
+  },
+  9: {
+    title: "🪢 CLINGING ACTIVE",
+    body: "What you hold begins holding you.",
+  },
+  10: {
+    title: "♻️ BECOMING ACTIVE",
+    body: "A new self is being assembled.",
+  },
+  11: {
+    title: "🌱 BIRTH ACTIVE",
+    body: "A fresh form enters the wheel.",
+  },
+  12: {
+    title: "💀 DEATH ACTIVE",
+    body: "The ending prepares the next beginning.",
+  },
+};
+const EMOJIS = ["😴", "🔥", "🐷", "🐍", "⚔️", "🧘", "😂", "😡"];
+const pieceShort = (k: PieceKind) => {
+  if (k === "pig") return "P";
+  if (k === "snake") return "S";
+  return "R";
+};
+const REALM_TOKEN_MAP = {
+  hungry_ghost: { P1: brunoP1, P2: brunoP2 },
+  hell: { P1: margotP1, P2: margotP2 },
+  animals: { P1: oriolP1, P2: oriolP2 },
+  humans: { P1: marinoP1, P2: marinoP2 },
+  asura: { P1: rufusP1, P2: rufusP2 },
+  deva: { P1: whitmanP1, P2: whitmanP2 },
+} as const;
+function pieceSortKey(player: PlayerId, kind: PieceKind) {
+  const playerOrder = player === "P1" ? 0 : 10;
+  const kindOrder = kind === "pig" ? 0 : kind === "snake" ? 1 : 2;
+  return playerOrder + kindOrder;
+}
+
+function stackOffset(index: number, total: number) {
+  if (total <= 1) return { x: 0, y: 0 };
+
+  if (total === 2) {
+    return index === 0 ? { x: -10, y: 0 } : { x: 10, y: 0 };
+  }
+
+  if (total === 3) {
+    const offsets = [
+      { x: 0, y: -10 },
+      { x: -9, y: 8 },
+      { x: 9, y: 8 },
+    ];
+    return offsets[index] ?? { x: 0, y: 0 };
+  }
+
+  const radius = 10;
+  const angle = (index / total) * Math.PI * 2 - Math.PI / 2;
+
+  return {
+    x: Math.cos(angle) * radius,
+    y: Math.sin(angle) * radius,
+  };
+}
+
+export function Board({
+  state,
+  onSelectPiece,
+  hoveredOption,
+  moveOptions,
+  onChooseMove,
+  onSendEmoji,
+  onRoll,
+  nidanaCoinSrc,
+  nidanaCoinSide,
+  nidanaCoinId,
+}: Props){
+
+  const captureAudioWhite = useRef<HTMLAudioElement | null>(null);
+  const captureAudioBlack = useRef<HTMLAudioElement | null>(null);
+  const moveAudio = useRef<HTMLAudioElement | null>(null);
+
+const [lastEmojiAt, setLastEmojiAt] = useState(0);
+const [explainOpen, setExplainOpen] = useState(false);
+const [explainPlayer, setExplainPlayer] = useState<PlayerId>("P1");
+
+const [impactPos, setImpactPos] = useState<number | null>(null);
+const [flashCell, setFlashCell] = useState<number | null>(null);
+
+const [ghost, setGhost] = useState<string | null>(null);
+const ghostTimer = useRef<number | null>(null);
+
+const [beat, setBeat] = useState(false);
+const beatTimer = useRef<number | null>(null);
+
+  // 🔊 INICIALIZAR AUDIOS
+
+  useEffect(() => {
+    captureAudioWhite.current = new Audio(captureWhite);
+    captureAudioBlack.current = new Audio(captureBlack);
+    moveAudio.current = new Audio(moveSound);
+
+    if (moveAudio.current) moveAudio.current.volume = 0.03;
+    if (captureAudioWhite.current) captureAudioWhite.current.volume = 0.35;
+    if (captureAudioBlack.current) captureAudioBlack.current.volume = 0.35;
+    
+}, []);
+  const size = state.trackSize;
+const me = state.turn;
+const other = otherPlayer(me);
+const rolls = state.phase === "rolled" ? state.rollOptions : null;
+
+const activePiece = state.selectedPiece[me];
+
+const activeBasePiece = PIECE_KINDS.includes(activePiece as PieceKind)
+  ? (activePiece as PieceKind)
+  : null;
+
+const activeRealmPiece =
+  state.realmPieces?.[me]?.[
+    activePiece as keyof typeof state.realmPieces.P1
+  ];
+
+const activePos =
+  activeBasePiece
+    ? state.pieces?.[me]?.[activeBasePiece]?.pos
+    : activeRealmPiece?.pos ?? null;
+
+  const [bigHeadSchoolBy, setBigHeadSchoolBy] =
+  useState<"white" | "black" | null>(null);
+
+  // 🔊 DISPARAR SONIDO / FX POR LAST MOVE
+  useEffect(() => {
+    if (!state.lastMove) return;
+
+    if (state.lastMove.didCapture) {
+      const player = state.lastMove.player;
+
+      if (player === "P1") {
+        if (captureAudioWhite.current) {
+          captureAudioWhite.current.currentTime = 0;
+          captureAudioWhite.current.play().catch(() => {});
+        }
+      } else {
+        if (captureAudioBlack.current) {
+          captureAudioBlack.current.currentTime = 0;
+          captureAudioBlack.current.play().catch(() => {});
+        }
+      }
+    } else {
+      if (moveAudio.current) {
+        moveAudio.current.currentTime = 0;
+        moveAudio.current.play().catch(() => {});
+      }
+    }
+
+    setBeat(true);
+    if (beatTimer.current) window.clearTimeout(beatTimer.current);
+    beatTimer.current = window.setTimeout(() => setBeat(false), 650);
+
+    const oldRealm = realmFromPos(state.lastMove.fromPos);
+    const newRealm = realmFromPos(state.lastMove.toPos);
+
+    setGhost(oldRealm !== newRealm ? pickLine(newRealm) : "flow");
+
+    if (ghostTimer.current) window.clearTimeout(ghostTimer.current);
+    ghostTimer.current = window.setTimeout(() => setGhost(null), 1200);
+
+    setImpactPos(state.lastMove.toPos);
+    setFlashCell(state.lastMove.toPos);
+
+    const t = window.setTimeout(() => {
+      setImpactPos(null);
+      setFlashCell(null);
+    }, 320);
+
+    return () => window.clearTimeout(t);
+  }, [state.lastMove]);
+
+  useEffect(() => {
+    return () => {
+      if (ghostTimer.current) window.clearTimeout(ghostTimer.current);
+      if (beatTimer.current) window.clearTimeout(beatTimer.current);
+    };
+  }, []);
+
+  const turnClass = state.turn === "P1" ? "turnP1" : "turnP2";
+  const beatClass = beat ? "beat" : "";
+ const cajaMagica = useRef<number | null>(null);
+const [showNidanaBanner, setShowNidanaBanner] = useState(false);
+
+useEffect(() => {
+  if (nidanaCoinId && nidanaCoinSide === "front") {
+    cajaMagica.current = nidanaCoinId;
+    setShowNidanaBanner(false);
+
+    const t = window.setTimeout(() => {
+      setShowNidanaBanner(true);
+    }, 5600);
+
+    return () => window.clearTimeout(t);
+  }
+}, [nidanaCoinId, nidanaCoinSide]);
+
+  const piecesByPos: Record<number, { player: PlayerId; kind: PieceKind }[]> =
+    {};
+
+  (["P1", "P2"] as PlayerId[]).forEach((player) => {
+   PIECE_KINDS.forEach((kind) => {
+      const pieceState = state.pieces[player][kind];
+      if (pieceState.inLimbo) return;
+
+      const pos = pieceState.pos;
+      if (!piecesByPos[pos]) piecesByPos[pos] = [];
+      piecesByPos[pos].push({ player, kind });
+    });
+  });
+
+  Object.values(piecesByPos).forEach((stack) => {
+    stack.sort(
+      (a, b) => pieceSortKey(a.player, a.kind) - pieceSortKey(b.player, b.kind)
+    );
+  });
+
+  const renderedPieces = (["P1", "P2"] as PlayerId[]).flatMap((player) => {
+    return PIECE_KINDS.map((kind) => {
+      const pieceState = state.pieces[player][kind];
+      if (pieceState.inLimbo) return null;
+
+      const pos = pieceState.pos;
+
+      const isCurrentSelected =
+        player === state.turn && state.selectedPiece[player] === kind;
+
+      const base = piecePosition(pos, size);
+      const stack = piecesByPos[pos] ?? [];
+      const stackIndex = stack.findIndex(
+        (p) => p.player === player && p.kind === kind
+      );
+      const offset = stackOffset(stackIndex, stack.length);
+
+      let src = player === "P1" ? pigWhite : pigBlack;
+
+      if (kind === "rooster") {
+        src = player === "P1" ? roosterWhite : roosterBlack;
+      } else if (kind === "snake") {
+        src = player === "P1" ? cobraWhite : cobraBlack;
+      }
+
+      return (
+        <div
+          key={`${player}-${kind}`}
+          onClick={() => {
+            if (player === state.turn && !pieceState.inLimbo) {
+              setShowNidanaBanner(false);
+              onSelectPiece?.(kind);
+            }
+          }}
+          style={{
+            ...base,
+            left: (base.left as number) + offset.x,
+            top: (base.top as number) + offset.y,
+            width: 36,
+            height: 36,
+            zIndex: isCurrentSelected ? 45 : 40,
+            pointerEvents: player === state.turn ? "auto" : "none",
+            position: "absolute",
+            cursor: player === state.turn ? "pointer" : "default",
+            borderRadius: 18,
+            boxShadow: isCurrentSelected
+              ? "0 0 0 2px rgba(255,255,255,0.18)"
+              : "none",
+          }}
+        >
+<img
+  src={src}
+  alt=""
+  onError={(e) => {
+    e.currentTarget.remove();
+  }}
+  className={impactPos === pos ? "pieceHit" : ""}
+  style={{
+    width: 36,
+    height: 36,
+    objectFit: "contain",
+    pointerEvents: "none",
+    transform: isCurrentSelected
+      ? "scale(1.08) translateY(-4px)"
+      : "translateY(-1px)",
+    filter: isCurrentSelected
+      ? "drop-shadow(0 0 8px rgba(255,255,255,0.4))"
+      : "none",
+  }}
+/>
+
+          <div
+            style={{
+              position: "absolute",
+              right: -3,
+              bottom: -3,
+              minWidth: 14,
+              height: 14,
+              borderRadius: 7,
+              background: "rgba(0,0,0,0.72)",
+              border: "1px solid rgba(255,255,255,0.2)",
+              color: "white",
+              fontSize: 9,
+              fontWeight: 800,
+              lineHeight: "12px",
+              textAlign: "center",
+              padding: "0 3px",
+              pointerEvents: "none",
+            }}
+          >
+            {pieceShort(kind)}
+          </div>
+        </div>
+      );
+    });
+  });
+
+  console.log("PHASE", state.phase);
+console.log("MOVE OPTIONS", moveOptions.length);
+
+console.log("BANNER", {
+  showNidanaBanner,
+  coinId: nidanaCoinId,
+  caja: cajaMagica.current,
+});
+  return (
+    <div className={`board ${turnClass} ${beatClass}`}>
+      {ghost && <div className="ghostWord">{ghost}</div>}
+      {state.emojiEvents?.length ? (
+  <div
+    style={{
+      textAlign: "center",
+      fontSize: 26,
+      margin: "6px 0 10px",
+      minHeight: 32,
+    }}
+  >
+    {state.emojiEvents[state.emojiEvents.length - 1].emoji}
+  </div>
+) : null}
+{true && (
+  <div className="nidanaLivingBanner">
+    <div className="nidanaLivingTitle">
+      {NIDANA_EFFECT_LINES[cajaMagica.current]?.title}
+    </div>
+
+    <div className="nidanaLivingBody">
+      {NIDANA_EFFECT_LINES[cajaMagica.current]?.body}
+    </div>
+  </div>
+)}
+      {/* ===== Ring ===== */}
+
+<div
+  className="ringWrap"
+  style={{
+    position: "absolute",
+    left: 520,
+    top: 55,
+
+    width: RING_SIZE,
+    height: RING_SIZE,
+
+    margin: 0,
+    borderRadius: "50%",
+
+    overflow: "visible",
+    zIndex: 5000,
+
+    transform: "scale(1.12)",
+    transformOrigin: "center center",
+  }}
+>
+        <img
+src={budaKarmaER}
+onClick={() => {
+
+  setBigHeadSchoolBy(state.turn === "P1" ? "white" : "black");
+
+  setTimeout(() => {
+    setBigHeadSchoolBy(null);
+  }, 5000);
+}}
+
+onMouseEnter={(e)=>{
+e.currentTarget.style.transform="scale(1.12)"
+}}
+
+onMouseLeave={(e)=>{
+e.currentTarget.style.transform="scale(1)"
+}}
+
+style={{
+position:"absolute",
+
+left:"-10%",
+top:"70%",
+
+width:130,
+
+zIndex:90,
+
+cursor:"pointer",
+transition:"0.3s",
+
+filter:"drop-shadow(0 0 18px rgba(255,255,255,.95))"
+}}
+/>
+{bigHeadSchoolBy && (
+  <BigHeadSchoolOverlay openedBy={bigHeadSchoolBy} />
+)}
+{onRoll && (
+  <button
+    type="button"
+    className="samsaraDicePortalButton"
+    onClick={onRoll}
+    title="Roll dice"
+  >
+    <img
+      src={state.turn === "P1" ? diceWhitePortal : diceBlackPortal}
+      alt="Roll dice"
+      className="samsaraDicePortalImg"
+    />
+  </button>
+)}
+     {nidanaCoinSrc && (
+  <div
+    style={{
+      position: "absolute",
+      left: "-290px",
+      top: "160px",
+      transform: "translate(-50%, -50%)",
+      zIndex: 9999,
+      pointerEvents: "none",
+    }}
+  >
+    <img
+    key={`${nidanaCoinSrc}-${nidanaCoinSide}`}
+      src={nidanaCoinSrc}
+      className={`nidanaCoinImage ${
+        nidanaCoinSide === "back" ? "isBack" : ""
+      }`}
+      style={{
+        width: 220,
+        height: "auto",
+        borderRadius: "50%",
+animation: "nidanaReveal 2.6s cubic-bezier(.16,1.25,.32,1) both",
+      }}
+    />
+  </div>
+)}
+  {Array.from({ length: size }, (_, i) => {
+  const cellRealm = realmFromPos(i);
+  const isHoveredTarget = hoveredOption?.toPos === i;
+
+  const enemyPlayer = state.turn === "P1" ? "P2" : "P1";
+
+  const enemiesOnCell = PIECE_KINDS.filter((kind) => {
+    const piece = state.pieces[enemyPlayer][kind];
+    return !piece.inLimbo && piece.pos === i;
+  });
+
+  const isBlockedCell = enemiesOnCell.length >= 2;
+
+  return (
+    <button
+      key={i}
+      type="button"
+      disabled={true}
+      className={`cellBtn ${
+        isHoveredTarget
+          ? hoveredOption?.meaning === "IMPACT"
+            ? "moveB"
+            : hoveredOption?.meaning === "RISK"
+            ? "moveAB"
+            : "moveA"
+          : ""
+      } ${flashCell === i ? "cellFlash" : ""} ${
+        isBlockedCell ? "blockedCell" : ""
+      }`}
+      style={ringCellStyle(i, size)}
+      onClick={() => {}}
+      title={`${REALM_LABEL[cellRealm]}`}
+    >
+      {i}
+              {isHoveredTarget && (
+                <>
+                  <div className="moveTag">{hoveredOption?.choice}</div>
+                  {hoveredOption?.meaning && (
+                    <div className="moveMeaning">{hoveredOption.meaning}</div>
+                  )}
+                </>
+              )}
+            </button>
+          );
+        })}
+
+      {moveOptions.length > 0 && onChooseMove && (
+          <MoveEmanations
+            options={moveOptions}
+            player={state.turn}
+            trackSize={size}
+            selectedPiece={state.selectedPiece[state.turn]}
+            onChoose={onChooseMove}
+          />
+        )}
+{(["P1", "P2"] as PlayerId[]).flatMap((player) => {
+ const realmOrder = [
+  "hungry_ghost",
+  "hell",
+  "animals",
+  "humans",
+  "asura",
+  "deva",
+
+] as const;
+
+const seen = new Set<number>();
+
+const realmList = realmOrder
+  .map((key) => state.realmPieces[player]?.[key])
+  .filter((piece) => {
+    if (!piece || piece.inLimbo || !piece.unlocked) return false;
+
+    if (seen.has(piece.pos)) {
+      console.log(
+        "🚨 DUPLICATE REALM PIECE:",
+        player,
+        piece.kind,
+        piece.pos
+      );
+      return false;
+    }
+
+    seen.add(piece.pos);
+    return true;
+  });
+
+  return realmList.map((piece) => {
+    if (!piece || piece.inLimbo || !piece.unlocked) {
+      return null;
+    }
+
+    const base = piecePosition(piece.pos, size);
+
+    return (
+      <div
+        key={piece.id}
+        onClick={() => {
+          if (player === state.turn) {
+              setShowNidanaBanner(false);
+            onSelectPiece?.(piece.kind);
+          }
+        }}
+        className={`realmPieceToken realmPiece-${piece.kind} ${
+          player === "P1" ? "realmPieceP1" : "realmPieceP2"
+        }`}
+      style={{
+  ...base,
+  width: 48,
+  height: 48,
+
+  border:
+player==="P1"
+ ? "3px solid #fff"
+ : "3px solid #000",
+
+  borderRadius: "50%",
+
+ boxShadow:
+player==="P1"
+? "0 0 0 2px gold,0 0 14px white"
+: "0 0 0 2px #500,0 0 14px black",
+
+  zIndex: 38,
+  position: "absolute",
+  pointerEvents: player === state.turn ? "auto" : "none",
+  cursor: player === state.turn ? "pointer" : "default",
+}}
+        title={`${player} ${piece.kind}`}
+           >
+      <img
+  src={
+    REALM_TOKEN_MAP[piece.kind as keyof typeof REALM_TOKEN_MAP]?.[player] ??
+    brunoP1
+  }
+  alt={`${piece.kind} token`}
+  className="realmPieceTokenImg"
+/>
+      </div>
+    );
+  });
+})}
+        {renderedPieces}
+
+  
+      </div>
+
+      <ExplainModal
+        open={explainOpen}
+        onClose={() => setExplainOpen(false)}
+        player={explainPlayer}
+        last={
+          (() => {
+            const hist = state.behavior?.history?.[explainPlayer] ?? [];
+            return hist[hist.length - 1] ?? null;
+          })()
+        }
+      />
+    </div>
+  );
+}
