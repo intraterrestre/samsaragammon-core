@@ -130,6 +130,28 @@ React.useEffect(() => {
   return () => window.removeEventListener('resize', applyScale);
 }, []);
 
+// Fullscreen + orientation lock al primer toque en móvil
+React.useEffect(() => {
+  const requestFullscreen = async () => {
+    try {
+      const el = document.documentElement;
+      if (el.requestFullscreen) await el.requestFullscreen();
+      else if ((el as any).webkitRequestFullscreen) await (el as any).webkitRequestFullscreen();
+      if ((screen.orientation as any)?.lock) {
+        await (screen.orientation as any).lock('landscape').catch(() => {});
+      }
+    } catch {}
+    document.removeEventListener('click', requestFullscreen);
+    document.removeEventListener('touchstart', requestFullscreen);
+  };
+  document.addEventListener('click', requestFullscreen, { once: true });
+  document.addEventListener('touchstart', requestFullscreen, { once: true });
+  return () => {
+    document.removeEventListener('click', requestFullscreen);
+    document.removeEventListener('touchstart', requestFullscreen);
+  };
+}, []);
+
 React.useEffect(() => {
    clarityAudio.current = new Audio(claritySound);
   distortionAudio.current = new Audio(distortionSound);
@@ -425,6 +447,11 @@ return (
       </div>
     </div>
   )}
+
+  <div className="rotateHint">
+    <span>↺</span>
+    Rotate your device to play
+  </div>
 
   <div className="samsaraStage">
     <div className="samsaraScene">
