@@ -1,9 +1,9 @@
 import { REALM_CANON } from "./realm/realmCanon";
-import { karmaOracle } from "./karma/karmaOracle";
+import { karmaOracle } from "./Karma/KarmaOracle";
 import { masterOracleLine } from "./master/masterEngine";
-import { karmaMirror } from "./karma/karmaMirror";
-import { getMirrorPatternReading } from "./karma/getMirrorPatternReading";
-import { getMasterMessage } from "./karma/getMasterMessage";
+import { karmaMirror } from "./Karma/KarmaMirror";
+import { getMirrorPatternReading } from "./Karma/getMirrorPatternReading";
+import { getMasterMessage } from "./Karma/getMasterMessage";
 import type { GameState, PlayerId } from "./types";
 
 type DerivedState = {

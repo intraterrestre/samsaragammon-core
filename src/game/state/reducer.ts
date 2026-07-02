@@ -12,7 +12,7 @@ import { initialState } from "./state";
 import { behaviorAfterMove } from "../behavior/behavior";
 import { recordMove } from "../behavior/patternEngine";
 import { realmFromPos } from "../../UI/realm";
-import { updateDecisionSignature } from "../karma/updateDecisionSignature";
+import { updateDecisionSignature } from "../Karma/updateDecisionSignature";
 import { computeKarmaTurn } from "../engine/computeKarmaTurn";
 import { NIDANA_LIST } from "../nidanas";
 import type { NidanaId } from "../nidanas";

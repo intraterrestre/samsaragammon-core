@@ -1,6 +1,6 @@
 // src/game/master/masterEngine.ts
 import data from "./yingyang.en.json";
-import type { KarmaOracleReading } from "../karma/karmaOracle";
+import type { KarmaOracleReading } from "../Karma/KarmaOracle";
 
 export type MasterWhen =
   | "start"

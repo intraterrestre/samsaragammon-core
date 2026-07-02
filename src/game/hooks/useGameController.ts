@@ -4,8 +4,8 @@ import { initialState } from "../state/state";
 import { supabase } from "../../lib/supabaseClient";
 import { KarmaEngine } from "../engine/KarmaEngine";
 import { REALM_CANON } from "../realm/realmCanon";
-import { karmaOracle } from "../karma/karmaOracle";
-import { karmaMirror } from "../karma/karmaMirror";
+import { karmaOracle } from "../Karma/KarmaOracle";
+import { karmaMirror } from "../Karma/KarmaMirror";
 import { masterLine, masterOracleLine } from "../master/masterEngine";
 
 export function useGameController() {
