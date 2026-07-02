@@ -65,6 +65,16 @@ realmPieces: {
   P1: {},
   P2: {},
 },
+actors: {
+  bruno: {
+    id: "bruno",
+    owner: "P1",
+    pos: 0,
+    inLimbo: false,
+    maraLevel: null,
+    unlocked: false,
+  },
+},
 
   realmTokens: {
     P1: [],
@@ -178,6 +188,10 @@ export function makeInitialState(
         ...(overrides.realmPieces?.P2 ?? {}),
       },
     },
+    actors: {
+  ...initialState.actors,
+  ...(overrides.actors ?? {}),
+},
 
     realmTokens: {
       ...initialState.realmTokens,

@@ -1,65 +1,64 @@
-.fandangoRoot{
-  position:relative;
-  width:150px;
-  cursor:pointer;
-  text-align:center;
-  z-index:20;
+.fandangoRoot {
+  position: absolute;
+  left: -40px;
+  top: 66%;
+  transform: translateY(-50%);
+  width: 295px;
+  cursor: pointer;
+  text-align: center;
+  z-index: 80;
 }
 
-.fandangoImage{
-  width:150px;
-  height:auto;
-  display:block;
-  pointer-events:none;
+.fandangoImage {
+  width: 285px;
+  height: auto;
+  display: block;
+  pointer-events: none;
   transition:
-    transform .25s ease,
-    filter .25s ease;
+    transform 0.25s ease,
+    filter 0.25s ease;
 }
 
-.fandangoRoot:hover .fandangoImage{
-  transform:scale(1.08);
+.fandangoRoot:hover .fandangoImage {
+  transform: scale(1.08);
   filter:
-    drop-shadow(0 0 12px rgba(255,255,255,.35))
-    drop-shadow(0 8px 18px rgba(0,0,0,.45));
+    drop-shadow(0 0 8px rgba(255, 255, 255, 0.35))
+    drop-shadow(0 6px 12px rgba(0, 0, 0, 0.45));
 }
 
-.fandangoTooltip{
-  position:absolute;
-  left:110px;
-  top:-10px;
-
-  width:260px;
-  padding:12px 14px;
-
-  border-radius:14px;
-  background:rgba(0,0,0,.68);
-  border:1px solid rgba(255,255,255,.12);
-  backdrop-filter:blur(8px);
-
-  color:white;
-  opacity:0;
-  transform:translateY(8px);
-  pointer-events:none;
-
+.fandangoTooltip {
+  position: absolute;
+  left: 60px;
+  top: -10px;
+  width: 160px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.68);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  color: white;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
   transition:
-    opacity .25s ease,
-    transform .25s ease;
+    opacity 0.25s ease,
+    transform 0.25s ease;
 }
 
-.fandangoRoot:hover .fandangoTooltip{
-  opacity:1;
-  transform:translateY(0);
+.fandangoRoot:hover .fandangoTooltip {
+  opacity: 1;
+  transform: translateY(0);
 }
 
-.fandangoTooltip strong{
-  display:block;
-  font-size:14px;
-  letter-spacing:.08em;
-  margin-bottom:6px;
+.fandangoTooltip strong {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  margin-bottom: 5px;
 }
 
-.fandangoText{
-  font-size:13px;
-  line-height:1.35;
-  opacity:.82;
+.fandangoText {
+  font-size: 10px;
+  line-height: 1.25;
+  opacity: 0.82;
 }

@@ -324,7 +324,9 @@ const finalToPos = toPos;
   P1: { ...state.realmPieces.P1 },
   P2: { ...state.realmPieces.P2 },
 };
-
+const nextActors = {
+  ...state.actors,
+};
       // ===== progreso de reino / loops =====
       const prevRealmProgress = state.realmProgress[me];
 
@@ -448,13 +450,23 @@ const isBasePiece =
   BASE_PIECES.includes(activePiece as BasePieceKind);
 
 if (isBasePiece) {
-  const activeBasePiece =
-    activePiece as BasePieceKind;
+  const activeBasePiece = activePiece as BasePieceKind;
 
   nextPieces[me][activeBasePiece].pos = finalToPos;
   nextPieces[me][activeBasePiece].inLimbo = false;
   nextPieces[me][activeBasePiece].maraLevel = null;
 
+  // ===== BRUNO SE MUEVE USANDO LOS BICHOS =====
+  const bruno = nextActors.bruno;
+
+  if (bruno?.unlocked && bruno.owner === me) {
+    nextActors.bruno = {
+      ...bruno,
+      pos: finalToPos,
+      inLimbo: false,
+      maraLevel: null,
+    };
+  }
 } else {
   const activeRealmPiece =
     activePiece as RealmPieceKind;
@@ -606,6 +618,7 @@ if (shouldCollapse) {
         pieces: nextPiecesAfterCollapse,
         realmPieces: nextPiecesRealm,
         captures: nextCaptures,
+        actors: nextActors,
         curvature: nextCurvature,
         realmProgress: nextRealmProgress,
 realmAscension: didAscendRealm && unlockedRealmKey

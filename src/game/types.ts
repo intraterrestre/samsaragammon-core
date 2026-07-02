@@ -2,6 +2,7 @@
 import type { PatternEngineState } from "./behavior/patternEngine";
 import type { BehaviorState } from "./behavior/types";
 import type { NidanaId } from "./nidanas";
+import type { ActorId } from "./actors/actorProfiles";
 
 export type PlayerId = "P1" | "P2";
 export type Phase = "idle" | "rolled";
@@ -29,7 +30,15 @@ export type SinglePieceState = {
   inLimbo: boolean;
   maraLevel: number | null;
 };
+export type ActorPieceState = SinglePieceState & {
+  id: ActorId;
+  unlocked: boolean;
+  owner: PlayerId;
+};
 
+export type ActorPiecesState = Partial<
+  Record<ActorId, ActorPieceState>
+>;
 export type RealmPieceState = SinglePieceState & {
   id: string;
   kind: RealmPieceKind;
@@ -185,6 +194,7 @@ export type GameState = {
 
   pieces: Record<PlayerId, PlayerPiecesState>;
   realmPieces: Record<PlayerId, PlayerRealmPiecesState>;
+  actors: ActorPiecesState;
   realmTokens: Record<PlayerId, RealmPieceKind[]>;
 
   selectedPiece: SelectedPieceState;
