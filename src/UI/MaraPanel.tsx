@@ -9,14 +9,14 @@ import cobraBlack from "../assets/pieces/cobra_black.png";
 import roosterWhite from "../assets/pieces/rooster_white.png";
 import roosterBlack from "../assets/pieces/rooster_black.png";
 const LEFT_EYE = {
-  x: 150,
-  y: 262,
+  x: 118,
+  y: 182,
   rotate: -11,
 };
 
 const RIGHT_EYE = {
-  x: 190,
-  y: 255,
+  x: 164,
+  y: 178,
   rotate: -11,
 };
 
@@ -40,8 +40,8 @@ if (piece?.player === "P2") {
   return (
     <div
       style={{
-        width: 20,
-        height: 20,
+        width: 34,
+        height: 34,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -52,16 +52,16 @@ if (piece?.player === "P2") {
           src={image}
           alt={piece?.kind ?? ""}
           style={{
-            width: 20,
-            height: 20,
+            width: 28,
+            height: 28,
             objectFit: "contain",
           }}
         />
       ) : (
         <div
           style={{
-            width: 16,
-            height: 16,
+            width: 27,
+            height: 27,
             borderRadius: 4,
             border: "1px solid rgba(255,255,255,.25)",
             background: "rgba(0,0,0,.25)",
@@ -104,7 +104,7 @@ function EyeRail({ x, y, rotate = 0, cells }: EyeRailProps) {
 
         flexDirection: "column",
 
-        gap: 8,
+        gap: 4,
 
         transform: `rotate(${rotate}deg)`,
 

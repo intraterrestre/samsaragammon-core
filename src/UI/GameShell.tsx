@@ -25,6 +25,7 @@ import fireworksSound from "../assets/sounds/fireworks.wav";
 import claritySound from "../assets/sounds/clarity.mp3";
 import distortionSound from "../assets/sounds/distortion.wav";
 import tensionSound from "../assets/sounds/tension.mp3";
+import { SacredProgress } from "./SacredProgress";
 
 type MirrorData = {
   title: string;
@@ -105,18 +106,51 @@ const triggerWatcher = () => {
   setShowWatcher(true);
   window.setTimeout(() => setShowWatcher(false), 1800);
 };
-  const [showNidanaSpinner, setShowNidanaSpinner] = React.useState(false);
-  const [visibleNidana, setVisibleNidana] = React.useState<string | null>(null);
-  const nidanaTimerRef = React.useRef<number | null>(null);
-  const prevNidanaRef = React.useRef<string | null>(null);
+const [showNidanaSpinner, setShowNidanaSpinner] = React.useState(false);
+const [visibleNidana, setVisibleNidana] = React.useState<string | null>(null);
+const nidanaTimerRef = React.useRef<number | null>(null);
+const prevNidanaRef = React.useRef<string | null>(null);
 const clarityAudio = React.useRef<HTMLAudioElement | null>(null);
 const distortionAudio = React.useRef<HTMLAudioElement | null>(null);
 const tensionAudio = React.useRef<HTMLAudioElement | null>(null);
 const cheeringAudio = React.useRef<HTMLAudioElement | null>(null);
 const fireworksAudio = React.useRef<HTMLAudioElement | null>(null);
-
-
 const [showNidanaTitle, setShowNidanaTitle] = React.useState(false);
+
+// Escala dinámica del scene para llenar el viewport
+React.useEffect(() => {
+  const applyScale = () => {
+    const scaleX = window.innerWidth  / 1116;
+    const scaleY = window.innerHeight / 636;
+    const scale  = Math.min(scaleX, scaleY) * 0.92;
+    document.documentElement.style.setProperty('--scene-scale', String(scale));
+  };
+  applyScale();
+  window.addEventListener('resize', applyScale);
+  return () => window.removeEventListener('resize', applyScale);
+}, []);
+
+// Fullscreen + orientation lock al primer toque en móvil
+React.useEffect(() => {
+  const requestFullscreen = async () => {
+    try {
+      const el = document.documentElement;
+      if (el.requestFullscreen) await el.requestFullscreen();
+      else if ((el as any).webkitRequestFullscreen) await (el as any).webkitRequestFullscreen();
+      if ((screen.orientation as any)?.lock) {
+        await (screen.orientation as any).lock('landscape').catch(() => {});
+      }
+    } catch {}
+    document.removeEventListener('click', requestFullscreen);
+    document.removeEventListener('touchstart', requestFullscreen);
+  };
+  document.addEventListener('click', requestFullscreen, { once: true });
+  document.addEventListener('touchstart', requestFullscreen, { once: true });
+  return () => {
+    document.removeEventListener('click', requestFullscreen);
+    document.removeEventListener('touchstart', requestFullscreen);
+  };
+}, []);
 
 React.useEffect(() => {
    clarityAudio.current = new Audio(claritySound);
@@ -199,11 +233,39 @@ React.useEffect(() => {
     state.phase === "rolled"
       ? getMoveOptionsForPlayer(state, state.turn)
       : [];
+const [usedPoisons, setUsedPoisons] = React.useState({
+  pig: false,
+  snake: false,
+  rooster: false,
+});
 
-  const handleMove = (opt: MoveOption, all: MoveOption[]) => {
-    setHoveredOption(null);
-    onConsciousMove(opt, all);
+const [brunoAwakened, setBrunoAwakened] = React.useState(false);
+
+const handleMove = (opt: MoveOption, all: MoveOption[]) => {
+  setHoveredOption(null);
+
+  const nextUsedPoisons = {
+    ...usedPoisons,
+    [opt.pieceKind]: true,
   };
+
+  setUsedPoisons(nextUsedPoisons);
+
+  const firstEyeOpens =
+    nextUsedPoisons.pig &&
+    nextUsedPoisons.snake &&
+    nextUsedPoisons.rooster &&
+    !brunoAwakened;
+
+  if (firstEyeOpens) {
+    setBrunoAwakened(true);
+
+    console.log("THE FIRST EYE OPENS");
+    console.log("BRUNO AWAKENS");
+  }
+
+  onConsciousMove(opt, all);
+};
 React.useEffect(() => {
   if (state.phase !== "rolled") setHoveredOption(null);
 }, [state.phase]);
@@ -288,33 +350,33 @@ const getNidanaEffectText = () => {
 };
 const realmCoinMap = {
   hungry_ghost: {
-    front: "/assets/coins/coin_hungry_ghost_front.png",
-    back: "/assets/coins/coin_hungry_ghost_back.png",
+    front: "/assets/coin_hungry_ghost_front.webp",
+    back: "/assets/coin_hungry_ghost_back.webp",
   },
 
   hell: {
-    front: "/assets/coins/coin_hell_front.png",
-    back: "/assets/coins/coin_hell_back.png",
+    front: "/assets/coin_hell_front.webp",
+    back: "/assets/coin_hell_back.webp",
   },
 
   animals: {
-    front: "/assets/coins/coin_animal_front.png",
-    back: "/assets/coins/coin_animal_back.png",
+    front: "/assets/coin_animal_front.webp",
+    back: "/assets/coin_animal_back.webp",
   },
 
   humans: {
-    front: "/assets/coins/coin_human_front.png",
-    back: "/assets/coins/coin_human_back.png",
+    front: "/assets/coin_human_front.webp",
+    back: "/assets/coin_human_back.webp",
   },
 
   asura: {
-  front: "/assets/coins/coin_asura_front.png",
-  back: "/assets/coins/coin_asura_back.png",
-},
+    front: "/assets/coin_asura_front.webp",
+    back: "/assets/coin_asura_back.webp",
+  },
 
   deva: {
-    front: "/assets/coins/coin_deva_front.png",
-    back: "/assets/coins/coin_deva_back.png",
+    front: "/assets/coin_deva_front.webp",
+    back: "/assets/coin_deva_back.webp",
   },
 } as const;
 
@@ -331,9 +393,12 @@ const coinRealmKey =
     : currentRealmKey;
 
 const currentRealmCoin =
-  coinRealmKey && realmCoinMap[coinRealmKey]
-    ? realmCoinMap[coinRealmKey]
-    : realmCoinMap.hungry_ghost;
+  (coinRealmKey && realmCoinMap[coinRealmKey]) ||
+  realmCoinMap.humans ||
+  {
+    front: "/assets/coin_human_front.webp",
+    back: "/assets/coin_human_back.webp",
+  };
 
 console.log("ORACLE TEXT:", oracleText);
 
@@ -344,21 +409,24 @@ console.log(
   `${oracleText}\n\n${mirrorData.title}\n${mirrorData.body}`
 );
 
+const buddhaMessage = "THE FIRST EYE OPENS.";
+  
 return (
 
-<>
-<TopBar onLogout={onLogout} />
+  <>
 
-<VestigiumOverlay
-  show={showVestigium}
-  onDone={onVestigiumDone}
-/>
+    {/* <TopBar onLogout={onLogout} /> */}
 
+    <VestigiumOverlay
+
+      show={showVestigium}
+
+      onDone={onVestigiumDone}
+
+    />
 {showWatcher && (
   <div className="watcherOverlay">
-    <div className="watcherTextTop">
-      {watcherLine}
-    </div>
+    <div className="watcherTextTop">{watcherLine}</div>
 
     <video
       src={watcherVideo}
@@ -370,104 +438,52 @@ return (
   </div>
 )}
 
-     <div style={{ padding: 24, position: "relative" }}>
-{showRealmMedal && (
-  <div className="realmMedalFlip">
-    <div className="realmMedalInner">
-  <img
-  src={currentRealmCoin.front}
-  className="realmMedalFace"
-/>
+<div className="gameViewport">
+  {false && showRealmMedal && currentRealmCoin && (
+    <div className="realmMedalFlip">
+      <div className="realmMedalInner">
+        <img src={currentRealmCoin.front} className="realmMedalFace" />
+        <img src={currentRealmCoin.back} className="realmMedalFace realmMedalBack" />
+      </div>
+    </div>
+  )}
 
-<img
-  src={currentRealmCoin.back}
-  className="realmMedalFace realmMedalBack"
-/>
+  <div className="rotateHint">
+    <span>↺</span>
+    Rotate your device to play
+  </div>
+
+  <div className="samsaraStage">
+    <div className="samsaraScene">
+      <SamsaraStage
+       dharmaMessage={buddhaMessage}
+      />
+
+      <SacredProgress
+        p1Completed={state.realmProgress.P1.realmTransitions}
+        p2Completed={state.realmProgress.P2.realmTransitions}
+      />
+
+      <MaraPanel state={state} />
+
+     <FandangoKarma />
+
+      <div className="boardLayer">
+        <Board
+          state={state}
+          onSelectPiece={onSelectPiece}
+          hoveredOption={hoveredOption}
+          moveOptions={moveOptions}
+          onChooseMove={handleMove}
+          onSendEmoji={onSendEmoji}
+          onRoll={onRoll}
+          nidanaCoinSrc={nidanaCoinSrc}
+          nidanaCoinSide={nidanaCoinSide}
+          nidanaCoinId={nidanaCoinId}
+        />
+      </div>
     </div>
   </div>
-)}
-        <h1 className="mainTitle">Samsaragammon Core</h1>
-
-    <div style={{ display: "flex", gap: 20, justifyContent: "center" }}>
-  
-  <EvolutionStatus
-   player="P1"   isActive={state.turn === "P1"}
-    realmLabel={activeRealmData.label}
-    realmHex={activeRealmData.color}
-    era={activeEra}
-    cyclesDone={state.realmProgress.P1.completedLoopsInRealm}
-    cyclesNeeded={state.realmProgress.P1.currentRealmStep * 2}
-    transitions={state.realmProgress.P1.realmTransitions}
-  />
-
-  <EvolutionStatus
-   player="P2"   isActive={state.turn === "P2"}
-    realmLabel={activeRealmData.label}
-    realmHex={activeRealmData.color}
-    era={activeEra}
-    cyclesDone={state.realmProgress.P2.completedLoopsInRealm}
-    cyclesNeeded={state.realmProgress.P2.currentRealmStep * 2}
-    transitions={state.realmProgress.P2.realmTransitions}
-  />
-
-</div>
-
-   <TurnDock
-  turn={state.turn}
-  phase={state.phase}
-  rollA={a}
-  rollB={b}
-  level={state.level}
-  onRoll={onRoll}
-  onReset={onReset}
-/>
-     
-{/* <MasterPanel text={oracleText} /> */}
-
-<MirrorPanel
-  title={
-    state.globalRollCount > 0 && state.globalRollCount % 5 === 0
-      ? "GOAL"
-      : mirrorData.title
-  }
-  body={
-    state.globalRollCount > 0 && state.globalRollCount % 5 === 0
-      ? "Collect 6 Realm Tokens → Unite them in the Human Realm → Achieve Nirvana"
-      : mirrorData.body
-  }
-  tags={
-    state.globalRollCount > 0 && state.globalRollCount % 5 === 0
-      ? ["realm tokens", "human realm", "nirvana"]
-      : mirrorData.tags
-  }
-/>
-<div className="samsaraScene">
-<SamsaraStage
-  dharmaMessage={`${oracleText}\n\n${mirrorData.title}\n${mirrorData.body}`}
-/>
-
-  <MaraPanel state={state} />
-
-  <div className="fandangoLayer">
-    <FandangoKarma />
-  </div>
-
-  <div className="boardLayer">
-    <Board
-      state={state}
-      onSelectPiece={onSelectPiece}
-      hoveredOption={hoveredOption}
-      moveOptions={moveOptions}
-      onChooseMove={handleMove}
-      onSendEmoji={onSendEmoji}
-      onRoll={onRoll}
-      nidanaCoinSrc={nidanaCoinSrc}
-      nidanaCoinSide={nidanaCoinSide}
-      nidanaCoinId={nidanaCoinId}
-    />
-  </div>
-</div>
-
 </div>
 
 <LedgerModal

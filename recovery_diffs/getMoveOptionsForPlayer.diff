@@ -1,0 +1,66 @@
+diff --git a/src/game/rules/getMoveOptionsForPlayer.ts b/src/game/rules/getMoveOptionsForPlayer.ts
+index 40ecb4b..e6b9c3a 100644
+--- a/src/game/rules/getMoveOptionsForPlayer.ts
++++ b/src/game/rules/getMoveOptionsForPlayer.ts
+@@ -8,7 +8,19 @@ import type {
+ import { previewMove } from "./preview";
+ import { applyRealmEffect } from "../realm/realmEffects";
+ 
+-const ALL_PIECES: PieceKind[] = ["pig", "snake", "rooster"];
++const BASE_PIECES: BasePieceKind[] = ["pig", "snake", "rooster"];
++
++const REALM_PIECES: RealmPieceKind[] = [
++  "hungry_ghost",
++  "hell",
++  "animals",
++  "humans",
++  "asura",
++  "deva",
++];
++
++const isBasePiece = (kind: PieceKind): kind is BasePieceKind =>
++  BASE_PIECES.includes(kind as BasePieceKind);
+ 
+ const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
+ 
+@@ -41,7 +53,7 @@ function countEnemyPiecesAtPos(
+ ): number {
+   const opp = otherPlayer(player);
+ 
+-  return ALL_PIECES.filter((kind) => {
++ return BASE_PIECES.filter((kind) => {
+     const piece = state.pieces[opp][kind];
+     return !piece.inLimbo && piece.pos === targetPos;
+   }).length;
+@@ -105,15 +117,24 @@ export function getMoveOptionsForPlayer(
+   const isDouble = a === b;
+   const opp = otherPlayer(player);
+ 
+-  const enemyPositions = ALL_PIECES
+-    .filter((kind) => !state.pieces[opp][kind].inLimbo)
+-    .map((kind) => state.pieces[opp][kind].pos);
+-
++const enemyPositions = BASE_PIECES
++  .filter((kind) => !state.pieces[opp][kind].inLimbo)
++  .map((kind) => state.pieces[opp][kind].pos);
+   const options: MoveOption[] = [];
+ 
+-  for (const pieceKind of ALL_PIECES) {
+-    const piece = state.pieces[player][pieceKind];
+-    if (piece.inLimbo) continue;
++const activePieceKinds: PieceKind[] = [
++  ...BASE_PIECES,
++  ...REALM_PIECES.filter(
++    (kind) => state.realmPieces[player]?.[kind]?.unlocked
++  ),
++];
++
++for (const pieceKind of activePieceKinds) {
++  const piece = isBasePiece(pieceKind)
++    ? state.pieces[player][pieceKind]
++    : state.realmPieces[player]?.[pieceKind];
++
++  if (!piece || piece.inLimbo) continue;
+ 
+     const fromPos = piece.pos;
+ 

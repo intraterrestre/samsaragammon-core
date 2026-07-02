@@ -4,42 +4,42 @@ import {  cellStyle as ringCellStyle, RING_SIZE,  piecePosition,} from "../UI/ge
 import { realmFromPos, REALM_LABEL, pickLine } from "../UI/realm";
 import { ExplainModal } from "../UI/ExplainModal";
 import { MoveEmanations } from "../UI/MoveEmanations";
-import budaKarmaER from "../assets/tokens/buda-karma-er.png";
+import budaKarmaER from "../assets/tokens/buda-karma-er.webp";
 import BigHeadSchoolOverlay from "../UI/BigHeadSchoolOverlay";
 
 // 🔥 FICHAS
-import pigWhite from "../assets/pieces/pig_white.png";
-import pigBlack from "../assets/pieces/pig_black.png";
-import roosterWhite from "../assets/pieces/rooster_white.png";
-import roosterBlack from "../assets/pieces/rooster_black.png";
-import cobraWhite from "../assets/pieces/cobra_white.png";
-import cobraBlack from "../assets/pieces/cobra_black.png";
+import pigWhite from "../assets/pieces/pig_white.webp";
+import pigBlack from "../assets/pieces/pig_black.webp";
+import roosterWhite from "../assets/pieces/rooster_white.webp";
+import roosterBlack from "../assets/pieces/rooster_black.webp";
+import cobraWhite from "../assets/pieces/cobra_white.webp";
+import cobraBlack from "../assets/pieces/cobra_black.webp";
 
 // 🔊 SONIDOS
 import captureWhite from "../assets/sounds/capture_white.mp3";
 import captureBlack from "../assets/sounds/capture_black.mp3";
 import moveSound from "../assets/sounds/move.mp3";
 
-import brunoP1 from "../assets/tokens/bruno_P1.png";
-import brunoP2 from "../assets/tokens/bruno_P2.png";
+import brunoP1 from "../assets/tokens/bruno_P1.webp";
+import brunoP2 from "../assets/tokens/bruno_P2.webp";
 
-import margotP1 from "../assets/tokens/margot_P1.png";
-import margotP2 from "../assets/tokens/margot_P2.png";
+import margotP1 from "../assets/tokens/margot_P1.webp";
+import margotP2 from "../assets/tokens/margot_P2.webp";
 
-import marinoP1 from "../assets/tokens/marino_P1.png";
-import marinoP2 from "../assets/tokens/marino_P2.png";
+import marinoP1 from "../assets/tokens/marino_P1.webp";
+import marinoP2 from "../assets/tokens/marino_P2.webp";
 
-import oriolP1 from "../assets/tokens/oriol_P1.png";
-import oriolP2 from "../assets/tokens/oriol_P2.png";
+import oriolP1 from "../assets/tokens/oriol_P1.webp";
+import oriolP2 from "../assets/tokens/oriol_P2.webp";
 
-import rufusP1 from "../assets/tokens/rufus_P1.png";
-import rufusP2 from "../assets/tokens/rufus_P2.png";
+import rufusP1 from "../assets/tokens/rufus_P1.webp";
+import rufusP2 from "../assets/tokens/rufus_P2.webp";
 
-import whitmanP1 from "../assets/tokens/whitman_P1.png";
-import whitmanP2 from "../assets/tokens/whitman_P2.png";
+import whitmanP1 from "../assets/tokens/whitman_P1.webp";
+import whitmanP2 from "../assets/tokens/whitman_P2.webp";
 
-import diceWhitePortal from "../assets/dice/dice_white_portal.png";
-import diceBlackPortal from "../assets/dice/dice_black_portal.png";
+import diceWhitePortal from "../assets/dice/dice_white_portal.webp";
+import diceBlackPortal from "../assets/dice/dice_black_portal.webp";
 
 type Props = {
   state: GameState;
@@ -70,7 +70,7 @@ const NIDANA_EFFECT_LINES: Record<number, {
     body: "Old patterns begin moving before you choose.",
   },
   3: {
-    title: "👁️ CONSCIOUSNESS ACTIVE",
+    title: " CONSCIOUSNESS ACTIVE",
     body: "A witness appears, but still believes the dream.",
   },
   4: {
@@ -154,6 +154,141 @@ function stackOffset(index: number, total: number) {
     y: Math.sin(angle) * radius,
   };
 }
+/* =====================================================
+   /* =====================================================
+   STACK ENGINE
+   ===================================================== */
+
+function getStackedTokenPosition({
+  base,
+  pieceSize,
+  indexInStack,
+  totalInStack,
+  wheelCenter,
+  spacing = 26,
+}: {
+  base: { left: number; top: number };
+  pieceSize: number;
+  indexInStack: number;
+  totalInStack: number;
+  wheelCenter: { x: number; y: number };
+  spacing?: number;
+}) {
+  if (totalInStack <= 1) {
+    return {
+      left: base.left,
+      top: base.top,
+      zIndex: 40,
+    };
+  }
+
+  const cellCenterX = base.left + pieceSize / 2;
+  const cellCenterY = base.top + pieceSize / 2;
+
+  const dx = wheelCenter.x - cellCenterX;
+  const dy = wheelCenter.y - cellCenterY;
+
+  const len = Math.hypot(dx, dy) || 1;
+
+  const ux = dx / len;
+  const uy = dy / len;
+
+  const px = -uy;
+  const py = ux;
+
+  const compressedSpacing =
+    totalInStack >= 6 ? 18 :
+    totalInStack === 5 ? 21 :
+    totalInStack === 4 ? 25 :
+    totalInStack === 3 ? 30 :
+    spacing;
+
+  const radialOffset = indexInStack * compressedSpacing;
+
+  const midIndex = (totalInStack - 1) / 2;
+
+  const lateralOffset =
+    totalInStack > 4
+      ? (indexInStack - midIndex) * 10
+      : 0;
+
+  return {
+    left:
+      cellCenterX +
+      ux * radialOffset +
+      px * lateralOffset -
+      pieceSize / 2,
+
+    top:
+      cellCenterY +
+      uy * radialOffset +
+      py * lateralOffset -
+      pieceSize / 2,
+
+    zIndex: 40 + indexInStack,
+  };
+}
+
+function buildUnifiedStackMap(
+  state: GameState
+): Map<string, { stackIndex: number; stackTotal: number }> {
+  const byPos = new Map<
+    number,
+    { player: PlayerId; kind: string }[]
+  >();
+
+  const addToken = (pos: number, player: PlayerId, kind: string) => {
+    if (!byPos.has(pos)) byPos.set(pos, []);
+    byPos.get(pos)!.push({ player, kind });
+  };
+
+  (["P1", "P2"] as PlayerId[]).forEach((player) => {
+    PIECE_KINDS.forEach((kind) => {
+      const piece = state.pieces[player][kind];
+
+      if (!piece.inLimbo) {
+        addToken(piece.pos, player, kind);
+      }
+    });
+  });
+
+  const realmOrder = [
+    "hungry_ghost",
+    "hell",
+    "animals",
+    "humans",
+    "asura",
+    "deva",
+  ] as const;
+
+  (["P1", "P2"] as PlayerId[]).forEach((player) => {
+    realmOrder.forEach((kind) => {
+      const piece = state.realmPieces?.[player]?.[kind];
+
+      if (piece && !piece.inLimbo && piece.unlocked) {
+        addToken(piece.pos, player, kind);
+      }
+    });
+  });
+
+  const result = new Map<
+    string,
+    { stackIndex: number; stackTotal: number }
+  >();
+
+  byPos.forEach((tokens) => {
+    const stackTotal = tokens.length;
+
+    tokens.forEach(({ player, kind }, stackIndex) => {
+      result.set(`${player}-${kind}`, {
+        stackIndex,
+        stackTotal,
+      });
+    });
+  });
+
+  return result;
+}
 
 export function Board({
   state,
@@ -221,6 +356,9 @@ const activePos =
   const [bigHeadSchoolBy, setBigHeadSchoolBy] =
   useState<"white" | "black" | null>(null);
 
+  const [dharmaEmergencyFor, setDharmaEmergencyFor] =
+  useState<PlayerId | null>(null);
+
   // 🔊 DISPARAR SONIDO / FX POR LAST MOVE
   useEffect(() => {
     if (!state.lastMove) return;
@@ -278,6 +416,13 @@ const activePos =
 
   const turnClass = state.turn === "P1" ? "turnP1" : "turnP2";
   const beatClass = beat ? "beat" : "";
+
+const unifiedStackMap = buildUnifiedStackMap(state);
+
+const wheelCenter = {
+  x: RING_SIZE / 2,
+  y: RING_SIZE / 2,
+};
  const cajaMagica = useRef<number | null>(null);
 const [showNidanaBanner, setShowNidanaBanner] = useState(false);
 
@@ -324,12 +469,26 @@ useEffect(() => {
       const isCurrentSelected =
         player === state.turn && state.selectedPiece[player] === kind;
 
-      const base = piecePosition(pos, size);
-      const stack = piecesByPos[pos] ?? [];
-      const stackIndex = stack.findIndex(
-        (p) => p.player === player && p.kind === kind
-      );
-      const offset = stackOffset(stackIndex, stack.length);
+    const base = piecePosition(pos, size);
+
+const stackKey = `${player}-${kind}`;
+const { stackIndex, stackTotal } =
+  unifiedStackMap.get(stackKey) ?? {
+    stackIndex: 0,
+    stackTotal: 1,
+  };
+
+const stackedPosition = getStackedTokenPosition({
+  base: {
+    left: base.left as number,
+    top: base.top as number,
+  },
+  pieceSize: 36,
+  indexInStack: stackIndex,
+  totalInStack: stackTotal,
+  wheelCenter,
+  spacing: 30,
+});
 
       let src = player === "P1" ? pigWhite : pigBlack;
 
@@ -350,11 +509,11 @@ useEffect(() => {
           }}
           style={{
             ...base,
-            left: (base.left as number) + offset.x,
-            top: (base.top as number) + offset.y,
+            left: stackedPosition.left,
+top: stackedPosition.top,
             width: 36,
             height: 36,
-            zIndex: isCurrentSelected ? 45 : 40,
+           zIndex: isCurrentSelected ? 9000 : 8000 + stackedPosition.zIndex,
             pointerEvents: player === state.turn ? "auto" : "none",
             position: "absolute",
             cursor: player === state.turn ? "pointer" : "default",
@@ -411,14 +570,6 @@ useEffect(() => {
     });
   });
 
-  console.log("PHASE", state.phase);
-console.log("MOVE OPTIONS", moveOptions.length);
-
-console.log("BANNER", {
-  showNidanaBanner,
-  coinId: nidanaCoinId,
-  caja: cajaMagica.current,
-});
   return (
     <div className={`board ${turnClass} ${beatClass}`}>
       {ghost && <div className="ghostWord">{ghost}</div>}
@@ -434,8 +585,14 @@ console.log("BANNER", {
     {state.emojiEvents[state.emojiEvents.length - 1].emoji}
   </div>
 ) : null}
+
 {true && (
   <div className="nidanaLivingBanner">
+
+    <div className="nidanaLivingIcon">
+      👁️
+    </div>
+
     <div className="nidanaLivingTitle">
       {NIDANA_EFFECT_LINES[cajaMagica.current]?.title}
     </div>
@@ -443,16 +600,17 @@ console.log("BANNER", {
     <div className="nidanaLivingBody">
       {NIDANA_EFFECT_LINES[cajaMagica.current]?.body}
     </div>
+
   </div>
 )}
-      {/* ===== Ring ===== */}
 
+      {/* ===== Ring ===== */}
 <div
   className="ringWrap"
   style={{
     position: "absolute",
-    left: 520,
-    top: 55,
+    left: 512,
+    top: 50,
 
     width: RING_SIZE,
     height: RING_SIZE,
@@ -467,14 +625,16 @@ console.log("BANNER", {
     transformOrigin: "center center",
   }}
 >
-        <img
+  <img
 src={budaKarmaER}
 onClick={() => {
+  setDharmaEmergencyFor(state.turn);
 
   setBigHeadSchoolBy(state.turn === "P1" ? "white" : "black");
 
   setTimeout(() => {
     setBigHeadSchoolBy(null);
+    setDharmaEmergencyFor(null);
   }, 5000);
 }}
 
@@ -489,29 +649,29 @@ e.currentTarget.style.transform="scale(1)"
 style={{
 position:"absolute",
 
-left:"-10%",
-top:"70%",
+left:"-8%",
+top:"75%",
 
-width:130,
+width:115,
 
 zIndex:90,
 
-cursor:"pointer",
+pointerEvents: "auto",
 transition:"0.3s",
 
-filter:"drop-shadow(0 0 18px rgba(255,255,255,.95))"
+filter:"drop-shadow(0 0 7px rgba(255,255,255,.95))"
 }}
 />
 {bigHeadSchoolBy && (
   <BigHeadSchoolOverlay openedBy={bigHeadSchoolBy} />
 )}
-{onRoll && (
-  <button
-    type="button"
-    className="samsaraDicePortalButton"
-    onClick={onRoll}
-    title="Roll dice"
-  >
+{onRoll && !dharmaEmergencyFor && (
+<button
+  type="button"
+  className="samsaraDicePortalButton"
+  onClick={onRoll}
+  title="Roll dice"
+>
     <img
       src={state.turn === "P1" ? diceWhitePortal : diceBlackPortal}
       alt="Roll dice"
@@ -615,29 +775,43 @@ const seen = new Set<number>();
 
 const realmList = realmOrder
   .map((key) => state.realmPieces[player]?.[key])
-  .filter((piece) => {
-    if (!piece || piece.inLimbo || !piece.unlocked) return false;
+  .filter((piece) => piece && !piece.inLimbo && piece.unlocked);
+  const realmStackCountByPos = new Map<number, number>();
 
-    if (seen.has(piece.pos)) {
-      console.log(
-        "🚨 DUPLICATE REALM PIECE:",
-        player,
-        piece.kind,
-        piece.pos
-      );
-      return false;
-    }
+for (const piece of realmList) {
+  realmStackCountByPos.set(
+    piece.pos,
+    (realmStackCountByPos.get(piece.pos) ?? 0) + 1
+  );
+}
 
-    seen.add(piece.pos);
-    return true;
-  });
-
+const realmStackIndexByPos = new Map<number, number>();
   return realmList.map((piece) => {
     if (!piece || piece.inLimbo || !piece.unlocked) {
       return null;
     }
 
-    const base = piecePosition(piece.pos, size);
+const base = piecePosition(piece.pos, size);
+
+const stackKey = `${player}-${piece.kind}`;
+const { stackIndex, stackTotal } =
+  unifiedStackMap.get(stackKey) ?? {
+    stackIndex: 0,
+    stackTotal: 1,
+  };
+
+const stackedPosition = getStackedTokenPosition({
+  base: {
+    left: base.left as number,
+    top: base.top as number,
+  },
+  pieceSize: 48,
+  indexInStack: stackIndex,
+  totalInStack: stackTotal,
+  wheelCenter,
+  spacing: 34,
+});
+
 
     return (
       <div
@@ -651,8 +825,9 @@ const realmList = realmOrder
         className={`realmPieceToken realmPiece-${piece.kind} ${
           player === "P1" ? "realmPieceP1" : "realmPieceP2"
         }`}
-      style={{
-  ...base,
+style={{
+ left: stackedPosition.left,
+ 
   width: 48,
   height: 48,
 
@@ -667,8 +842,8 @@ player==="P1"
 player==="P1"
 ? "0 0 0 2px gold,0 0 14px white"
 : "0 0 0 2px #500,0 0 14px black",
-
-  zIndex: 38,
+zIndex: 9999 + stackedPosition.zIndex,
+top: stackedPosition.top,
   position: "absolute",
   pointerEvents: player === state.turn ? "auto" : "none",
   cursor: player === state.turn ? "pointer" : "default",

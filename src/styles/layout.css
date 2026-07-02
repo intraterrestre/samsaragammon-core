@@ -1,0 +1,65 @@
+:root {
+  --scene-w: 1100px;
+  --scene-h: 620px;
+  --scene-fit-margin: 0.92;
+}
+
+.samsaraStage {
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  background: #000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+
+  box-sizing: border-box;
+}
+
+/* Aviso de rotar en portrait (móvil) */
+.rotateHint {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 9999999;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  gap: 16px;
+  font-family: sans-serif;
+}
+
+.rotateHint span { font-size: 64px; }
+
+@media (orientation: portrait) and (max-width: 768px) {
+  .rotateHint { display: flex; }
+}
+
+.samsaraScene {
+  position: relative;
+
+  width: var(--scene-w);
+  height: var(--scene-h);
+
+  flex-shrink: 0;
+  margin: 0;
+
+  transform: scale(var(--scene-scale, 0.85));
+
+  transform-origin: center center;
+
+  overflow: visible;
+
+  border: 8px solid rgba(80,255,80,.55);
+
+  box-shadow:
+    0 0 1px rgba(80,255,80,.25),
+    0 0 24px rgba(80,255,80,.12);
+}

@@ -1,0 +1,119 @@
+
+/* =========================
+   NIDANA COIN OVERLAY
+   ========================= */
+
+.nidanaCoinStage {
+  margin: 18px auto 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 390px;
+  pointer-events: none;
+}
+
+.nidanaCoinImage {
+  width: min(390px, 82vw);
+  height: auto;
+  border-radius: 50%;
+  object-fit: contain;
+  animation:
+    nidanaCoinEnter 0.45s ease-out,
+    nidanaCoinFloat 1.7s ease-in-out infinite;
+  box-shadow:
+    0 20px 55px rgba(0, 0, 0, 0.45),
+    0 0 36px rgba(255, 230, 160, 0.18);
+}
+
+.nidanaCoinImage.isBack {
+
+  animation: none;
+}
+
+@keyframes nidanaCoinEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.68) rotateY(85deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotateY(0deg);
+  }
+}
+
+@keyframes nidanaCoinFlip {
+  from {
+    opacity: 0.65;
+    transform: scale(0.95) rotateY(90deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotateY(0deg);
+  }
+}
+
+@keyframes nidanaCoinFloat {
+  0%, 100% {
+    transform: scale(1) rotateZ(0deg);
+  }
+  50% {
+    transform: scale(1.035) rotateZ(1.5deg);
+  }
+}
+/* ===== COIN SYSTEM ===== */
+
+.coin {
+  transition: transform 0.6s ease;
+  z-index: 30;
+  pointer-events: auto;
+}
+.coin:hover {
+  filter: brightness(1.08) drop-shadow(0 0 10px rgba(255,255,255,0.18));
+  cursor: pointer;
+}
+.flip {
+  transform: translate(-50%, -50%) rotateY(180deg);
+}
+.coin:hover {
+  filter: brightness(1.08) drop-shadow(0 0 10px rgba(255,255,255,0.18));
+}
+.coin {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  aspect-ratio: 1 / 1;
+}
+.nidanaStage {
+  margin: 18px auto 14px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.nidanaCoin {
+  width: min(360px, 72vw);
+  height: auto;
+  border-radius: 50%;
+  animation: nidanaAppear 0.45s ease-out, nidanaPulse 1.8s ease-in-out infinite;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.38);
+}
+
+@keyframes nidanaAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.72) rotateY(90deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotateY(0deg);
+  }
+}
+
+@keyframes nidanaPulse {
+  0%, 100% {
+    transform: scale(1) rotateY(0deg);
+  }
+  50% {
+    transform: scale(1.035) rotateY(10deg);
+  }
+}

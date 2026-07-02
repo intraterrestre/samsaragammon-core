@@ -1,5 +1,5 @@
 import "./fandango.css";
-import karmaChatFandango from "./karma-chat-fandango.png";
+import karmaChatFandango from "./karma-chat-fandango.webp";
 
 export function FandangoKarma() {
   return (

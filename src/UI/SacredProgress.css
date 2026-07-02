@@ -1,0 +1,80 @@
+.sacredYinYang {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.sacredYinYangImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  opacity: 0.75;
+  z-index: 1;
+}
+
+.lampCurve {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+}
+
+.lampCurveTop {
+  transform: translate(-12px, 49px) rotate(-12deg) scale(1.12);
+  transform-origin: 10px 10px;
+}
+
+.lampCurveBottom {
+  transform: translate(58px, 25px) rotate(18deg) scale(1.12);
+  transform-origin: 20px 20px;
+}
+.lampCurveTop .sacredLamp:nth-child(1) { left: 8px; top: 54px; }
+
+.lampCurveTop .sacredLamp:nth-child(2) { left: 16px; top: 40px; }
+
+.lampCurveTop .sacredLamp:nth-child(3) { left: 32px; top: 26px; }
+
+.lampCurveTop .sacredLamp:nth-child(4) { left: 52px; top: 18px; }
+
+.lampCurveTop .sacredLamp:nth-child(5) { left: 74px; top: 22px; }
+
+.lampCurveTop .sacredLamp:nth-child(6) { left: 92px; top: 36px; }
+
+.lampCurveBottom .sacredLamp:nth-child(1) { left: 96px; top: 56px; }
+.lampCurveBottom .sacredLamp:nth-child(2) { left: 88px; top: 68px; }
+.lampCurveBottom .sacredLamp:nth-child(3) { left: 74px; top: 78px; }
+.lampCurveBottom .sacredLamp:nth-child(4) { left: 58px; top: 82px; }
+.lampCurveBottom .sacredLamp:nth-child(5) { left: 42px; top: 78px; }
+.lampCurveBottom .sacredLamp:nth-child(6) { left: 28px; top: 66px; }
+
+.sacredLamp {
+  position: absolute;
+  z-index: 30;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  box-shadow: none;
+}
+
+.sacredLamp.isFilled {
+  background: var(--lamp-color);
+  border-color: rgba(255, 255, 255, 0.65);
+}
+
+.sacredCounter {
+  display: none;
+}
+
+.sacredProgress {
+  position: absolute;
+  left: 8%;
+  top: 14%;
+  transform: translate(-50%, -50%);
+  width: 180px;
+  height: 180px;
+}
