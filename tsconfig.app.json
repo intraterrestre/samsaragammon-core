@@ -24,5 +24,16 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": [
+    "src/**/*.before-clean.tsx",
+    "src/**/*.old-before-recovery.tsx",
+    "src/**/*.recovered.tsx",
+    "src/**/*.stash.tsx",
+    "src/**/*.stash.ts",
+    "src/game/Board.before-clean.tsx",
+    "src/game/Board.old-before-recovery.tsx",
+    "src/game/Board.recovered.tsx",
+    "src/game/Board.stash.tsx"
+  ]
 }
