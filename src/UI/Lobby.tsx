@@ -29,7 +29,7 @@ export function Lobby({
   return (
     <div
       style={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -47,7 +47,7 @@ export function Lobby({
           SAMSARAGAMMON
         </h1>
         <p style={{ opacity: 0.5, marginTop: 8, fontSize: 13 }}>
-          The wheel turns for all beings
+          The wheel turns for all beings.
         </p>
       </div>
 
@@ -81,7 +81,7 @@ export function Lobby({
           disabled={isLoading}
           style={btnStyle("primary")}
         >
-          {isLoading ? "Creando…" : "Crear partida"}
+          {isLoading ? "Creating…" : "Create game"}
         </button>
 
         {createdCode && (
@@ -95,7 +95,7 @@ export function Lobby({
             }}
           >
             <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 6 }}>
-              Compartí este código con tu oponente:
+              Share this code with your opponent:
             </div>
             <div
               style={{
@@ -120,10 +120,10 @@ export function Lobby({
                 cursor: "pointer",
               }}
             >
-              Copiar código
+              Copy code
             </button>
             <div style={{ fontSize: 11, opacity: 0.4, marginTop: 8 }}>
-              Esperando al oponente…
+              Waiting for opponent…
             </div>
           </div>
         )}
@@ -137,7 +137,7 @@ export function Lobby({
         >
           <input
             type="text"
-            placeholder="Código de partida (ej: KARMA-7X3)"
+            placeholder="Game code (e.g. KARMA-7X3)"
             value={joinCode}
             onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
             onKeyDown={(e) => e.key === "Enter" && handleJoin()}
@@ -158,7 +158,7 @@ export function Lobby({
             disabled={isLoading || !joinCode.trim()}
             style={btnStyle("secondary")}
           >
-            Unirse
+            Join
           </button>
         </div>
 
@@ -169,7 +169,7 @@ export function Lobby({
           }}
         >
           <button onClick={onPlayLocal} style={btnStyle("ghost")}>
-            Jugar local (hot-seat)
+            Play local (hot-seat)
           </button>
         </div>
       </div>
