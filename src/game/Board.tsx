@@ -805,11 +805,11 @@ const stackedPosition = getStackedTokenPosition({
     left: base.left as number,
     top: base.top as number,
   },
-  pieceSize: 67,
+  pieceSize: 48,
   indexInStack: stackIndex,
   totalInStack: stackTotal,
   wheelCenter,
-  spacing: 38,
+  spacing: 34,
 });
 
 
@@ -828,8 +828,8 @@ const stackedPosition = getStackedTokenPosition({
 style={{
  left: stackedPosition.left,
  
-  width: 67,
-  height: 67,
+  width: 48,
+  height: 48,
 
   border:
 player==="P1"

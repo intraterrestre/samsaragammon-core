@@ -131,8 +131,8 @@ export function DicePopup({ visible, rollA, rollB, rolling, turn, onDismiss }: P
       {/* Círculo contenedor — semitransparente, posicionado sobre la rueda */}
       <div style={{
         position: "absolute",
-        left: "50%",
-        top: "48%",
+        left: "62%",
+        top: "46%",
         transform: "translate(-50%, -50%)",
         background: "rgba(0,0,0,0.35)",
         backdropFilter: "blur(10px)",
