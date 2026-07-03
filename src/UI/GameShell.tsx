@@ -120,11 +120,9 @@ const [showNidanaTitle, setShowNidanaTitle] = React.useState(false);
 // Escala dinámica del scene para llenar el viewport
 React.useEffect(() => {
   const applyScale = () => {
-    const isLandscape = window.innerWidth > window.innerHeight;
     const scaleX = window.innerWidth  / 1116;
     const scaleY = window.innerHeight / 636;
-    // En landscape llenamos el ancho; en portrait usamos el mínimo con margen
-    const scale = isLandscape ? scaleX : Math.min(scaleX, scaleY) * 0.92;
+    const scale  = Math.min(scaleX, scaleY);
     document.documentElement.style.setProperty('--scene-scale', String(scale));
   };
   applyScale();
@@ -485,6 +483,28 @@ return (
         />
       </div>
     </div>
+  </div>
+
+  <div style={{
+    position: "fixed",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    background: "rgba(0,0,0,0.85)",
+    backdropFilter: "blur(8px)",
+    padding: "6px 0",
+  }}>
+    <TurnDock
+      turn={state.turn}
+      phase={state.phase}
+      rollA={a}
+      rollB={b}
+      level={state.level ?? 1}
+      onRoll={onRoll}
+      onReset={onReset}
+      showVestigium={showVestigium}
+    />
   </div>
 </div>
 
