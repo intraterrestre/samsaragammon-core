@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type { PlayerId } from "../game/types";
+import { Die } from "./Die";
 
 type Props = {
   turn: PlayerId;
@@ -11,45 +12,6 @@ type Props = {
   onReset: () => void;
   showVestigium?: boolean;
 };
-
-function DieBox({ label, value }: { label: string; value: number | null }) {
-  return (
-    <div
-      className="dieBox"
-      style={{
-        minWidth: 48,
-        padding: "6px 8px",
-        borderRadius: 10,
-        background: "rgba(255,255,255,0.06)",
-        border: "1px solid rgba(255,255,255,0.10)",
-        textAlign: "center",
-      }}
-    >
-      <div
-        className="dieLabel"
-        style={{
-          fontSize: 11,
-          opacity: 0.7,
-          marginBottom: 2,
-          letterSpacing: 0.4,
-        }}
-      >
-        {label}
-      </div>
-
-      <div
-        className="dieValue"
-        style={{
-          fontSize: 18,
-          fontWeight: 800,
-          lineHeight: 1.1,
-        }}
-      >
-        {value !== null ? value : "–"}
-      </div>
-    </div>
-  );
-}
 
 export function TurnDock({
   turn,
@@ -65,10 +27,31 @@ export function TurnDock({
   const leftActive = turn === "P2";
   const rightActive = turn === "P1";
 
+  // Rolling animation state
+  const [rolling, setRolling] = useState(false);
+  const prevPhase = useRef(phase);
+
+  useEffect(() => {
+    // When phase changes from idle → rolled, trigger animation
+    if (prevPhase.current === "idle" && phase === "rolled") {
+      setRolling(true);
+      setTimeout(() => setRolling(false), 800);
+    }
+    prevPhase.current = phase;
+  }, [phase]);
+
+  const handleRoll = () => {
+    setRolling(true);
+    onRoll();
+    setTimeout(() => setRolling(false), 800);
+  };
+
   const centerMessage =
     rollA === null || rollB === null
       ? ""
       : "Pig · Snake · Rooster — choose your path";
+
+  const diceColor = turn === "P1" ? "white" : "black";
 
   return (
     <div className="turnDock">
@@ -84,13 +67,13 @@ export function TurnDock({
           className="dockDice"
           style={{
             display: "flex",
-            gap: 8,
+            gap: 10,
             justifyContent: "center",
-            opacity: leftActive ? 1 : 0.45,
+            opacity: leftActive ? 1 : 0.35,
           }}
         >
-          <DieBox label="A" value={rollA} />
-          <DieBox label="B" value={rollB} />
+          <Die value={rollA} rolling={rolling && leftActive} color="black" />
+          <Die value={rollB} rolling={rolling && leftActive} color="black" />
         </div>
 
         <div className="dockMeta">
@@ -103,16 +86,15 @@ export function TurnDock({
 
       {/* Center */}
       <div className="dockCenter">
-       {false && (
-  <button
-    className="dockBtn"
-    type="button"
-    onClick={onRoll}
-    disabled={!canRoll}
-  >
-    Roll the dice
-  </button>
-)}
+        {canRoll && (
+          <button
+            className="dockBtn"
+            type="button"
+            onClick={handleRoll}
+          >
+            Roll
+          </button>
+        )}
 
         <button className="dockBtn ghost" type="button" onClick={onReset}>
           Reset
@@ -133,13 +115,13 @@ export function TurnDock({
           className="dockDice"
           style={{
             display: "flex",
-            gap: 8,
+            gap: 10,
             justifyContent: "center",
-            opacity: rightActive ? 1 : 0.45,
+            opacity: rightActive ? 1 : 0.35,
           }}
         >
-          <DieBox label="A" value={rollA} />
-          <DieBox label="B" value={rollB} />
+          <Die value={rollA} rolling={rolling && rightActive} color="white" />
+          <Die value={rollB} rolling={rolling && rightActive} color="white" />
         </div>
 
         <div className="dockMeta">
