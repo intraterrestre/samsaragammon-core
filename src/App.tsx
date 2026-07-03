@@ -32,12 +32,13 @@ import {
 import { getMasterLine } from "./game/master/masterVoices";
 import diceRollSound from "./assets/sounds/dice_roll.mp3";
 
-import brunoIntro from "./assets/cinematics/realms/bruno_origin_intro.mp4";
-import margotIntro from "./assets/cinematics/realms/margot_hell_intro.mp4";
-import oriolIntro from "./assets/cinematics/realms/oriol_animal_intro.mp4";
-import marinoIntro from "./assets/cinematics/realms/marino_human_intro.mov";
-import rufusIntro from "./assets/cinematics/realms/rufus_titan_intro.mp4";
-import whitmanIntro from "./assets/cinematics/realms/whitman_deva_intro.mp4";
+// Videos cargados como URLs estáticas (no en memoria hasta que se usan)
+const brunoIntro = new URL("./assets/cinematics/realms/bruno_origin_intro.mp4", import.meta.url).href;
+const margotIntro = new URL("./assets/cinematics/realms/margot_hell_intro.mp4", import.meta.url).href;
+const oriolIntro = new URL("./assets/cinematics/realms/oriol_animal_intro.mp4", import.meta.url).href;
+const marinoIntro = new URL("./assets/cinematics/realms/marino_human_intro.mov", import.meta.url).href;
+const rufusIntro = new URL("./assets/cinematics/realms/rufus_titan_intro.mp4", import.meta.url).href;
+const whitmanIntro = new URL("./assets/cinematics/realms/whitman_deva_intro.mp4", import.meta.url).href;
 import { SamsaraStage } from "./samsara/SamsaraStage";
 
 const nidanaImages = import.meta.glob("./assets/nidanas/*.jpg", {

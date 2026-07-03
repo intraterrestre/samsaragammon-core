@@ -534,10 +534,12 @@
   font-weight: 900;
   color: white;
   background: rgba(255, 215, 0, 0.22);
-  border: 2px solid rgba(255, 230, 140, 0.8);
+  border: 3px solid rgba(255, 255, 255, 0.9);
   box-shadow:
-    0 0 16px rgba(255, 220, 120, 0.65),
-    0 8px 18px rgba(0, 0, 0, 0.35);
+    0 0 0 3px rgba(255, 255, 255, 0.4),
+    0 0 18px rgba(255, 255, 255, 0.7),
+    0 0 35px rgba(255, 220, 120, 0.5),
+    0 8px 18px rgba(0, 0, 0, 0.5);
 }
 
 .realmPieceP1 {
@@ -600,5 +602,8 @@ background: rgba(0,0,0,0.88);
   object-fit: contain;
   display: block;
   pointer-events: none;
-  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.55));
+  filter:
+    drop-shadow(0 0 6px rgba(255, 255, 255, 0.9))
+    drop-shadow(0 0 12px rgba(255, 255, 255, 0.5))
+    drop-shadow(0 4px 8px rgba(0, 0, 0, 0.7));
 }

@@ -28,10 +28,10 @@
 
 .fandangoTooltip {
   position: absolute;
-  left: 60px;
-  top: -10px;
-  width: 210px;
-  padding: 12px 14px;
+  left: 70px;
+  top: -20px;
+  width: 260px;
+  padding: 16px 18px;
   border-radius: 12px;
   background: rgba(0, 0, 0, 0.68);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -52,13 +52,13 @@
 
 .fandangoTooltip strong {
   display: block;
-  font-size: 15px;
+  font-size: 18px;
   letter-spacing: 0.08em;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .fandangoText {
-  font-size: 13px;
-  line-height: 1.4;
-  opacity: 0.82;
+  font-size: 15px;
+  line-height: 1.5;
+  opacity: 0.88;
 }
