@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import introImage from "../assets/intro/intro_samsaragammon.webp";
 
 type Props = {
   userId: string;
@@ -41,14 +42,17 @@ export function Lobby({
         gap: 32,
       }}
     >
-      <div style={{ textAlign: "center" }}>
-        <div style={{ fontSize: 48, marginBottom: 8 }}>☸</div>
-        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, letterSpacing: 2 }}>
-          SAMSARAGAMMON
-        </h1>
-        <p style={{ opacity: 0.5, marginTop: 8, fontSize: 13 }}>
-          The wheel turns for all beings.
-        </p>
+      <div style={{ textAlign: "center", width: "100%", maxWidth: 420 }}>
+        <img
+          src={introImage}
+          alt="Samsaragammon"
+          style={{
+            width: "100%",
+            maxHeight: "45vh",
+            objectFit: "contain",
+            borderRadius: 12,
+          }}
+        />
       </div>
 
       {error && (
