@@ -9,7 +9,7 @@ const PIPS: Record<number, [number, number][]> = {
   6: [[0, 0], [0, 1], [0, 2], [2, 0], [2, 1], [2, 2]],
 };
 
-function CircleDie({ value, rolling, color, size = 80 }: {
+function CubicDie({ value, rolling, color, size = 76 }: {
   value: number | null;
   rolling: boolean;
   color: "white" | "black";
@@ -31,12 +31,12 @@ function CircleDie({ value, rolling, color, size = 80 }: {
   }, [rolling, value]);
 
   const isDark = color === "black";
-  const bg = isDark ? "#1a1a1a" : "#f5f0e8";
+  const bg = isDark ? "#1c1c1c" : "#f5f0e8";
   const pipColor = isDark ? "#e8dcc8" : "#222";
-  const border = isDark ? "2px solid rgba(255,255,255,0.15)" : "2px solid rgba(0,0,0,0.12)";
+  const border = isDark ? "2px solid rgba(255,255,255,0.18)" : "2px solid rgba(0,0,0,0.14)";
   const shadow = isDark
-    ? "0 6px 20px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.1)"
-    : "0 6px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.7)";
+    ? "0 6px 18px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.08)"
+    : "0 6px 18px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.8)";
 
   const pips = PIPS[display] ?? [];
 
@@ -44,14 +44,14 @@ function CircleDie({ value, rolling, color, size = 80 }: {
     <div style={{
       width: size,
       height: size,
-      borderRadius: "50%",
+      borderRadius: size * 0.18,  // cubic — rounded corners like real dice
       background: bg,
       border,
       boxShadow: shadow,
       display: "grid",
       gridTemplateColumns: "repeat(3, 1fr)",
       gridTemplateRows: "repeat(3, 1fr)",
-      padding: size * 0.12,
+      padding: size * 0.1,
       boxSizing: "border-box",
       animation: rolling
         ? "dieRoll 0.08s ease-in-out infinite"
@@ -66,8 +66,8 @@ function CircleDie({ value, rolling, color, size = 80 }: {
           <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
             {hasPip && (
               <div style={{
-                width: size * 0.14,
-                height: size * 0.14,
+                width: size * 0.15,
+                height: size * 0.15,
                 borderRadius: "50%",
                 background: pipColor,
                 boxShadow: isDark ? "0 1px 3px rgba(0,0,0,0.6)" : "0 1px 3px rgba(0,0,0,0.25)",
@@ -128,43 +128,43 @@ export function DicePopup({ visible, rollA, rollB, rolling, turn, onDismiss }: P
         pointerEvents: "all",
       }}
     >
+      {/* Círculo contenedor — semitransparente, posicionado sobre la rueda */}
       <div style={{
-        background: "rgba(0,0,0,0.55)",
-        backdropFilter: "blur(12px)",
+        position: "absolute",
+        left: "50%",
+        top: "48%",
+        transform: "translate(-50%, -50%)",
+        background: "rgba(0,0,0,0.35)",
+        backdropFilter: "blur(10px)",
         borderRadius: "50%",
-        width: 260,
-        height: 260,
+        width: 240,
+        height: 240,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: 16,
-        border: "1px solid rgba(255,255,255,0.12)",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
+        gap: 14,
+        border: "1px solid rgba(255,255,255,0.1)",
+        boxShadow: "0 16px 48px rgba(0,0,0,0.45)",
       }}>
         <div style={{
-          fontSize: 13,
-          letterSpacing: 2,
+          fontSize: 11,
+          letterSpacing: 3,
           textTransform: "uppercase",
-          opacity: 0.7,
+          opacity: 0.6,
           color: "white",
           fontFamily: "Cinzel, serif",
         }}>
           {label}
         </div>
 
-        <div style={{ display: "flex", gap: 20 }}>
-          <CircleDie value={rollA} rolling={rolling} color={color} size={88} />
-          <CircleDie value={rollB} rolling={rolling} color={color} size={88} />
+        <div style={{ display: "flex", gap: 14 }}>
+          <CubicDie value={rollA} rolling={rolling} color={color} size={76} />
+          <CubicDie value={rollB} rolling={rolling} color={color} size={76} />
         </div>
 
         {!rolling && (
-          <div style={{
-            fontSize: 11,
-            opacity: 0.4,
-            color: "white",
-            fontFamily: "system-ui",
-          }}>
+          <div style={{ fontSize: 10, opacity: 0.35, color: "white", fontFamily: "system-ui" }}>
             tap to continue
           </div>
         )}

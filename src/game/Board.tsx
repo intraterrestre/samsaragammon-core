@@ -483,11 +483,11 @@ const stackedPosition = getStackedTokenPosition({
     left: base.left as number,
     top: base.top as number,
   },
-  pieceSize: 36,
+  pieceSize: 50,
   indexInStack: stackIndex,
   totalInStack: stackTotal,
   wheelCenter,
-  spacing: 30,
+  spacing: 32,
 });
 
       let src = player === "P1" ? pigWhite : pigBlack;
@@ -511,8 +511,8 @@ const stackedPosition = getStackedTokenPosition({
             ...base,
             left: stackedPosition.left,
 top: stackedPosition.top,
-            width: 36,
-            height: 36,
+            width: 50,
+            height: 50,
            zIndex: isCurrentSelected ? 9000 : 8000 + stackedPosition.zIndex,
             pointerEvents: player === state.turn ? "auto" : "none",
             position: "absolute",
@@ -531,8 +531,8 @@ top: stackedPosition.top,
   }}
   className={impactPos === pos ? "pieceHit" : ""}
   style={{
-    width: 36,
-    height: 36,
+    width: 50,
+    height: 50,
     objectFit: "contain",
     pointerEvents: "none",
     transform: isCurrentSelected
@@ -805,11 +805,11 @@ const stackedPosition = getStackedTokenPosition({
     left: base.left as number,
     top: base.top as number,
   },
-  pieceSize: 48,
+  pieceSize: 67,
   indexInStack: stackIndex,
   totalInStack: stackTotal,
   wheelCenter,
-  spacing: 34,
+  spacing: 38,
 });
 
 
@@ -828,8 +828,8 @@ const stackedPosition = getStackedTokenPosition({
 style={{
  left: stackedPosition.left,
  
-  width: 48,
-  height: 48,
+  width: 67,
+  height: 67,
 
   border:
 player==="P1"

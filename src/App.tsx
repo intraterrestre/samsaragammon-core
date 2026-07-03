@@ -782,15 +782,14 @@ window.setTimeout(() => {
   <video
   className="realmIntroVideo"
   src={activeRealmIntro}
-  autoPlay
   playsInline
+  preload="auto"
   muted={false}
-  onLoadedMetadata={(e) => {
-    e.currentTarget.volume = 1;
-    e.currentTarget.muted = false;
-    e.currentTarget.play().catch((err) => {
-      console.warn("Intro video play blocked:", err);
-    });
+  onCanPlay={(e) => {
+    const v = e.currentTarget;
+    v.currentTime = 0;
+    v.volume = 1;
+    v.play().catch(() => {});
   }}
   onEnded={() => setActiveRealmIntro(null)}
 />
