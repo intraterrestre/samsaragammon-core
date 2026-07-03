@@ -20,7 +20,15 @@ import { KarmaEngine } from "./game/engine/KarmaEngine";
 
 import { GameShell } from "./UI/GameShell";
 import { LoginScreen } from "./UI/LoginScreen";
+import { Lobby } from "./UI/Lobby";
 import { useGameController } from "./game/hooks/useGameController";
+import {
+  createGame,
+  joinGame,
+  updateGameState,
+  subscribeToGame,
+  type Game,
+} from "./lib/gameService";
 import { getMasterLine } from "./game/master/masterVoices";
 import diceRollSound from "./assets/sounds/dice_roll.mp3";
 
@@ -248,6 +256,18 @@ const playedRealmIntrosRef = useRef<Record<string, boolean>>({});
 
   const [profile, setProfile] = useState<any>(null);
   const [runId, setRunId] = useState<string | null>(null);
+
+  /** =========================
+   *  Multiplayer state
+   *  ========================= */
+  const [gameMode, setGameMode] = useState<"lobby" | "local" | "multiplayer">("lobby");
+  const [multiplayerGame, setMultiplayerGame] = useState<Game | null>(null);
+  const [myRole, setMyRole] = useState<"P1" | "P2" | null>(null);
+  const [lobbyCode, setLobbyCode] = useState<string | null>(null);
+  const [lobbyError, setLobbyError] = useState<string | null>(null);
+  const [lobbyLoading, setLobbyLoading] = useState(false);
+  const isReceivingFromRealtime = useRef(false);
+  const lastSyncedVersion = useRef<number>(-1);
 
   useEffect(() => {
     const init = async () => {
@@ -708,6 +728,53 @@ window.setTimeout(() => {
     console.log("ROLL_OPTIONS:", state.rollOptions);
   }, [state.phase, state.rollOptions]);
 
+  /** =========================
+   *  Multiplayer — sync state to Supabase
+   *  ========================= */
+  useEffect(() => {
+    if (gameMode !== "multiplayer" || !multiplayerGame || !session?.user) return;
+    if (isReceivingFromRealtime.current) return;
+
+    const version = multiplayerGame.version;
+    if (version === lastSyncedVersion.current) return;
+
+    updateGameState(
+      multiplayerGame.id,
+      state,
+      version,
+      session.user.id,
+      state.phase === "rolled" ? "roll" : "move"
+    ).then((ok) => {
+      if (ok) {
+        lastSyncedVersion.current = version + 1;
+        setMultiplayerGame((g) => g ? { ...g, version: version + 1 } : g);
+      }
+    });
+  }, [state, gameMode, multiplayerGame, session]);
+
+  /** =========================
+   *  Multiplayer — Realtime subscription
+   *  ========================= */
+  useEffect(() => {
+    if (gameMode !== "multiplayer" || !multiplayerGame) return;
+
+    const unsubscribe = subscribeToGame(multiplayerGame.id, (game) => {
+      // Si la versión es mía (ya la tengo), ignorar
+      if (game.version <= lastSyncedVersion.current) return;
+
+      isReceivingFromRealtime.current = true;
+      dispatchBase({ type: "SET_MULTIPLAYER_STATE", state: game.state });
+      setMultiplayerGame(game);
+      lastSyncedVersion.current = game.version;
+
+      setTimeout(() => {
+        isReceivingFromRealtime.current = false;
+      }, 100);
+    });
+
+    return unsubscribe;
+  }, [gameMode, multiplayerGame?.id]);
+
   return (
   <ErrorBoundary>
 {activeRealmIntro && (
@@ -731,8 +798,53 @@ window.setTimeout(() => {
 )}
 
   {!session ? (
-  
     <LoginScreen onLogin={handleLogin} />
+  ) : gameMode === "lobby" ? (
+    <Lobby
+      userId={session.user.id}
+      createdCode={lobbyCode}
+      isLoading={lobbyLoading}
+      error={lobbyError}
+      onPlayLocal={() => setGameMode("local")}
+      onCreateGame={async () => {
+        setLobbyLoading(true);
+        setLobbyError(null);
+        try {
+          const game = await createGame(session.user.id, state);
+          setMultiplayerGame(game);
+          setMyRole("P1");
+          setLobbyCode(game.code);
+          lastSyncedVersion.current = 0;
+          // Esperar a que se una P2 via Realtime
+          subscribeToGame(game.id, (updated) => {
+            if (updated.player2_id && updated.status === "active") {
+              setMultiplayerGame(updated);
+              setGameMode("multiplayer");
+            }
+          });
+        } catch (e: any) {
+          setLobbyError(e.message ?? "Error al crear partida");
+        } finally {
+          setLobbyLoading(false);
+        }
+      }}
+      onJoinGame={async (code) => {
+        setLobbyLoading(true);
+        setLobbyError(null);
+        try {
+          const game = await joinGame(code, session.user.id);
+          setMultiplayerGame(game);
+          setMyRole("P2");
+          lastSyncedVersion.current = game.version;
+          dispatchBase({ type: "SET_MULTIPLAYER_STATE", state: game.state });
+          setGameMode("multiplayer");
+        } catch (e: any) {
+          setLobbyError(e.message ?? "Código inválido o partida no encontrada");
+        } finally {
+          setLobbyLoading(false);
+        }
+      }}
+    />
   ) : (
     <>
     <GameShell
@@ -769,6 +881,8 @@ nidanaCoinSide={nidanaSide}
       }}
   onExportRun={debugPrintRunExport}
 onRoll={() => {
+  // En multiplayer, solo puede tirar el jugador activo
+  if (gameMode === "multiplayer" && myRole !== state.turn) return;
   playDiceSound();
 
 const shouldTriggerNidana = true;
@@ -799,13 +913,14 @@ if (shouldTriggerNidana) {
 }}
 onReset={() => dispatch({ type: "RESET" })}
 
-onConsciousMove={(option, allOptions) =>
+onConsciousMove={(option, allOptions) => {
+  if (gameMode === "multiplayer" && myRole !== state.turn) return;
   dispatch({
     type: "CONSCIOUS_MOVE",
     option,
     allOptions,
-  })
-}
+  });
+}}
 
 onSelectPiece={(piece: PieceKind) =>
   dispatch({ type: "SELECT_PIECE", player: state.turn, piece })

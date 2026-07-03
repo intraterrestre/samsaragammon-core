@@ -38,7 +38,8 @@ type Action =
       option: MoveOption;
       allOptions: MoveOption[];
     }
-  | { type: "EMOJI"; emoji: string; player: PlayerId };
+  | { type: "EMOJI"; emoji: string; player: PlayerId }
+  | { type: "SET_MULTIPLAYER_STATE"; state: GameState };
 
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 const rollDie = () => 1 + Math.floor(Math.random() * 6);
@@ -153,6 +154,9 @@ function applyCollapseIfNeeded(
 
 export function reducer(state: GameState, action: Action): GameState {
   switch (action.type) {
+    case "SET_MULTIPLAYER_STATE":
+      return action.state;
+
     case "RESET":
       return initialState;
 
