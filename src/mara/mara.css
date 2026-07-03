@@ -26,6 +26,8 @@
 
   filter:
     blur(0.4px)
-    saturate(1.1)
+    contrast(1.25)
+    brightness(1.12)
+    saturate(1.3)
     drop-shadow(0 0 30px rgba(255,255,255,0.08));
 }

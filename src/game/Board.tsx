@@ -826,27 +826,16 @@ const stackedPosition = getStackedTokenPosition({
           player === "P1" ? "realmPieceP1" : "realmPieceP2"
         }`}
 style={{
- left: stackedPosition.left,
- 
+  left: stackedPosition.left,
+  top: stackedPosition.top,
   width: 48,
   height: 48,
-
-  border:
-player==="P1"
- ? "3px solid #fff"
- : "3px solid #000",
-
   borderRadius: "50%",
-
- boxShadow:
-player==="P1"
-? "0 0 0 2px gold,0 0 14px white"
-: "0 0 0 2px #500,0 0 14px black",
-zIndex: 9999 + stackedPosition.zIndex,
-top: stackedPosition.top,
   position: "absolute",
+  zIndex: 9999 + stackedPosition.zIndex,
   pointerEvents: player === state.turn ? "auto" : "none",
   cursor: player === state.turn ? "pointer" : "default",
+  /* glow: dejar que overlays.css maneje box-shadow y border */
 }}
         title={`${player} ${piece.kind}`}
            >
