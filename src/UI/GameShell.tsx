@@ -120,9 +120,11 @@ const [showNidanaTitle, setShowNidanaTitle] = React.useState(false);
 // Escala dinámica del scene para llenar el viewport
 React.useEffect(() => {
   const applyScale = () => {
+    const isLandscape = window.innerWidth > window.innerHeight;
     const scaleX = window.innerWidth  / 1116;
     const scaleY = window.innerHeight / 636;
-    const scale  = Math.min(scaleX, scaleY) * 0.92;
+    // En landscape llenamos el ancho; en portrait usamos el mínimo con margen
+    const scale = isLandscape ? scaleX : Math.min(scaleX, scaleY) * 0.92;
     document.documentElement.style.setProperty('--scene-scale', String(scale));
   };
   applyScale();

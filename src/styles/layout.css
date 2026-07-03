@@ -55,7 +55,7 @@
 
   transform-origin: center center;
 
-  overflow: visible;
+  overflow: hidden;
 
   border: 8px solid rgba(80,255,80,.55);
 
