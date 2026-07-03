@@ -823,7 +823,7 @@ window.setTimeout(() => {
             }
           });
         } catch (e: any) {
-          setLobbyError(e.message ?? "Error al crear partida");
+          setLobbyError(e.message ?? "Error creating game");
         } finally {
           setLobbyLoading(false);
         }
@@ -839,7 +839,7 @@ window.setTimeout(() => {
           dispatchBase({ type: "SET_MULTIPLAYER_STATE", state: game.state });
           setGameMode("multiplayer");
         } catch (e: any) {
-          setLobbyError(e.message ?? "Código inválido o partida no encontrada");
+          setLobbyError(e.message ?? "Invalid code or game not found");
         } finally {
           setLobbyLoading(false);
         }
