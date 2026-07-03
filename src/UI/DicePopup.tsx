@@ -121,53 +121,23 @@ export function DicePopup({ visible, rollA, rollB, rolling, turn, onDismiss }: P
       style={{
         position: "fixed",
         inset: 0,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
         zIndex: 9999,
         pointerEvents: "all",
       }}
     >
-      {/* Círculo contenedor — semitransparente, posicionado sobre la rueda */}
+      {/* Dados sin contenedor — flotan sobre la rueda */}
       <div style={{
         position: "absolute",
-        left: "65%",
-        top: "52%",
+        left: "68%",
+        top: "50%",
         transform: "translate(-50%, -50%)",
-        background: "rgba(0,0,0,0.18)",
-        backdropFilter: "blur(10px)",
-        borderRadius: "50%",
-        width: 240,
-        height: 240,
         display: "flex",
-        flexDirection: "column",
+        gap: 16,
         alignItems: "center",
-        justifyContent: "center",
-        gap: 14,
-        border: "1px solid rgba(255,255,255,0.1)",
-        boxShadow: "0 16px 48px rgba(0,0,0,0.45)",
+        filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.7))",
       }}>
-        <div style={{
-          fontSize: 11,
-          letterSpacing: 3,
-          textTransform: "uppercase",
-          opacity: 0.6,
-          color: "white",
-          fontFamily: "Cinzel, serif",
-        }}>
-          {label}
-        </div>
-
-        <div style={{ display: "flex", gap: 14 }}>
-          <CubicDie value={rollA} rolling={rolling} color={color} size={76} />
-          <CubicDie value={rollB} rolling={rolling} color={color} size={76} />
-        </div>
-
-        {!rolling && (
-          <div style={{ fontSize: 10, opacity: 0.35, color: "white", fontFamily: "system-ui" }}>
-            tap to continue
-          </div>
-        )}
+        <CubicDie value={rollA} rolling={rolling} color={color} size={82} />
+        <CubicDie value={rollB} rolling={rolling} color={color} size={82} />
       </div>
     </div>
   );

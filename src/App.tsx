@@ -784,7 +784,7 @@ window.setTimeout(() => {
   className="realmIntroVideo"
   src={activeRealmIntro}
   playsInline
-  preload="auto"
+  preload="none"
   muted={false}
   onCanPlay={(e) => {
     const v = e.currentTarget;
