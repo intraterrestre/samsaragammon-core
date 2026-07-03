@@ -2,7 +2,7 @@ import React from "react";
 
 import { TopBar } from "./TopBar";
 import { EvolutionStatus } from "./EvolutionStatus";
-import { TurnDock } from "./TurnDock";
+import { DicePopup } from "./DicePopup";
 
 import { MasterPanel } from "./MasterPanel";
 import { MirrorPanel } from "./MirrorPanel";
@@ -81,6 +81,15 @@ export function GameShell({
   onCloseLedger,
 }: Props) {
 const [hoveredOption, setHoveredOption] = React.useState<MoveOption | null>(null);
+const [dicePopupVisible, setDicePopupVisible] = React.useState(false);
+const [diceRolling, setDiceRolling] = React.useState(false);
+
+const handleRollWithPopup = () => {
+  setDicePopupVisible(true);
+  setDiceRolling(true);
+  onRoll();
+  setTimeout(() => setDiceRolling(false), 900);
+};
 
 const [showWatcher, setShowWatcher] = React.useState(false);
 const [watcherLine, setWatcherLine] = React.useState("I see you.");
@@ -476,7 +485,7 @@ return (
           moveOptions={moveOptions}
           onChooseMove={handleMove}
           onSendEmoji={onSendEmoji}
-          onRoll={onRoll}
+          onRoll={handleRollWithPopup}
           nidanaCoinSrc={nidanaCoinSrc}
           nidanaCoinSide={nidanaCoinSide}
           nidanaCoinId={nidanaCoinId}
@@ -485,27 +494,14 @@ return (
     </div>
   </div>
 
-  <div style={{
-    position: "fixed",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    background: "rgba(0,0,0,0.85)",
-    backdropFilter: "blur(8px)",
-    padding: "6px 0",
-  }}>
-    <TurnDock
-      turn={state.turn}
-      phase={state.phase}
-      rollA={a}
-      rollB={b}
-      level={state.level ?? 1}
-      onRoll={onRoll}
-      onReset={onReset}
-      showVestigium={showVestigium}
-    />
-  </div>
+  <DicePopup
+    visible={dicePopupVisible}
+    rollA={a}
+    rollB={b}
+    rolling={diceRolling}
+    turn={state.turn}
+    onDismiss={() => setDicePopupVisible(false)}
+  />
 </div>
 
 <LedgerModal
