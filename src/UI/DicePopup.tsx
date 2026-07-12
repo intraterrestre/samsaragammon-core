@@ -1,5 +1,11 @@
 import React, { useEffect, useState, useRef } from "react";
+import type { DiceSkin } from "../game/dice/eraDiceSkins";
+import { getActiveDiceSkin } from "../game/dice/eraDiceSkins";
+import { STONE_GRADIENT, STONE_RING, STONE_SHADOW } from "../game/dice/stoneDiceStyle";
 
+// Legacy pip layout — kept for any era that wants to fall back to plain
+// numeric dice instead of an image-face skin. Not deleted, just unused by
+// default while an era skin (e.g. the Primitive leaves/clovers) is active.
 const PIPS: Record<number, [number, number][]> = {
   1: [[1, 1]],
   2: [[0, 0], [2, 2]],
@@ -9,11 +15,28 @@ const PIPS: Record<number, [number, number][]> = {
   6: [[0, 0], [0, 1], [0, 2], [2, 0], [2, 1], [2, 2]],
 };
 
-function CubicDie({ value, rolling, color, size = 76 }: {
+// Fixed "weathering" pits — small low-contrast craters scattered on every
+// stone die, independent of the rolled value, just to break up the flat
+// gradient and read as worn rock rather than plastic.
+const WEATHER_PITS: [number, number, number][] = [
+  [0.22, 0.72, 0.07],
+  [0.78, 0.20, 0.06],
+  [0.68, 0.80, 0.05],
+];
+
+function CubicDie({ value, rolling, color, size = 76, skin, stone = true }: {
   value: number | null;
   rolling: boolean;
   color: "white" | "black";
   size?: number;
+  /** Image-based face skin for a future era. Not used while stone=true. */
+  skin?: DiceSkin | null;
+  /**
+   * Round, carved-stone look (drilled pip-holes) for the Primitive Era —
+   * default. Set false to fall back to the flat rounded-square card
+   * (image face if `skin` is given, otherwise flat dot pips).
+   */
+  stone?: boolean;
 }) {
   const [display, setDisplay] = useState(value ?? 1);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -31,14 +54,84 @@ function CubicDie({ value, rolling, color, size = 76 }: {
   }, [rolling, value]);
 
   const isDark = color === "black";
+  const pips = PIPS[display] ?? [];
+
+  if (stone) {
+    // Carved-stone dice: no real photo texture available, so this is a CSS
+    // approximation — a mottled radial-gradient sphere with drilled-hole
+    // pips, tan/ochre for White and charcoal-grey for Black (matching the
+    // reference photo's two stones).
+    const stoneBg = isDark ? STONE_GRADIENT.black : STONE_GRADIENT.white;
+    const ring = isDark ? STONE_RING.black : STONE_RING.white;
+
+    return (
+      <div style={{
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        background: stoneBg,
+        border: `1px solid ${ring}`,
+        boxShadow: STONE_SHADOW,
+        boxSizing: "border-box",
+        position: "relative",
+        animation: rolling
+          ? "dieRoll 0.08s ease-in-out infinite"
+          : "dieLand 0.3s cubic-bezier(0.2,0.8,0.4,1) forwards",
+        flexShrink: 0,
+      }}>
+        {WEATHER_PITS.map(([px, py, pr], i) => (
+          <div key={`w${i}`} style={{
+            position: "absolute",
+            left: `${px * 100}%`,
+            top: `${py * 100}%`,
+            width: size * pr,
+            height: size * pr,
+            transform: "translate(-50%,-50%)",
+            borderRadius: "50%",
+            background: "radial-gradient(circle at 35% 30%, rgba(0,0,0,0.35), rgba(0,0,0,0.12) 70%, transparent 100%)",
+          }} />
+        ))}
+
+        {pips.map(([c, r], i) => (
+          <div key={i} style={{
+            position: "absolute",
+            left: `${((c + 0.5) / 3) * 100}%`,
+            top: `${((r + 0.5) / 3) * 100}%`,
+            width: size * 0.17,
+            height: size * 0.17,
+            transform: "translate(-50%,-50%)",
+            borderRadius: "50%",
+            background: "radial-gradient(circle at 35% 30%, rgba(0,0,0,0.95), rgba(0,0,0,0.65) 55%, rgba(0,0,0,0.3) 100%)",
+            boxShadow: "inset 0 1px 2px rgba(0,0,0,0.9), 0 1px 0 rgba(255,255,255,0.08)",
+          }} />
+        ))}
+
+        <style>{`
+          @keyframes dieRoll {
+            0%   { transform: rotate(-10deg) scale(0.93); }
+            25%  { transform: rotate(7deg) scale(1.07) translateY(-3px); }
+            75%  { transform: rotate(-5deg) scale(0.96) translateY(2px); }
+            100% { transform: rotate(-10deg) scale(0.93); }
+          }
+          @keyframes dieLand {
+            0%   { transform: scale(1.2) rotate(5deg); }
+            60%  { transform: scale(0.94) rotate(-1deg); }
+            100% { transform: scale(1) rotate(0deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // Legacy flat card — kept for a future era that wants image faces or
+  // plain dot pips instead of the carved-stone look above.
   const bg = isDark ? "#1c1c1c" : "#f5f0e8";
   const pipColor = isDark ? "#e8dcc8" : "#222";
   const border = isDark ? "2px solid rgba(255,255,255,0.18)" : "2px solid rgba(0,0,0,0.14)";
   const shadow = isDark
     ? "0 6px 18px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.08)"
     : "0 6px 18px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.8)";
-
-  const pips = PIPS[display] ?? [];
+  const faceSrc = skin?.faces?.[display as 1 | 2 | 3 | 4 | 5 | 6] ?? null;
 
   return (
     <div style={{
@@ -48,34 +141,51 @@ function CubicDie({ value, rolling, color, size = 76 }: {
       background: bg,
       border,
       boxShadow: shadow,
-      display: "grid",
-      gridTemplateColumns: "repeat(3, 1fr)",
-      gridTemplateRows: "repeat(3, 1fr)",
-      padding: size * 0.1,
       boxSizing: "border-box",
       animation: rolling
         ? "dieRoll 0.08s ease-in-out infinite"
         : "dieLand 0.3s cubic-bezier(0.2,0.8,0.4,1) forwards",
       flexShrink: 0,
+      display: faceSrc ? "flex" : "grid",
+      alignItems: "center",
+      justifyContent: "center",
+      gridTemplateColumns: faceSrc ? undefined : "repeat(3, 1fr)",
+      gridTemplateRows: faceSrc ? undefined : "repeat(3, 1fr)",
+      padding: faceSrc ? size * 0.12 : size * 0.1,
     }}>
-      {Array.from({ length: 9 }).map((_, i) => {
-        const col = i % 3;
-        const row = Math.floor(i / 3);
-        const hasPip = pips.some(([c, r]) => c === col && r === row);
-        return (
-          <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {hasPip && (
-              <div style={{
-                width: size * 0.15,
-                height: size * 0.15,
-                borderRadius: "50%",
-                background: pipColor,
-                boxShadow: isDark ? "0 1px 3px rgba(0,0,0,0.6)" : "0 1px 3px rgba(0,0,0,0.25)",
-              }} />
-            )}
-          </div>
-        );
-      })}
+      {faceSrc ? (
+        <img
+          src={faceSrc}
+          alt={`face ${display}`}
+          draggable={false}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            pointerEvents: "none",
+            filter: isDark ? "drop-shadow(0 1px 2px rgba(0,0,0,0.6))" : "none",
+          }}
+        />
+      ) : (
+        Array.from({ length: 9 }).map((_, i) => {
+          const col = i % 3;
+          const row = Math.floor(i / 3);
+          const hasPip = pips.some(([c, r]) => c === col && r === row);
+          return (
+            <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {hasPip && (
+                <div style={{
+                  width: size * 0.15,
+                  height: size * 0.15,
+                  borderRadius: "50%",
+                  background: pipColor,
+                  boxShadow: isDark ? "0 1px 3px rgba(0,0,0,0.6)" : "0 1px 3px rgba(0,0,0,0.25)",
+                }} />
+              )}
+            </div>
+          );
+        })
+      )}
       <style>{`
         @keyframes dieRoll {
           0%   { transform: rotate(-10deg) scale(0.93); }
@@ -102,6 +212,15 @@ type Props = {
   onDismiss: () => void;
 };
 
+// Positioned inside the 1100x620 samsaraScene coordinate space, in the gap
+// between Mara's face (eyes sit around x:118-164) and the ring wheel (whose
+// scaled edge starts around x:481). The "roll" portal button lives in the
+// upper half of that same gap (~x:300-390, y:255-345), so the vertical dice
+// stack sits just below it, in the lower half of the gap, to avoid covering
+// it. See GameShell.tsx for where this is mounted.
+const HUD_LEFT = 300;
+const HUD_TOP = 380;
+
 export function DicePopup({ visible, rollA, rollB, rolling, turn, onDismiss }: Props) {
   useEffect(() => {
     if (visible && !rolling) {
@@ -114,30 +233,40 @@ export function DicePopup({ visible, rollA, rollB, rolling, turn, onDismiss }: P
 
   const color = turn === "P1" ? "white" : "black";
   const label = turn === "P1" ? "White" : "Black";
+  const skin = getActiveDiceSkin();
 
   return (
     <div
       onClick={onDismiss}
       style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 9999,
-        pointerEvents: "all",
+        position: "absolute",
+        left: HUD_LEFT,
+        top: HUD_TOP,
+        zIndex: 6000,
+        pointerEvents: "auto",
+        cursor: "pointer",
       }}
     >
-      {/* Dados sin contenedor — flotan sobre la rueda */}
+      {/* Los dos dados del turno activo, apilados en columna vertical */}
       <div style={{
-        position: "absolute",
-        left: "68%",
-        top: "50%",
-        transform: "translate(-50%, -50%)",
         display: "flex",
-        gap: 16,
+        flexDirection: "column",
+        gap: 14,
         alignItems: "center",
         filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.7))",
       }}>
-        <CubicDie value={rollA} rolling={rolling} color={color} size={82} />
-        <CubicDie value={rollB} rolling={rolling} color={color} size={82} />
+        <div style={{
+          fontSize: 11,
+          fontWeight: 800,
+          letterSpacing: 1.2,
+          textTransform: "uppercase",
+          color: color === "white" ? "#f5f0e8" : "#cfcfcf",
+          textShadow: "0 1px 3px rgba(0,0,0,0.8)",
+        }}>
+          {label}
+        </div>
+        <CubicDie value={rollA} rolling={rolling} color={color} size={64} skin={skin} />
+        <CubicDie value={rollB} rolling={rolling} color={color} size={64} skin={skin} />
       </div>
     </div>
   );

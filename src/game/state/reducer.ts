@@ -16,6 +16,11 @@ import { updateDecisionSignature } from "../Karma/updateDecisionSignature";
 import { computeKarmaTurn } from "../engine/computeKarmaTurn";
 import { NIDANA_LIST } from "../nidanas";
 import type { NidanaId } from "../nidanas";
+import { isBasePieceUnlocked } from "../era";
+
+const BASE_PIECE_KINDS: BasePieceKind[] = ["pig", "snake", "rooster"];
+const isBasePieceKind = (kind: PieceKind): kind is BasePieceKind =>
+  BASE_PIECE_KINDS.includes(kind as BasePieceKind);
 
 function clampCurvature(value: number): number {
   return Math.max(0, Math.min(100, value));
@@ -247,6 +252,16 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
 
     case "SELECT_PIECE": {
       if (action.player !== state.turn) return state;
+
+      // Era gate: Snake/Rooster (and any future locked base piece) can't be
+      // selected while their era hasn't unlocked them yet. Realm pieces are
+      // unaffected — they carry their own `unlocked` flag.
+      if (
+        isBasePieceKind(action.piece) &&
+        !isBasePieceUnlocked(action.piece)
+      ) {
+        return state;
+      }
 
       return {
         ...state,

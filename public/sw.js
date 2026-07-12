@@ -1,4 +1,4 @@
-const CACHE_NAME = "samsaragammon-v1";
+const CACHE_NAME = "samsaragammon-v2";
 const PRECACHE = ["/", "/index.html"];
 
 self.addEventListener("install", (event) => {

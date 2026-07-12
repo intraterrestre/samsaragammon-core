@@ -477,6 +477,15 @@ return (
 
      <FandangoKarma />
 
+      <DicePopup
+        visible={dicePopupVisible}
+        rollA={a}
+        rollB={b}
+        rolling={diceRolling}
+        turn={state.turn}
+        onDismiss={() => setDicePopupVisible(false)}
+      />
+
       <div className="boardLayer">
         <Board
           state={state}
@@ -493,15 +502,6 @@ return (
       </div>
     </div>
   </div>
-
-  <DicePopup
-    visible={dicePopupVisible}
-    rollA={a}
-    rollB={b}
-    rolling={diceRolling}
-    turn={state.turn}
-    onDismiss={() => setDicePopupVisible(false)}
-  />
 </div>
 
 <LedgerModal

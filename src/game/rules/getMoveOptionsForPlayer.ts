@@ -1,14 +1,22 @@
 import type {
+  BasePieceKind,
   GameState,
   MoveMeaning,
   MoveOption,
   PieceKind,
   PlayerId,
+  RealmPieceKind,
 } from "../types";
 import { previewMove } from "./preview";
 import { applyRealmEffect } from "../realm/realmEffects";
+import { getUnlockedBasePieces } from "../era";
 
 const BASE_PIECES: BasePieceKind[] = ["pig", "snake", "rooster"];
+
+// Era-gated view of BASE_PIECES. During Era 1 (Ignorance) this resolves to
+// just ["pig"] — Snake and Rooster stay fully coded but can't generate move
+// options (and therefore can't be selected) until their era unlocks them.
+const ACTIVE_BASE_PIECES: BasePieceKind[] = getUnlockedBasePieces(BASE_PIECES);
 
 const REALM_PIECES: RealmPieceKind[] = [
   "hungry_ghost",
@@ -53,7 +61,7 @@ function countEnemyPiecesAtPos(
 ): number {
   const opp = otherPlayer(player);
 
- return BASE_PIECES.filter((kind) => {
+ return ACTIVE_BASE_PIECES.filter((kind) => {
     const piece = state.pieces[opp][kind];
     return !piece.inLimbo && piece.pos === targetPos;
   }).length;
@@ -117,13 +125,13 @@ export function getMoveOptionsForPlayer(
   const isDouble = a === b;
   const opp = otherPlayer(player);
 
-const enemyPositions = BASE_PIECES
+const enemyPositions = ACTIVE_BASE_PIECES
   .filter((kind) => !state.pieces[opp][kind].inLimbo)
   .map((kind) => state.pieces[opp][kind].pos);
   const options: MoveOption[] = [];
 
 const activePieceKinds: PieceKind[] = [
-  ...BASE_PIECES,
+  ...ACTIVE_BASE_PIECES,
   ...REALM_PIECES.filter(
     (kind) => state.realmPieces[player]?.[kind]?.unlocked
   ),

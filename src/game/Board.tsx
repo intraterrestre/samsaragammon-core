@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
-import type { GameState, MoveOption, PieceKind, PlayerId } from "./types";
+import type { GameState, MoveOption, PieceKind, BasePieceKind, PlayerId } from "./types";
 import {  cellStyle as ringCellStyle, RING_SIZE,  piecePosition,} from "../UI/geometry";
 import { realmFromPos, REALM_LABEL, pickLine } from "../UI/realm";
 import { ExplainModal } from "../UI/ExplainModal";
 import { MoveEmanations } from "../UI/MoveEmanations";
 import budaKarmaER from "../assets/tokens/buda-karma-er.webp";
 import BigHeadSchoolOverlay from "../UI/BigHeadSchoolOverlay";
+import { getUnlockedBasePieces } from "./era";
+import { STONE_GRADIENT, STONE_RING, STONE_SHADOW } from "./dice/stoneDiceStyle";
 
 // 🔥 FICHAS
 import pigWhite from "../assets/pieces/pig_white.webp";
@@ -38,8 +40,44 @@ import rufusP2 from "../assets/tokens/rufus_P2.webp";
 import whitmanP1 from "../assets/tokens/whitman_P1.webp";
 import whitmanP2 from "../assets/tokens/whitman_P2.webp";
 
+// 🎲 Previous dice art — retired from the active roll button for this sprint
+// (see point 4 of the Genesis Intro brief) but kept imported/usable so a
+// future era can bring the spinning portal dice back.
 import diceWhitePortal from "../assets/dice/dice_white_portal.webp";
 import diceBlackPortal from "../assets/dice/dice_black_portal.webp";
+
+// Real reference photo for the Primitive Era roll-button icon (pitted stone
+// dice pair), dropped in by hand — see src/assets/dice/primitive/.
+import diceGenesisStonePair from "../assets/dice/primitive/dice_genesis_1.webp";
+
+// Flip this back to `true` to restore the white/black portal dice as the
+// roll-button art. Off by default while the Primitive Era stone dice photo
+// is active.
+const USE_LEGACY_PORTAL_DICE_ART = false;
+
+// Flip this to `true` to fall back to the CSS-drawn stone circles below
+// instead of the real photo, e.g. if the photo asset is ever missing.
+const USE_CSS_STONE_ICON_FALLBACK = false;
+
+// CSS approximation of a carved-stone dice pair (see
+// src/game/dice/stoneDiceStyle.ts) — superseded by the real photo above,
+// kept as a fallback so the roll button still has *something* if the photo
+// asset is removed.
+function StoneDiceIcon({ color }: { color: "white" | "black" }) {
+  return (
+    <div
+      style={{
+        width: "42%",
+        height: "68%",
+        borderRadius: "50%",
+        background: STONE_GRADIENT[color],
+        border: `1px solid ${STONE_RING[color]}`,
+        boxShadow: STONE_SHADOW,
+        flexShrink: 0,
+      }}
+    />
+  );
+}
 
 type Props = {
   state: GameState;
@@ -57,6 +95,26 @@ const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 
 const playerLabel = (p: PlayerId) => (p === "P1" ? "⚪ White" : "⚫ Black");
 const PIECE_KINDS: PieceKind[] = ["pig", "snake", "rooster"];
+
+// Era 1 (Ignorance) gate: only unlocked base pieces render on the board or
+// can be clicked/selected. Snake and Rooster stay fully coded (imports,
+// styles, sort keys, etc. are untouched below) — they're just filtered out
+// of the active render list until a later era unlocks them.
+const ACTIVE_PIECE_KINDS: PieceKind[] = getUnlockedBasePieces(
+  ["pig", "snake", "rooster"] as BasePieceKind[]
+);
+
+// Visual size per base piece. Pig is enlarged vs. the previous uniform
+// 50px so it reads clearly as the sole active drive of Era 1. Capped at
+// 90px: the ring sits close to the top/bottom edge of the scaled
+// samsaraScene (which clips overflow), so anything much bigger than this
+// gets its head cut off on the topmost/bottommost cells. Snake/Rooster
+// keep the original size for whenever their era switches them back on.
+const PIECE_VISUAL_SIZE: Record<BasePieceKind, number> = {
+  pig: 90,
+  snake: 50,
+  rooster: 50,
+};
 const NIDANA_EFFECT_LINES: Record<number, {
   title: string;
   body: string;
@@ -243,7 +301,7 @@ function buildUnifiedStackMap(
   };
 
   (["P1", "P2"] as PlayerId[]).forEach((player) => {
-    PIECE_KINDS.forEach((kind) => {
+    ACTIVE_PIECE_KINDS.forEach((kind) => {
       const piece = state.pieces[player][kind];
 
       if (!piece.inLimbo) {
@@ -443,7 +501,7 @@ useEffect(() => {
     {};
 
   (["P1", "P2"] as PlayerId[]).forEach((player) => {
-   PIECE_KINDS.forEach((kind) => {
+   ACTIVE_PIECE_KINDS.forEach((kind) => {
       const pieceState = state.pieces[player][kind];
       if (pieceState.inLimbo) return;
 
@@ -460,7 +518,7 @@ useEffect(() => {
   });
 
   const renderedPieces = (["P1", "P2"] as PlayerId[]).flatMap((player) => {
-    return PIECE_KINDS.map((kind) => {
+    return ACTIVE_PIECE_KINDS.map((kind) => {
       const pieceState = state.pieces[player][kind];
       if (pieceState.inLimbo) return null;
 
@@ -478,12 +536,14 @@ const { stackIndex, stackTotal } =
     stackTotal: 1,
   };
 
+const visualSize = PIECE_VISUAL_SIZE[kind as BasePieceKind] ?? 50;
+
 const stackedPosition = getStackedTokenPosition({
   base: {
     left: base.left as number,
     top: base.top as number,
   },
-  pieceSize: 50,
+  pieceSize: visualSize,
   indexInStack: stackIndex,
   totalInStack: stackTotal,
   wheelCenter,
@@ -498,6 +558,8 @@ const stackedPosition = getStackedTokenPosition({
         src = player === "P1" ? cobraWhite : cobraBlack;
       }
 
+      const badgeSize = kind === "pig" ? 22 : 14;
+
       return (
         <div
           key={`${player}-${kind}`}
@@ -511,8 +573,8 @@ const stackedPosition = getStackedTokenPosition({
             ...base,
             left: stackedPosition.left,
 top: stackedPosition.top,
-            width: 50,
-            height: 50,
+            width: visualSize,
+            height: visualSize,
            zIndex: isCurrentSelected ? 9000 : 8000 + stackedPosition.zIndex,
             pointerEvents: player === state.turn ? "auto" : "none",
             position: "absolute",
@@ -531,8 +593,8 @@ top: stackedPosition.top,
   }}
   className={impactPos === pos ? "pieceHit" : ""}
   style={{
-    width: 50,
-    height: 50,
+    width: visualSize,
+    height: visualSize,
     objectFit: "contain",
     pointerEvents: "none",
     transform: isCurrentSelected
@@ -549,15 +611,15 @@ top: stackedPosition.top,
               position: "absolute",
               right: -3,
               bottom: -3,
-              minWidth: 14,
-              height: 14,
-              borderRadius: 7,
+              minWidth: badgeSize,
+              height: badgeSize,
+              borderRadius: badgeSize / 2,
               background: "rgba(0,0,0,0.72)",
               border: "1px solid rgba(255,255,255,0.2)",
               color: "white",
-              fontSize: 9,
+              fontSize: kind === "pig" ? 13 : 9,
               fontWeight: 800,
-              lineHeight: "12px",
+              lineHeight: `${badgeSize - 2}px`,
               textAlign: "center",
               padding: "0 3px",
               pointerEvents: "none",
@@ -671,12 +733,35 @@ filter:"drop-shadow(0 0 7px rgba(255,255,255,.95))"
   className="samsaraDicePortalButton"
   onClick={onRoll}
   title="Roll dice"
+  style={{ top: "40%" }}
 >
-    <img
-      src={state.turn === "P1" ? diceWhitePortal : diceBlackPortal}
-      alt="Roll dice"
-      className="samsaraDicePortalImg"
-    />
+    {USE_LEGACY_PORTAL_DICE_ART ? (
+      <img
+        src={state.turn === "P1" ? diceWhitePortal : diceBlackPortal}
+        alt="Roll dice"
+        className="samsaraDicePortalImg"
+      />
+    ) : USE_CSS_STONE_ICON_FALLBACK ? (
+      <div
+        className="samsaraDicePortalImg"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "6%",
+          animation: "none",
+        }}
+      >
+        <StoneDiceIcon color="white" />
+        <StoneDiceIcon color="black" />
+      </div>
+    ) : (
+      <img
+        src={diceGenesisStonePair}
+        alt="Roll dice"
+        className="samsaraDicePortalImg"
+      />
+    )}
   </button>
 )}
      {nidanaCoinSrc && (
@@ -711,7 +796,7 @@ animation: "nidanaReveal 2.6s cubic-bezier(.16,1.25,.32,1) both",
 
   const enemyPlayer = state.turn === "P1" ? "P2" : "P1";
 
-  const enemiesOnCell = PIECE_KINDS.filter((kind) => {
+  const enemiesOnCell = ACTIVE_PIECE_KINDS.filter((kind) => {
     const piece = state.pieces[enemyPlayer][kind];
     return !piece.inLimbo && piece.pos === i;
   });

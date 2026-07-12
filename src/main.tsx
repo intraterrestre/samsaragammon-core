@@ -13,7 +13,10 @@ ReactDOM.createRoot(rootElement).render(
   <AppBoot />
 );
 
-if ("serviceWorker" in navigator) {
+// Solo registramos el service worker en producción. En desarrollo (npm run
+// dev) el SW se queda "pegado" en el móvil y sigue sirviendo la versión
+// vieja cacheada aunque el código cambie y se refresque la página.
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").catch(() => {});
   });
