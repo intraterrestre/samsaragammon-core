@@ -255,7 +255,7 @@ export function DicePopup({ visible, rollA, rollB, rolling, turn, onDismiss }: P
 
   const color = turn === "P1" ? "white" : "black";
   const label = turn === "P1" ? "White" : "Black";
-  const skin = getActiveDiceSkin();
+  const skin = getActiveDiceSkin(undefined, turn);
 
   return (
     <div
