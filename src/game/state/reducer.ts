@@ -665,6 +665,24 @@ realmAscension: didAscendRealm && unlockedRealmKey
           at: Date.now(),
           player: me,
           pieceKind: activePiece,
+
+          // v2: Avatar activo y Veneno usado (para KarmaEngine v2)
+          avatarId: state.actors.bruno?.owner === me && state.actors.bruno?.unlocked
+            ? "bruno"
+            : undefined,
+          venomUsed: isBasePiece
+            ? (activePiece as import("../actors/actorProfiles").VenomId)
+            : undefined,
+
+          // v2: posición del Veneno antes y después
+          venomPositionBefore: isBasePiece ? fromPos : undefined,
+          venomPositionAfter: isBasePiece ? finalToPos : undefined,
+
+          // v2: datos para detección de capturas declinadas (D-018)
+          captureWasAvailable: allOptions.some(o => o.meaning === "IMPACT"),
+          legalCapturesCount: allOptions.filter(o => o.meaning === "IMPACT").length,
+          turnLost: false,
+
           a,
           b,
           chosenValue: option.value,
@@ -675,7 +693,7 @@ realmAscension: didAscendRealm && unlockedRealmKey
           didCapture,
           capturedPieceKind,
           fromRealm: realmFromPos(fromPos),
-         toRealm: realmFromPos(finalToPos),
+          toRealm: realmFromPos(finalToPos),
           turnIndex: nextTurnIndex,
           cycleIndex: nextCycleIndex,
           level: state.level,

@@ -187,6 +187,12 @@ export type KarmaReport = {
   };
 };
 
+export type GameConfig = {
+  skipGenesis: boolean;
+  victoryMode: "4x1" | "2x2";
+  transitionEventSelection: "round_robin" | "context_based" | "random";
+};
+
 export type GameState = {
   behavior: BehaviorState;
   pattern: PatternEngineState;
@@ -239,6 +245,9 @@ export type GameState = {
   introSeen: boolean;
 
   winner: PlayerId | null;
+
+  // v2: configuración de partida elegida al inicio
+  config: GameConfig;
 
   curvature: CurvatureState;
   venomTrio: VenomTrioState | null;

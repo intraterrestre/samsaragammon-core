@@ -124,6 +124,13 @@ actors: {
   introSeen: false,
   winner: null,
 
+  // v2: configuración por defecto
+  config: {
+    skipGenesis: false,
+    victoryMode: "4x1",
+    transitionEventSelection: "round_robin",
+  },
+
   curvature: {
     P1: 20,
     P2: 80,
