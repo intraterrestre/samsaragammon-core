@@ -441,8 +441,14 @@
   text-align: center;
   margin: 0 auto;
   display: block;
-  color: rgba(0, 0, 0, 0.88);
-  text-shadow: 0 1px 2px rgba(255,255,255,0.4);
+  color: #ffffff;
+  text-shadow:
+    0 0 3px rgba(0,0,0,0.9),
+    -1px -1px 0 rgba(0,0,0,0.8),
+     1px -1px 0 rgba(0,0,0,0.8),
+    -1px  1px 0 rgba(0,0,0,0.8),
+     1px  1px 0 rgba(0,0,0,0.8),
+    0 2px 8px rgba(0,0,0,0.9);
 }
 
 .nidanaLivingBody {
