@@ -346,27 +346,51 @@ const finalToPos = toPos;
 const nextActors = {
   ...state.actors,
 };
-      // ===== progreso de reino / loops =====
+      // ===== progreso de reino por globalRollCount =====
+      // Sistema híbrido: mínimo de lances globales + condiciones objetivas
+      // Reemplaza el sistema de vueltas (loopsNeeded) que era impredecible
       const prevRealmProgress = state.realmProgress[me];
 
+      // Mantenemos loopProgress para compatibilidad visual (barras de progreso)
+      // pero ya no dispara la transición
       let nextLoopProgress =
         prevRealmProgress.currentLoopProgress + option.value;
-
       let nextCompletedLoops = prevRealmProgress.completedLoopsInRealm;
-
       if (nextLoopProgress >= state.trackSize) {
         nextCompletedLoops += 1;
         nextLoopProgress = nextLoopProgress % state.trackSize;
       }
-let nextRealmStep = prevRealmProgress.currentRealmStep;
-let nextRealmTransitions = prevRealmProgress.realmTransitions;
-let didAscendRealm = false;
-let unlockedRealmKey: RealmPieceKind | null = null;
 
-     const loopsNeeded = 1;
+      let nextRealmStep = prevRealmProgress.currentRealmStep;
+      let nextRealmTransitions = prevRealmProgress.realmTransitions;
+      let didAscendRealm = false;
+      let unlockedRealmKey: RealmPieceKind | null = null;
+
+      // Umbrales de lances globales por transición
+      // Basados en RFC v0.9 D-020 — calibrar con pruebas de juego
+      const GENESIS_THRESHOLDS: Record<number, number> = {
+        1: 10,  // Bruno  → Margot:  10 lances mínimo
+        2: 20,  // Margot → Oriol:   20 lances mínimo
+        3: 35,  // Oriol  → Marino:  35 lances mínimo
+        4: 50,  // Marino → Rufus:   50 lances mínimo
+        5: 65,  // Rufus  → Whitman: 65 lances mínimo
+        6: 999, // Whitman ya es el final
+      };
+
+      const currentStep = prevRealmProgress.currentRealmStep;
+      const minRollsForNext = GENESIS_THRESHOLDS[currentStep] ?? 999;
+      const rollsReached = state.globalRollCount >= minRollsForNext;
+
+      // Condiciones objetivas adicionales por etapa
+      const sig = state.decisionSignature[me];
+      const capturesOk = sig.capturesMade >= Math.max(1, Math.floor(state.globalRollCount / 8));
+      const maraOk = sig.totalMoves > 0; // al menos 1 movimiento real
+
+      const conditionsMet = rollsReached && capturesOk && maraOk;
+
     if (
   prevRealmProgress.currentRealmStep < 7 &&
-  nextCompletedLoops >= loopsNeeded
+  conditionsMet
 ) {
   const nextRealmStepValue = Math.min(
     prevRealmProgress.currentRealmStep + 1,
