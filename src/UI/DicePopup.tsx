@@ -241,7 +241,7 @@ type Props = {
 // (~x:434-563, y:456-585). See GameShell.tsx for mount.
 const HUD_LEFT = 214;
 const HUD_TOP = 20;
-const DIE_SIZE = 128; // 2x the original 64px per the 2nd round of feedback
+const DIE_SIZE = 72; // reducido — más proporcionado con el tablero
 
 export function DicePopup({ visible, rollA, rollB, rolling, turn, onDismiss }: Props) {
   useEffect(() => {
