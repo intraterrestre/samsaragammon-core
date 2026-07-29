@@ -12,16 +12,20 @@
 // deleted — see src/assets/dice/dice_white_portal.* and
 // src/assets/dice/dice_black_portal.* — it's simply not the active skin
 // right now. It stays available for a future era to reuse.
+//
+// The original placeholder leaf/clover SVGs (face_1.svg...face_6.svg) are
+// also kept in src/assets/dice/primitive/ but are no longer imported here —
+// replaced by the real carved-stone disc photos below.
 
 import type { EraId } from "../era";
 import { CURRENT_ERA } from "../era";
 
-import leafOne from "../../assets/dice/primitive/face_1.svg";
-import leafTwo from "../../assets/dice/primitive/face_2.svg";
-import cloverThree from "../../assets/dice/primitive/face_3.svg";
-import cloverFour from "../../assets/dice/primitive/face_4.svg";
-import leafFive from "../../assets/dice/primitive/face_5.svg";
-import leafSix from "../../assets/dice/primitive/face_6.svg";
+import discOne from "../../assets/dice/primitive/disco_1_hoja.webp";
+import discTwo from "../../assets/dice/primitive/disco_2_hojas.webp";
+import discThree from "../../assets/dice/primitive/disco_3_colmillos.webp";
+import discFour from "../../assets/dice/primitive/disco_4_manos.webp";
+import discFive from "../../assets/dice/primitive/disco_5_lanzas.webp";
+import discSix from "../../assets/dice/primitive/disco_6_huesos.webp";
 
 export type DiceFaceValue = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -32,18 +36,18 @@ export interface DiceSkin {
   faces: Record<DiceFaceValue, string>;
 }
 
-// Provisional Era 1 dice — inspired by 2.5 million years of nature: leaves
-// and clovers standing in for pips. Placeholder art, not final design.
+// Era 1 dice — carved stone/bone discs: 1 leaf, 2 leaves, 3 fangs, 4 hands,
+// 5 spears, 6 bones. Real reference photos, dropped in by hand.
 export const PRIMITIVE_DICE_SKIN: DiceSkin = {
-  id: "primitive-leaves",
-  label: "Primitive Era — Leaves & Clovers",
+  id: "primitive-stone-discs",
+  label: "Primitive Era — Stone Discs",
   faces: {
-    1: leafOne,
-    2: leafTwo,
-    3: cloverThree,
-    4: cloverFour,
-    5: leafFive,
-    6: leafSix,
+    1: discOne,
+    2: discTwo,
+    3: discThree,
+    4: discFour,
+    5: discFive,
+    6: discSix,
   },
 };
 

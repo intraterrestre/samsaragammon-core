@@ -57,10 +57,7 @@ function CubicDie({ value, rolling, color, size = 76, skin, stone = true }: {
   const pips = PIPS[display] ?? [];
 
   if (stone) {
-    // Carved-stone dice: no real photo texture available, so this is a CSS
-    // approximation — a mottled radial-gradient sphere with drilled-hole
-    // pips, tan/ochre for White and charcoal-grey for Black (matching the
-    // reference photo's two stones).
+    const stoneFaceSrc = skin?.faces?.[display as 1 | 2 | 3 | 4 | 5 | 6] ?? null;
     const stoneBg = isDark ? STONE_GRADIENT.black : STONE_GRADIENT.white;
     const ring = isDark ? STONE_RING.black : STONE_RING.white;
 
@@ -69,42 +66,64 @@ function CubicDie({ value, rolling, color, size = 76, skin, stone = true }: {
         width: size,
         height: size,
         borderRadius: "50%",
-        background: stoneBg,
+        background: stoneFaceSrc ? "#000" : stoneBg,
         border: `1px solid ${ring}`,
         boxShadow: STONE_SHADOW,
         boxSizing: "border-box",
         position: "relative",
+        overflow: "hidden",
         animation: rolling
           ? "dieRoll 0.08s ease-in-out infinite"
           : "dieLand 0.3s cubic-bezier(0.2,0.8,0.4,1) forwards",
         flexShrink: 0,
       }}>
-        {WEATHER_PITS.map(([px, py, pr], i) => (
-          <div key={`w${i}`} style={{
-            position: "absolute",
-            left: `${px * 100}%`,
-            top: `${py * 100}%`,
-            width: size * pr,
-            height: size * pr,
-            transform: "translate(-50%,-50%)",
-            borderRadius: "50%",
-            background: "radial-gradient(circle at 35% 30%, rgba(0,0,0,0.35), rgba(0,0,0,0.12) 70%, transparent 100%)",
-          }} />
-        ))}
-
-        {pips.map(([c, r], i) => (
-          <div key={i} style={{
-            position: "absolute",
-            left: `${((c + 0.5) / 3) * 100}%`,
-            top: `${((r + 0.5) / 3) * 100}%`,
-            width: size * 0.17,
-            height: size * 0.17,
-            transform: "translate(-50%,-50%)",
-            borderRadius: "50%",
-            background: "radial-gradient(circle at 35% 30%, rgba(0,0,0,0.95), rgba(0,0,0,0.65) 55%, rgba(0,0,0,0.3) 100%)",
-            boxShadow: "inset 0 1px 2px rgba(0,0,0,0.9), 0 1px 0 rgba(255,255,255,0.08)",
-          }} />
-        ))}
+        {stoneFaceSrc ? (
+          // Real carved-stone disc photo — see src/assets/dice/primitive/
+          // and src/game/dice/eraDiceSkins.ts. object-fit:cover + the
+          // round clip above crops out the photo's black square corners.
+          <img
+            src={stoneFaceSrc}
+            alt={`face ${display}`}
+            draggable={false}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              pointerEvents: "none",
+            }}
+          />
+        ) : (
+          <>
+            {/* No photo for this value yet — CSS approximation fallback:
+                mottled gradient sphere with drilled-hole pips. */}
+            <div style={{ position: "absolute", inset: 0, background: stoneBg }} />
+            {WEATHER_PITS.map(([px, py, pr], i) => (
+              <div key={`w${i}`} style={{
+                position: "absolute",
+                left: `${px * 100}%`,
+                top: `${py * 100}%`,
+                width: size * pr,
+                height: size * pr,
+                transform: "translate(-50%,-50%)",
+                borderRadius: "50%",
+                background: "radial-gradient(circle at 35% 30%, rgba(0,0,0,0.35), rgba(0,0,0,0.12) 70%, transparent 100%)",
+              }} />
+            ))}
+            {pips.map(([c, r], i) => (
+              <div key={i} style={{
+                position: "absolute",
+                left: `${((c + 0.5) / 3) * 100}%`,
+                top: `${((r + 0.5) / 3) * 100}%`,
+                width: size * 0.17,
+                height: size * 0.17,
+                transform: "translate(-50%,-50%)",
+                borderRadius: "50%",
+                background: "radial-gradient(circle at 35% 30%, rgba(0,0,0,0.95), rgba(0,0,0,0.65) 55%, rgba(0,0,0,0.3) 100%)",
+                boxShadow: "inset 0 1px 2px rgba(0,0,0,0.9), 0 1px 0 rgba(255,255,255,0.08)",
+              }} />
+            ))}
+          </>
+        )}
 
         <style>{`
           @keyframes dieRoll {
@@ -212,14 +231,17 @@ type Props = {
   onDismiss: () => void;
 };
 
-// Positioned inside the 1100x620 samsaraScene coordinate space, in the gap
-// between Mara's face (eyes sit around x:118-164) and the ring wheel (whose
-// scaled edge starts around x:481). The "roll" portal button lives in the
-// upper half of that same gap (~x:300-390, y:255-345), so the vertical dice
-// stack sits just below it, in the lower half of the gap, to avoid covering
-// it. See GameShell.tsx for where this is mounted.
-const HUD_LEFT = 300;
-const HUD_TOP = 380;
+// Positioned inside the 1100x620 samsaraScene coordinate space, directly
+// above the roll button (the "spinning dice" — nudged down to top:44% in
+// Board.tsx, center ~x:347, y:230-320). Side-by-side (not stacked) so the
+// block only needs ~150px of height instead of ~290px, which is what let
+// it clear every neighbor at once: Mara's eyes (x:118-164, y:178-182),
+// SacredProgress (x:-2-178, y:-3-177), the ring (retreats past x:500+
+// this high up), and the blue Buddha "Dharma Emergencies" icon lower down
+// (~x:434-563, y:456-585). See GameShell.tsx for mount.
+const HUD_LEFT = 214;
+const HUD_TOP = 20;
+const DIE_SIZE = 128; // 2x the original 64px per the 2nd round of feedback
 
 export function DicePopup({ visible, rollA, rollB, rolling, turn, onDismiss }: Props) {
   useEffect(() => {
@@ -247,16 +269,16 @@ export function DicePopup({ visible, rollA, rollB, rolling, turn, onDismiss }: P
         cursor: "pointer",
       }}
     >
-      {/* Los dos dados del turno activo, apilados en columna vertical */}
+      {/* Los dos dados del turno activo, en fila horizontal, encima del botón de tirar */}
       <div style={{
         display: "flex",
         flexDirection: "column",
-        gap: 14,
+        gap: 6,
         alignItems: "center",
         filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.7))",
       }}>
         <div style={{
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: 800,
           letterSpacing: 1.2,
           textTransform: "uppercase",
@@ -265,8 +287,10 @@ export function DicePopup({ visible, rollA, rollB, rolling, turn, onDismiss }: P
         }}>
           {label}
         </div>
-        <CubicDie value={rollA} rolling={rolling} color={color} size={64} skin={skin} />
-        <CubicDie value={rollB} rolling={rolling} color={color} size={64} skin={skin} />
+        <div style={{ display: "flex", flexDirection: "row", gap: 10 }}>
+          <CubicDie value={rollA} rolling={rolling} color={color} size={DIE_SIZE} skin={skin} />
+          <CubicDie value={rollB} rolling={rolling} color={color} size={DIE_SIZE} skin={skin} />
+        </div>
       </div>
     </div>
   );

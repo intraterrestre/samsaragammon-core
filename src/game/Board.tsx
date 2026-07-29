@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { GameState, MoveOption, PieceKind, BasePieceKind, PlayerId } from "./types";
-import {  cellStyle as ringCellStyle, RING_SIZE,  piecePosition,} from "../UI/geometry";
+import {  cellStyle as ringCellStyle, RING_SIZE,  piecePosition, CELL,} from "../UI/geometry";
 import { realmFromPos, REALM_LABEL, pickLine } from "../UI/realm";
 import { ExplainModal } from "../UI/ExplainModal";
 import { MoveEmanations } from "../UI/MoveEmanations";
@@ -232,16 +232,23 @@ function getStackedTokenPosition({
   wheelCenter: { x: number; y: number };
   spacing?: number;
 }) {
+  // `base.left/top` come from piecePosition(), which sizes them for a
+  // CELL x CELL (44x44) box — i.e. base.left = trueCenterX - CELL/2. The
+  // true cell-circle center has to be recovered using CELL here, not
+  // `pieceSize`: using pieceSize instead (the piece's own rendered size)
+  // silently drags every token off-center by (pieceSize-CELL)/2 px,
+  // growing worse the bigger a piece gets drawn (this is what made the
+  // enlarged Pig visibly drift down-right off the cell circle).
+  const cellCenterX = base.left + CELL / 2;
+  const cellCenterY = base.top + CELL / 2;
+
   if (totalInStack <= 1) {
     return {
-      left: base.left,
-      top: base.top,
+      left: cellCenterX - pieceSize / 2,
+      top: cellCenterY - pieceSize / 2,
       zIndex: 40,
     };
   }
-
-  const cellCenterX = base.left + pieceSize / 2;
-  const cellCenterY = base.top + pieceSize / 2;
 
   const dx = wheelCenter.x - cellCenterX;
   const dy = wheelCenter.y - cellCenterY;
@@ -733,7 +740,7 @@ filter:"drop-shadow(0 0 7px rgba(255,255,255,.95))"
   className="samsaraDicePortalButton"
   onClick={onRoll}
   title="Roll dice"
-  style={{ top: "40%" }}
+  style={{ top: "44%" }}
 >
     {USE_LEGACY_PORTAL_DICE_ART ? (
       <img
