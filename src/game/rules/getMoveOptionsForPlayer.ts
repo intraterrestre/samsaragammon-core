@@ -1,3 +1,7 @@
+// src/game/rules/getMoveOptionsForPlayer.ts
+// v2: destinos calculados desde posición del VENENO (no del Avatar)
+//     soporte de dirección opuesta entre jugadores
+
 import type {
   BasePieceKind,
   GameState,
@@ -13,9 +17,6 @@ import { getUnlockedBasePieces } from "../era";
 
 const BASE_PIECES: BasePieceKind[] = ["pig", "snake", "rooster"];
 
-// Era-gated view of BASE_PIECES. During Era 1 (Ignorance) this resolves to
-// just ["pig"] — Snake and Rooster stay fully coded but can't generate move
-// options (and therefore can't be selected) until their era unlocks them.
 const ACTIVE_BASE_PIECES: BasePieceKind[] = getUnlockedBasePieces(BASE_PIECES);
 
 const REALM_PIECES: RealmPieceKind[] = [
@@ -32,6 +33,13 @@ const isBasePiece = (kind: PieceKind): kind is BasePieceKind =>
 
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 
+// v2: P1 va horario, P2 va antihorario
+function getPlayerDirection(
+  player: PlayerId
+): "clockwise" | "counterclockwise" {
+  return player === "P1" ? "clockwise" : "counterclockwise";
+}
+
 function resolveFinalPreviewPos(params: {
   fromPos: number;
   value: number;
@@ -39,7 +47,15 @@ function resolveFinalPreviewPos(params: {
   level: number;
   player: PlayerId;
 }): number {
-  const basePos = previewMove(params.fromPos, params.value, params.trackSize);
+  const direction = getPlayerDirection(params.player);
+
+  // v2: usar previewMove con dirección
+  const basePos = previewMove(
+    params.fromPos,
+    params.value,
+    params.trackSize,
+    direction
+  );
 
   const realmEffect = applyRealmEffect({
     level: params.level,
@@ -61,7 +77,7 @@ function countEnemyPiecesAtPos(
 ): number {
   const opp = otherPlayer(player);
 
- return ACTIVE_BASE_PIECES.filter((kind) => {
+  return ACTIVE_BASE_PIECES.filter((kind) => {
     const piece = state.pieces[opp][kind];
     return !piece.inLimbo && piece.pos === targetPos;
   }).length;
@@ -86,7 +102,7 @@ function pushMoveIfLegal(params: {
   pieceKind: PieceKind;
   choice: MoveOption["choice"];
   value: number;
-  fromPos: number;
+  fromPos: number;  // posición del Veneno (origen del movimiento)
   toPos: number;
   enemyPositions: number[];
   isSame?: boolean;
@@ -97,7 +113,7 @@ function pushMoveIfLegal(params: {
     params.toPos
   );
 
-  // 2+ enemigos = casilla bloqueada. NO se muestra opción.
+  // 2+ enemigos = casilla bloqueada
   if (enemyCount >= 2) return;
 
   params.options.push({
@@ -125,24 +141,29 @@ export function getMoveOptionsForPlayer(
   const isDouble = a === b;
   const opp = otherPlayer(player);
 
-const enemyPositions = ACTIVE_BASE_PIECES
-  .filter((kind) => !state.pieces[opp][kind].inLimbo)
-  .map((kind) => state.pieces[opp][kind].pos);
+  const enemyPositions = ACTIVE_BASE_PIECES.filter(
+    (kind) => !state.pieces[opp][kind].inLimbo
+  ).map((kind) => state.pieces[opp][kind].pos);
+
   const options: MoveOption[] = [];
 
-const activePieceKinds: PieceKind[] = [
-  ...ACTIVE_BASE_PIECES,
-  ...REALM_PIECES.filter(
-    (kind) => state.realmPieces[player]?.[kind]?.unlocked
-  ),
-];
+  const activePieceKinds: PieceKind[] = [
+    ...ACTIVE_BASE_PIECES,
+    ...REALM_PIECES.filter(
+      (kind) => state.realmPieces[player]?.[kind]?.unlocked
+    ),
+  ];
 
-for (const pieceKind of activePieceKinds) {
-  const piece = isBasePiece(pieceKind)
-    ? state.pieces[player][pieceKind]
-    : state.realmPieces[player]?.[pieceKind];
+  for (const pieceKind of activePieceKinds) {
+    // v2: el origen del movimiento es la posición del VENENO (BasePiece)
+    // Si el pieceKind ES un Veneno → usa su propia posición
+    // Si el pieceKind es un Avatar realm → usa la posición del Veneno activo
+    // Por ahora los realm pieces usan su propia posición (compatibilidad)
+    const piece = isBasePiece(pieceKind)
+      ? state.pieces[player][pieceKind]
+      : state.realmPieces[player]?.[pieceKind];
 
-  if (!piece || piece.inLimbo) continue;
+    if (!piece || piece.inLimbo) continue;
 
     const fromPos = piece.pos;
 

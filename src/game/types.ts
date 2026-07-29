@@ -97,6 +97,19 @@ export type LastMove = {
   player: PlayerId;
   pieceKind: PieceKind;
 
+  // v2: Avatar y Veneno que generaron el movimiento
+  avatarId?: import('./actors/actorProfiles').ActorId;
+  venomUsed?: import('./actors/actorProfiles').VenomId;
+
+  // v2: posición del Veneno antes y después del movimiento
+  venomPositionBefore?: number;
+  venomPositionAfter?: number;
+
+  // v2: si había captura disponible y no se tomó (para D-018)
+  captureWasAvailable: boolean;
+  legalCapturesCount: number;
+  turnLost: boolean;
+
   a: number;
   b: number;
 
