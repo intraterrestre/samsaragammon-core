@@ -3,12 +3,21 @@ import "./mara.css";
 import samsaraPaintingPanel from "../assets/samsara/samsara-painting-panel.webp";
 import DharmaBubble from "../components/DharmaBubble";
 import DharmaConnector from "../components/DharmaConnector";
+import { GenesisReveal } from "./GenesisReveal";
+import type { RealmPieceKind } from "../game/types";
 
 interface MaraLayerProps {
   dharmaMessage?: string;
+  // v2: Genesis reveal
+  realmStep?: number;
+  lastRealmKey?: RealmPieceKind | null;
 }
 
-export function MaraLayer({ dharmaMessage = "" }: MaraLayerProps) {
+export function MaraLayer({
+  dharmaMessage = "",
+  realmStep = 1,
+  lastRealmKey = null,
+}: MaraLayerProps) {
   const layerRef = useRef<HTMLDivElement | null>(null);
   const bubbleRef = useRef<HTMLDivElement | null>(null);
 
@@ -37,6 +46,12 @@ export function MaraLayer({ dharmaMessage = "" }: MaraLayerProps) {
         src={samsaraPaintingPanel}
         alt="Samsara Painting"
         className="maraPainting"
+      />
+
+      {/* v2: Revelación progresiva del Genesis */}
+      <GenesisReveal
+        realmStep={realmStep}
+        lastRealmKey={lastRealmKey}
       />
 
       <DharmaConnector

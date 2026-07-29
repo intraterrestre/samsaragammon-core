@@ -465,7 +465,12 @@ return (
   <div className="samsaraStage">
     <div className="samsaraScene">
       <SamsaraStage
-       dharmaMessage={buddhaMessage}
+        dharmaMessage={buddhaMessage}
+        realmStep={Math.max(
+          state.realmProgress.P1.currentRealmStep,
+          state.realmProgress.P2.currentRealmStep
+        )}
+        lastRealmKey={state.realmAscension?.realmKey ?? null}
       />
 
       <SacredProgress
