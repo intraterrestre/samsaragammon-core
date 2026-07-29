@@ -11,12 +11,12 @@ import stoneWhite1 from "../../assets/dice/stone_white_1.webp";
 import stoneWhite2 from "../../assets/dice/stone_white_2.webp";
 import stoneWhite3 from "../../assets/dice/stone_white_3.webp";
 import stoneWhite4 from "../../assets/dice/stone_white_4.webp";
-import stoneWhite5 from "../../assets/dice/stone_white_5..webp";
+import stoneWhite5 from "../../assets/dice/stone_white_5.webp";
 import stoneWhite6 from "../../assets/dice/stone_white_6.webp";
 
 // Piedras negras — P2
 import stoneBlack1 from "../../assets/dice/stone_black_1.webp";
-import stoneBlack2 from "../../assets/dice/stone_black_2 .webp";
+import stoneBlack2 from "../../assets/dice/stone_black_2.webp";
 import stoneBlack3 from "../../assets/dice/stone_black_3.webp";
 import stoneBlack4 from "../../assets/dice/stone_black_4.webp";
 import stoneBlack5 from "../../assets/dice/stone_black_5.webp";
