@@ -48,6 +48,9 @@ export function GenesisReveal({ globalRollCount, onComplete }: Props) {
     VIDEO_SRC ? "VIDEO" : "NEBULA"
   );
   const [nebulaIndex, setNebulaIndex] = useState(0);
+  // Guardar el rollCount inicial para calcular lances relativos al Genesis
+  const [startRoll] = useState(globalRollCount);
+  const relativeRoll = globalRollCount - startRoll;
 
   const handleVideoEnd = () => setPhase("NEBULA");
 
@@ -58,20 +61,20 @@ export function GenesisReveal({ globalRollCount, onComplete }: Props) {
       return;
     }
     const idx = Math.min(
-      Math.floor((globalRollCount / 6) * NEBULA_FRAMES.length),
+      Math.floor((relativeRoll / 6) * NEBULA_FRAMES.length),
       NEBULA_FRAMES.length - 1
     );
     setNebulaIndex(idx);
-    if (globalRollCount >= 6) setPhase("CASILLAS");
-  }, [globalRollCount, phase]);
+    if (relativeRoll >= 6) setPhase("CASILLAS");
+  }, [relativeRoll, phase]);
 
   useEffect(() => {
     if (phase !== "CASILLAS") return;
-    if (globalRollCount >= 12) {
+    if (relativeRoll >= 12) {
       setPhase("COMPLETE");
       onComplete?.();
     }
-  }, [globalRollCount, phase, onComplete]);
+  }, [relativeRoll, phase, onComplete]);
 
   if (phase === "VIDEO" && VIDEO_SRC) {
     return (
