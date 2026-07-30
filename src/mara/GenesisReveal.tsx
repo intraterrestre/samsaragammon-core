@@ -20,7 +20,7 @@ import gf11  from "../../assets/genesis/genesis_f11.webp";
 import gf12  from "../../assets/genesis/genesis_f12.webp";
 import gf13  from "../../assets/genesis/genesis_f13.webp";
 import gf14  from "../../assets/genesis/genesis_f14.webp";
-import gf015 from "../../assets/genesis/genesis_f015.webp";
+import gf15 from "../../assets/genesis/genesis_f15.webp";
 import gf16  from "../../assets/genesis/genesis_f16.webp";
 import gf17  from "../../assets/genesis/genesis_f17.webp";
 import gf18  from "../../assets/genesis/genesis_f18.webp";
@@ -40,7 +40,7 @@ import genesisVideo from "../../assets/genesis/genesis_dados.mp4";
 const NEBULA_FRAMES = [
   gf0, gf00, gf01, gf02, gf03, gf04, gf05, gf06,
   gf07, gf08, gf09, gf10, gf11, gf12, gf13, gf14,
-  gf015, gf16, gf17, gf18, gf19, gf20,
+  gf15, gf16, gf17, gf18, gf19, gf20,
 ];
 
 // Casillas acumuladas por lance (4 en 4)
