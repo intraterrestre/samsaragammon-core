@@ -66,7 +66,7 @@ function CubicDie({ value, rolling, color, size = 76, skin, stone = true }: {
         width: size,
         height: size,
         borderRadius: "50%",
-        background: stoneFaceSrc ? "#000" : stoneBg,
+        background: stoneFaceSrc ? "transparent" : stoneBg,
         border: `1px solid ${ring}`,
         boxShadow: STONE_SHADOW,
         boxSizing: "border-box",
