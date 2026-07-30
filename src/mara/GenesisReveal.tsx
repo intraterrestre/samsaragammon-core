@@ -54,8 +54,11 @@ export function GenesisReveal({ globalRollCount, onComplete, onPhaseChange }: Pr
   const relativeRoll = globalRollCount - startRoll;
 
   const handleVideoEnd = () => {
-    setPhase("NEBULA");
-    onPhaseChange?.("NEBULA");
+    // Delay para que el primer frame de nebulosa cargue antes de mostrar el boardLayer
+    setTimeout(() => {
+      setPhase("NEBULA");
+      onPhaseChange?.("NEBULA");
+    }, 300);
   };
 
   useEffect(() => {
