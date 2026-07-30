@@ -61,7 +61,7 @@ import genesisVideo from "../../assets/genesis/genesis_dados.mp4";
 // Orden visual: mundo fantasma → sólido → bastidores → lonas cubriendo
 const NEBULA_FRAMES = [
   gf0, gf00, gf01, gf02, gf03, gf04, gf05, gf06, gf07,
-  gf08, gf09, gf10, gf11, gf12, gf013, gf14, gf015,
+  gf08, gf09, gf10, gf11, gf12, gf13, gf14, gf015,
   gf16, gf17, gf18, gf19, gf20,
 ];
 
