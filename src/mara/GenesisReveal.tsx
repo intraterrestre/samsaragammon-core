@@ -5,17 +5,17 @@ import { useEffect, useState } from "react";
 
 // import.meta.glob procesa los assets en build time — funciona en producción
 const nebulaModules = import.meta.glob(
-  "../../assets/genesis/genesis_f*.webp",
+  "../assets/genesis/genesis_f*.webp",
   { eager: true, query: "?url", import: "default" }
 ) as Record<string, string>;
 
 const casillasModules = import.meta.glob(
-  "../../assets/genesis/genesis_cv*.webp",
+  "../assets/genesis/genesis_cv*.webp",
   { eager: true, query: "?url", import: "default" }
 ) as Record<string, string>;
 
 const videoModules = import.meta.glob(
-  "../../assets/genesis/genesis_dados.mp4",
+  "../assets/genesis/genesis_dados.mp4",
   { eager: true, query: "?url", import: "default" }
 ) as Record<string, string>;
 
