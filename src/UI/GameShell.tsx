@@ -84,10 +84,26 @@ const [hoveredOption, setHoveredOption] = React.useState<MoveOption | null>(null
 const [dicePopupVisible, setDicePopupVisible] = React.useState(false);
 const [diceRolling, setDiceRolling] = React.useState(false);
 
+// Clicks del dado *durante* Genesis (fases VIDEO/CASILLAS) — puramente
+// decorativos, avanzan el reveal de casillas verdes. Deliberadamente NO
+// despachan la acción ROLL real: el reducer bloquea un segundo ROLL
+// mientras state.phase === "rolled" hasta que se elige y mueve una ficha,
+// pero las fichas siguen ocultas durante Genesis, así que un ROLL real
+// aquí dejaría el juego trancado tras el primer clic. Además evita que
+// estos clics de calentamiento contaminen state.globalRollCount, que el
+// Orquestador usa para la progresión real de eras.
+const [genesisClickCount, setGenesisClickCount] = React.useState(0);
+
 const handleRollWithPopup = () => {
   setDicePopupVisible(true);
   setDiceRolling(true);
-  onRoll();
+
+  if (!genesisComplete) {
+    setGenesisClickCount((n) => n + 1);
+  } else {
+    onRoll();
+  }
+
   setTimeout(() => setDiceRolling(false), 900);
 };
 
@@ -473,7 +489,7 @@ return (
           state.realmProgress.P2.currentRealmStep
         )}
         lastRealmKey={state.realmAscension?.realmKey ?? null}
-        globalRollCount={state.globalRollCount ?? 0}
+        globalRollCount={genesisClickCount}
         genesisComplete={genesisComplete}
         onGenesisComplete={() => setGenesisComplete(true)}
         onGenesisPhaseChange={(phase) => setGenesisPhase(phase)}

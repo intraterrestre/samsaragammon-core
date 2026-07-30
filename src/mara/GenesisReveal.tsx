@@ -58,6 +58,10 @@ export function GenesisReveal({ globalRollCount, onComplete, onPhaseChange }: Pr
     VIDEO_SRC ? null : globalRollCount
   );
 
+  // El video arranca muted (requisito de autoplay en todos los browsers).
+  // El botón de sonido permite al usuario activarlo con un tap explícito.
+  const [isMuted, setIsMuted] = useState(true);
+
   useEffect(() => {
     if (phase === "VIDEO") {
       onPhaseChange?.("VIDEO");
@@ -98,10 +102,37 @@ export function GenesisReveal({ globalRollCount, onComplete, onPhaseChange }: Pr
       }}>
         <video
           src={VIDEO_SRC}
-          autoPlay muted playsInline
+          autoPlay
+          muted={isMuted}
+          playsInline
           onEnded={handleVideoEnd}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
+        <button
+          type="button"
+          onClick={() => setIsMuted((m) => !m)}
+          aria-label={isMuted ? "Activar sonido" : "Silenciar"}
+          title={isMuted ? "Activar sonido" : "Silenciar"}
+          style={{
+            position: "absolute",
+            right: 18,
+            bottom: 18,
+            width: 48,
+            height: 48,
+            borderRadius: "50%",
+            border: "1px solid rgba(255,255,255,0.35)",
+            background: "rgba(0,0,0,0.45)",
+            color: "#fff",
+            fontSize: 22,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            backdropFilter: "blur(2px)",
+          }}
+        >
+          {isMuted ? "🔇" : "🔊"}
+        </button>
       </div>
     );
   }
