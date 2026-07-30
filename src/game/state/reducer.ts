@@ -17,6 +17,7 @@ import { computeKarmaTurn } from "../engine/computeKarmaTurn";
 import { NIDANA_LIST } from "../nidanas";
 import type { NidanaId } from "../nidanas";
 import { isBasePieceUnlocked } from "../era";
+import { evaluateOrchestrator } from "../orchestrator/Orchestrator";
 
 const BASE_PIECE_KINDS: BasePieceKind[] = ["pig", "snake", "rooster"];
 const isBasePieceKind = (kind: PieceKind): kind is BasePieceKind =>
@@ -366,27 +367,10 @@ const nextActors = {
       let didAscendRealm = false;
       let unlockedRealmKey: RealmPieceKind | null = null;
 
-      // Umbrales de lances globales por transición
-      // Basados en RFC v0.9 D-020 — calibrar con pruebas de juego
-      const GENESIS_THRESHOLDS: Record<number, number> = {
-        1: 10,  // Bruno  → Margot:  10 lances mínimo
-        2: 20,  // Margot → Oriol:   20 lances mínimo
-        3: 35,  // Oriol  → Marino:  35 lances mínimo
-        4: 50,  // Marino → Rufus:   50 lances mínimo
-        5: 65,  // Rufus  → Whitman: 65 lances mínimo
-        6: 999, // Whitman ya es el final
-      };
-
-      const currentStep = prevRealmProgress.currentRealmStep;
-      const minRollsForNext = GENESIS_THRESHOLDS[currentStep] ?? 999;
-      const rollsReached = state.globalRollCount >= minRollsForNext;
-
-      // Condiciones objetivas adicionales por etapa
-      const sig = state.decisionSignature[me];
-      const capturesOk = sig.capturesMade >= Math.max(1, Math.floor(state.globalRollCount / 8));
-      const maraOk = sig.totalMoves > 0; // al menos 1 movimiento real
-
-      const conditionsMet = rollsReached && capturesOk && maraOk;
+      // ===== ORQUESTADOR DE PROGRESIÓN (D-009, D-020) =====
+      // Evalúa condiciones objetivas para la transición entre Avatares
+      const orchestratorResult = evaluateOrchestrator(state, me);
+      const conditionsMet = orchestratorResult.event === "REVEAL_NEXT_AVATAR";
 
     if (
   prevRealmProgress.currentRealmStep < 7 &&
