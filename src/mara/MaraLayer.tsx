@@ -8,15 +8,20 @@ import type { RealmPieceKind } from "../game/types";
 
 interface MaraLayerProps {
   dharmaMessage?: string;
-  // v2: Genesis reveal
   realmStep?: number;
   lastRealmKey?: RealmPieceKind | null;
+  globalRollCount?: number;
+  genesisComplete?: boolean;
+  onGenesisComplete?: () => void;
 }
 
 export function MaraLayer({
   dharmaMessage = "",
   realmStep = 1,
   lastRealmKey = null,
+  globalRollCount = 0,
+  genesisComplete = false,
+  onGenesisComplete,
 }: MaraLayerProps) {
   const layerRef = useRef<HTMLDivElement | null>(null);
   const bubbleRef = useRef<HTMLDivElement | null>(null);
@@ -48,11 +53,14 @@ export function MaraLayer({
         className="maraPainting"
       />
 
-      {/* v2: Revelación progresiva del Genesis */}
-      <GenesisReveal
-        realmStep={realmStep}
-        lastRealmKey={lastRealmKey}
-      />
+      {/* v2: Genesis — secuencia completa */}
+      {!genesisComplete && (
+        <GenesisReveal
+          globalRollCount={globalRollCount}
+          realmStep={realmStep}
+          onComplete={onGenesisComplete}
+        />
+      )}
 
       <DharmaConnector
         fromX={46}

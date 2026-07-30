@@ -249,6 +249,7 @@ const [usedPoisons, setUsedPoisons] = React.useState({
 });
 
 const [brunoAwakened, setBrunoAwakened] = React.useState(false);
+const [genesisComplete, setGenesisComplete] = React.useState(false);
 
 const handleMove = (opt: MoveOption, all: MoveOption[]) => {
   setHoveredOption(null);
@@ -471,6 +472,9 @@ return (
           state.realmProgress.P2.currentRealmStep
         )}
         lastRealmKey={state.realmAscension?.realmKey ?? null}
+        globalRollCount={state.globalRollCount ?? 0}
+        genesisComplete={genesisComplete}
+        onGenesisComplete={() => setGenesisComplete(true)}
       />
 
       <SacredProgress
