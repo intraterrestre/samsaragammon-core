@@ -53,6 +53,8 @@ export function MaraLayer({
         src={samsaraPaintingPanel}
         alt="Samsara Painting"
         className="maraPainting"
+        style={{ opacity: genesisComplete ? 1 : 0, transition: "opacity 0.8s ease" }}
+        style={{ opacity: genesisComplete ? 1 : 0, transition: "opacity 0.8s ease" }}
       />
 
       {/* v2: Genesis — import.meta.glob resuelve assets en build y runtime */}

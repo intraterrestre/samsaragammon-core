@@ -846,7 +846,7 @@ animation: "nidanaReveal 2.6s cubic-bezier(.16,1.25,.32,1) both",
           );
         })}
 
-      {moveOptions.length > 0 && onChooseMove && (
+      {genesisComplete && moveOptions.length > 0 && onChooseMove && (
           <MoveEmanations
             options={moveOptions}
             player={state.turn}
