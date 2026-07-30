@@ -8,4 +8,8 @@ export default defineConfig({
     host: true,
     allowedHosts: true,
   },
+  assetsInclude: ['**/*.webp', '**/*.mp4'],
+  build: {
+    assetsInlineLimit: 0,
+  },
 })
