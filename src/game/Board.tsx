@@ -690,7 +690,7 @@ top: stackedPosition.top,
     borderRadius: "50%",
 
     overflow: "visible",
-    zIndex: 5000,
+    zIndex: genesisComplete ? 5000 : 10,
 
     transform: "scale(1.12)",
     transformOrigin: "center center",
