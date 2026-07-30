@@ -730,7 +730,8 @@ zIndex:90,
 pointerEvents: "auto",
 transition:"0.3s",
 
-filter:"drop-shadow(0 0 7px rgba(255,255,255,.95))"
+filter:"drop-shadow(0 0 7px rgba(255,255,255,.95))",
+display: genesisComplete ? "block" : "none"
 }}
 />
 {bigHeadSchoolBy && (
@@ -945,7 +946,7 @@ style={{
     );
   });
 })}
-        {renderedPieces}
+        {genesisComplete && renderedPieces}
 
   
       </div>
