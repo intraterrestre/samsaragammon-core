@@ -13,6 +13,7 @@ interface MaraLayerProps {
   globalRollCount?: number;
   genesisComplete?: boolean;
   onGenesisComplete?: () => void;
+  onGenesisPhaseChange?: (phase: string) => void;
 }
 
 export function MaraLayer({
@@ -22,6 +23,7 @@ export function MaraLayer({
   globalRollCount = 0,
   genesisComplete = false,
   onGenesisComplete,
+  onGenesisPhaseChange,
 }: MaraLayerProps) {
   const layerRef = useRef<HTMLDivElement | null>(null);
   const bubbleRef = useRef<HTMLDivElement | null>(null);
@@ -59,6 +61,7 @@ export function MaraLayer({
           globalRollCount={globalRollCount}
           realmStep={realmStep}
           onComplete={onGenesisComplete}
+          onPhaseChange={onGenesisPhaseChange}
         />
       )}
 

@@ -41,9 +41,10 @@ type Props = {
   globalRollCount: number;
   realmStep: number;
   onComplete?: () => void;
+  onPhaseChange?: (phase: GenesisPhase) => void;
 };
 
-export function GenesisReveal({ globalRollCount, onComplete }: Props) {
+export function GenesisReveal({ globalRollCount, onComplete, onPhaseChange }: Props) {
   const [phase, setPhase] = useState<GenesisPhase>(
     VIDEO_SRC ? "VIDEO" : "NEBULA"
   );
@@ -52,7 +53,10 @@ export function GenesisReveal({ globalRollCount, onComplete }: Props) {
   const [startRoll] = useState(globalRollCount);
   const relativeRoll = globalRollCount - startRoll;
 
-  const handleVideoEnd = () => setPhase("NEBULA");
+  const handleVideoEnd = () => {
+    setPhase("NEBULA");
+    onPhaseChange?.("NEBULA");
+  };
 
   useEffect(() => {
     if (phase !== "NEBULA") return;

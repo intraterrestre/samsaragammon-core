@@ -8,6 +8,7 @@ type SamsaraStageProps = {
   globalRollCount?: number;
   genesisComplete?: boolean;
   onGenesisComplete?: () => void;
+  onGenesisPhaseChange?: (phase: string) => void;
 };
 
 export function SamsaraStage({
@@ -17,6 +18,7 @@ export function SamsaraStage({
   globalRollCount = 0,
   genesisComplete = false,
   onGenesisComplete,
+  onGenesisPhaseChange,
 }: SamsaraStageProps) {
   return (
     <MaraLayer
@@ -26,6 +28,7 @@ export function SamsaraStage({
       globalRollCount={globalRollCount}
       genesisComplete={genesisComplete}
       onGenesisComplete={onGenesisComplete}
+      onGenesisPhaseChange={onGenesisPhaseChange}
     />
   );
 }

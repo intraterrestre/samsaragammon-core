@@ -250,6 +250,7 @@ const [usedPoisons, setUsedPoisons] = React.useState({
 
 const [brunoAwakened, setBrunoAwakened] = React.useState(false);
 const [genesisComplete, setGenesisComplete] = React.useState(false);
+const [genesisPhase, setGenesisPhase] = React.useState<string>("VIDEO");
 
 const handleMove = (opt: MoveOption, all: MoveOption[]) => {
   setHoveredOption(null);
@@ -475,6 +476,7 @@ return (
         globalRollCount={state.globalRollCount ?? 0}
         genesisComplete={genesisComplete}
         onGenesisComplete={() => setGenesisComplete(true)}
+        onGenesisPhaseChange={(phase) => setGenesisPhase(phase)}
       />
 
       {genesisComplete && (
@@ -488,14 +490,17 @@ return (
 
      {genesisComplete && <FandangoKarma />}
 
-      <DicePopup
-        visible={dicePopupVisible}
-        rollA={a}
-        rollB={b}
-        rolling={diceRolling}
-        turn={state.turn}
-        onDismiss={() => setDicePopupVisible(false)}
-      />
+      {/* Dados ocultos durante video intro del Genesis */}
+      {(genesisComplete || genesisPhase !== "VIDEO") && (
+        <DicePopup
+          visible={dicePopupVisible}
+          rollA={a}
+          rollB={b}
+          rolling={diceRolling}
+          turn={state.turn}
+          onDismiss={() => setDicePopupVisible(false)}
+        />
+      )}
 
       <div className="boardLayer">
         <Board
