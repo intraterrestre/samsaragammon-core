@@ -502,7 +502,25 @@ return (
         />
       )}
 
-      <div className="boardLayer" style={{ opacity: genesisComplete ? 1 : (genesisPhase === "NEBULA" || genesisPhase === "CASILLAS" ? 1 : 0), transition: "opacity 0.6s ease" }}>
+      {/* Botón invisible para lanzar dados durante Genesis */}
+      {!genesisComplete && (
+        <button
+          onClick={handleRollWithPopup}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            zIndex: 99998,
+          }}
+          title="Roll to advance Genesis"
+        />
+      )}
+
+      <div className="boardLayer" style={{ opacity: genesisComplete ? 1 : 0, transition: genesisComplete ? "opacity 0.8s ease" : "none" }}>
         <Board
           state={state}
           onSelectPiece={onSelectPiece}
