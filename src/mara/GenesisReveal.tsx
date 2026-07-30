@@ -45,6 +45,11 @@ type Props = {
 };
 
 export function GenesisReveal({ globalRollCount, onComplete, onPhaseChange }: Props) {
+  // Notificar fase inicial al montar
+  React.useEffect(() => {
+    onPhaseChange?.("VIDEO");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [phase, setPhase] = useState<GenesisPhase>(
     VIDEO_SRC ? "VIDEO" : "NEBULA"
   );

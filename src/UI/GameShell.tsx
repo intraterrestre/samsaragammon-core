@@ -502,7 +502,7 @@ return (
         />
       )}
 
-      <div className="boardLayer" style={{ opacity: genesisPhase === "VIDEO" ? 0 : 1, transition: genesisPhase === "VIDEO" ? "none" : "opacity 0.6s ease" }}>
+      <div className="boardLayer" style={{ opacity: genesisComplete ? 1 : (genesisPhase === "NEBULA" || genesisPhase === "CASILLAS" ? 1 : 0), transition: "opacity 0.6s ease" }}>
         <Board
           state={state}
           onSelectPiece={onSelectPiece}
