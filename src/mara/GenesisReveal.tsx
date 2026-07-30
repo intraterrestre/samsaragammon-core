@@ -138,3 +138,4 @@ export function GenesisReveal({ globalRollCount, onComplete }: Props) {
 }
 
 export default GenesisReveal;
+
