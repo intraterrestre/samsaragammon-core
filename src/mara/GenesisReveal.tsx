@@ -1,23 +1,44 @@
 // src/mara/GenesisReveal.tsx
-// Genesis — usa import.meta.glob para que Vite procese el asset correctamente
+// Genesis — usa import.meta.glob para que Vite procese los assets correctamente
 //
-// 2026-07-30: el video genesis_dados.mp4 ahora es un video fusionado
-// (cosmos + reveal del tablero pintado a mano). Ya no necesitamos ciclar
-// 44 frames estáticos (genesis_f0..f20 + genesis_cv01..24) sincronizados
-// con las tiradas de dado — esa animación vive ahora dentro del video.
-// El flujo queda: VIDEO reproduce -> onEnded -> COMPLETE (genesisComplete).
+// 2026-07-30: genesis_dados.mp4 ahora es un video fusionado que cubre lo que
+// antes eran los 21 frames estáticos "NEBULA" (genesis_f0..f20 — cosmos
+// hasta el tablero pintado). Esa fase ya no se cicla a mano con las tiradas
+// de dado, vive dentro del video.
+//
+// El desarrollo de las casillas verdes ancestrales (genesis_cv04..cv24) NO
+// está en el video — sigue siendo una fase aparte, ciclada por tiradas de
+// dado igual que antes, solo que ahora arranca apenas termina el video
+// (ya no hace falta "gastar" 6 lances en la nebulosa primero).
+//
+// Flujo: VIDEO reproduce -> onEnded -> CASILLAS (6 lances) -> COMPLETE.
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
-// import.meta.glob procesa el asset en build time — funciona en producción
+const casillasModules = import.meta.glob(
+  "../assets/genesis/genesis_cv*.webp",
+  { eager: true, query: "?url", import: "default" }
+) as Record<string, string>;
+
 const videoModules = import.meta.glob(
   "../assets/genesis/genesis_dados.mp4",
   { eager: true, query: "?url", import: "default" }
 ) as Record<string, string>;
 
+// Casillas cada 4 (cv04, cv08, cv12, cv16, cv20, cv24)
+const CASILLAS_FRAMES = [
+  "genesis_cv04", "genesis_cv08", "genesis_cv12",
+  "genesis_cv16", "genesis_cv20", "genesis_cv24"
+]
+  .map((name) => {
+    const key = Object.keys(casillasModules).find((k) => k.includes(name));
+    return key ? casillasModules[key] : "";
+  })
+  .filter(Boolean);
+
 const VIDEO_SRC = Object.values(videoModules)[0] ?? "";
 
-type GenesisPhase = "VIDEO" | "COMPLETE";
+type GenesisPhase = "VIDEO" | "CASILLAS" | "COMPLETE";
 
 type Props = {
   globalRollCount: number;
@@ -26,32 +47,47 @@ type Props = {
   onPhaseChange?: (phase: GenesisPhase) => void;
 };
 
-export function GenesisReveal({ onComplete, onPhaseChange }: Props) {
+export function GenesisReveal({ globalRollCount, onComplete, onPhaseChange }: Props) {
   const [phase, setPhase] = useState<GenesisPhase>(
-    VIDEO_SRC ? "VIDEO" : "COMPLETE"
+    VIDEO_SRC ? "VIDEO" : CASILLAS_FRAMES.length > 0 ? "CASILLAS" : "COMPLETE"
   );
 
-  // Notificar fase inicial al montar. Si no hay VIDEO_SRC (asset faltante),
-  // completar Genesis de inmediato en vez de dejar el juego bloqueado en negro.
-  React.useEffect(() => {
-    if (VIDEO_SRC) {
+  // Lance en el que arrancó la fase CASILLAS, para contar relativo a ella
+  // (ya no hay una fase NEBULA previa que "gaste" lances).
+  const [casillasStartRoll, setCasillasStartRoll] = useState<number | null>(
+    VIDEO_SRC ? null : globalRollCount
+  );
+
+  useEffect(() => {
+    if (phase === "VIDEO") {
       onPhaseChange?.("VIDEO");
+    } else if (phase === "CASILLAS") {
+      onPhaseChange?.("CASILLAS");
+      setCasillasStartRoll((prev) => prev ?? globalRollCount);
     } else {
       onPhaseChange?.("COMPLETE");
       onComplete?.();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [phase]);
 
   const handleVideoEnd = () => {
     // Pequeño delay para que no haya un frame en negro entre el fin del
-    // video y el fade-in del tablero real.
+    // video y el primer frame de casillas.
     setTimeout(() => {
-      setPhase("COMPLETE");
-      onPhaseChange?.("COMPLETE");
-      onComplete?.();
+      setPhase(CASILLAS_FRAMES.length > 0 ? "CASILLAS" : "COMPLETE");
     }, 300);
   };
+
+  const relativeRoll =
+    casillasStartRoll != null ? globalRollCount - casillasStartRoll : 0;
+
+  useEffect(() => {
+    if (phase !== "CASILLAS") return;
+    if (relativeRoll >= CASILLAS_FRAMES.length) {
+      setPhase("COMPLETE");
+    }
+  }, [phase, relativeRoll]);
 
   if (phase === "VIDEO" && VIDEO_SRC) {
     return (
@@ -65,6 +101,27 @@ export function GenesisReveal({ onComplete, onPhaseChange }: Props) {
           autoPlay muted playsInline
           onEnded={handleVideoEnd}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      </div>
+    );
+  }
+
+  if (phase === "CASILLAS" && CASILLAS_FRAMES.length > 0) {
+    const idx = Math.min(relativeRoll, CASILLAS_FRAMES.length - 1);
+    const img = CASILLAS_FRAMES[idx];
+    if (!img) return null;
+    return (
+      <div style={{
+        position: "absolute", inset: 0, zIndex: 100, pointerEvents: "none"
+      }}>
+        <img
+          key={idx} src={img} alt=""
+          style={{
+            position: "absolute", inset: 0,
+            width: "100%", height: "100%",
+            objectFit: "cover",
+            transition: "opacity 0.5s ease",
+          }}
         />
       </div>
     );
