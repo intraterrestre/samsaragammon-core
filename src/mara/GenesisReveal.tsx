@@ -135,7 +135,20 @@ export function GenesisReveal({ globalRollCount, onComplete }: Props) {
     );
   }
 
-  return null;
+  // COMPLETE — mostrar imagen final del tablero con fade-in
+  // El MaraLayer ya tiene samsaraPaintingPanel debajo, solo quitamos el overlay
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 99,
+        pointerEvents: 'none',
+        opacity: 0,
+        transition: 'opacity 1s ease',
+      }}
+    />
+  );
 }
 
 export default GenesisReveal;
