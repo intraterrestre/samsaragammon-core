@@ -58,11 +58,18 @@ export function GenesisReveal({ globalRollCount, onComplete, onPhaseChange }: Pr
   const [startRoll] = useState(globalRollCount);
   const relativeRoll = globalRollCount - startRoll;
 
+  // 2026-07-30: por decisión de producto, dado y fichas Veneno deben quedar
+  // visibles apenas termina el video — ya no se espera a completar las fases
+  // NEBULA/CASILLAS (que antes requerían 12 lances extra tras el video).
+  // Las fases NEBULA/CASILLAS y sus frames quedan en el código sin usarse,
+  // por si una futura sesión quiere reintroducir un reveal progresivo.
   const handleVideoEnd = () => {
-    // Delay para que el primer frame de nebulosa cargue antes de mostrar el boardLayer
+    // Pequeño delay para que no haya un frame en negro entre el fin del
+    // video y el fade-in del tablero real.
     setTimeout(() => {
-      setPhase("NEBULA");
-      onPhaseChange?.("NEBULA");
+      setPhase("COMPLETE");
+      onPhaseChange?.("COMPLETE");
+      onComplete?.();
     }, 300);
   };
 
