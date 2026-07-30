@@ -1,52 +1,47 @@
 // src/mara/GenesisReveal.tsx
-// Genesis — revelación progresiva del tablero
+// Genesis — usa URLs dinámicas para evitar problemas de resolución en build
 
 import { useEffect, useRef, useState } from "react";
 
-// ─── IMPORTS EXACTOS según archivos en src/assets/genesis/ ────────────────
-import gf0   from "../../assets/genesis/genesis_f0.webp";
-import gf00  from "../../assets/genesis/genesis_f00.webp";
-import gf01  from "../../assets/genesis/genesis_f01.webp";
-import gf02  from "../../assets/genesis/genesis_f02.webp";
-import gf03  from "../../assets/genesis/genesis_f03.webp";
-import gf04  from "../../assets/genesis/genesis_f04.webp";
-import gf05  from "../../assets/genesis/genesis_f05.webp";
-import gf06  from "../../assets/genesis/genesis_f06.webp";
-import gf07  from "../../assets/genesis/genesis_f07.webp";
-import gf08  from "../../assets/genesis/genesis_f08.webp";
-import gf09  from "../../assets/genesis/genesis_f09.webp";
-import gf10  from "../../assets/genesis/genesis_f10.webp";
-import gf11  from "../../assets/genesis/genesis_f11.webp";
-import gf12  from "../../assets/genesis/genesis_f12.webp";
-import gf13  from "../../assets/genesis/genesis_f13.webp";
-import gf14  from "../../assets/genesis/genesis_f14.webp";
-import gf15 from "../../assets/genesis/genesis_f15.webp";
-import gf16  from "../../assets/genesis/genesis_f16.webp";
-import gf17  from "../../assets/genesis/genesis_f17.webp";
-import gf18  from "../../assets/genesis/genesis_f18.webp";
-import gf19  from "../../assets/genesis/genesis_f19.webp";
-import gf20  from "../../assets/genesis/genesis_f20.webp";
+// URLs dinámicas — Vite las resuelve en runtime, no en build time
+const GENESIS_BASE = "/src/assets/genesis";
 
-import cv04 from "../../assets/genesis/genesis_cv04.webp";
-import cv08 from "../../assets/genesis/genesis_cv08.webp";
-import cv12 from "../../assets/genesis/genesis_cv12.webp";
-import cv16 from "../../assets/genesis/genesis_cv16.webp";
-import cv20 from "../../assets/genesis/genesis_cv20.webp";
-import cv24 from "../../assets/genesis/genesis_cv24.webp";
-
-import genesisVideo from "../../assets/genesis/genesis_dados.mp4";
-
-// Secuencia exacta de frames disponibles
+// Secuencia de frames nebulosa en orden
 const NEBULA_FRAMES = [
-  gf0, gf00, gf01, gf02, gf03, gf04, gf05, gf06,
-  gf07, gf08, gf09, gf10, gf11, gf12, gf13, gf14,
-  gf15, gf16, gf17, gf18, gf19, gf20,
-];
+  "genesis_f0.webp",
+  "genesis_f00.webp",
+  "genesis_f01.webp",
+  "genesis_f02.webp",
+  "genesis_f03.webp",
+  "genesis_f04.webp",
+  "genesis_f05.webp",
+  "genesis_f06.webp",
+  "genesis_f07.webp",
+  "genesis_f08.webp",
+  "genesis_f09.webp",
+  "genesis_f10.webp",
+  "genesis_f11.webp",
+  "genesis_f12.webp",
+  "genesis_f13.webp",
+  "genesis_f14.webp",
+  "genesis_f15.webp",
+  "genesis_f16.webp",
+  "genesis_f17.webp",
+  "genesis_f18.webp",
+  "genesis_f19.webp",
+  "genesis_f20.webp",
+].map(f => `${GENESIS_BASE}/${f}`);
 
-// Casillas acumuladas por lance (4 en 4)
-const CASILLAS_BY_ROLL: Record<number, string> = {
-  1: cv04, 2: cv08, 3: cv12, 4: cv16, 5: cv20, 6: cv24,
+const CASILLAS_FRAMES: Record<number, string> = {
+  1: `${GENESIS_BASE}/genesis_cv04.webp`,
+  2: `${GENESIS_BASE}/genesis_cv08.webp`,
+  3: `${GENESIS_BASE}/genesis_cv12.webp`,
+  4: `${GENESIS_BASE}/genesis_cv16.webp`,
+  5: `${GENESIS_BASE}/genesis_cv20.webp`,
+  6: `${GENESIS_BASE}/genesis_cv24.webp`,
 };
+
+const VIDEO_SRC = `${GENESIS_BASE}/genesis_dados.mp4`;
 
 type GenesisPhase = "VIDEO" | "NEBULA" | "CASILLAS" | "COMPLETE";
 
@@ -88,7 +83,7 @@ export function GenesisReveal({ globalRollCount, onComplete }: Props) {
         alignItems: "center", justifyContent: "center",
       }}>
         <video
-          src={genesisVideo}
+          src={VIDEO_SRC}
           autoPlay muted playsInline
           onEnded={handleVideoEnd}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
@@ -118,7 +113,7 @@ export function GenesisReveal({ globalRollCount, onComplete }: Props) {
   if (phase === "CASILLAS") {
     const rollsIn = globalRollCount - 6;
     const roll = Math.min(Math.max(Math.ceil(rollsIn), 1), 6);
-    const img = CASILLAS_BY_ROLL[roll] ?? cv24;
+    const img = CASILLAS_FRAMES[roll] ?? CASILLAS_FRAMES[6];
     return (
       <div style={{ position: "absolute", inset: 0, zIndex: 100, pointerEvents: "none" }}>
         <img
@@ -138,4 +133,3 @@ export function GenesisReveal({ globalRollCount, onComplete }: Props) {
 }
 
 export default GenesisReveal;
-
