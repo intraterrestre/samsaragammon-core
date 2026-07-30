@@ -53,14 +53,14 @@ export function MaraLayer({
         className="maraPainting"
       />
 
-      {/* v2: Genesis — temporalmente desactivado hasta resolver assets en Vercel */}
-      {/* {!genesisComplete && (
+      {/* v2: Genesis — import.meta.glob resuelve assets en build y runtime */}
+      {!genesisComplete && (
         <GenesisReveal
           globalRollCount={globalRollCount}
           realmStep={realmStep}
           onComplete={onGenesisComplete}
         />
-      )} */}
+      )}
 
       <DharmaConnector
         fromX={46}

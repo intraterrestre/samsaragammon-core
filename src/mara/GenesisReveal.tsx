@@ -1,47 +1,39 @@
 // src/mara/GenesisReveal.tsx
-// Genesis — usa URLs dinámicas para evitar problemas de resolución en build
+// Genesis — usa import.meta.glob para que Vite procese los assets correctamente
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
-// URLs dinámicas — Vite las resuelve en runtime, no en build time
-const GENESIS_BASE = "/src/assets/genesis";
+// import.meta.glob procesa los assets en build time — funciona en producción
+const nebulaModules = import.meta.glob(
+  "../../assets/genesis/genesis_f*.webp",
+  { eager: true, query: "?url", import: "default" }
+) as Record<string, string>;
 
-// Secuencia de frames nebulosa en orden
-const NEBULA_FRAMES = [
-  "genesis_f0.webp",
-  "genesis_f00.webp",
-  "genesis_f01.webp",
-  "genesis_f02.webp",
-  "genesis_f03.webp",
-  "genesis_f04.webp",
-  "genesis_f05.webp",
-  "genesis_f06.webp",
-  "genesis_f07.webp",
-  "genesis_f08.webp",
-  "genesis_f09.webp",
-  "genesis_f10.webp",
-  "genesis_f11.webp",
-  "genesis_f12.webp",
-  "genesis_f13.webp",
-  "genesis_f14.webp",
-  "genesis_f15.webp",
-  "genesis_f16.webp",
-  "genesis_f17.webp",
-  "genesis_f18.webp",
-  "genesis_f19.webp",
-  "genesis_f20.webp",
-].map(f => `${GENESIS_BASE}/${f}`);
+const casillasModules = import.meta.glob(
+  "../../assets/genesis/genesis_cv*.webp",
+  { eager: true, query: "?url", import: "default" }
+) as Record<string, string>;
 
-const CASILLAS_FRAMES: Record<number, string> = {
-  1: `${GENESIS_BASE}/genesis_cv04.webp`,
-  2: `${GENESIS_BASE}/genesis_cv08.webp`,
-  3: `${GENESIS_BASE}/genesis_cv12.webp`,
-  4: `${GENESIS_BASE}/genesis_cv16.webp`,
-  5: `${GENESIS_BASE}/genesis_cv20.webp`,
-  6: `${GENESIS_BASE}/genesis_cv24.webp`,
-};
+const videoModules = import.meta.glob(
+  "../../assets/genesis/genesis_dados.mp4",
+  { eager: true, query: "?url", import: "default" }
+) as Record<string, string>;
 
-const VIDEO_SRC = `${GENESIS_BASE}/genesis_dados.mp4`;
+// Ordenar frames de nebulosa
+const NEBULA_FRAMES = Object.entries(nebulaModules)
+  .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
+  .map(([, url]) => url);
+
+// Casillas cada 4 (cv04, cv08, cv12, cv16, cv20, cv24)
+const CASILLAS_FRAMES = [
+  "genesis_cv04", "genesis_cv08", "genesis_cv12",
+  "genesis_cv16", "genesis_cv20", "genesis_cv24"
+].map(name => {
+  const key = Object.keys(casillasModules).find(k => k.includes(name));
+  return key ? casillasModules[key] : "";
+});
+
+const VIDEO_SRC = Object.values(videoModules)[0] ?? "";
 
 type GenesisPhase = "VIDEO" | "NEBULA" | "CASILLAS" | "COMPLETE";
 
@@ -52,13 +44,19 @@ type Props = {
 };
 
 export function GenesisReveal({ globalRollCount, onComplete }: Props) {
-  const [phase, setPhase] = useState<GenesisPhase>("VIDEO");
+  const [phase, setPhase] = useState<GenesisPhase>(
+    VIDEO_SRC ? "VIDEO" : "NEBULA"
+  );
   const [nebulaIndex, setNebulaIndex] = useState(0);
 
   const handleVideoEnd = () => setPhase("NEBULA");
 
   useEffect(() => {
     if (phase !== "NEBULA") return;
+    if (NEBULA_FRAMES.length === 0) {
+      setPhase("CASILLAS");
+      return;
+    }
     const idx = Math.min(
       Math.floor((globalRollCount / 6) * NEBULA_FRAMES.length),
       NEBULA_FRAMES.length - 1
@@ -75,7 +73,7 @@ export function GenesisReveal({ globalRollCount, onComplete }: Props) {
     }
   }, [globalRollCount, phase, onComplete]);
 
-  if (phase === "VIDEO") {
+  if (phase === "VIDEO" && VIDEO_SRC) {
     return (
       <div style={{
         position: "absolute", inset: 0, zIndex: 9999,
@@ -92,9 +90,11 @@ export function GenesisReveal({ globalRollCount, onComplete }: Props) {
     );
   }
 
-  if (phase === "NEBULA") {
+  if (phase === "NEBULA" && NEBULA_FRAMES.length > 0) {
     return (
-      <div style={{ position: "absolute", inset: 0, zIndex: 100, pointerEvents: "none" }}>
+      <div style={{
+        position: "absolute", inset: 0, zIndex: 100, pointerEvents: "none"
+      }}>
         <img
           key={nebulaIndex}
           src={NEBULA_FRAMES[nebulaIndex]}
@@ -111,13 +111,16 @@ export function GenesisReveal({ globalRollCount, onComplete }: Props) {
   }
 
   if (phase === "CASILLAS") {
-    const rollsIn = globalRollCount - 6;
-    const roll = Math.min(Math.max(Math.ceil(rollsIn), 1), 6);
-    const img = CASILLAS_FRAMES[roll] ?? CASILLAS_FRAMES[6];
+    const rollsIn = Math.max(globalRollCount - 6, 0);
+    const idx = Math.min(rollsIn, CASILLAS_FRAMES.length - 1);
+    const img = CASILLAS_FRAMES[idx];
+    if (!img) return null;
     return (
-      <div style={{ position: "absolute", inset: 0, zIndex: 100, pointerEvents: "none" }}>
+      <div style={{
+        position: "absolute", inset: 0, zIndex: 100, pointerEvents: "none"
+      }}>
         <img
-          key={roll} src={img} alt=""
+          key={idx} src={img} alt=""
           style={{
             position: "absolute", inset: 0,
             width: "100%", height: "100%",
