@@ -477,14 +477,16 @@ return (
         onGenesisComplete={() => setGenesisComplete(true)}
       />
 
-      <SacredProgress
-        p1Completed={state.realmProgress.P1.realmTransitions}
-        p2Completed={state.realmProgress.P2.realmTransitions}
-      />
+      {genesisComplete && (
+        <SacredProgress
+          p1Completed={state.realmProgress.P1.realmTransitions}
+          p2Completed={state.realmProgress.P2.realmTransitions}
+        />
+      )}
 
-      <MaraPanel state={state} />
+      {genesisComplete && <MaraPanel state={state} />}
 
-     <FandangoKarma />
+     {genesisComplete && <FandangoKarma />}
 
       <DicePopup
         visible={dicePopupVisible}
@@ -504,9 +506,10 @@ return (
           onChooseMove={handleMove}
           onSendEmoji={onSendEmoji}
           onRoll={handleRollWithPopup}
-          nidanaCoinSrc={nidanaCoinSrc}
+          nidanaCoinSrc={genesisComplete ? nidanaCoinSrc : null}
           nidanaCoinSide={nidanaCoinSide}
-          nidanaCoinId={nidanaCoinId}
+          nidanaCoinId={genesisComplete ? nidanaCoinId : null}
+          genesisComplete={genesisComplete}
         />
       </div>
     </div>

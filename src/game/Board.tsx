@@ -90,6 +90,7 @@ type Props = {
   nidanaCoinSrc?: string | null;
   nidanaCoinSide?: "front" | "back";
   nidanaCoinId?: number | null;
+  genesisComplete?: boolean;
 };
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 
@@ -366,6 +367,7 @@ export function Board({
   nidanaCoinSrc,
   nidanaCoinSide,
   nidanaCoinId,
+  genesisComplete = false,
 }: Props){
 
   const captureAudioWhite = useRef<HTMLAudioElement | null>(null);
@@ -641,7 +643,7 @@ top: stackedPosition.top,
 
   return (
     <div className={`board ${turnClass} ${beatClass}`}>
-      {ghost && <div className="ghostWord">{ghost}</div>}
+      {genesisComplete && ghost && <div className="ghostWord">{ghost}</div>}
       {state.emojiEvents?.length ? (
   <div
     style={{
@@ -655,7 +657,7 @@ top: stackedPosition.top,
   </div>
 ) : null}
 
-{true && (
+{genesisComplete && (
   <div className="nidanaLivingBanner">
 
     <div className="nidanaLivingIcon">
