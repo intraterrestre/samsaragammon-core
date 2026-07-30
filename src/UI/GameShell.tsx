@@ -502,7 +502,7 @@ return (
         />
       )}
 
-      <div className="boardLayer">
+      <div className="boardLayer" style={{ visibility: genesisPhase === "VIDEO" ? "hidden" : "visible" }}>
         <Board
           state={state}
           onSelectPiece={onSelectPiece}
