@@ -502,25 +502,15 @@ return (
         />
       )}
 
-      {/* Botón invisible para lanzar dados durante Genesis */}
-      {!genesisComplete && (
-        <button
-          onClick={handleRollWithPopup}
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            background: "transparent",
-            border: "none",
-            cursor: "pointer",
-            zIndex: 99998,
-          }}
-          title="Roll to advance Genesis"
-        />
-      )}
-
-      <div className="boardLayer" style={{ opacity: genesisComplete ? 1 : 0, transition: genesisComplete ? "opacity 0.8s ease" : "none" }}>
+      {/*
+        boardLayer ya no se oculta por completo durante Genesis: el dado real
+        de piedra (dentro de Board/ringWrap, zIndex 5000) debe quedar visible
+        y clicable encima del overlay NEBULA/CASILLAS desde que termina el
+        video. Lo que sí sigue oculto hasta genesisComplete —anillo de
+        casillas, fichas Avatar, fichas Veneno, MoveEmanations— se gatea
+        dentro de Board.tsx, no aquí.
+      */}
+      <div className="boardLayer" style={{ opacity: 1 }}>
         <Board
           state={state}
           onSelectPiece={onSelectPiece}

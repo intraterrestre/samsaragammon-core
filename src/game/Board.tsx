@@ -690,7 +690,10 @@ top: stackedPosition.top,
     borderRadius: "50%",
 
     overflow: "visible",
-    zIndex: genesisComplete ? 5000 : 10,
+    // Siempre por encima del overlay NEBULA/CASILLAS de Genesis (zIndex 100 en
+    // GenesisReveal.tsx) para que el dado real quede visible y clicable
+    // durante todas las fases, no solo cuando genesisComplete.
+    zIndex: 5000,
 
     transform: "scale(1.12)",
     transformOrigin: "center center",
@@ -800,7 +803,7 @@ animation: "nidanaReveal 2.6s cubic-bezier(.16,1.25,.32,1) both",
     />
   </div>
 )}
-  {Array.from({ length: size }, (_, i) => {
+  {genesisComplete && Array.from({ length: size }, (_, i) => {
   const cellRealm = realmFromPos(i);
   const isHoveredTarget = hoveredOption?.toPos === i;
 
@@ -855,7 +858,7 @@ animation: "nidanaReveal 2.6s cubic-bezier(.16,1.25,.32,1) both",
             onChoose={onChooseMove}
           />
         )}
-{(["P1", "P2"] as PlayerId[]).flatMap((player) => {
+{genesisComplete && (["P1", "P2"] as PlayerId[]).flatMap((player) => {
  const realmOrder = [
   "hungry_ghost",
   "hell",
