@@ -89,6 +89,11 @@ export type MoveOption = {
   fromPos: number;
   toPos: number;
   meaning: MoveMeaning;
+  // v3 — Actualización Crítica (D-001/D-014): cuando pieceKind es un Avatar
+  // (RealmPieceKind), venomId identifica qué Veneno originó este destino —
+  // ese Veneno viaja junto con el Avatar al aplicarse la opción.
+  // undefined cuando pieceKind ya es un Veneno moviéndose por sí mismo.
+  venomId?: BasePieceKind;
 };
 
 export type LastMove = {

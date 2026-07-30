@@ -512,6 +512,20 @@ if (isBasePiece) {
     maraLevel: null,
     unlocked: true,
   };
+
+  // v3 — Actualización Crítica (D-001/D-014): el Veneno que originó este
+  // destino viaja junto con el Avatar. Los otros dos Venenos y los demás
+  // Avatares permanecen donde estaban.
+  if (option.venomId) {
+    const venomPiece = nextPieces[me][option.venomId];
+
+    if (venomPiece && !venomPiece.inLimbo) {
+      nextPieces[me][option.venomId] = {
+        ...venomPiece,
+        pos: finalToPos,
+      };
+    }
+  }
 }
 const currentRealm = realmFromPos(finalToPos);
       let nextRealmProgress = {
@@ -678,13 +692,19 @@ realmAscension: didAscendRealm && unlockedRealmKey
           avatarId: state.actors.bruno?.owner === me && state.actors.bruno?.unlocked
             ? "bruno"
             : undefined,
+          // v3 — Actualización Crítica (D-007): el Veneno usado es el propio
+          // (Fase 1, moviéndose por sí mismo) o el que originó el destino
+          // del Avatar (option.venomId, ver getMoveOptionsForPlayer v3).
           venomUsed: isBasePiece
             ? (activePiece as import("../actors/actorProfiles").VenomId)
-            : undefined,
+            : (option.venomId as import("../actors/actorProfiles").VenomId | undefined),
 
-          // v2: posición del Veneno antes y después
-          venomPositionBefore: isBasePiece ? fromPos : undefined,
-          venomPositionAfter: isBasePiece ? finalToPos : undefined,
+          // v3: posición del Veneno antes y después — fromPos/finalToPos ya
+          // representan la posición del Veneno en ambos casos (ver arriba).
+          venomPositionBefore:
+            isBasePiece || option.venomId ? fromPos : undefined,
+          venomPositionAfter:
+            isBasePiece || option.venomId ? finalToPos : undefined,
 
           // v2: datos para detección de capturas declinadas (D-018)
           captureWasAvailable: allOptions.some(o => o.meaning === "IMPACT"),

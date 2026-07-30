@@ -106,6 +106,7 @@ function pushMoveIfLegal(params: {
   toPos: number;
   enemyPositions: number[];
   isSame?: boolean;
+  venomId?: BasePieceKind; // v3: Veneno cuya posición originó este destino
 }) {
   const enemyCount = countEnemyPiecesAtPos(
     params.state,
@@ -122,6 +123,7 @@ function pushMoveIfLegal(params: {
     value: params.value,
     fromPos: params.fromPos,
     toPos: params.toPos,
+    venomId: params.venomId,
     meaning: inferMeaning(
       params.toPos,
       enemyCount,
@@ -129,6 +131,111 @@ function pushMoveIfLegal(params: {
       params.isSame ?? false
     ),
   });
+}
+
+// v3 — Actualización Crítica (RFC v0.9→v1.0, D-001/D-014): el destino de un
+// Avatar se calcula desde la posición del VENENO elegido, no de la propia.
+// Genera las opciones A/B/ECO/AB para un único origen (la posición de un
+// Veneno concreto, o la del propio Veneno cuando es él quien se mueve en
+// Fase 1). El Avatar viaja al mismo destino que el Veneno elegido.
+function pushOptionsFromOrigin(params: {
+  state: GameState;
+  options: MoveOption[];
+  player: PlayerId;
+  pieceKind: PieceKind;
+  fromPos: number;
+  a: number;
+  b: number;
+  isDouble: boolean;
+  enemyPositions: number[];
+  venomId?: BasePieceKind;
+}) {
+  const { state, options, player, pieceKind, fromPos, a, b, isDouble, enemyPositions, venomId } = params;
+
+  const toA = resolveFinalPreviewPos({
+    fromPos,
+    value: a,
+    trackSize: state.trackSize,
+    level: state.level,
+    player,
+  });
+
+  pushMoveIfLegal({
+    state,
+    options,
+    player,
+    pieceKind,
+    choice: "A",
+    value: a,
+    fromPos,
+    toPos: toA,
+    enemyPositions,
+    venomId,
+  });
+
+  if (!isDouble) {
+    const toB = resolveFinalPreviewPos({
+      fromPos,
+      value: b,
+      trackSize: state.trackSize,
+      level: state.level,
+      player,
+    });
+
+    pushMoveIfLegal({
+      state,
+      options,
+      player,
+      pieceKind,
+      choice: "B",
+      value: b,
+      fromPos,
+      toPos: toB,
+      enemyPositions,
+      venomId,
+    });
+
+    if (toA === toB) {
+      pushMoveIfLegal({
+        state,
+        options,
+        player,
+        pieceKind,
+        choice: "ECO",
+        value: a,
+        fromPos,
+        toPos: toA,
+        enemyPositions,
+        isSame: true,
+        venomId,
+      });
+    }
+  }
+
+  if (state.level >= 3) {
+    const sum = a + b;
+
+    const toAB = resolveFinalPreviewPos({
+      fromPos,
+      value: sum,
+      trackSize: state.trackSize,
+      level: state.level,
+      player,
+    });
+
+    pushMoveIfLegal({
+      state,
+      options,
+      player,
+      pieceKind,
+      choice: "AB",
+      value: sum,
+      fromPos,
+      toPos: toAB,
+      enemyPositions,
+      venomId,
+    });
+  }
 }
 
 export function getMoveOptionsForPlayer(
@@ -155,96 +262,49 @@ export function getMoveOptionsForPlayer(
   ];
 
   for (const pieceKind of activePieceKinds) {
-    // v2: el origen del movimiento es la posición del VENENO (BasePiece)
-    // Si el pieceKind ES un Veneno → usa su propia posición
-    // Si el pieceKind es un Avatar realm → usa la posición del Veneno activo
-    // Por ahora los realm pieces usan su propia posición (compatibilidad)
-    const piece = isBasePiece(pieceKind)
-      ? state.pieces[player][pieceKind]
-      : state.realmPieces[player]?.[pieceKind];
+    if (isBasePiece(pieceKind)) {
+      // Es un Veneno moviéndose por sí mismo (Fase 1: PHYSICAL_CAPTURABLE,
+      // Fase 2: PHYSICAL_MOBILE). Origen = su propia posición.
+      const piece = state.pieces[player][pieceKind];
+      if (!piece || piece.inLimbo) continue;
 
-    if (!piece || piece.inLimbo) continue;
-
-    const fromPos = piece.pos;
-
-    const toA = resolveFinalPreviewPos({
-      fromPos,
-      value: a,
-      trackSize: state.trackSize,
-      level: state.level,
-      player,
-    });
-
-    pushMoveIfLegal({
-      state,
-      options,
-      player,
-      pieceKind,
-      choice: "A",
-      value: a,
-      fromPos,
-      toPos: toA,
-      enemyPositions,
-    });
-
-    if (!isDouble) {
-      const toB = resolveFinalPreviewPos({
-        fromPos,
-        value: b,
-        trackSize: state.trackSize,
-        level: state.level,
-        player,
-      });
-
-      pushMoveIfLegal({
+      pushOptionsFromOrigin({
         state,
         options,
         player,
         pieceKind,
-        choice: "B",
-        value: b,
-        fromPos,
-        toPos: toB,
+        fromPos: piece.pos,
+        a,
+        b,
+        isDouble,
         enemyPositions,
       });
 
-      if (toA === toB) {
-        pushMoveIfLegal({
-          state,
-          options,
-          player,
-          pieceKind,
-          choice: "ECO",
-          value: a,
-          fromPos,
-          toPos: toA,
-          enemyPositions,
-          isSame: true,
-        });
-      }
+      continue;
     }
 
-    if (state.level >= 3) {
-      const sum = a + b;
+    // v3 — Actualización Crítica: es un Avatar (realm piece). El destino se
+    // calcula desde la posición de CADA Veneno propio, no de la posición del
+    // Avatar. Cuando el jugador elige una de estas opciones, ese Veneno se
+    // mueve junto con el Avatar (ver reducer CONSCIOUS_MOVE, option.venomId).
+    const realmPiece = state.realmPieces[player]?.[pieceKind];
+    if (!realmPiece || realmPiece.inLimbo) continue;
 
-      const toAB = resolveFinalPreviewPos({
-        fromPos,
-        value: sum,
-        trackSize: state.trackSize,
-        level: state.level,
-        player,
-      });
+    for (const venomId of ACTIVE_BASE_PIECES) {
+      const venomPiece = state.pieces[player][venomId];
+      if (!venomPiece || venomPiece.inLimbo) continue;
 
-      pushMoveIfLegal({
+      pushOptionsFromOrigin({
         state,
         options,
         player,
         pieceKind,
-        choice: "AB",
-        value: sum,
-        fromPos,
-        toPos: toAB,
+        fromPos: venomPiece.pos,
+        a,
+        b,
+        isDouble,
         enemyPositions,
+        venomId,
       });
     }
   }
