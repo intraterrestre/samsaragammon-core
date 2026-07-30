@@ -1,7 +1,7 @@
 // src/mara/GenesisReveal.tsx
 // Genesis — usa import.meta.glob para que Vite procese los assets correctamente
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 // import.meta.glob procesa los assets en build time — funciona en producción
 const nebulaModules = import.meta.glob(
