@@ -436,7 +436,13 @@ console.log(
   `${oracleText}\n\n${mirrorData.title}\n${mirrorData.body}`
 );
 
-const buddhaMessage = "THE FIRST EYE OPENS.";
+// Antes esto era un string fijo ("THE FIRST EYE OPENS.") que se mostraba
+// apenas terminaba Genesis, sin haber pasado nada en la partida real —
+// daba la sensación de "saltar" a una partida ya avanzada. Ahora solo
+// aparece una vez que de verdad se cumplió la condición narrativa
+// (brunoAwakened, ver handleMove arriba: los 3 Venenos usados al menos
+// una vez).
+const buddhaMessage = brunoAwakened ? "THE FIRST EYE OPENS." : "";
   
 return (
 

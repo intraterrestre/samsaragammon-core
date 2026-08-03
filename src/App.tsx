@@ -885,7 +885,20 @@ onRoll={() => {
   if (gameMode === "multiplayer" && myRole !== state.turn) return;
   playDiceSound();
 
-const shouldTriggerNidana = true;
+// Antes esto disparaba la moneda-Nidana + un efecto CLARITY/DISTORTION/
+// TENSION en CADA tirada, incluida la primera tirada real justo después
+// de terminar Genesis — daba la impresión de "saltar" a una partida ya
+// avanzada (ver reporte del usuario: "salta a una foto vieja con todo
+// el juego andando"). Los Nidanas son, según el diseño, activos "desde
+// Oriol en adelante" — es decir, una vez que el jugador ya usó los tres
+// Venenos al menos una vez (equivalente al "despertar de Bruno" que ve
+// GameShell). Antes de eso, no deberían dispararse.
+const allPoisonsUsed = (["P1", "P2"] as const).some((p) => {
+  const d = state.decisionSignature[p];
+  return d.pigTrace > 0 && d.snakeTrace > 0 && d.roosterTrace > 0;
+});
+
+const shouldTriggerNidana = allPoisonsUsed;
 
 if (shouldTriggerNidana) {
   triggerNidanaCoin();
