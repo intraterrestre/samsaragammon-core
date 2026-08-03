@@ -91,6 +91,13 @@ type Props = {
   nidanaCoinSide?: "front" | "back";
   nidanaCoinId?: number | null;
   genesisComplete?: boolean;
+  // true una vez terminó el video intro de Genesis (fase CASILLAS o
+  // COMPLETE). Controla cuándo arranca la animación de giro del dado y
+  // cuándo se muestra el hint de "toca aquí".
+  genesisVideoDone?: boolean;
+  // clics del dado durante Genesis (antes de genesisComplete). Se usa
+  // para ocultar el hint de mano apenas el jugador toca el dado una vez.
+  genesisClickCount?: number;
 };
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 
@@ -368,6 +375,8 @@ export function Board({
   nidanaCoinSide,
   nidanaCoinId,
   genesisComplete = false,
+  genesisVideoDone = false,
+  genesisClickCount = 0,
 }: Props){
 
   const captureAudioWhite = useRef<HTMLAudioElement | null>(null);
@@ -740,43 +749,80 @@ display: genesisComplete ? "block" : "none"
 {bigHeadSchoolBy && (
   <BigHeadSchoolOverlay openedBy={bigHeadSchoolBy} />
 )}
-{onRoll && !dharmaEmergencyFor && (
-<button
-  type="button"
-  className="samsaraDicePortalButton"
-  onClick={onRoll}
-  title="Roll dice"
-  style={{ top: "44%" }}
->
-    {USE_LEGACY_PORTAL_DICE_ART ? (
-      <img
-        src={state.turn === "P1" ? diceWhitePortal : diceBlackPortal}
-        alt="Roll dice"
-        className="samsaraDicePortalImg"
-      />
-    ) : USE_CSS_STONE_ICON_FALLBACK ? (
-      <div
-        className="samsaraDicePortalImg"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "6%",
-          animation: "none",
-        }}
+{onRoll && !dharmaEmergencyFor && (() => {
+  // Durante el video intro el dado real vive oculto detrás del video
+  // (zIndex 5000 < 9999), pero su animación CSS de giro arranca apenas
+  // el componente monta — no cuando el video termina. Sin pausarla,
+  // para cuando el video acaba el dado ya lleva varios segundos girando
+  // "detrás de escena" y aparece a mitad de ciclo. La pausamos mientras
+  // el video sigue activo y la soltamos justo cuando termina.
+  const diceSpinPaused = !genesisVideoDone && !genesisComplete;
+
+  // Hint de "toca aquí": solo antes del primer clic, una vez visible
+  // el dado real (video ya terminado) y antes de completar Genesis.
+  const showTapHint =
+    genesisVideoDone && !genesisComplete && genesisClickCount === 0;
+
+  return (
+    <>
+      <button
+        type="button"
+        className="samsaraDicePortalButton"
+        onClick={onRoll}
+        title="Roll dice"
+        style={{ top: "44%" }}
       >
-        <StoneDiceIcon color="white" />
-        <StoneDiceIcon color="black" />
-      </div>
-    ) : (
-      <img
-        src={diceGenesisStonePair}
-        alt="Roll dice"
-        className="samsaraDicePortalImg"
-      />
-    )}
-  </button>
-)}
+        {USE_LEGACY_PORTAL_DICE_ART ? (
+          <img
+            src={state.turn === "P1" ? diceWhitePortal : diceBlackPortal}
+            alt="Roll dice"
+            className="samsaraDicePortalImg"
+            style={{ animationPlayState: diceSpinPaused ? "paused" : "running" }}
+          />
+        ) : USE_CSS_STONE_ICON_FALLBACK ? (
+          <div
+            className="samsaraDicePortalImg"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "6%",
+              animation: "none",
+            }}
+          >
+            <StoneDiceIcon color="white" />
+            <StoneDiceIcon color="black" />
+          </div>
+        ) : (
+          <img
+            src={diceGenesisStonePair}
+            alt="Roll dice"
+            className="samsaraDicePortalImg"
+            style={{ animationPlayState: diceSpinPaused ? "paused" : "running" }}
+          />
+        )}
+      </button>
+
+      {showTapHint && (
+        <div
+          style={{
+            position: "absolute",
+            top: "44%",
+            left: "-23%",
+            transform: "translate(-50%, 40px)",
+            zIndex: 1000000,
+            pointerEvents: "none",
+            fontSize: 40,
+            animation: "tapHintBounce 1.1s ease-in-out infinite",
+            filter: "drop-shadow(0 0 8px rgba(255,255,255,0.6))",
+          }}
+        >
+          👆
+        </div>
+      )}
+    </>
+  );
+})()}
      {nidanaCoinSrc && (
   <div
     style={{

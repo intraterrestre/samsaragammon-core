@@ -539,6 +539,8 @@ return (
           nidanaCoinSide={nidanaCoinSide}
           nidanaCoinId={genesisComplete ? nidanaCoinId : null}
           genesisComplete={genesisComplete}
+          genesisVideoDone={genesisPhase !== "VIDEO"}
+          genesisClickCount={genesisClickCount}
         />
       </div>
     </div>

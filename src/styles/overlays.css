@@ -416,6 +416,14 @@
     transform:scale(1.06);
   }
 }
+@keyframes tapHintBounce{
+  0%,100%{
+    transform:translate(-50%,40px) translateY(0) rotate(0deg);
+  }
+  50%{
+    transform:translate(-50%,40px) translateY(-14px) rotate(-8deg);
+  }
+}
 @keyframes portalSpin{
   from{
     rotate:0deg;
