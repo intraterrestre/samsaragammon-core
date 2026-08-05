@@ -249,34 +249,45 @@ const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
   [state.pieces, state.realmPieces, state.selectedPiece]
 );
 
-  // 2026-08-05: dos causas combinadas. (1) Se creaba un `new Audio(...)`
-  // nuevo en cada tirada sin guardar referencia — ya corregido reusando
-  // un Audio persistente, igual que fireworks/cheering. (2) El archivo
-  // dice_roll.mp3 en sí estaba casi en silencio (mean_volume ≈ -53dB,
-  // comprobado con ffmpeg volumedetect) — con volume=0.4 encima, era
-  // inaudible aunque la reproducción funcionara bien. Se re-normalizó el
-  // archivo (+20dB) y se sube el volumen del elemento.
-  const diceAudioRef = useRef<HTMLAudioElement | null>(null);
+  // 2026-08-05: tres causas encontradas en orden. (1) Se creaba un
+  // `new Audio(...)` nuevo en cada tirada sin guardar referencia —
+  // corregido reusando un Audio persistente. (2) El archivo dice_roll.mp3
+  // estaba casi en silencio (mean_volume ≈ -53dB) — renormalizado +20dB.
+  // (3) Con logs de diagnóstico confirmamos que play() SIEMPRE resuelve
+  // OK (sin error), pero el usuario reportó que igual "a veces no suena"
+  // — es el problema clásico de reusar UN SOLO elemento Audio para un
+  // efecto corto que se dispara repetido: si un play() nuevo llega antes
+  // de que el anterior se asiente del todo, el navegador a veces lo
+  // silencia sin avisar. Fix: pool de varios Audio en rotación, patrón
+  // estándar para SFX cortos y repetidos.
+  const DICE_AUDIO_POOL_SIZE = 4;
+  const diceAudioPoolRef = useRef<HTMLAudioElement[]>([]);
+  const diceAudioPoolIndexRef = useRef(0);
   useEffect(() => {
-    diceAudioRef.current = new Audio(diceRollSound);
-    diceAudioRef.current.volume = 0.8;
+    diceAudioPoolRef.current = Array.from(
+      { length: DICE_AUDIO_POOL_SIZE },
+      () => {
+        const a = new Audio(diceRollSound);
+        a.volume = 0.8;
+        return a;
+      }
+    );
   }, []);
 
   const playDiceSound = useCallback(() => {
-    const audio = diceAudioRef.current;
-    if (!audio) return;
+    const pool = diceAudioPoolRef.current;
+    if (!pool.length) return;
+    const audio = pool[diceAudioPoolIndexRef.current];
+    diceAudioPoolIndexRef.current =
+      (diceAudioPoolIndexRef.current + 1) % pool.length;
     try {
       audio.currentTime = 0;
     } catch (err) {
       console.warn("Dice sound currentTime reset failed:", err);
     }
-    console.log("DICE SOUND: intentando reproducir", diceRollSound);
-    audio
-      .play()
-      .then(() => console.log("DICE SOUND: play() resuelto OK"))
-      .catch((err) => {
-        console.warn("Dice sound failed:", err);
-      });
+    audio.play().catch((err) => {
+      console.warn("Dice sound failed:", err);
+    });
   }, []);
 
   /** =========================
