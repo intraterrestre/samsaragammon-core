@@ -31,6 +31,9 @@ import {
 } from "./lib/gameService";
 import { getMasterLine } from "./game/master/masterVoices";
 import diceRollSound from "./assets/sounds/dice_roll.mp3";
+// 2026-08-05: sonido distinto por dado, a pedido del usuario — blanco
+// (P1) sigue con dice_roll.mp3, negro (P2) usa este nuevo archivo.
+import diceRollSoundBlack from "./assets/sounds/blackdice-rolling.mp3";
 
 // Videos cargados como URLs estáticas (no en memoria hasta que se usan)
 const brunoIntro = new URL("./assets/cinematics/realms/bruno_origin_intro.mp4", import.meta.url).href;
@@ -261,23 +264,27 @@ const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
   // silencia sin avisar. Fix: pool de varios Audio en rotación, patrón
   // estándar para SFX cortos y repetidos.
   const DICE_AUDIO_POOL_SIZE = 4;
-  const diceAudioPoolRef = useRef<HTMLAudioElement[]>([]);
+  const diceAudioPoolWhiteRef = useRef<HTMLAudioElement[]>([]);
+  const diceAudioPoolBlackRef = useRef<HTMLAudioElement[]>([]);
   const diceAudioPoolIndexRef = useRef(0);
   useEffect(() => {
-    diceAudioPoolRef.current = Array.from(
-      { length: DICE_AUDIO_POOL_SIZE },
-      () => {
-        const a = new Audio(diceRollSound);
+    const makePool = (src: string) =>
+      Array.from({ length: DICE_AUDIO_POOL_SIZE }, () => {
+        const a = new Audio(src);
         a.volume = 0.8;
         return a;
-      }
-    );
+      });
+    diceAudioPoolWhiteRef.current = makePool(diceRollSound);
+    diceAudioPoolBlackRef.current = makePool(diceRollSoundBlack);
   }, []);
 
-  const playDiceSound = useCallback(() => {
-    const pool = diceAudioPoolRef.current;
+  const playDiceSound = useCallback((player: "P1" | "P2") => {
+    const pool =
+      player === "P1"
+        ? diceAudioPoolWhiteRef.current
+        : diceAudioPoolBlackRef.current;
     if (!pool.length) return;
-    const audio = pool[diceAudioPoolIndexRef.current];
+    const audio = pool[diceAudioPoolIndexRef.current % pool.length];
     diceAudioPoolIndexRef.current =
       (diceAudioPoolIndexRef.current + 1) % pool.length;
     try {
@@ -977,7 +984,7 @@ nidanaCoinSide={nidanaSide}
 onRoll={() => {
   // En multiplayer, solo puede tirar el jugador activo
   if (gameMode === "multiplayer" && myRole !== state.turn) return;
-  playDiceSound();
+  playDiceSound(state.turn);
 
 // Antes esto disparaba la moneda-Nidana + un efecto CLARITY/DISTORTION/
 // TENSION en CADA tirada, incluida la primera tirada real justo después
