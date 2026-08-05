@@ -265,10 +265,18 @@ const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
   const playDiceSound = useCallback(() => {
     const audio = diceAudioRef.current;
     if (!audio) return;
-    audio.currentTime = 0;
-    audio.play().catch((err) => {
-      console.warn("Dice sound failed:", err);
-    });
+    try {
+      audio.currentTime = 0;
+    } catch (err) {
+      console.warn("Dice sound currentTime reset failed:", err);
+    }
+    console.log("DICE SOUND: intentando reproducir", diceRollSound);
+    audio
+      .play()
+      .then(() => console.log("DICE SOUND: play() resuelto OK"))
+      .catch((err) => {
+        console.warn("Dice sound failed:", err);
+      });
   }, []);
 
   /** =========================
