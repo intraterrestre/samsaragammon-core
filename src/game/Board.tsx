@@ -50,10 +50,12 @@ import diceBlackPortal from "../assets/dice/dice_black_portal.webp";
 // dice pair), dropped in by hand — see src/assets/dice/primitive/.
 import diceGenesisStonePair from "../assets/dice/primitive/dice_genesis_1.webp";
 
-// Flip this back to `true` to restore the white/black portal dice as the
-// roll-button art. Off by default while the Primitive Era stone dice photo
-// is active.
-const USE_LEGACY_PORTAL_DICE_ART = false;
+// 2026-08-05: el usuario reemplazó dice_white_portal.webp por una foto de
+// dados de mármol a juego con el arte de piedra del Génesis (dice_black_portal
+// se queda como estaba, según pidió). Se activa esta rama para que el dado
+// del botón cambie de foto según el turno (state.turn === "P1" -> blanco,
+// si no -> negro) en cada clic, en vez de mostrar el par estático de arriba.
+const USE_LEGACY_PORTAL_DICE_ART = true;
 
 // Flip this to `true` to fall back to the CSS-drawn stone circles below
 // instead of the real photo, e.g. if the photo asset is ever missing.
