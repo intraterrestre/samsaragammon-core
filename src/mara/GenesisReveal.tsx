@@ -66,6 +66,30 @@ export function GenesisReveal({ globalRollCount, onComplete, onPhaseChange }: Pr
   // El botón de sonido permite al usuario activarlo con un tap explícito.
   const [isMuted, setIsMuted] = useState(true);
 
+  // 2026-08-05: en Mac el audio nunca se escuchaba aunque se tocara el
+  // botón. Causa: solo se actualizaba el prop `muted` de React — React no
+  // siempre sincroniza eso con la propiedad real `.muted` del elemento
+  // <video> del DOM en todos los navegadores (es un gotcha conocido de
+  // React con <video>/<audio>). Ahora se setea la propiedad directamente
+  // vía ref en el mismo gesto de clic, que es lo único que garantiza que
+  // el navegador lo respete.
+  const videoRef = React.useRef<HTMLVideoElement | null>(null);
+
+  const toggleMute = () => {
+    setIsMuted((prev) => {
+      const next = !prev;
+      if (videoRef.current) {
+        videoRef.current.muted = next;
+        if (!next) {
+          // Algunos navegadores pausan/ignoran el cambio si no se pide
+          // play() explícitamente dentro del mismo gesto del usuario.
+          videoRef.current.play().catch(() => {});
+        }
+      }
+      return next;
+    });
+  };
+
   useEffect(() => {
     if (phase === "VIDEO") {
       onPhaseChange?.("VIDEO");
@@ -105,6 +129,7 @@ export function GenesisReveal({ globalRollCount, onComplete, onPhaseChange }: Pr
         alignItems: "center", justifyContent: "center",
       }}>
         <video
+          ref={videoRef}
           src={VIDEO_SRC}
           autoPlay
           muted={isMuted}
@@ -114,25 +139,29 @@ export function GenesisReveal({ globalRollCount, onComplete, onPhaseChange }: Pr
         />
         <button
           type="button"
-          onClick={() => setIsMuted((m) => !m)}
+          onClick={toggleMute}
           aria-label={isMuted ? "Activar sonido" : "Silenciar"}
           title={isMuted ? "Activar sonido" : "Silenciar"}
           style={{
             position: "absolute",
-            right: 18,
-            bottom: 18,
-            width: 48,
-            height: 48,
+            right: 20,
+            bottom: 20,
+            width: 72,
+            height: 72,
             borderRadius: "50%",
-            border: "1px solid rgba(255,255,255,0.35)",
-            background: "rgba(0,0,0,0.45)",
+            border: "2px solid rgba(255,255,255,0.7)",
+            background: "rgba(0,0,0,0.55)",
             color: "#fff",
-            fontSize: 22,
+            fontSize: 36,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             cursor: "pointer",
             backdropFilter: "blur(2px)",
+            boxShadow: isMuted
+              ? "0 0 0 4px rgba(255,255,255,0.15), 0 4px 16px rgba(0,0,0,0.6)"
+              : "0 4px 16px rgba(0,0,0,0.6)",
+            animation: isMuted ? "muteHintPulse 1.6s ease-in-out infinite" : "none",
           }}
         >
           {isMuted ? "🔇" : "🔊"}

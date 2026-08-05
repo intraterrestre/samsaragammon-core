@@ -416,6 +416,14 @@
     transform:scale(1.06);
   }
 }
+@keyframes muteHintPulse{
+  0%,100%{
+    transform:scale(1);
+  }
+  50%{
+    transform:scale(1.08);
+  }
+}
 @keyframes tapHintBounce{
   0%,100%{
     transform:translate(-50%,40px) translateY(0) rotate(0deg);
