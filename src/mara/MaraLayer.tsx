@@ -118,7 +118,13 @@ export function MaraLayer({
         />
       )}
 
-      {genesisComplete && (
+      {/* 2026-08-05: estaban gateados solo en genesisComplete (true a los
+          pocos clics de Genesis), independiente de si dharmaMessage tenía
+          contenido real — el conector se dibujaba igual aunque la burbuja
+          no tuviera nada que decir todavía. dharmaMessage ya es "" hasta
+          que brunoRevealed es real (ver GameShell buddhaMessage), así que
+          basta con exigir que además haya mensaje. */}
+      {genesisComplete && dharmaMessage && (
         <DharmaConnector
           fromX={46}
           fromY={79}
@@ -127,7 +133,7 @@ export function MaraLayer({
         />
       )}
 
-      {genesisComplete && (
+      {genesisComplete && dharmaMessage && (
         <DharmaBubble
           ref={bubbleRef}
           message={dharmaMessage}

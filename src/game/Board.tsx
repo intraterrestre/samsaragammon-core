@@ -686,7 +686,10 @@ top: stackedPosition.top,
   </div>
 ) : null}
 
-{genesisComplete && (
+{/* 2026-08-05: showNidanaBanner existía (con su delay de 5.6s tras un
+    Nidana real) pero nunca se usaba acá — el ojo se veía apenas
+    genesisComplete, sin esperar a que pasara nada real. */}
+{genesisComplete && showNidanaBanner && (
   <div className="nidanaLivingBanner">
 
     <div className="nidanaLivingIcon">
