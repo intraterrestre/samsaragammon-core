@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import "./mara.css";
-import samsaraPaintingPanel from "../assets/samsara/samsara-painting-panel.webp";
+// 2026-08-05: el mural correcto para mostrar tras el clic 6 (24 casillas
+// verdes armadas) es el último frame real de la secuencia de Génesis
+// (genesis_cv24.webp), NO el viejo placeholder samsara-painting-panel.webp
+// (confirmado por el usuario: "samsara-painting-panel.webp NO ES CORRECTO").
+import samsaraPaintingPanel from "../assets/intro/genesis_cv24.webp";
 import DharmaBubble from "../components/DharmaBubble";
 import DharmaConnector from "../components/DharmaConnector";
 import { GenesisReveal } from "./GenesisReveal";
