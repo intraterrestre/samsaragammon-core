@@ -768,6 +768,17 @@ display: genesisComplete ? "block" : "none"
   const diceSpinPaused = !genesisVideoDone && !genesisComplete;
   const diceHiddenDuringVideo = !genesisVideoDone && !genesisComplete;
 
+  // Durante Genesis (CASILLAS) los clics no despachan ROLL real — son
+  // decorativos, ver GameShell.tsx handleRollWithPopup — así que
+  // state.turn nunca cambia y la foto se quedaba en blanco los 6 clics.
+  // Antes de que termine Genesis alternamos por paridad de
+  // genesisClickCount (clic 1 = blanco, clic 2 = negro, ...) para que la
+  // foto sí indique a qué jugador le toca clicar. Una vez genesisComplete,
+  // usamos el turno real del juego.
+  const isWhiteTurn = genesisComplete
+    ? state.turn === "P1"
+    : genesisClickCount % 2 === 0;
+
   // Hint de "toca aquí": solo antes del primer clic, una vez visible
   // el dado real (video ya terminado) y antes de completar Genesis.
   const showTapHint =
@@ -789,7 +800,7 @@ display: genesisComplete ? "block" : "none"
       >
         {USE_LEGACY_PORTAL_DICE_ART ? (
           <img
-            src={state.turn === "P1" ? diceWhitePortal : diceBlackPortal}
+            src={isWhiteTurn ? diceWhitePortal : diceBlackPortal}
             alt="Roll dice"
             className="samsaraDicePortalImg"
             style={{ animationPlayState: diceSpinPaused ? "paused" : "running" }}
