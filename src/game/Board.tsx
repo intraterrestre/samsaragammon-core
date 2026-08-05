@@ -100,6 +100,11 @@ type Props = {
   // clics del dado durante Genesis (antes de genesisComplete). Se usa
   // para ocultar el hint de mano apenas el jugador toca el dado una vez.
   genesisClickCount?: number;
+  // 2026-08-05: tras las 24 casillas verdes, dos clics más revelan los
+  // Venenos de cada jugador por separado (blanco primero, luego negro)
+  // en vez de aparecer los 6 juntos. Ver GameShell.tsx.
+  p1VenomsRevealed?: boolean;
+  p2VenomsRevealed?: boolean;
 };
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 
@@ -379,6 +384,8 @@ export function Board({
   genesisComplete = false,
   genesisVideoDone = false,
   genesisClickCount = 0,
+  p1VenomsRevealed = false,
+  p2VenomsRevealed = false,
 }: Props){
 
   const captureAudioWhite = useRef<HTMLAudioElement | null>(null);
@@ -538,6 +545,13 @@ useEffect(() => {
   });
 
   const renderedPieces = (["P1", "P2"] as PlayerId[]).flatMap((player) => {
+    // 2026-08-05: revelado escalonado — el blanco entra en el 1er clic
+    // post-casillas, el negro en el 2do. Antes de genesisComplete, cada
+    // jugador respeta su propio flag; una vez completo, ambos son true.
+    const playerRevealed =
+      player === "P1" ? p1VenomsRevealed : p2VenomsRevealed;
+    if (!playerRevealed) return [];
+
     return ACTIVE_PIECE_KINDS.map((kind) => {
       const pieceState = state.pieces[player][kind];
       if (pieceState.inLimbo) return null;
@@ -1021,7 +1035,7 @@ style={{
     );
   });
 })}
-        {genesisComplete && renderedPieces}
+        {(p1VenomsRevealed || p2VenomsRevealed) && renderedPieces}
 
   
       </div>

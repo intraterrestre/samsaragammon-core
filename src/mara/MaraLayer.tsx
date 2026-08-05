@@ -12,6 +12,7 @@ interface MaraLayerProps {
   lastRealmKey?: RealmPieceKind | null;
   globalRollCount?: number;
   genesisComplete?: boolean;
+  boardPainted?: boolean;
   onGenesisComplete?: () => void;
   onGenesisPhaseChange?: (phase: string) => void;
 }
@@ -22,9 +23,11 @@ export function MaraLayer({
   lastRealmKey = null,
   globalRollCount = 0,
   genesisComplete = false,
+  boardPainted,
   onGenesisComplete,
   onGenesisPhaseChange,
 }: MaraLayerProps) {
+  const isBoardPainted = boardPainted ?? genesisComplete;
   const layerRef = useRef<HTMLDivElement | null>(null);
   const bubbleRef = useRef<HTMLDivElement | null>(null);
 
@@ -53,7 +56,7 @@ export function MaraLayer({
         src={samsaraPaintingPanel}
         alt="Samsara Painting"
         className="maraPainting"
-        style={{ opacity: genesisComplete ? 1 : 0, transition: "opacity 0.8s ease" }}
+        style={{ opacity: isBoardPainted ? 1 : 0, transition: "opacity 0.8s ease" }}
       />
 
       {/* v2: Genesis — import.meta.glob resuelve assets en build y runtime */}

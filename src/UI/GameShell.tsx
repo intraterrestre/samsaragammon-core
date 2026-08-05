@@ -265,7 +265,18 @@ const [usedPoisons, setUsedPoisons] = React.useState({
 });
 
 const [brunoAwakened, setBrunoAwakened] = React.useState(false);
-const [genesisComplete, setGenesisComplete] = React.useState(false);
+
+// 2026-08-05 — secuencia pedida por el usuario: después de las 24
+// casillas verdes (6 clics, GenesisReveal), NO se revela todo junto.
+// Primero terminan las casillas (casillasFinished), luego 2 clics más:
+// uno revela los Venenos del jugador blanco, el siguiente los del
+// jugador negro. genesisComplete (que gatea el resto — anillo, chat,
+// buda, yin-yang) ya no es un estado propio: es "ambos ya revelados".
+const [casillasFinished, setCasillasFinished] = React.useState(false);
+const p1VenomsRevealed = casillasFinished && genesisClickCount >= 7;
+const p2VenomsRevealed = casillasFinished && genesisClickCount >= 8;
+const genesisComplete = p2VenomsRevealed;
+
 const [genesisPhase, setGenesisPhase] = React.useState<string>("VIDEO");
 
 const handleMove = (opt: MoveOption, all: MoveOption[]) => {
@@ -497,7 +508,8 @@ return (
         lastRealmKey={state.realmAscension?.realmKey ?? null}
         globalRollCount={genesisClickCount}
         genesisComplete={genesisComplete}
-        onGenesisComplete={() => setGenesisComplete(true)}
+        boardPainted={casillasFinished}
+        onGenesisComplete={() => setCasillasFinished(true)}
         onGenesisPhaseChange={(phase) => setGenesisPhase(phase)}
       />
 
@@ -547,6 +559,8 @@ return (
           genesisComplete={genesisComplete}
           genesisVideoDone={genesisPhase !== "VIDEO"}
           genesisClickCount={genesisClickCount}
+          p1VenomsRevealed={p1VenomsRevealed}
+          p2VenomsRevealed={p2VenomsRevealed}
         />
       </div>
     </div>
