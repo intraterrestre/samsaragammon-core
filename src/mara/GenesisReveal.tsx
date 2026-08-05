@@ -15,8 +15,12 @@
 
 import React, { useEffect, useState } from "react";
 
+// 2026-08-03: el usuario retocó estas 24 fotos y las volvió a soltar en
+// src/assets/intro/ (carpeta nueva) en vez de src/assets/genesis/ donde
+// vivían antes — las viejas quedaron borradas de assets/genesis/. Apuntamos
+// el glob a la carpeta nueva para no tener que mover sus archivos.
 const casillasModules = import.meta.glob(
-  "../assets/genesis/genesis_cv*.webp",
+  "../assets/intro/genesis_cv*.webp",
   { eager: true, query: "?url", import: "default" }
 ) as Record<string, string>;
 
