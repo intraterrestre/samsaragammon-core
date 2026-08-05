@@ -249,18 +249,17 @@ const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
   [state.pieces, state.realmPieces, state.selectedPiece]
 );
 
-  // 2026-08-05: creaba un `new Audio(...)` nuevo en cada tirada y lo
-  // soltaba sin guardar referencia — el objeto queda sin ninguna
-  // variable que lo retenga mientras carga/reproduce, y algunos
-  // navegadores lo recolectan (garbage collection) a mitad de camino,
-  // fallando en silencio (el .catch ni siquiera llega a dispararse en
-  // ese caso). Los otros efectos de este archivo (fireworks, cheering,
-  // clarity...) SÍ funcionan porque se crean una sola vez en un ref y se
-  // reutilizan — aplicamos el mismo patrón acá.
+  // 2026-08-05: dos causas combinadas. (1) Se creaba un `new Audio(...)`
+  // nuevo en cada tirada sin guardar referencia — ya corregido reusando
+  // un Audio persistente, igual que fireworks/cheering. (2) El archivo
+  // dice_roll.mp3 en sí estaba casi en silencio (mean_volume ≈ -53dB,
+  // comprobado con ffmpeg volumedetect) — con volume=0.4 encima, era
+  // inaudible aunque la reproducción funcionara bien. Se re-normalizó el
+  // archivo (+20dB) y se sube el volumen del elemento.
   const diceAudioRef = useRef<HTMLAudioElement | null>(null);
   useEffect(() => {
     diceAudioRef.current = new Audio(diceRollSound);
-    diceAudioRef.current.volume = 0.4;
+    diceAudioRef.current.volume = 0.8;
   }, []);
 
   const playDiceSound = useCallback(() => {
@@ -457,10 +456,19 @@ useEffect(() => {
 
   playedRealmIntrosRef.current[introId] = true;
 
+  // 2026-08-05: antes esperaba 2200ms (para dejar sonar fireworks/medalla
+  // primero) y arrancaba muted=true, exigiendo un tap manual para
+  // escuchar el video. fireworks/cheering (más arriba, mismo archivo) SÍ
+  // logran sonido automático porque se disparan desde un useEffect sin
+  // demora artificial — probamos aquí lo mismo: bajamos el delay (deja
+  // algo de aire para la fanfarria) y arrancamos con muted=false directo.
+  // Si el navegador igual lo bloquea, el video se ve pero sin audio hasta
+  // el tap en el botón (que sigue ahí como respaldo) — no hay forma
+  // 100% confiable de saltarse esa política del navegador.
   window.setTimeout(() => {
-    setRealmIntroMuted(true);
+    setRealmIntroMuted(false);
     setActiveRealmIntro(introSrc);
-  }, 2200);
+  }, 800);
 
 }, [state.realmAscension]);
 
