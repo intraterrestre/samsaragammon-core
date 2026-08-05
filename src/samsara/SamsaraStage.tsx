@@ -13,6 +13,9 @@ type SamsaraStageProps = {
   // ahora tarde 2 clics más en llegar (revelado de Venenos por jugador).
   // Si no se pasa, usa genesisComplete como antes (compatibilidad).
   boardPainted?: boolean;
+  // 2026-08-05: era real (state.cosmicClock.era) — decide cuál de las 7
+  // etapas del mural se muestra (ver MaraLayer.tsx).
+  era?: string;
   onGenesisComplete?: () => void;
   onGenesisPhaseChange?: (phase: string) => void;
 };
@@ -24,6 +27,7 @@ export function SamsaraStage({
   globalRollCount = 0,
   genesisComplete = false,
   boardPainted,
+  era,
   onGenesisComplete,
   onGenesisPhaseChange,
 }: SamsaraStageProps) {
@@ -35,6 +39,7 @@ export function SamsaraStage({
       globalRollCount={globalRollCount}
       genesisComplete={genesisComplete}
       boardPainted={boardPainted}
+      era={era}
       onGenesisComplete={onGenesisComplete}
       onGenesisPhaseChange={onGenesisPhaseChange}
     />

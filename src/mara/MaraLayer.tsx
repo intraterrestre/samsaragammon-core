@@ -1,10 +1,49 @@
 import { useEffect, useRef, useState } from "react";
 import "./mara.css";
-// 2026-08-05: el mural correcto para mostrar tras el clic 6 (24 casillas
-// verdes armadas) es el último frame real de la secuencia de Génesis
-// (genesis_cv24.webp), NO el viejo placeholder samsara-painting-panel.webp
-// (confirmado por el usuario: "samsara-painting-panel.webp NO ES CORRECTO").
-import samsaraPaintingPanel from "../assets/intro/genesis_cv24.webp";
+// 2026-08-05: el mural NO es una sola imagen — son 7 etapas, una por cada
+// avatar que entra de verdad (Bruno→Margot→Oriol→Marino→Rufus→Whitman→
+// Nirvana), cada una más pintada que la anterior (confirmado por el
+// usuario con las 7 fotos "N entra <avatar>.webp" / "7 nirvana dj.webp").
+// Reemplaza el enfoque anterior de una sola imagen fija (genesis_cv24 /
+// samsara-painting-panel). Se selecciona según state.cosmicClock.era.
+const eraMuralModules = import.meta.glob(
+  "../assets/intro/*entra*.webp",
+  { eager: true, query: "?url", import: "default" }
+) as Record<string, string>;
+
+const nirvanaMuralModules = import.meta.glob(
+  "../assets/intro/*nirvana*.webp",
+  { eager: true, query: "?url", import: "default" }
+) as Record<string, string>;
+
+// Fallback: el último frame de las 24 casillas verdes, por si algún
+// mural de era todavía no está disponible.
+import fallbackMural from "../assets/intro/genesis_cv24.webp";
+
+const ERA_KEYS = ["bruno", "margot", "oriol", "marino", "rufus", "whitman"] as const;
+type EraKey = (typeof ERA_KEYS)[number] | "nirvana";
+
+function findMuralFor(era: string): string {
+  if (era === "nirvana") {
+    const key = Object.keys(nirvanaMuralModules)[0];
+    return key ? nirvanaMuralModules[key] : fallbackMural;
+  }
+  const key = Object.keys(eraMuralModules).find((k) =>
+    k.toLowerCase().includes(era.toLowerCase())
+  );
+  return key ? eraMuralModules[key] : fallbackMural;
+}
+
+const ERA_MURALS: Record<EraKey, string> = {
+  bruno: findMuralFor("bruno"),
+  margot: findMuralFor("margot"),
+  oriol: findMuralFor("oriol"),
+  marino: findMuralFor("marino"),
+  rufus: findMuralFor("rufus"),
+  whitman: findMuralFor("whitman"),
+  nirvana: findMuralFor("nirvana"),
+};
+
 import DharmaBubble from "../components/DharmaBubble";
 import DharmaConnector from "../components/DharmaConnector";
 import { GenesisReveal } from "./GenesisReveal";
@@ -17,6 +56,10 @@ interface MaraLayerProps {
   globalRollCount?: number;
   genesisComplete?: boolean;
   boardPainted?: boolean;
+  // 2026-08-05: era real de progresión (state.cosmicClock.era), decide
+  // qué etapa del mural (de las 7) se muestra. Default "bruno" — la
+  // primera etapa, la que corresponde apenas se pinta el tablero.
+  era?: string;
   onGenesisComplete?: () => void;
   onGenesisPhaseChange?: (phase: string) => void;
 }
@@ -28,10 +71,12 @@ export function MaraLayer({
   globalRollCount = 0,
   genesisComplete = false,
   boardPainted,
+  era = "bruno",
   onGenesisComplete,
   onGenesisPhaseChange,
 }: MaraLayerProps) {
   const isBoardPainted = boardPainted ?? genesisComplete;
+  const currentMural = ERA_MURALS[(era as EraKey)] ?? fallbackMural;
   const layerRef = useRef<HTMLDivElement | null>(null);
   const bubbleRef = useRef<HTMLDivElement | null>(null);
 
@@ -57,7 +102,7 @@ export function MaraLayer({
   return (
     <div ref={layerRef} className="maraLayer">
       <img
-        src={samsaraPaintingPanel}
+        src={currentMural}
         alt="Samsara Painting"
         className="maraPainting"
         style={{ opacity: isBoardPainted ? 1 : 0, transition: "opacity 0.8s ease" }}

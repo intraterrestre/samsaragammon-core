@@ -502,6 +502,7 @@ return (
         globalRollCount={genesisClickCount}
         genesisComplete={genesisComplete}
         boardPainted={casillasFinished}
+        era={state.cosmicClock.era}
         onGenesisComplete={() => setCasillasFinished(true)}
         onGenesisPhaseChange={(phase) => setGenesisPhase(phase)}
       />
