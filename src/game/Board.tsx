@@ -752,13 +752,21 @@ display: genesisComplete ? "block" : "none"
   <BigHeadSchoolOverlay openedBy={bigHeadSchoolBy} />
 )}
 {onRoll && !dharmaEmergencyFor && (() => {
-  // Durante el video intro el dado real vive oculto detrás del video
-  // (zIndex 5000 < 9999), pero su animación CSS de giro arranca apenas
-  // el componente monta — no cuando el video termina. Sin pausarla,
-  // para cuando el video acaba el dado ya lleva varios segundos girando
-  // "detrás de escena" y aparece a mitad de ciclo. La pausamos mientras
-  // el video sigue activo y la soltamos justo cuando termina.
+  // 2026-08-05 — CORRECCIÓN: se asumía que ringWrap (position:absolute,
+  // zIndex:5000) contenía el zIndex:999999 !important de
+  // .samsaraDicePortalButton dentro de su propio stacking context, y que
+  // por eso quedaba tapado por el div del video (zIndex:9999 en
+  // GenesisReveal.tsx). Verificado con ffmpeg extrayendo frames del propio
+  // genesis_dados.mp4: los "dados" solo existen en los primeros ~1.5s del
+  // video (son los dos asteroides picados que chocan y generan el Big
+  // Bang) — el resto del video (celosía de madera, warps, tablero blanco,
+  // pintura) NO tiene dados. Lo que el usuario veía "congelado" encima del
+  // video en el resto de las fases era el botón real de la app,
+  // escapándose por encima — la contención de stacking context no estaba
+  // funcionando como se asumió. Ahora se oculta explícitamente con
+  // opacity/visibility en vez de confiar en el z-index.
   const diceSpinPaused = !genesisVideoDone && !genesisComplete;
+  const diceHiddenDuringVideo = !genesisVideoDone && !genesisComplete;
 
   // Hint de "toca aquí": solo antes del primer clic, una vez visible
   // el dado real (video ya terminado) y antes de completar Genesis.
@@ -772,7 +780,12 @@ display: genesisComplete ? "block" : "none"
         className="samsaraDicePortalButton"
         onClick={onRoll}
         title="Roll dice"
-        style={{ top: "44%" }}
+        style={{
+          top: "44%",
+          opacity: diceHiddenDuringVideo ? 0 : 1,
+          visibility: diceHiddenDuringVideo ? "hidden" : "visible",
+          pointerEvents: diceHiddenDuringVideo ? "none" : "auto",
+        }}
       >
         {USE_LEGACY_PORTAL_DICE_ART ? (
           <img
