@@ -158,6 +158,22 @@ Cuando llegue el momento, el Cosmic Clock deberá cumplir las siguientes condici
 5. Respetar la separación entre Canon, lógica y presentación.
 6. Mantener un impacto emocional elevado sin introducir nuevas reglas.
 
+## Nota abierta — Génesis y comienzo del Cosmic Clock
+
+Existe una hipótesis narrativa que todavía no debe implementarse.
+
+Es posible que el Cosmic Clock no comience con la manifestación de Bruno, sino con un periodo previo denominado Génesis, durante el cual únicamente existen los Tres Venenos.
+
+En esta interpretación:
+
+- el Génesis representa aproximadamente el proceso evolutivo que conduce a Bruno;
+- los Tres Venenos son fuerzas anteriores a la aparición de los Avatares;
+- Bruno emerge como culminación de ese proceso, no necesariamente como el inicio del reloj.
+
+Esta idea queda pendiente de validación cuando se diseñe definitivamente el Cosmic Clock.
+
+**No modificar la arquitectura actual ni la lógica del juego basándose en esta nota.**
+
 ## Acción requerida en esta fase
 
 Implementar únicamente el estado mínimo descrito anteriormente.
