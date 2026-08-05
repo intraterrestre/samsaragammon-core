@@ -258,13 +258,15 @@ React.useEffect(() => {
     state.phase === "rolled"
       ? getMoveOptionsForPlayer(state, state.turn)
       : [];
-const [usedPoisons, setUsedPoisons] = React.useState({
-  pig: false,
-  snake: false,
-  rooster: false,
-});
-
-const [brunoAwakened, setBrunoAwakened] = React.useState(false);
+// 2026-08-05: brunoAwakened vivía como estado local disparado apenas
+// CUALQUIER pieza de cada tipo (pig/snake/rooster) se movía una vez —
+// alcanzaba con ~3 movidas de UN jugador, así que "THE FIRST EYE OPENS"
+// (el ojo, el conector del buda) aparecía a los pocos lances, mucho antes
+// de lo previsto. El trigger real y riguroso ya vive en el reducer/
+// Orchestrator (evaluateGenesisToBruno: ambos jugadores usaron los 3
+// Venenos, mínimo de turnos, 4 eventos de novedad) y se expone como
+// state.brunoRevealed — lo usamos directo en vez de duplicar la lógica.
+const brunoAwakened = Boolean(state.brunoRevealed);
 
 // 2026-08-05 — secuencia pedida por el usuario: después de las 24
 // casillas verdes (6 clics, GenesisReveal), NO se revela todo junto.
@@ -293,27 +295,6 @@ const [genesisPhase, setGenesisPhase] = React.useState<string>("VIDEO");
 
 const handleMove = (opt: MoveOption, all: MoveOption[]) => {
   setHoveredOption(null);
-
-  const nextUsedPoisons = {
-    ...usedPoisons,
-    [opt.pieceKind]: true,
-  };
-
-  setUsedPoisons(nextUsedPoisons);
-
-  const firstEyeOpens =
-    nextUsedPoisons.pig &&
-    nextUsedPoisons.snake &&
-    nextUsedPoisons.rooster &&
-    !brunoAwakened;
-
-  if (firstEyeOpens) {
-    setBrunoAwakened(true);
-
-    console.log("THE FIRST EYE OPENS");
-    console.log("BRUNO AWAKENS");
-  }
-
   onConsciousMove(opt, all);
 };
 React.useEffect(() => {
@@ -463,8 +444,8 @@ console.log(
 // apenas terminaba Genesis, sin haber pasado nada en la partida real —
 // daba la sensación de "saltar" a una partida ya avanzada. Ahora solo
 // aparece una vez que de verdad se cumplió la condición narrativa
-// (brunoAwakened, ver handleMove arriba: los 3 Venenos usados al menos
-// una vez).
+// (brunoAwakened === state.brunoRevealed, ver arriba: ambos jugadores
+// usaron los 3 Venenos, mínimo de turnos y 4 eventos de novedad).
 const buddhaMessage = brunoAwakened ? "THE FIRST EYE OPENS." : "";
   
 return (

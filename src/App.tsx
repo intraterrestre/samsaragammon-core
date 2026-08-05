@@ -799,11 +799,13 @@ window.setTimeout(() => {
   playsInline
   preload="auto"
   muted={realmIntroMuted}
-  onCanPlay={(e) => {
-    const v = e.currentTarget;
-    v.currentTime = 0;
-    v.play().catch(() => {});
-  }}
+  // 2026-08-05: el handler onCanPlay anterior reseteaba
+  // v.currentTime = 0 y llamaba play() en CADA disparo del evento
+  // "canplay" — ese evento puede dispararse más de una vez durante el
+  // buffering, así que el video quedaba reiniciándose en el frame 0 en
+  // loop (pantalla "congelada" aunque el audio de fiesta sí sonaba).
+  // El atributo autoPlay ya es suficiente para arrancar solo (empieza
+  // muted, así que ningún navegador lo bloquea).
   onEnded={() => setActiveRealmIntro(null)}
 />
   <button
@@ -943,12 +945,14 @@ onRoll={() => {
 // Oriol en adelante" — es decir, una vez que el jugador ya usó los tres
 // Venenos al menos una vez (equivalente al "despertar de Bruno" que ve
 // GameShell). Antes de eso, no deberían dispararse.
-const allPoisonsUsed = (["P1", "P2"] as const).some((p) => {
-  const d = state.decisionSignature[p];
-  return d.pigTrace > 0 && d.snakeTrace > 0 && d.roosterTrace > 0;
-});
-
-const shouldTriggerNidana = allPoisonsUsed;
+//
+// 2026-08-05: esto usaba .some() sobre P1/P2 — bastaba con que UN SOLO
+// jugador usara sus 3 Venenos (unos pocos lances) para disparar el
+// efecto. El trigger real y riguroso (ambos jugadores, mínimo de turnos,
+// eventos de novedad) ya vive en el reducer/Orchestrator y se expone
+// como state.brunoRevealed — usamos ese mismo flag para que este efecto
+// y "THE FIRST EYE OPENS" (GameShell) queden sincronizados.
+const shouldTriggerNidana = Boolean(state.brunoRevealed);
 
 if (shouldTriggerNidana) {
   triggerNidanaCoin();
