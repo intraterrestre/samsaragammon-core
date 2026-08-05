@@ -105,6 +105,9 @@ type Props = {
   // en vez de aparecer los 6 juntos. Ver GameShell.tsx.
   p1VenomsRevealed?: boolean;
   p2VenomsRevealed?: boolean;
+  // 2026-08-05: el buda azul (Dharma Emergencies) ya no aparece con
+  // genesisComplete — recién con la entrada real de Oriol. Ver GameShell.tsx.
+  oriolEntered?: boolean;
 };
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 
@@ -386,6 +389,7 @@ export function Board({
   genesisClickCount = 0,
   p1VenomsRevealed = false,
   p2VenomsRevealed = false,
+  oriolEntered = false,
 }: Props){
 
   const captureAudioWhite = useRef<HTMLAudioElement | null>(null);
@@ -759,7 +763,7 @@ pointerEvents: "auto",
 transition:"0.3s",
 
 filter:"drop-shadow(0 0 7px rgba(255,255,255,.95))",
-display: genesisComplete ? "block" : "none"
+display: oriolEntered ? "block" : "none"
 }}
 />
 {bigHeadSchoolBy && (

@@ -277,6 +277,18 @@ const p1VenomsRevealed = casillasFinished && genesisClickCount >= 7;
 const p2VenomsRevealed = casillasFinished && genesisClickCount >= 8;
 const genesisComplete = p2VenomsRevealed;
 
+// 2026-08-05 — pedido del usuario: el buda azul (Dharma Emergencies),
+// el chat Karma Fandango y el yin-yang (dentro de SacredProgress) no
+// deben aparecer con genesisComplete — recién con la entrada real de
+// Oriol (3er Avatar). state.cosmicClock.era ya se actualiza en el
+// reducer cuando el Orquestador revela cada Avatar (ver RFC Cosmic
+// Clock — leer ese estado para gatear otra UI sí es un uso válido de
+// "consumidor", no se está construyendo el componente aplazado).
+const ERA_ORDER = ["bruno", "margot", "oriol", "marino", "rufus", "whitman"] as const;
+const oriolEntered =
+  ERA_ORDER.indexOf(state.cosmicClock.era as (typeof ERA_ORDER)[number]) >=
+  ERA_ORDER.indexOf("oriol");
+
 const [genesisPhase, setGenesisPhase] = React.useState<string>("VIDEO");
 
 const handleMove = (opt: MoveOption, all: MoveOption[]) => {
@@ -513,7 +525,7 @@ return (
         onGenesisPhaseChange={(phase) => setGenesisPhase(phase)}
       />
 
-      {genesisComplete && (
+      {oriolEntered && (
         <SacredProgress
           p1Completed={state.realmProgress.P1.realmTransitions}
           p2Completed={state.realmProgress.P2.realmTransitions}
@@ -522,7 +534,7 @@ return (
 
       {genesisComplete && <MaraPanel state={state} />}
 
-     {genesisComplete && <FandangoKarma />}
+     {oriolEntered && <FandangoKarma />}
 
       {/* Dados ocultos durante video intro del Genesis */}
       {(genesisComplete || genesisPhase !== "VIDEO") && (
@@ -561,6 +573,7 @@ return (
           genesisClickCount={genesisClickCount}
           p1VenomsRevealed={p1VenomsRevealed}
           p2VenomsRevealed={p2VenomsRevealed}
+          oriolEntered={oriolEntered}
         />
       </div>
     </div>
