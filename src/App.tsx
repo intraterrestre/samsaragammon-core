@@ -208,6 +208,15 @@ export default function App() {
   const [state, dispatchBase] = useReducer(reducer, initialState);
 const [activeRealmIntro, setActiveRealmIntro] = useState<string | null>(null);
 const playedRealmIntrosRef = useRef<Record<string, boolean>>({});
+// 2026-08-05: este video se disparaba con muted={false} + play() dentro de
+// un useEffect/setTimeout — fuera de la cadena directa de un gesto del
+// usuario, así que los navegadores lo bloqueaban silenciosamente (catch
+// vacío). Resultado: pantalla negra aunque sonaran otros efectos (fiesta/
+// fireworks, que sí corren dentro del gesto de clic). Mismo patrón que
+// GenesisReveal: arranca muted (autoplay garantizado) + botón para
+// activar sonido con un tap explícito.
+const [realmIntroMuted, setRealmIntroMuted] = useState(true);
+const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
   const karmaRef = useRef<KarmaEngine | null>(null);
   const [karmaSnap, setKarmaSnap] = useState<any>(null);
 
@@ -434,6 +443,7 @@ useEffect(() => {
   playedRealmIntrosRef.current[introId] = true;
 
   window.setTimeout(() => {
+    setRealmIntroMuted(true);
     setActiveRealmIntro(introSrc);
   }, 2200);
 
@@ -704,6 +714,7 @@ window.setTimeout(() => {
 
   playedRealmIntrosRef.current = {};
   setActiveRealmIntro(null);
+  setRealmIntroMuted(true);
 
   setRollsCount(0);
   setShowVestigium(false);
@@ -779,21 +790,60 @@ window.setTimeout(() => {
   return (
   <ErrorBoundary>
 {activeRealmIntro && (
-  <div className="realmIntroOverlay">
+  <div className="realmIntroOverlay" style={{ pointerEvents: "auto" }}>
   <video
+  ref={realmIntroVideoRef}
   className="realmIntroVideo"
   src={activeRealmIntro}
+  autoPlay
   playsInline
-  preload="none"
-  muted={false}
+  preload="auto"
+  muted={realmIntroMuted}
   onCanPlay={(e) => {
     const v = e.currentTarget;
     v.currentTime = 0;
-    v.volume = 1;
     v.play().catch(() => {});
   }}
   onEnded={() => setActiveRealmIntro(null)}
 />
+  <button
+    type="button"
+    onClick={() => {
+      setRealmIntroMuted((prev) => {
+        const next = !prev;
+        if (realmIntroVideoRef.current) {
+          realmIntroVideoRef.current.muted = next;
+          if (!next) {
+            realmIntroVideoRef.current.play().catch(() => {});
+          }
+        }
+        return next;
+      });
+    }}
+    aria-label={realmIntroMuted ? "Activar sonido" : "Silenciar"}
+    title={realmIntroMuted ? "Activar sonido" : "Silenciar"}
+    style={{
+      position: "absolute",
+      right: 20,
+      bottom: 20,
+      width: 72,
+      height: 72,
+      borderRadius: "50%",
+      border: "2px solid rgba(255,255,255,0.7)",
+      background: "rgba(0,0,0,0.55)",
+      color: "#fff",
+      fontSize: 36,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      cursor: "pointer",
+      backdropFilter: "blur(2px)",
+      zIndex: 1000000,
+      pointerEvents: "auto",
+    }}
+  >
+    {realmIntroMuted ? "🔇" : "🔊"}
+  </button>
   </div>
 )}
 

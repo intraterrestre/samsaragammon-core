@@ -127,6 +127,12 @@ export function GenesisReveal({ globalRollCount, onComplete, onPhaseChange }: Pr
         position: "absolute", inset: 0, zIndex: 9999,
         background: "#000", display: "flex",
         alignItems: "center", justifyContent: "center",
+        // 2026-08-05: .maraLayer (contenedor padre) tiene
+        // pointer-events: none en CSS, y esa propiedad se hereda — sin
+        // este override el botón de mute nunca recibía clics ni hover
+        // (icono "muerto" aunque se viera bien). Reactivamos eventos
+        // de puntero explícitamente para este overlay.
+        pointerEvents: "auto",
       }}>
         <video
           ref={videoRef}
