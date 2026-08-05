@@ -75,6 +75,41 @@ export function evaluateOrchestrator(
   return { event: "REVEAL_NEXT_AVATAR", avatarStep: currentStep + 1 };
 }
 
+// v5 — Acto 0 (Génesis de los animales). Condición para que Bruno
+// aparezca por primera vez. A diferencia de STEP_TO_TRANSITION/THRESHOLDS
+// (que gobiernan Bruno→Margot→...), esta transición 0→Bruno se evalúa con
+// criterios de tipo distinto (eventos de novedad del tutorial, no
+// captureRate/maraVisits), así que vive en su propia función en vez de
+// forzarla dentro de la tabla genérica.
+export const MIN_GENESIS_TURNS = 6;
+export const MIN_NOVELTY_EVENTS = 4;
+
+export function evaluateGenesisToBruno(state: GameState): boolean {
+  if (state.brunoRevealed) return false;
+
+  const p1Sig = state.decisionSignature?.P1;
+  const p2Sig = state.decisionSignature?.P2;
+  if (!p1Sig || !p2Sig) return false;
+
+  const p1MovedAllVenoms =
+    p1Sig.pigTrace > 0 && p1Sig.snakeTrace > 0 && p1Sig.roosterTrace > 0;
+  const p2MovedAllVenoms =
+    p2Sig.pigTrace > 0 && p2Sig.snakeTrace > 0 && p2Sig.roosterTrace > 0;
+
+  if (!p1MovedAllVenoms || !p2MovedAllVenoms) return false;
+  if (state.globalRollCount < MIN_GENESIS_TURNS) return false;
+
+  const novelty = state.genesisNovelty;
+  const noveltyCount = [
+    novelty?.hasRolled,
+    novelty?.hasMoved,
+    novelty?.hasCaptured,
+    novelty?.hasMaraReturn,
+  ].filter(Boolean).length;
+
+  return noveltyCount >= MIN_NOVELTY_EVENTS;
+}
+
 export function getAvatarNameForStep(step: number): string {
   const names: Record<number, string> = {
     1: "Bruno", 2: "Margot", 3: "Oriol",

@@ -284,4 +284,24 @@ export type GameState = {
     // detecte transiciones sin comparar objetos.
     transitionSequence: number;
   };
+
+  // v5 — Acto 0 (Génesis de los animales). La partida empieza con solo
+  // los Tres Venenos, sin Avatares, sin colores de reino, sin Mara
+  // visible — puro tutorial jugado de verdad, no cosmético. Ver
+  // Orchestrator.ts para la condición completa. Estos 4 flags son los
+  // "eventos de novedad" mínimos del diseño del usuario (lanzar dados,
+  // mover fichas, capturar, regresar de Mara) — cada uno se enciende una
+  // sola vez, la primera vez que ocurre.
+  genesisNovelty: {
+    hasRolled: boolean;
+    hasMoved: boolean;
+    hasCaptured: boolean;
+    hasMaraReturn: boolean;
+  };
+
+  // true una sola vez: ambos jugadores movieron los 3 Venenos, hubo
+  // suficientes turnos y se cumplieron los 4 eventos de novedad. Dispara
+  // el "Bruno despierta" — hasta entonces no existen Avatares, colores
+  // de reino ni Mara visual, aunque el sistema ya los soporte por dentro.
+  brunoRevealed: boolean;
 };

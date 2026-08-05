@@ -17,7 +17,7 @@ import { computeKarmaTurn } from "../engine/computeKarmaTurn";
 import { NIDANA_LIST } from "../nidanas";
 import type { NidanaId } from "../nidanas";
 import { isBasePieceUnlocked } from "../era";
-import { evaluateOrchestrator } from "../orchestrator/Orchestrator";
+import { evaluateOrchestrator, evaluateGenesisToBruno } from "../orchestrator/Orchestrator";
 
 const BASE_PIECE_KINDS: BasePieceKind[] = ["pig", "snake", "rooster"];
 const isBasePieceKind = (kind: PieceKind): kind is BasePieceKind =>
@@ -202,6 +202,8 @@ export function reducer(state: GameState, action: Action): GameState {
       };
 
     // liberar fichas por maraLevel
+let anyMaraReturnThisRoll = false;
+
 for (const player of ["P1", "P2"] as PlayerId[]) {
   const opp = otherPlayer(player);
 
@@ -230,6 +232,7 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
           piece.pos = spawnPos;
           piece.inLimbo = false;
           piece.maraLevel = null;
+          anyMaraReturnThisRoll = true;
         }
       } else {
         piece.maraLevel = nextLevel;
@@ -238,6 +241,14 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
   }
 }
 
+      // v5 — Acto 0: eventos de novedad (ver types.ts / Orchestrator.ts).
+      // Cada flag se enciende una sola vez, la primera vez que ocurre.
+      const nextGenesisNovelty = {
+        ...state.genesisNovelty,
+        hasRolled: true,
+        hasMaraReturn: state.genesisNovelty.hasMaraReturn || anyMaraReturnThisRoll,
+      };
+
       const nextState: GameState = {
         ...state,
         globalRollCount: nextRollCount,
@@ -245,9 +256,24 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
         phase: "rolled",
         rollOptions: [rollDie(), rollDie()],
         currentNidana: randomNidana,
+        genesisNovelty: nextGenesisNovelty,
       };
 
       const nextVenomTrio = detectVenomTrio(nextState.pieces);
+      const nextBrunoRevealed =
+        state.brunoRevealed || evaluateGenesisToBruno(nextState);
+
+      // v5 — "Bruno despierta": el momento en que el trigger pasa de false
+      // a true por primera vez, se desbloquea el actor (además del flag
+      // brunoRevealed que gatea la UI). No se toca si ya estaba
+      // desbloqueado o si todavía no se cumplió la condición.
+      const nextActorsOnRoll =
+        !state.brunoRevealed && nextBrunoRevealed
+          ? {
+              ...state.actors,
+              bruno: { ...state.actors.bruno, unlocked: true },
+            }
+          : state.actors;
 
       if (!playerHasActivePiece(nextState, state.turn)) {
         return {
@@ -256,12 +282,16 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
           turn: otherPlayer(state.turn),
           phase: "idle",
           rollOptions: null,
+          brunoRevealed: nextBrunoRevealed,
+          actors: nextActorsOnRoll,
         };
       }
 
       return {
         ...nextState,
         venomTrio: nextVenomTrio,
+        brunoRevealed: nextBrunoRevealed,
+        actors: nextActorsOnRoll,
       };
     }
 
@@ -685,6 +715,27 @@ if (shouldCollapse) {
 }
       const nextVenomTrio = detectVenomTrio(nextPiecesAfterCollapse);
 
+      // v5 — Acto 0: eventos de novedad (ver ROLL más arriba para hasRolled
+      // / hasMaraReturn). Aquí se encienden los otros dos.
+      const nextGenesisNovelty = {
+        ...state.genesisNovelty,
+        hasMoved: true,
+        hasCaptured: state.genesisNovelty.hasCaptured || didCapture,
+      };
+
+      const nextBrunoRevealed =
+        state.brunoRevealed ||
+        evaluateGenesisToBruno({
+          ...state,
+          decisionSignature: nextDecisionSignature,
+          genesisNovelty: nextGenesisNovelty,
+        });
+
+      // v5 — "Bruno despierta" (ver ROLL más arriba para la misma lógica).
+      if (!state.brunoRevealed && nextBrunoRevealed) {
+        nextActors.bruno = { ...nextActors.bruno, unlocked: true };
+      }
+
       return {
         ...state,
         pieces: nextPiecesAfterCollapse,
@@ -694,6 +745,8 @@ if (shouldCollapse) {
         curvature: nextCurvature,
         realmProgress: nextRealmProgress,
         cosmicClock: nextCosmicClock,
+        genesisNovelty: nextGenesisNovelty,
+        brunoRevealed: nextBrunoRevealed,
 realmAscension: didAscendRealm && unlockedRealmKey
   ? {
       player: me,

@@ -152,6 +152,15 @@ realmAscension: null,
     progress: 0,
     transitionSequence: 0,
   },
+
+  // v5 — Acto 0. Ver types.ts para la explicación completa.
+  genesisNovelty: {
+    hasRolled: false,
+    hasMoved: false,
+    hasCaptured: false,
+    hasMaraReturn: false,
+  },
+  brunoRevealed: false,
 };
 
 /**
