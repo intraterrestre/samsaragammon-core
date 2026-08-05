@@ -267,4 +267,21 @@ export type GameState = {
   realmStep: number;
   at: number;
 } | null;
+
+  // v4 — RFC Cosmic Clock (APLAZADO, ver docs/SAMSARAGAMMON_RFC_COSMIC_CLOCK_APLAZADO.md).
+  // Estado mínimo para que un futuro componente puramente visual pueda saber
+  // en qué Era narrativa está la partida, sin acoplarse al Karma Engine, al
+  // Orquestador ni al Reducer. Nada además de este objeto debe agregarse
+  // hasta que se decida retomar el RFC — nada de cronología, animaciones,
+  // textos ni escalas de tiempo.
+  cosmicClock: {
+    era: ActorId;
+    // Normalizado 0..1. Se deja siempre en 0 al no existir todavía la
+    // cronología definitiva (ver RFC) — el futuro sistema visual la
+    // calculará cuando el Canon quede estabilizado.
+    progress: number;
+    // Se incrementa solo cuando cambia `era`. Permite que la UI futura
+    // detecte transiciones sin comparar objetos.
+    transitionSequence: number;
+  };
 };

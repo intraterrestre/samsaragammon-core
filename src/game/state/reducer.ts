@@ -64,6 +64,20 @@ const REALM_PIECE_ORDER: RealmPieceKind[] = [
   "deva",
 ];
 
+// v4 — RFC Cosmic Clock (APLAZADO). El Orquestador ya expone avatarStep
+// (1=Bruno..6=Whitman, ver Orchestrator.ts) cuando dispara
+// REVEAL_NEXT_AVATAR. Este mapa solo traduce ese número a un ActorId para
+// que cosmicClock.era pueda actualizarse — no agrega ninguna condición ni
+// lógica nueva de progresión.
+const STEP_TO_ACTOR_ID: Record<number, import("../actors/actorProfiles").ActorId> = {
+  1: "bruno",
+  2: "margot",
+  3: "oriol",
+  4: "marino",
+  5: "rufus",
+  6: "whitman",
+};
+
 function playerHasActivePiece(state: GameState, player: PlayerId): boolean {
   return BASE_PIECES.some((kind) => !state.pieces[player][kind].inLimbo);
 }
@@ -372,6 +386,23 @@ const nextActors = {
       const orchestratorResult = evaluateOrchestrator(state, me);
       const conditionsMet = orchestratorResult.event === "REVEAL_NEXT_AVATAR";
 
+      // v4 — RFC Cosmic Clock (APLAZADO): solo actualiza el estado mínimo
+      // (era + contador de transición) cuando el Orquestador ya decidió por
+      // su cuenta revelar el siguiente Avatar. No añade ninguna condición
+      // propia — es puro reflejo de una decisión que el sistema actual ya
+      // toma. progress se deja en 0 (ver types.ts).
+      let nextCosmicClock = state.cosmicClock;
+      if (conditionsMet && orchestratorResult.event === "REVEAL_NEXT_AVATAR") {
+        const newEra = STEP_TO_ACTOR_ID[orchestratorResult.avatarStep];
+        if (newEra && newEra !== state.cosmicClock.era) {
+          nextCosmicClock = {
+            era: newEra,
+            progress: 0,
+            transitionSequence: state.cosmicClock.transitionSequence + 1,
+          };
+        }
+      }
+
     if (
   prevRealmProgress.currentRealmStep < 7 &&
   conditionsMet
@@ -662,6 +693,7 @@ if (shouldCollapse) {
         actors: nextActors,
         curvature: nextCurvature,
         realmProgress: nextRealmProgress,
+        cosmicClock: nextCosmicClock,
 realmAscension: didAscendRealm && unlockedRealmKey
   ? {
       player: me,

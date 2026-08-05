@@ -142,7 +142,17 @@ actors: {
     karma: 0,
     dharma: 0,
   },
-realmAscension: null,};
+realmAscension: null,
+
+  // v4 — RFC Cosmic Clock (APLAZADO). Bruno es la primera Era; el
+  // Orquestador actualiza esto cuando revela el siguiente Avatar
+  // (ver reducer.ts, CONSCIOUS_MOVE). Nada más lee ni escribe este campo.
+  cosmicClock: {
+    era: "bruno",
+    progress: 0,
+    transitionSequence: 0,
+  },
+};
 
 /**
  * Helper para crear estados iniciales personalizados
