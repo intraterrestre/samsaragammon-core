@@ -291,6 +291,26 @@ const oriolEntered =
   ERA_ORDER.indexOf(state.cosmicClock.era as (typeof ERA_ORDER)[number]) >=
   ERA_ORDER.indexOf("oriol");
 
+// 2026-08-05 — pedido del usuario: el mural de "Bruno" no debe verse
+// apenas se pintan las casillas — debe esperar hasta que el video intro
+// de Bruno (el viejo sistema de realmAscension) se dispare de verdad.
+// cosmicClock.era arranca en "bruno" como valor por defecto (nunca lo
+// pone ahí ninguna transición real) y en la PRIMERA ascensión real salta
+// directo a "margot" (desfase de nombres entre avatarStep y
+// REALM_PIECE_ORDER, sistemas preexistentes). Para que el mural muestre
+// "Bruno" justo cuando ese primer video se dispara, desplazamos un paso
+// SOLO la selección visual del mural — no toca cosmicClock.era real ni
+// el desbloqueo de actors/SacredProgress, que siguen igual.
+const muralEra =
+  state.cosmicClock.transitionSequence === 0
+    ? "none"
+    : ERA_ORDER[
+        Math.max(
+          0,
+          ERA_ORDER.indexOf(state.cosmicClock.era as (typeof ERA_ORDER)[number]) - 1
+        )
+      ];
+
 const [genesisPhase, setGenesisPhase] = React.useState<string>("VIDEO");
 
 const handleMove = (opt: MoveOption, all: MoveOption[]) => {
@@ -502,7 +522,7 @@ return (
         globalRollCount={genesisClickCount}
         genesisComplete={genesisComplete}
         boardPainted={casillasFinished}
-        era={state.cosmicClock.era}
+        era={muralEra}
         onGenesisComplete={() => setCasillasFinished(true)}
         onGenesisPhaseChange={(phase) => setGenesisPhase(phase)}
       />
