@@ -37,6 +37,13 @@ if (piece?.player === "P2") {
   if (piece.kind === "snake") image = cobraBlack;
   if (piece.kind === "rooster") image = roosterBlack;
 }
+  // Antes, cuando no había ficha en este nivel de Mara, se dibujaba un
+  // cuadrito con borde/fondo — eso es lo que hacía visible "el circuito
+  // de Mara" (12 cuadritos, 6 por ojo) incluso sin fichas comidas. El
+  // usuario pidió que no se vean esos cuadros: que solo aparezca la
+  // ficha comida caminando sobre el bastidor. El div sigue existiendo
+  // (mismo tamaño) para mantener el espaciado de los 6 niveles, pero
+  // ahora es invisible cuando no hay ficha.
   return (
     <div
       style={{
@@ -47,7 +54,7 @@ if (piece?.player === "P2") {
         justifyContent: "center",
       }}
     >
-      {image ? (
+      {image && (
         <img
           src={image}
           alt={piece?.kind ?? ""}
@@ -55,16 +62,6 @@ if (piece?.player === "P2") {
             width: 28,
             height: 28,
             objectFit: "contain",
-          }}
-        />
-      ) : (
-        <div
-          style={{
-            width: 27,
-            height: 27,
-            borderRadius: 4,
-            border: "1px solid rgba(255,255,255,.25)",
-            background: "rgba(0,0,0,.25)",
           }}
         />
       )}
