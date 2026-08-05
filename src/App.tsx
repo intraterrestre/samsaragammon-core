@@ -249,9 +249,24 @@ const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
   [state.pieces, state.realmPieces, state.selectedPiece]
 );
 
+  // 2026-08-05: creaba un `new Audio(...)` nuevo en cada tirada y lo
+  // soltaba sin guardar referencia — el objeto queda sin ninguna
+  // variable que lo retenga mientras carga/reproduce, y algunos
+  // navegadores lo recolectan (garbage collection) a mitad de camino,
+  // fallando en silencio (el .catch ni siquiera llega a dispararse en
+  // ese caso). Los otros efectos de este archivo (fireworks, cheering,
+  // clarity...) SÍ funcionan porque se crean una sola vez en un ref y se
+  // reutilizan — aplicamos el mismo patrón acá.
+  const diceAudioRef = useRef<HTMLAudioElement | null>(null);
+  useEffect(() => {
+    diceAudioRef.current = new Audio(diceRollSound);
+    diceAudioRef.current.volume = 0.4;
+  }, []);
+
   const playDiceSound = useCallback(() => {
-    const audio = new Audio(diceRollSound);
-    audio.volume = 0.4;
+    const audio = diceAudioRef.current;
+    if (!audio) return;
+    audio.currentTime = 0;
     audio.play().catch((err) => {
       console.warn("Dice sound failed:", err);
     });
