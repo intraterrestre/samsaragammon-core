@@ -984,6 +984,7 @@ window.setTimeout(() => {
 }
 nidanaCoinId={activeNidanaId}
 nidanaCoinSide={nidanaSide}
+      onGenesisUIComplete={() => dispatch({ type: "SET_GENESIS_UI_COMPLETE" })}
       onVestigiumDone={() => setShowVestigium(false)}
       onCloseLedger={() => dispatch({ type: "CLOSE_LEDGER" })}
       onIntroDone={() => dispatch({ type: "INTRO_DONE" })}

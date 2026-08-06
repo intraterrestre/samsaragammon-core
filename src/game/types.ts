@@ -304,4 +304,5 @@ export type GameState = {
   // el "Bruno despierta" — hasta entonces no existen Avatares, colores
   // de reino ni Mara visual, aunque el sistema ya los soporte por dentro.
   brunoRevealed: boolean;
+  genesisUIComplete: boolean; // true cuando el Genesis visual terminó (clic 8)
 };

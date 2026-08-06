@@ -86,6 +86,8 @@ export const MIN_NOVELTY_EVENTS = 4;
 
 export function evaluateGenesisToBruno(state: GameState): boolean {
   if (state.brunoRevealed) return false;
+  // No disparar Bruno hasta que el Genesis visual haya terminado completamente
+  if (!state.genesisUIComplete) return false;
 
   const p1Sig = state.decisionSignature?.P1;
   const p2Sig = state.decisionSignature?.P2;

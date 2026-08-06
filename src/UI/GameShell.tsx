@@ -52,6 +52,7 @@ nidanaCoinSide: "front" | "back";
   onReset: () => void;
 
   onConsciousMove: (option: MoveOption, all: MoveOption[]) => void;
+  onGenesisUIComplete?: () => void;
   onSelectPiece: (piece: PieceKind) => void;
   onSendEmoji: (emoji: string) => void;
 
@@ -76,6 +77,7 @@ export function GameShell({
   onRoll,
   onReset,
   onConsciousMove,
+  onGenesisUIComplete,
   onSelectPiece,
   onSendEmoji,
   onCloseLedger,
@@ -278,6 +280,10 @@ const [casillasFinished, setCasillasFinished] = React.useState(false);
 const p1VenomsRevealed = casillasFinished && genesisClickCount >= 7;
 const p2VenomsRevealed = casillasFinished && genesisClickCount >= 8;
 const genesisComplete = p2VenomsRevealed;
+// Notificar al reducer cuando el Genesis visual termina
+React.useEffect(() => {
+  if (genesisComplete) onGenesisUIComplete?.();
+}, [genesisComplete]);
 
 // 2026-08-05 — pedido del usuario: el buda azul (Dharma Emergencies),
 // el chat Karma Fandango y el yin-yang (dentro de SacredProgress) no

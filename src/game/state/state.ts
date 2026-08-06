@@ -161,6 +161,7 @@ realmAscension: null,
     hasMaraReturn: false,
   },
   brunoRevealed: false,
+  genesisUIComplete: false,
 };
 
 /**

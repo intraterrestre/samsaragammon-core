@@ -45,7 +45,8 @@ type Action =
       allOptions: MoveOption[];
     }
   | { type: "EMOJI"; emoji: string; player: PlayerId }
-  | { type: "SET_MULTIPLAYER_STATE"; state: GameState };
+  | { type: "SET_MULTIPLAYER_STATE"; state: GameState }
+  | { type: "SET_GENESIS_UI_COMPLETE" };
 
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 const rollDie = () => 1 + Math.floor(Math.random() * 6);
@@ -330,6 +331,9 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
         ledgerOpen: false,
         ledgerEntry: null,
       };
+
+    case "SET_GENESIS_UI_COMPLETE":
+      return { ...state, genesisUIComplete: true };
 
     case "SET_NIDANA":
       return {
