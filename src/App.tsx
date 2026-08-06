@@ -263,6 +263,18 @@ const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
   // de que el anterior se asiente del todo, el navegador a veces lo
   // silencia sin avisar. Fix: pool de varios Audio en rotación, patrón
   // estándar para SFX cortos y repetidos.
+  // Desbloquear contexto de audio en iOS/móvil en el primer toque
+  React.useEffect(() => {
+    const unlockAudio = () => {
+      const silence = new Audio();
+      silence.play().catch(() => {});
+      document.removeEventListener("touchstart", unlockAudio);
+      document.removeEventListener("click", unlockAudio);
+    };
+    document.addEventListener("touchstart", unlockAudio, { once: true });
+    document.addEventListener("click", unlockAudio, { once: true });
+  }, []);
+
   const DICE_AUDIO_POOL_SIZE = 4;
   const diceAudioPoolWhiteRef = useRef<HTMLAudioElement[]>([]);
   const diceAudioPoolBlackRef = useRef<HTMLAudioElement[]>([]);
