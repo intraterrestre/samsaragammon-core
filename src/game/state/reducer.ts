@@ -5,8 +5,11 @@ import type {
   MoveOption,
   PieceKind,
   PlayerId,
+  PlayerRealmPiecesState,
   RealmPieceKind,
 } from "../types";
+import { REALM_PIECE_ORDER } from "../types";
+import { checkNirvana } from "../victory/nirvana";
 import { initialState } from "./state";
 
 import { behaviorAfterMove } from "../behavior/behavior";
@@ -54,16 +57,9 @@ const rollDie = () => 1 + Math.floor(Math.random() * 6);
 // Las 3 fichas base / venenos.
 const BASE_PIECES: BasePieceKind[] = ["pig", "snake", "rooster"];
 
-// Las 6 fichas nuevas de reino. Todavía no se mueven aquí;
-// primero las dejamos separadas para no mezclar sistemas.
-const REALM_PIECE_ORDER: RealmPieceKind[] = [
-  "hungry_ghost",
-  "hell",
-  "animals",
-  "humans",
-  "asura",
-  "deva",
-];
+// Las 6 fichas de reino (una por Avatar/era) — REALM_PIECE_ORDER
+// importado de types.ts (fuente única). v6: ya se mueven, se capturan
+// y se envían a Mara igual que los Venenos (D-014, Avatar-vs-Avatar).
 
 // v4 — RFC Cosmic Clock (APLAZADO). El Orquestador ya expone avatarStep
 // (1=Bruno..6=Whitman, ver Orchestrator.ts) cuando dispara
@@ -202,8 +198,13 @@ export function reducer(state: GameState, action: Action): GameState {
         },
       };
 
-    // liberar fichas por maraLevel
+    // liberar fichas por maraLevel (Venenos + Avatares)
 let anyMaraReturnThisRoll = false;
+
+const releasedPiecesRealm: Record<PlayerId, PlayerRealmPiecesState> = {
+  P1: { ...state.realmPieces.P1 },
+  P2: { ...state.realmPieces.P2 },
+};
 
 for (const player of ["P1", "P2"] as PlayerId[]) {
   const opp = otherPlayer(player);
@@ -240,6 +241,43 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
       }
     }
   }
+
+  // Mismo ciclo de Mara (6 lances) para Avatares capturados (D-014).
+  // Un Avatar en Mara nunca antes salía de ahí — este bucle no existía.
+  for (const kind of REALM_PIECE_ORDER) {
+    const piece = releasedPiecesRealm[player][kind];
+    if (!piece || !piece.inLimbo || piece.maraLevel === null) continue;
+
+    const nextLevel = piece.maraLevel + 1;
+
+    if (nextLevel > 6) {
+      let spawnPos: number | null = null;
+
+      for (let i = 0; i < state.trackSize; i++) {
+        const occupied = REALM_PIECE_ORDER.some((k) => {
+          const e = releasedPiecesRealm[opp][k];
+          return e && !e.inLimbo && e.pos === i;
+        });
+
+        if (!occupied) {
+          spawnPos = i;
+          break;
+        }
+      }
+
+      if (spawnPos !== null) {
+        releasedPiecesRealm[player][kind] = {
+          ...piece,
+          pos: spawnPos,
+          inLimbo: false,
+          maraLevel: null,
+        };
+        anyMaraReturnThisRoll = true;
+      }
+    } else {
+      releasedPiecesRealm[player][kind] = { ...piece, maraLevel: nextLevel };
+    }
+  }
 }
 
       // v5 — Acto 0: eventos de novedad (ver types.ts / Orchestrator.ts).
@@ -254,6 +292,7 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
         ...state,
         globalRollCount: nextRollCount,
         pieces: releasedPieces,
+        realmPieces: releasedPiecesRealm,
         phase: "rolled",
         rollOptions: [rollDie(), rollDie()],
         currentNidana: randomNidana,
@@ -494,43 +533,77 @@ if (nextRealmKey) {
         P1: state.captures.P1,
         P2: state.captures.P2,
       };
-// ===== captura sobre posición final real =====
+// ===== captura sobre posición final real (Venenos + Avatares, D-014) =====
+// v6 — Avatar-vs-Avatar: la misma regla 0/1/2+ que ya regía solo para
+// Venenos ahora se evalúa sobre el conjunto combinado de piezas del
+// rival (Venenos + Avatares de reino) presentes en la casilla. Un
+// jugador con 2+ piezas propias (de cualquier tipo combinado) en una
+// casilla queda protegido frente al rival — apilamiento estilo
+// Backgammon, sección 6.3 de la RFC.
 let didCapture = false;
 let capturedPieceKind: PieceKind | null = null;
 
-const enemiesAtFinalPos = BASE_PIECES.filter((enemyKind) => {
-  const enemy = nextPieces[opp][enemyKind];
-  return !enemy.inLimbo && enemy.pos === finalToPos;
-});
+type EnemyRef =
+  | { system: "base"; kind: BasePieceKind }
+  | { system: "realm"; kind: RealmPieceKind };
 
-// 2+ enemigos en destino final = casilla bloqueada.
-// El movimiento queda prohibido aunque la UI se equivoque.
+const getEnemyRefsAtPos = (pos: number): EnemyRef[] => {
+  const refs: EnemyRef[] = [];
+
+  for (const kind of BASE_PIECES) {
+    const enemy = nextPieces[opp][kind];
+    if (!enemy.inLimbo && enemy.pos === pos) {
+      refs.push({ system: "base", kind });
+    }
+  }
+
+  for (const kind of REALM_PIECE_ORDER) {
+    const enemy = nextPiecesRealm[opp][kind];
+    if (enemy && enemy.unlocked && !enemy.inLimbo && enemy.pos === pos) {
+      refs.push({ system: "realm", kind });
+    }
+  }
+
+  return refs;
+};
+
+const enemiesAtFinalPos = getEnemyRefsAtPos(finalToPos);
+
+// 2+ enemigos (Venenos + Avatares combinados) en destino final =
+// casilla bloqueada. El movimiento queda prohibido aunque la UI se
+// equivoque.
 if (enemiesAtFinalPos.length >= 2) {
   return state;
 }
 
 const possibleCapturePositions = Array.from(new Set([toPos, finalToPos]));
 
-const enemyPiecesAtTarget = BASE_PIECES.filter((enemyKind) => {
-  const enemy = nextPieces[opp][enemyKind];
-
-  return !enemy.inLimbo && possibleCapturePositions.includes(enemy.pos);
-});
+const enemyRefsAtTarget = possibleCapturePositions.flatMap(getEnemyRefsAtPos);
 
 // se captura si hay 1 enemiga sola en la casilla
-if (enemyPiecesAtTarget.length >= 1) {
- const enemyKind = enemyPiecesAtTarget.slice(-1)[0];
+if (enemyRefsAtTarget.length >= 1) {
+  const enemyRef = enemyRefsAtTarget[enemyRefsAtTarget.length - 1];
 
   didCapture = true;
-  capturedPieceKind = enemyKind;
+  capturedPieceKind = enemyRef.kind;
   nextCaptures[me] += 1;
 
-  nextPieces[opp][enemyKind] = {
-    ...nextPieces[opp][enemyKind],
-    pos: -1,
-    inLimbo: true,
-    maraLevel: 1,
-  };
+  if (enemyRef.system === "base") {
+    nextPieces[opp][enemyRef.kind] = {
+      ...nextPieces[opp][enemyRef.kind],
+      pos: -1,
+      inLimbo: true,
+      maraLevel: 1,
+    };
+  } else {
+    const capturedRealmPiece = nextPiecesRealm[opp][enemyRef.kind]!;
+    nextPiecesRealm[opp][enemyRef.kind] = {
+      ...capturedRealmPiece,
+      pos: -1,
+      inLimbo: true,
+      maraLevel: 1,
+    };
+  }
 
   nextCurvature[me] = clampCurvature((nextCurvature[me] ?? 0) + 6);
   nextCurvature[opp] = clampCurvature((nextCurvature[opp] ?? 0) - 8);
@@ -663,7 +736,25 @@ if (!didCapture) {
         trackSize: state.trackSize,
       });
 
-      const didWin = finalToPos === state.trackSize - 1;
+      // v6 — Victory Architecture (RFC v1.1 sección 6, módulo separado
+      // en src/game/victory/nirvana.ts). Reemplaza el placeholder
+      // "llegar al final de la pista" por la condición real: Whitman
+      // alcanzado + 6 Avatares propios en Humans + Karma (stub READY).
+      // Se comprueba al final del turno del jugador activo, como pedía
+      // la RFC — el propio move que se está resolviendo ya dejó el
+      // estado de piezas actualizado más abajo (nextPiecesRealm), así
+      // que la formación se evalúa sobre ese estado ya movido, no
+      // sobre el previo.
+      const stateAfterThisMove: GameState = {
+        ...state,
+        pieces: nextPieces,
+        realmPieces: nextPiecesRealm,
+        realmProgress: {
+          ...state.realmProgress,
+          [me]: { ...state.realmProgress[me], currentRealmStep: nextRealmStep },
+        },
+      };
+      const didWin = checkNirvana(stateAfterThisMove, me);
 
       const samePieceAlternatives = allOptions.filter(
         (o) => o.pieceKind === activePiece

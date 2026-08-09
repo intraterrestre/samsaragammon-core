@@ -23,6 +23,18 @@ export type RealmPieceKind =
   | "asura"
   | "deva";
 
+// Orden canónico de las 6 fichas de reino (una por Avatar/era). Única
+// fuente de verdad — reducer.ts y el módulo de victoria (src/game/victory)
+// importan esta lista en vez de declararla cada uno por su cuenta.
+export const REALM_PIECE_ORDER: RealmPieceKind[] = [
+  "hungry_ghost",
+  "hell",
+  "animals",
+  "humans",
+  "asura",
+  "deva",
+];
+
 export type PieceKind = BasePieceKind | RealmPieceKind;
 
 export type SinglePieceState = {
