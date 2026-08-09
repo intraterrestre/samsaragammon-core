@@ -11,6 +11,7 @@ import type {
   PlayerId,
   RealmPieceKind,
 } from "../types";
+import { REALM_PIECE_ORDER } from "../types";
 import { previewMove } from "./preview";
 import { applyRealmEffect } from "../realm/realmEffects";
 import { getUnlockedBasePieces } from "../era";
@@ -19,14 +20,8 @@ const BASE_PIECES: BasePieceKind[] = ["pig", "snake", "rooster"];
 
 const ACTIVE_BASE_PIECES: BasePieceKind[] = getUnlockedBasePieces(BASE_PIECES);
 
-const REALM_PIECES: RealmPieceKind[] = [
-  "hungry_ghost",
-  "hell",
-  "animals",
-  "humans",
-  "asura",
-  "deva",
-];
+// REALM_PIECE_ORDER importado de types.ts (fuente única — ver reducer.ts).
+const REALM_PIECES: RealmPieceKind[] = REALM_PIECE_ORDER;
 
 const isBasePiece = (kind: PieceKind): kind is BasePieceKind =>
   BASE_PIECES.includes(kind as BasePieceKind);
@@ -77,10 +72,21 @@ function countEnemyPiecesAtPos(
 ): number {
   const opp = otherPlayer(player);
 
-  return ACTIVE_BASE_PIECES.filter((kind) => {
+  const enemyVenoms = ACTIVE_BASE_PIECES.filter((kind) => {
     const piece = state.pieces[opp][kind];
     return !piece.inLimbo && piece.pos === targetPos;
   }).length;
+
+  // v6 — Avatar-vs-Avatar (D-014): antes esta función solo contaba
+  // Venenos, así que la UI nunca marcaba ni bloqueaba correctamente un
+  // Avatar rival en la casilla de destino. Debe contar lo mismo que
+  // cuenta el reducer al resolver el movimiento real.
+  const enemyRealmPieces = REALM_PIECE_ORDER.filter((kind) => {
+    const piece = state.realmPieces[opp]?.[kind];
+    return piece && piece.unlocked && !piece.inLimbo && piece.pos === targetPos;
+  }).length;
+
+  return enemyVenoms + enemyRealmPieces;
 }
 
 function inferMeaning(
@@ -248,9 +254,15 @@ export function getMoveOptionsForPlayer(
   const isDouble = a === b;
   const opp = otherPlayer(player);
 
-  const enemyPositions = ACTIVE_BASE_PIECES.filter(
-    (kind) => !state.pieces[opp][kind].inLimbo
-  ).map((kind) => state.pieces[opp][kind].pos);
+  const enemyPositions = [
+    ...ACTIVE_BASE_PIECES.filter(
+      (kind) => !state.pieces[opp][kind].inLimbo
+    ).map((kind) => state.pieces[opp][kind].pos),
+    ...REALM_PIECE_ORDER.filter((kind) => {
+      const p = state.realmPieces[opp]?.[kind];
+      return p && p.unlocked && !p.inLimbo;
+    }).map((kind) => state.realmPieces[opp]![kind]!.pos),
+  ];
 
   const options: MoveOption[] = [];
 
