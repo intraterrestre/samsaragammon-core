@@ -96,12 +96,23 @@ const [diceRolling, setDiceRolling] = React.useState(false);
 // Orquestador usa para la progresión real de eras.
 const [genesisClickCount, setGenesisClickCount] = React.useState(0);
 
+// Valor puramente cosmético para los clics decorativos del dado durante
+// Genesis. state.rollOptions no cambia en esos clics (a propósito, ver
+// arriba), así que antes el popup de dados se quedaba mostrando siempre
+// el mismo número tras el giro. Este estado local no toca el reducer ni
+// globalRollCount — solo hace que el número que se ve cambie en cada
+// clic, igual que un roll real, mientras estás en Genesis.
+const [genesisDiceA, setGenesisDiceA] = React.useState(1);
+const [genesisDiceB, setGenesisDiceB] = React.useState(1);
+
 const handleRollWithPopup = () => {
   setDicePopupVisible(true);
   setDiceRolling(true);
 
   if (!genesisComplete) {
     setGenesisClickCount((n) => n + 1);
+    setGenesisDiceA(1 + Math.floor(Math.random() * 6));
+    setGenesisDiceB(1 + Math.floor(Math.random() * 6));
   } else {
     onRoll();
   }
@@ -548,8 +559,8 @@ return (
       {(genesisComplete || genesisPhase !== "VIDEO") && (
         <DicePopup
           visible={dicePopupVisible}
-          rollA={a}
-          rollB={b}
+          rollA={genesisComplete ? a : genesisDiceA}
+          rollB={genesisComplete ? b : genesisDiceB}
           rolling={diceRolling}
           turn={state.turn}
           onDismiss={() => setDicePopupVisible(false)}
