@@ -289,8 +289,16 @@ React.useEffect(() => {
 // de lo previsto. El trigger real y riguroso ya vive en el reducer/
 // Orchestrator (evaluateGenesisToBruno: ambos jugadores usaron los 3
 // Venenos, mínimo de turnos, 4 eventos de novedad) y se expone como
-// state.brunoRevealed — lo usamos directo en vez de duplicar la lógica.
-const brunoAwakened = Boolean(state.brunoRevealed);
+// state.brunoRevealed.
+//
+// v19 (10 agosto 2026) — Federico confirmó explícitamente (dos veces)
+// que el buda/conector y las nidanas deben esperar a Oriol, no a
+// Bruno — mismo criterio que ya se corrigió para shouldTriggerNidana
+// en App.tsx. "THE FIRST EYE OPENS" seguía sonando a "el momento de
+// Bruno" por el nombre, pero el diseño real es que todo este sistema
+// (conector, globo de texto, nidanas) es una capa que arranca en
+// Oriol — no antes.
+const brunoAwakened = state.realmProgress[state.turn].currentRealmStep >= 3;
 
 // 2026-08-05 — secuencia pedida por el usuario: después de las 24
 // casillas verdes (6 clics, GenesisReveal), NO se revela todo junto.
