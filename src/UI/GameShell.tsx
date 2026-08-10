@@ -50,6 +50,13 @@ nidanaCoinSide: "front" | "back";
   onLogout: () => void;
   onRoll: () => void;
   onReset: () => void;
+  // v11 — sonido de dados durante los clics decorativos de Genesis
+  // (10 agosto 2026). onRoll solo se llama tras genesisComplete, así que
+  // el sonido real (playDiceSound, App.tsx) nunca sonaba en los clics
+  // decorativos — mismo patrón que ya se corrigió para el NÚMERO del
+  // dado (genesisDiceA/B). Prop opcional para no romper otros usos de
+  // GameShell que no la pasen.
+  playDiceSound?: (player: "P1" | "P2") => void;
 
   onConsciousMove: (option: MoveOption, all: MoveOption[]) => void;
   onGenesisUIComplete?: () => void;
@@ -76,6 +83,7 @@ export function GameShell({
   onLogout,
   onRoll,
   onReset,
+  playDiceSound,
   onConsciousMove,
   onGenesisUIComplete,
   onSelectPiece,
@@ -113,6 +121,9 @@ const handleRollWithPopup = () => {
     setGenesisClickCount((n) => n + 1);
     setGenesisDiceA(1 + Math.floor(Math.random() * 6));
     setGenesisDiceB(1 + Math.floor(Math.random() * 6));
+    // Mismo criterio de paridad que isWhiteTurn (más abajo) para que el
+    // sonido coincida con qué color de dado se ve girando.
+    playDiceSound?.(genesisClickCount % 2 === 0 ? "P1" : "P2");
   } else {
     onRoll();
   }
