@@ -1034,17 +1034,16 @@ onRoll={() => {
 // de terminar Genesis — daba la impresión de "saltar" a una partida ya
 // avanzada (ver reporte del usuario: "salta a una foto vieja con todo
 // el juego andando"). Los Nidanas son, según el diseño, activos "desde
-// Oriol en adelante" — es decir, una vez que el jugador ya usó los tres
-// Venenos al menos una vez (equivalente al "despertar de Bruno" que ve
-// GameShell). Antes de eso, no deberían dispararse.
+// Oriol en adelante".
 //
-// 2026-08-05: esto usaba .some() sobre P1/P2 — bastaba con que UN SOLO
-// jugador usara sus 3 Venenos (unos pocos lances) para disparar el
-// efecto. El trigger real y riguroso (ambos jugadores, mínimo de turnos,
-// eventos de novedad) ya vive en el reducer/Orchestrator y se expone
-// como state.brunoRevealed — usamos ese mismo flag para que este efecto
-// y "THE FIRST EYE OPENS" (GameShell) queden sincronizados.
-const shouldTriggerNidana = Boolean(state.brunoRevealed);
+// v17 (10 agosto 2026) — bug real confirmado por Federico: el comentario
+// de arriba YA decía "desde Oriol en adelante", pero el código usaba
+// state.brunoRevealed (Bruno es el PRIMER Avatar, Oriol es el TERCERO —
+// dos etapas completas de diferencia). Las nidanas se encendían apenas
+// nacía Bruno, mucho antes de lo previsto. Corregido para comprobar de
+// verdad la etapa de Oriol: avatarStep 3 en STEP_TO_ACTOR_ID
+// (Orchestrator.ts) — currentRealmStep >= 3 del jugador activo.
+const shouldTriggerNidana = state.realmProgress[state.turn].currentRealmStep >= 3;
 
 if (shouldTriggerNidana) {
   triggerNidanaCoin();

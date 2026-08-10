@@ -555,8 +555,6 @@
   font-size: 22px;
   font-weight: 900;
   color: white;
-  background: rgba(255, 230, 100, 0.18);
-  border: 2px solid rgba(255, 255, 255, 0.55);
 }
 
 .realmPieceP1 {
@@ -565,28 +563,28 @@
 .realmPieceP2 {
 }
 
+/* v16 (10 agosto 2026) — se quitaron los fondos de color por reino
+   (morado para Bruno, negro para Margot, etc.). Con las monedas nuevas
+   —imágenes completas, con su propio borde y textura— ese fondo de
+   color detrás creaba un círculo de más, redundante con el borde que
+   ya trae la propia imagen. Las clases se conservan (por si algo más
+   las referencia) pero vacías. */
 .realmPiece-hungry_ghost {
-  background: rgba(150, 80, 200, 0.35);
 }
 
 .realmPiece-hell {
-  background: rgba(40, 40, 40, 0.55);
 }
 
 .realmPiece-animals {
-  background: rgba(255, 190, 0, 0.35);
 }
 
 .realmPiece-humans {
-  background: rgba(70, 170, 255, 0.35);
 }
 
 .realmPiece-asura {
-  background: rgba(255, 70, 70, 0.35);
 }
 
 .realmPiece-deva {
-  background: rgba(255, 255, 255, 0.45);
   color: #222;
 }
 .realmIntroOverlay {
