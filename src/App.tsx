@@ -489,7 +489,16 @@ useEffect(() => {
 
   if (!realmKey || !player) return;
 
-  const introId = `${player}-${realmKey}`;
+  // v9 — Bruno ("hungry_ghost") solo reproduce el video UNA VEZ para
+  // toda la partida, sin importar cuál jugador llegue primero. Antes
+  // se disparaba por jugador (dedup incluía el player), así que el
+  // segundo jugador en llegar volvía a abrir el mismo video — Federico
+  // confirmó en playtest que eso se siente redundante y pidió apagar
+  // solo el segundo disparo. El resto de los Avatares NO cambia: siguen
+  // reproduciéndose una vez por jugador como siempre. Los efectos de
+  // fiesta/aplausos (fireworks/cheering) están en otro useEffect, sin
+  // relación con esto — no se tocan.
+  const introId = realmKey === "hungry_ghost" ? realmKey : `${player}-${realmKey}`;
 
   if (playedRealmIntrosRef.current[introId]) return;
 
