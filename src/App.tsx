@@ -36,6 +36,11 @@ import diceRollSound from "./assets/sounds/dice_roll.mp3";
 import diceRollSoundBlack from "./assets/sounds/blackdice-rolling.mp3";
 
 // Videos cargados como URLs estáticas (no en memoria hasta que se usan)
+// v8 — el split-screen (dos videos lado a lado) se probó y se descartó:
+// el ratio 50/50 corta el cartel inicial de cada video y no se lee.
+// Vuelve a ser un solo video, igual que el resto de los Avatares —
+// Federico va a producir un video único con swap de ficha blanca/negra
+// para reemplazar bruno_origin_intro.mp4 cuando esté listo.
 const brunoIntro = new URL("./assets/cinematics/realms/bruno_origin_intro.mp4", import.meta.url).href;
 const margotIntro = new URL("./assets/cinematics/realms/margot_hell_intro.mp4", import.meta.url).href;
 const oriolIntro = new URL("./assets/cinematics/realms/oriol_animal_intro.mp4", import.meta.url).href;
