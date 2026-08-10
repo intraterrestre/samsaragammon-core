@@ -156,6 +156,14 @@ export type RealmProgress = {
   completedLoopsInRealm: number;
   currentLoopProgress: number;
   realmTransitions: number;
+  // v10 — reparación de identidad de etapa (10 agosto 2026): globalRollCount
+  // que tenía la partida cuando el Avatar ACTUAL de este jugador apareció.
+  // Permite calcular rollsInCurrentStage = globalRollCount - stageStartedAtRoll
+  // en el Orquestador, para que una etapa no pueda heredar lances ya
+  // acumulados por etapas anteriores (evita transiciones en cascada cuando
+  // un Avatar tarda en aparecer). minTurns/minGlobalRolls sigue existiendo
+  // como guardrail absoluto — esto es un guardrail relativo adicional.
+  stageStartedAtRoll: number;
 };
 
 export type CurvatureState = {
@@ -277,6 +285,12 @@ export type GameState = {
   realmAscension: {
   player: PlayerId;
   realmStep: number;
+  // v10 — faltaba en el tipo (bug real: el reducer siempre lo asignó,
+  // pero TypeScript nunca lo comprobó porque el tsc real del proyecto
+  // no se estaba corriendo — ver commit de reparación de identidad de
+  // etapa). App.tsx depende de este campo para decidir qué video/mural
+  // mostrar; sin tipo, un error de este tipo pasa silencioso.
+  realmKey: RealmPieceKind;
   at: number;
 } | null;
 

@@ -303,17 +303,74 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
       const nextBrunoRevealed =
         state.brunoRevealed || evaluateGenesisToBruno(nextState);
 
-      // v5 — "Bruno despierta": el momento en que el trigger pasa de false
-      // a true por primera vez, se desbloquea el actor (además del flag
-      // brunoRevealed que gatea la UI). No se toca si ya estaba
-      // desbloqueado o si todavía no se cumplió la condición.
-      const nextActorsOnRoll =
-        !state.brunoRevealed && nextBrunoRevealed
-          ? {
-              ...state.actors,
-              bruno: { ...state.actors.bruno, unlocked: true },
-            }
-          : state.actors;
+      // v10 — reparación de identidad de etapa (10 agosto 2026). Antes:
+      // brunoRevealed solo marcaba una bandera narrativa y desbloqueaba el
+      // actor legacy sin renderizado; la ficha/video/mural de Bruno de
+      // verdad nacían mucho después, cuando el Orquestador cumplía sus
+      // propios umbrales (bruno_to_margot) — y para entonces cosmicClock.era
+      // ya decía "margot" (ver hallazgo del off-by-one). Ahora: el momento
+      // en que brunoRevealed pasa de false a true ES el único evento
+      // Genesis→Bruno y crea el paquete completo de una vez, para los dos
+      // jugadores a la vez (un acontecimiento, dos manifestaciones — P-001).
+      const brunoJustRevealed = !state.brunoRevealed && nextBrunoRevealed;
+
+      const nextActorsOnRoll = brunoJustRevealed
+        ? {
+            ...state.actors,
+            bruno: { ...state.actors.bruno, unlocked: true },
+          }
+        : state.actors;
+
+      const nextPiecesRealmWithBruno = brunoJustRevealed
+        ? {
+            P1: {
+              ...nextState.realmPieces.P1,
+              hungry_ghost: {
+                id: "P1-hungry_ghost",
+                kind: "hungry_ghost" as RealmPieceKind,
+                pos: 0,
+                inLimbo: false,
+                maraLevel: null,
+                unlocked: true,
+              },
+            },
+            P2: {
+              ...nextState.realmPieces.P2,
+              hungry_ghost: {
+                id: "P2-hungry_ghost",
+                kind: "hungry_ghost" as RealmPieceKind,
+                pos: 12,
+                inLimbo: false,
+                maraLevel: null,
+                unlocked: true,
+              },
+            },
+          }
+        : nextState.realmPieces;
+
+      const nextCosmicClockOnRoll = brunoJustRevealed
+        ? {
+            era: "bruno" as const,
+            progress: 0,
+            transitionSequence: state.cosmicClock.transitionSequence + 1,
+          }
+        : state.cosmicClock;
+
+      const nextRealmAscensionOnRoll = brunoJustRevealed
+        ? {
+            player: state.turn,
+            realmStep: 1,
+            realmKey: "hungry_ghost" as RealmPieceKind,
+            at: Date.now(),
+          }
+        : state.realmAscension;
+
+      const nextRealmProgressOnRoll = brunoJustRevealed
+        ? {
+            P1: { ...state.realmProgress.P1, stageStartedAtRoll: nextRollCount },
+            P2: { ...state.realmProgress.P2, stageStartedAtRoll: nextRollCount },
+          }
+        : state.realmProgress;
 
       if (!playerHasActivePiece(nextState, state.turn)) {
         return {
@@ -324,6 +381,10 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
           rollOptions: null,
           brunoRevealed: nextBrunoRevealed,
           actors: nextActorsOnRoll,
+          realmPieces: nextPiecesRealmWithBruno,
+          cosmicClock: nextCosmicClockOnRoll,
+          realmAscension: nextRealmAscensionOnRoll,
+          realmProgress: nextRealmProgressOnRoll,
         };
       }
 
@@ -332,6 +393,10 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
         venomTrio: nextVenomTrio,
         brunoRevealed: nextBrunoRevealed,
         actors: nextActorsOnRoll,
+        realmPieces: nextPiecesRealmWithBruno,
+        cosmicClock: nextCosmicClockOnRoll,
+        realmAscension: nextRealmAscensionOnRoll,
+        realmProgress: nextRealmProgressOnRoll,
       };
     }
 
@@ -492,8 +557,17 @@ const nextActors = {
   nextLoopProgress = 0;
 
  // ===== DESBLOQUEAR FICHA DE REINO =====
+ // v10 — reparación de identidad de etapa (10 agosto 2026). Antes:
+ // `nextRealmStepValue - 2`. Con avatarStep = currentStep + 1 (mismo
+ // valor que nextRealmStepValue) usado para cosmicClock.era más arriba,
+ // esa fórmula quedaba UN Avatar por detrás de lo que decía el reloj
+ // cósmico — cuando el Orquestador revelaba "margot" en cosmicClock.era,
+ // esta línea creaba en realidad la ficha de "hungry_ghost" (Bruno).
+ // Con Bruno ahora creado directamente en Genesis (ver case "ROLL"),
+ // esta cadena empieza en Margot: `bruno_to_margot` debe crear a Margot
+ // (hell), no a Bruno. -1 alinea el índice con avatarStep.
 unlockedRealmKey =
-  REALM_PIECE_ORDER[nextRealmStepValue - 2] ?? null;
+  REALM_PIECE_ORDER[nextRealmStepValue - 1] ?? null;
 
 const nextRealmKey = unlockedRealmKey;
 
@@ -674,6 +748,14 @@ const currentRealm = realmFromPos(finalToPos);
           completedLoopsInRealm: nextCompletedLoops,
           currentLoopProgress: nextLoopProgress,
           realmTransitions: nextRealmTransitions,
+          // v10 — reparación de identidad de etapa: se resetea SOLO cuando
+          // esta jugada de verdad ascendió de Avatar (didAscendRealm),
+          // para que el guardrail relativo del Orquestador (sección 1.5,
+          // rollsInCurrentStage) cuente desde que el Avatar actual
+          // apareció, no desde el inicio de la partida.
+          stageStartedAtRoll: didAscendRealm
+            ? state.globalRollCount
+            : state.realmProgress[me].stageStartedAtRoll,
         },
       };
 

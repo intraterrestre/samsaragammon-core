@@ -97,12 +97,14 @@ actors: {
       completedLoopsInRealm: 0,
       currentLoopProgress: 0,
       realmTransitions: 0,
+      stageStartedAtRoll: 0,
     },
     P2: {
       currentRealmStep: 1,
       completedLoopsInRealm: 0,
       currentLoopProgress: 0,
       realmTransitions: 0,
+      stageStartedAtRoll: 0,
     },
   },
 
