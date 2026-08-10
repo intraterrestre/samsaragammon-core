@@ -216,6 +216,18 @@ export default function App() {
   const [state, dispatchBase] = useReducer(reducer, initialState);
 const [activeRealmIntro, setActiveRealmIntro] = useState<string | null>(null);
 const playedRealmIntrosRef = useRef<Record<string, boolean>>({});
+// v13 (10 agosto 2026) — reinicio real de Genesis. GameShell guarda su
+// propio estado local de los clics decorativos (genesisClickCount,
+// casillasFinished, genesisPhase, genesisDiceA/B) — ese estado NUNCA se
+// tocaba en RESET porque vive en un componente hijo, no en el reducer.
+// Resultado real de playtest: tras reiniciar, esos valores quedaban tan
+// altos como en la partida anterior, así que genesisComplete/
+// casillasFinished ya estaban en true desde el primer render de la
+// partida nueva — se saltaba todo Genesis, incluida la intro de Bruno.
+// Forzar un remount completo de GameShell (key) es más seguro que ir
+// limpiando cada useState uno por uno: garantiza que TODO su estado
+// local decorativo empiece de cero, sin tener que enumerar cada campo.
+const [genesisResetSeq, setGenesisResetSeq] = useState(0);
 // 2026-08-05: este video se disparaba con muted={false} + play() dentro de
 // un useEffect/setTimeout — fuera de la cadena directa de un gesto del
 // usuario, así que los navegadores lo bloqueaban silenciosamente (catch
@@ -792,6 +804,7 @@ window.setTimeout(() => {
   playedRealmIntrosRef.current = {};
   setActiveRealmIntro(null);
   setRealmIntroMuted(true);
+  setGenesisResetSeq((n) => n + 1);
 
   setRollsCount(0);
   setShowVestigium(false);
@@ -977,6 +990,7 @@ window.setTimeout(() => {
   ) : (
     <>
     <GameShell
+      key={genesisResetSeq}
       state={state}
       a={a}
       b={b}
