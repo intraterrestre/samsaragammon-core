@@ -79,6 +79,40 @@ function playerHasActivePiece(state: GameState, player: PlayerId): boolean {
   return BASE_PIECES.some((kind) => !state.pieces[player][kind].inLimbo);
 }
 
+// v18 (10 agosto 2026) — bug real reportado por Federico: Bruno nacía en
+// posiciones fijas (0 para P1, 12 para P2) sin comprobar si ya había
+// algo ahí. Con muchos turnos pasando antes de que Bruno naciera, un
+// Veneno rival podía terminar parado justo en esa casilla — el token
+// blanco de Bruno apareció encima de un Veneno negro. Busca la primera
+// casilla libre (sin ningún Veneno ni ficha de reino de NINGÚN jugador)
+// empezando en preferredPos, igual que ya hace el retorno de Mara más
+// abajo para no repetir ese mismo problema.
+function findEmptySpawnPos(
+  state: GameState,
+  preferredPos: number
+): number {
+  const isOccupied = (pos: number): boolean => {
+    for (const player of ["P1", "P2"] as PlayerId[]) {
+      for (const kind of BASE_PIECES) {
+        const p = state.pieces[player][kind];
+        if (!p.inLimbo && p.pos === pos) return true;
+      }
+      for (const kind of REALM_PIECE_ORDER) {
+        const p = state.realmPieces[player]?.[kind];
+        if (p && p.unlocked && !p.inLimbo && p.pos === pos) return true;
+      }
+    }
+    return false;
+  };
+
+  for (let offset = 0; offset < state.trackSize; offset++) {
+    const candidate = (preferredPos + offset) % state.trackSize;
+    if (!isOccupied(candidate)) return candidate;
+  }
+
+  return preferredPos; // tablero lleno (no debería pasar nunca) — mejor esto que crashear
+}
+
 function detectVenomTrio(
   pieces: GameState["pieces"]
 ): GameState["venomTrio"] {
@@ -321,25 +355,38 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
           }
         : state.actors;
 
-      const nextPiecesRealmWithBruno = brunoJustRevealed
+      const brunoP1SpawnPos = brunoJustRevealed ? findEmptySpawnPos(nextState, 0) : 0;
+      const nextStateWithBrunoP1 = brunoJustRevealed
         ? {
-            P1: {
-              ...nextState.realmPieces.P1,
-              hungry_ghost: {
-                id: "P1-hungry_ghost",
-                kind: "hungry_ghost" as RealmPieceKind,
-                pos: 0,
-                inLimbo: false,
-                maraLevel: null,
-                unlocked: true,
+            ...nextState,
+            realmPieces: {
+              ...nextState.realmPieces,
+              P1: {
+                ...nextState.realmPieces.P1,
+                hungry_ghost: {
+                  id: "P1-hungry_ghost",
+                  kind: "hungry_ghost" as RealmPieceKind,
+                  pos: brunoP1SpawnPos,
+                  inLimbo: false,
+                  maraLevel: null,
+                  unlocked: true,
+                },
               },
             },
+          }
+        : nextState;
+
+      const nextPiecesRealmWithBruno = brunoJustRevealed
+        ? {
+            P1: nextStateWithBrunoP1.realmPieces.P1,
             P2: {
               ...nextState.realmPieces.P2,
               hungry_ghost: {
                 id: "P2-hungry_ghost",
                 kind: "hungry_ghost" as RealmPieceKind,
-                pos: 12,
+                // busca desde nextStateWithBrunoP1 para no caer sobre la
+                // casilla que le acabamos de dar a Bruno-P1.
+                pos: findEmptySpawnPos(nextStateWithBrunoP1, 12),
                 inLimbo: false,
                 maraLevel: null,
                 unlocked: true,
@@ -921,23 +968,39 @@ if (shouldCollapse) {
       if (brunoJustRevealedInMove) {
         nextActors.bruno = { ...nextActors.bruno, unlocked: true };
 
+        const searchBaseForBruno: GameState = {
+          ...state,
+          pieces: nextPieces,
+          realmPieces: nextPiecesRealm,
+        };
+
+        const p1SpawnPos = nextPiecesRealm.P1.hungry_ghost
+          ? nextPiecesRealm.P1.hungry_ghost.pos
+          : findEmptySpawnPos(searchBaseForBruno, 0);
+
         nextPiecesRealm.P1 = {
           ...nextPiecesRealm.P1,
           hungry_ghost: nextPiecesRealm.P1.hungry_ghost ?? {
             id: "P1-hungry_ghost",
             kind: "hungry_ghost" as RealmPieceKind,
-            pos: 0,
+            pos: p1SpawnPos,
             inLimbo: false,
             maraLevel: null,
             unlocked: true,
           },
         };
+
+        const searchBaseForBrunoP2: GameState = {
+          ...searchBaseForBruno,
+          realmPieces: { ...searchBaseForBruno.realmPieces, P1: nextPiecesRealm.P1 },
+        };
+
         nextPiecesRealm.P2 = {
           ...nextPiecesRealm.P2,
           hungry_ghost: nextPiecesRealm.P2.hungry_ghost ?? {
             id: "P2-hungry_ghost",
             kind: "hungry_ghost" as RealmPieceKind,
-            pos: 12,
+            pos: findEmptySpawnPos(searchBaseForBrunoP2, 12),
             inLimbo: false,
             maraLevel: null,
             unlocked: true,
