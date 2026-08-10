@@ -241,7 +241,9 @@ const releasedPiecesRealm: Record<PlayerId, PlayerRealmPiecesState> = {
 };
 
 for (const player of ["P1", "P2"] as PlayerId[]) {
-  const opp = otherPlayer(player);
+  // v23 — 'opp' ya no hace falta aquí: findEmptySpawnPos revisa todas
+  // las piezas de los dos jugadores directamente, no hay que armar la
+  // comparación contra el rival a mano.
 
   for (const kind of BASE_PIECES) {
     const piece = releasedPieces[player][kind];
@@ -250,19 +252,17 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
       const nextLevel = piece.maraLevel + 1;
 
       if (nextLevel > 6) {
-        let spawnPos: number | null = null;
-
-        for (let i = 0; i < state.trackSize; i++) {
-          const occupied = BASE_PIECES.some((k) => {
-            const e = releasedPieces[opp][k];
-            return !e.inLimbo && e.pos === i;
-          });
-
-          if (!occupied) {
-            spawnPos = i;
-            break;
-          }
-        }
+        // v23 (10 agosto 2026) — bug real reportado: un Avatar volviendo
+        // de Mara podía aterrizar donde ya había un Veneno (o viceversa,
+        // ver el otro bucle más abajo) porque cada uno solo comprobaba
+        // colisión contra piezas de su MISMO tipo, nunca contra el otro.
+        // findEmptySpawnPos ya revisa Venenos + Avatares de los dos
+        // jugadores — mismo helper que ya arregló esto para el
+        // nacimiento de Bruno.
+        const spawnPos = findEmptySpawnPos(
+          { pieces: releasedPieces, realmPieces: releasedPiecesRealm, trackSize: state.trackSize } as GameState,
+          piece.pos
+        );
 
         if (spawnPos !== null) {
           piece.pos = spawnPos;
@@ -285,19 +285,13 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
     const nextLevel = piece.maraLevel + 1;
 
     if (nextLevel > 6) {
-      let spawnPos: number | null = null;
-
-      for (let i = 0; i < state.trackSize; i++) {
-        const occupied = REALM_PIECE_ORDER.some((k) => {
-          const e = releasedPiecesRealm[opp][k];
-          return e && !e.inLimbo && e.pos === i;
-        });
-
-        if (!occupied) {
-          spawnPos = i;
-          break;
-        }
-      }
+      // v23 — mismo arreglo que el bucle de Venenos de arriba: antes
+      // solo comprobaba colisión contra OTROS Avatares del rival, nunca
+      // contra Venenos. findEmptySpawnPos ya revisa todo.
+      const spawnPos = findEmptySpawnPos(
+        { pieces: releasedPieces, realmPieces: releasedPiecesRealm, trackSize: state.trackSize } as GameState,
+        piece.pos
+      );
 
       if (spawnPos !== null) {
         releasedPiecesRealm[player][kind] = {
