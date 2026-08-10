@@ -192,7 +192,11 @@ const pieceShort = (k: PieceKind) => {
   if (k === "snake") return "S";
   return "R";
 };
-const REALM_TOKEN_MAP = {
+// v21 (10 agosto 2026) — exportado para que MaraPanel.tsx pueda
+// mostrar Avatares capturados con su propia imagen (antes solo sabía
+// dibujar Venenos — un Avatar capturado no aparecía en Mara, aunque el
+// estado real ya lo movía por ahí correctamente).
+export const REALM_TOKEN_MAP = {
   hungry_ghost: { P1: brunoP1, P2: brunoP2 },
   hell: { P1: margotP1, P2: margotP2 },
   animals: { P1: oriolP1, P2: oriolP2 },
