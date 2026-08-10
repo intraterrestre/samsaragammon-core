@@ -329,23 +329,21 @@ const oriolEntered =
 
 // 2026-08-05 — pedido del usuario: el mural de "Bruno" no debe verse
 // apenas se pintan las casillas — debe esperar hasta que el video intro
-// de Bruno (el viejo sistema de realmAscension) se dispare de verdad.
-// cosmicClock.era arranca en "bruno" como valor por defecto (nunca lo
-// pone ahí ninguna transición real) y en la PRIMERA ascensión real salta
-// directo a "margot" (desfase de nombres entre avatarStep y
-// REALM_PIECE_ORDER, sistemas preexistentes). Para que el mural muestre
-// "Bruno" justo cuando ese primer video se dispara, desplazamos un paso
-// SOLO la selección visual del mural — no toca cosmicClock.era real ni
-// el desbloqueo de actors/SacredProgress, que siguen igual.
+// de Bruno se dispare de verdad (cosmicClock.transitionSequence === 0
+// todavía cubre exactamente ese caso: antes de la primera transición
+// real, no se muestra ningún mural de Avatar).
+//
+// v20 (10 agosto 2026) — el desplazamiento de "-1" que había aquí
+// compensaba a propósito el desfase de nombres entre avatarStep y
+// REALM_PIECE_ORDER que ya se corrigió de raíz hoy (ver "reparación de
+// identidad de etapa", reducer.ts) — cosmicClock.era ya dice "bruno" en
+// el momento real en que Bruno nace, no "margot". Mantener el "-1" aquí
+// ahora mostraría el mural del Avatar ANTERIOR al que realmente está
+// activo. Se quita — cosmicClock.era ya es la fuente de verdad directa.
 const muralEra =
   state.cosmicClock.transitionSequence === 0
     ? "none"
-    : ERA_ORDER[
-        Math.max(
-          0,
-          ERA_ORDER.indexOf(state.cosmicClock.era as (typeof ERA_ORDER)[number]) - 1
-        )
-      ];
+    : state.cosmicClock.era;
 
 const [genesisPhase, setGenesisPhase] = React.useState<string>("VIDEO");
 
