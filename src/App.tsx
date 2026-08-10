@@ -36,8 +36,12 @@ import diceRollSound from "./assets/sounds/dice_roll.mp3";
 import diceRollSoundBlack from "./assets/sounds/blackdice-rolling.mp3";
 
 // Videos cargados como URLs estáticas (no en memoria hasta que se usan)
-const brunoWhiteIntro = new URL("./assets/cinematics/realms/bruno_white_intro.mp4", import.meta.url).href;
-const brunoBlackIntro = new URL("./assets/cinematics/realms/bruno_black_intro.mp4", import.meta.url).href;
+// v8 — el split-screen (dos videos lado a lado) se probó y se descartó:
+// el ratio 50/50 corta el cartel inicial de cada video y no se lee.
+// Vuelve a ser un solo video, igual que el resto de los Avatares —
+// Federico va a producir un video único con swap de ficha blanca/negra
+// para reemplazar bruno_origin_intro.mp4 cuando esté listo.
+const brunoIntro = new URL("./assets/cinematics/realms/bruno_origin_intro.mp4", import.meta.url).href;
 const margotIntro = new URL("./assets/cinematics/realms/margot_hell_intro.mp4", import.meta.url).href;
 const oriolIntro = new URL("./assets/cinematics/realms/oriol_animal_intro.mp4", import.meta.url).href;
 const marinoIntro = new URL("./assets/cinematics/realms/marino_human_intro.mov", import.meta.url).href;
@@ -64,10 +68,8 @@ const NIDANAS = [
   "birth",
   "death",
 ];
-// v7 — Bruno ya no vive en REALM_INTRO_MAP: es un evento split-screen
-// especial (ver el useEffect de state.realmAscension más abajo), no un
-// solo video como el resto de los Avatares.
 const REALM_INTRO_MAP = {
+  hungry_ghost: brunoIntro,
   hell: margotIntro,
   animals: oriolIntro,
   humans: marinoIntro,
@@ -214,14 +216,6 @@ export default function App() {
   const [state, dispatchBase] = useReducer(reducer, initialState);
 const [activeRealmIntro, setActiveRealmIntro] = useState<string | null>(null);
 const playedRealmIntrosRef = useRef<Record<string, boolean>>({});
-// v7 — Bruno: evento cinematográfico especial de pantalla dividida
-// (P1 a la izquierda con audio, P2 a la derecha mudo). Separado de
-// activeRealmIntro porque no es "un video", son dos reproduciéndose
-// a la vez. El fin de esto lo gobierna únicamente el video de P1
-// (master) — ver el <video> de bruno_white_intro más abajo.
-const [brunoSplitActive, setBrunoSplitActive] = useState(false);
-const brunoWhiteVideoRef = useRef<HTMLVideoElement | null>(null);
-const brunoBlackVideoRef = useRef<HTMLVideoElement | null>(null);
 // 2026-08-05: este video se disparaba con muted={false} + play() dentro de
 // un useEffect/setTimeout — fuera de la cadena directa de un gesto del
 // usuario, así que los navegadores lo bloqueaban silenciosamente (catch
@@ -485,34 +479,21 @@ const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
     selectedPos,
   ]);
 useEffect(() => {
-  const realmKey = state.realmAscension?.realmKey;
+  const realmKey = state.realmAscension?.realmKey as
+    | keyof typeof REALM_INTRO_MAP
+    | undefined;
+
   const player = state.realmAscension?.player;
 
   console.log("REALM ASCENSION:", state.realmAscension);
 
   if (!realmKey || !player) return;
 
-  // v7 — Bruno ("hungry_ghost") es un caso especial: un solo evento
-  // cinematográfico compartido (split-screen), no uno por jugador. La
-  // llave de dedup NO incluye al jugador a propósito — quien llegue
-  // primero dispara el evento para los dos; cuando el segundo jugador
-  // alcanza Bruno más tarde, no se vuelve a abrir nada.
-  if (realmKey === "hungry_ghost") {
-    const brunoIntroId = "hungry_ghost-GLOBAL";
-    if (playedRealmIntrosRef.current[brunoIntroId]) return;
-    playedRealmIntrosRef.current[brunoIntroId] = true;
-
-    window.setTimeout(() => {
-      setBrunoSplitActive(true);
-    }, 800);
-    return;
-  }
-
   const introId = `${player}-${realmKey}`;
 
   if (playedRealmIntrosRef.current[introId]) return;
 
-  const introSrc = REALM_INTRO_MAP[realmKey as keyof typeof REALM_INTRO_MAP];
+  const introSrc = REALM_INTRO_MAP[realmKey];
 
   if (!introSrc) return;
 
@@ -874,52 +855,6 @@ window.setTimeout(() => {
 
   return (
   <ErrorBoundary>
-{brunoSplitActive && (
-  <div
-    className="realmIntroOverlay"
-    style={{
-      pointerEvents: "auto",
-      display: "flex",
-      flexDirection: "row",
-      width: "100vw",
-      height: "100vh",
-    }}
-  >
-    <video
-      ref={brunoWhiteVideoRef}
-      src={brunoWhiteIntro}
-      autoPlay
-      playsInline
-      preload="auto"
-      muted={false}
-      style={{
-        width: "50%",
-        height: "100%",
-        objectFit: "cover",
-        display: "block",
-      }}
-      // El video de P1 (blanco) es el master: su fin cierra el evento
-      // completo. No se espera al onEnded del video negro (P2) — según
-      // la especificación, es un solo acontecimiento cinematográfico.
-      onEnded={() => setBrunoSplitActive(false)}
-    />
-    <video
-      ref={brunoBlackVideoRef}
-      src={brunoBlackIntro}
-      autoPlay
-      playsInline
-      preload="auto"
-      muted
-      style={{
-        width: "50%",
-        height: "100%",
-        objectFit: "cover",
-        display: "block",
-      }}
-    />
-  </div>
-)}
-
 {activeRealmIntro && (
   <div className="realmIntroOverlay" style={{ pointerEvents: "auto" }}>
   <video
