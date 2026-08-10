@@ -18,7 +18,10 @@ import cobraWhite from "../assets/pieces/cobra_white.webp";
 import cobraBlack from "../assets/pieces/cobra_black.webp";
 
 // 🔊 SONIDOS
-import captureWhite from "../assets/sounds/capture_white.mp3";
+// v22 (10 agosto 2026) — capture_white.mp3 confirmado sin audio real
+// (silencioso). Federico pidió usar capture_black.mp3 para los dos
+// hasta tener un archivo blanco de verdad.
+import captureWhite from "../assets/sounds/capture_black.mp3";
 import captureBlack from "../assets/sounds/capture_black.mp3";
 import moveSound from "../assets/sounds/move.mp3";
 
@@ -420,7 +423,13 @@ const beatTimer = useRef<number | null>(null);
     captureAudioBlack.current = new Audio(captureBlack);
     moveAudio.current = new Audio(moveSound);
 
-    if (moveAudio.current) moveAudio.current.volume = 0.03;
+    // v22 (10 agosto 2026) — Federico reportó "el efecto sonoro de
+    // arrastre no suena". El archivo está bien (mismo hash que el que
+    // subió como referencia) — el volumen estaba en 0.03 (3%),
+    // prácticamente inaudible junto al resto de efectos. Subido a un
+    // nivel audible pero discreto (suena en cada movimiento, más
+    // seguido que una captura).
+    if (moveAudio.current) moveAudio.current.volume = 0.18;
     if (captureAudioWhite.current) captureAudioWhite.current.volume = 0.35;
     if (captureAudioBlack.current) captureAudioBlack.current.volume = 0.35;
     
