@@ -59,6 +59,16 @@ export function evaluateOrchestrator(
   state: GameState,
   player: PlayerId
 ): OrchestratorEvent {
+  // v14 (10 agosto 2026) — bug real reproducido: esta función nunca
+  // comprobaba state.brunoRevealed. La condición real para que Bruno
+  // nazca (evaluateGenesisToBruno) exige que cada jugador haya movido
+  // los 3 Venenos al menos una vez — en partida real eso puede tardar
+  // más lances que el umbral que necesita bruno_to_margot para
+  // disparar. Sin este guardrail, el Orquestador avanzaba a Margot (y
+  // más allá) aunque Bruno nunca se hubiera creado. Reproducido con una
+  // simulación directa contra el reducer antes de este arreglo.
+  if (!state.brunoRevealed) return { event: "NONE" };
+
   const realmProgress = state.realmProgress[player];
   const currentStep = realmProgress.currentRealmStep;
 
