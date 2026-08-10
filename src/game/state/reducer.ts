@@ -908,9 +908,57 @@ if (shouldCollapse) {
           genesisNovelty: nextGenesisNovelty,
         });
 
-      // v5 — "Bruno despierta" (ver ROLL más arriba para la misma lógica).
-      if (!state.brunoRevealed && nextBrunoRevealed) {
+      // v15 (10 agosto 2026) — mismo paquete completo de nacimiento de
+      // Bruno que ya existe en case "ROLL", replicado aquí. Caso límite
+      // real: si hasMaraReturn ya estaba en true de antes (de un ciclo
+      // de Mara anterior sin relación con Genesis) y las otras tres
+      // condiciones se completan durante un CONSCIOUS_MOVE en vez de un
+      // ROLL, la transición ocurre AQUÍ — y antes de este arreglo, este
+      // camino solo tocaba el actor legacy sin renderizado, sin crear
+      // la ficha real, el video, ni el reloj cósmico.
+      const brunoJustRevealedInMove = !state.brunoRevealed && nextBrunoRevealed;
+
+      if (brunoJustRevealedInMove) {
         nextActors.bruno = { ...nextActors.bruno, unlocked: true };
+
+        nextPiecesRealm.P1 = {
+          ...nextPiecesRealm.P1,
+          hungry_ghost: nextPiecesRealm.P1.hungry_ghost ?? {
+            id: "P1-hungry_ghost",
+            kind: "hungry_ghost" as RealmPieceKind,
+            pos: 0,
+            inLimbo: false,
+            maraLevel: null,
+            unlocked: true,
+          },
+        };
+        nextPiecesRealm.P2 = {
+          ...nextPiecesRealm.P2,
+          hungry_ghost: nextPiecesRealm.P2.hungry_ghost ?? {
+            id: "P2-hungry_ghost",
+            kind: "hungry_ghost" as RealmPieceKind,
+            pos: 12,
+            inLimbo: false,
+            maraLevel: null,
+            unlocked: true,
+          },
+        };
+      }
+
+      const nextCosmicClockForBrunoInMove = brunoJustRevealedInMove
+        ? { era: "bruno" as const, progress: 0, transitionSequence: state.cosmicClock.transitionSequence + 1 }
+        : nextCosmicClock;
+
+      const nextRealmAscensionForBrunoInMove = brunoJustRevealedInMove
+        ? { player: me, realmStep: 1, realmKey: "hungry_ghost" as RealmPieceKind, at: Date.now() }
+        : undefined; // undefined = dejar que el cálculo normal de más abajo decida
+
+      if (brunoJustRevealedInMove) {
+        nextRealmProgress = {
+          ...nextRealmProgress,
+          P1: { ...nextRealmProgress.P1, stageStartedAtRoll: state.globalRollCount },
+          P2: { ...nextRealmProgress.P2, stageStartedAtRoll: state.globalRollCount },
+        };
       }
 
       return {
@@ -921,17 +969,27 @@ if (shouldCollapse) {
         actors: nextActors,
         curvature: nextCurvature,
         realmProgress: nextRealmProgress,
-        cosmicClock: nextCosmicClock,
+        cosmicClock: nextCosmicClockForBrunoInMove,
         genesisNovelty: nextGenesisNovelty,
         brunoRevealed: nextBrunoRevealed,
-realmAscension: didAscendRealm && unlockedRealmKey
+// v15 (10 agosto 2026) — bug real reproducido: antes esto forzaba
+// realmAscension a null en CADA movimiento que no fuera él mismo una
+// ascensión — es decir, borraba el evento un turno después de que
+// naciera. En un navegador real eso puede alcanzar a dispararse (si
+// App.tsx procesa el efecto antes del siguiente movimiento), pero no
+// es confiable, y en la reproducción directa contra el reducer el
+// evento se perdía en cuanto el jugador hacía su siguiente jugada
+// normal. No hay ninguna razón para resetearlo — el dedup del video
+// ya lo maneja un ref en App.tsx (playedRealmIntrosRef), así que aquí
+// solo hace falta conservar el último evento, no borrarlo.
+realmAscension: nextRealmAscensionForBrunoInMove ?? (didAscendRealm && unlockedRealmKey
   ? {
       player: me,
       realmStep: nextRealmStep,
       realmKey: unlockedRealmKey,
       at: Date.now(),
     }
-  : null,
+  : state.realmAscension),
         behavior: nextBehavior,
         pattern: patternNext,
         decisionSignature: nextDecisionSignature,
