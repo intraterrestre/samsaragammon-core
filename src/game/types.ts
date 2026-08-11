@@ -74,6 +74,13 @@ export type PlayerRealmPiecesState = Partial<
 >;
 
 export type SelectedPieceState = Record<PlayerId, string>;
+// v27 (11 agosto 2026) — decisión de diseño cerrada con Federico/Chat:
+// en Fase 2 (desde Oriol), la selección de movimiento es un par
+// AVATAR + VENENO acumulado en dos clics, no un valor único que se
+// sobreescribe. selectedPiece sigue representando el Avatar elegido
+// (igual que hoy); este campo nuevo guarda el Veneno elegido en el
+// segundo clic — null cuando todavía no se eligió ninguno.
+export type SelectedVenomState = Record<PlayerId, BasePieceKind | null>;
 
 export type Realm =
   | "HUNGRY_GHOST"
@@ -242,6 +249,8 @@ export type GameState = {
   realmTokens: Record<PlayerId, RealmPieceKind[]>;
 
   selectedPiece: SelectedPieceState;
+  // v27 — ver SelectedVenomState arriba.
+  selectedVenom: SelectedVenomState;
 
   captures: Record<PlayerId, number>;
 

@@ -86,6 +86,12 @@ actors: {
     P2: "pig",
   },
 
+  // v27 — ver SelectedVenomState en types.ts.
+  selectedVenom: {
+    P1: null,
+    P2: null,
+  },
+
   captures: {
     P1: 0,
     P2: 0,
@@ -230,6 +236,11 @@ export function makeInitialState(
     selectedPiece: {
       ...initialState.selectedPiece,
       ...(overrides.selectedPiece ?? {}),
+    },
+
+    selectedVenom: {
+      ...initialState.selectedVenom,
+      ...(overrides.selectedVenom ?? {}),
     },
 
     captures: {

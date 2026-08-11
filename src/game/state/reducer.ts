@@ -454,11 +454,50 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
         return state;
       }
 
+      // v27 (11 agosto 2026) — decisión de diseño cerrada: en Fase 2
+      // (desde Oriol), la selección es AVATAR + VENENO en dos clics que
+      // se ACUMULAN, no un valor único que se sobreescribe. Clicar un
+      // Avatar inicia/reinicia la selección (limpia el Veneno elegido
+      // antes, si había uno). Clicar un Veneno SOLO cuenta como el
+      // segundo paso si ya hay un Avatar propio válido seleccionado —
+      // si no, no hace nada (regla D del diseño cerrado con Chat).
+      const phase2 = state.realmProgress[action.player].currentRealmStep >= 3;
+
+      if (phase2 && isBasePieceKind(action.piece)) {
+        const currentAvatarSel = state.selectedPiece[action.player];
+        const hasValidAvatarSelected =
+          !isBasePieceKind(currentAvatarSel as PieceKind) &&
+          REALM_PIECE_ORDER.includes(currentAvatarSel as RealmPieceKind) &&
+          Boolean(
+            state.realmPieces[action.player]?.[
+              currentAvatarSel as RealmPieceKind
+            ]?.unlocked
+          );
+
+        if (!hasValidAvatarSelected) return state;
+
+        return {
+          ...state,
+          selectedVenom: {
+            ...state.selectedVenom,
+            [action.player]: action.piece,
+          },
+        };
+      }
+
       return {
         ...state,
         selectedPiece: {
           ...state.selectedPiece,
           [action.player]: action.piece,
+        },
+        // Elegir (o volver a elegir) un Avatar siempre reinicia el
+        // Veneno elegido antes — cada Avatar empieza su propia
+        // selección de motivo de cero. Esto no afecta Fase 1 (los
+        // Venenos allí no usan selectedVenom para nada).
+        selectedVenom: {
+          ...state.selectedVenom,
+          [action.player]: null,
         },
       };
     }
@@ -682,7 +721,23 @@ const getEnemyRefsAtPos = (pos: number): EnemyRef[] => {
   return refs;
 };
 
-const enemiesAtFinalPos = getEnemyRefsAtPos(finalToPos);
+// v28 (11 agosto 2026) — decisión de diseño cerrada con Federico: "un
+// Avatar más su Veneno cuentan solo los Avatares por pares — la regla
+// de backgammon (2+ = bloqueado) pasa a los Avatares solamente". Un
+// Veneno acompañando a su propio Avatar en la misma casilla NO debe
+// sumar para el bloqueo de 2+; solo 2+ Avatares del mismo jugador
+// bloquean. Esto es SOLO para el umbral de bloqueo — la captura de una
+// pieza sola (Veneno o Avatar) sigue funcionando igual, sin cambios
+// (getEnemyRefsAtPos arriba, sin filtrar).
+const oppPhase2ForBlocking =
+  state.realmProgress[opp].currentRealmStep >= 3;
+
+const getEnemyRefsAtPosForBlocking = (pos: number): EnemyRef[] =>
+  oppPhase2ForBlocking
+    ? getEnemyRefsAtPos(pos).filter((r) => r.system === "realm")
+    : getEnemyRefsAtPos(pos);
+
+const enemiesAtFinalPos = getEnemyRefsAtPosForBlocking(finalToPos);
 
 // 2+ enemigos (Venenos + Avatares combinados) en destino final =
 // casilla bloqueada. El movimiento queda prohibido aunque la UI se
@@ -1029,6 +1084,19 @@ if (shouldCollapse) {
         cosmicClock: nextCosmicClockForBrunoInMove,
         genesisNovelty: nextGenesisNovelty,
         brunoRevealed: nextBrunoRevealed,
+        // v27 — regla E del diseño cerrado: al resolver un movimiento,
+        // se limpia la selección para el siguiente turno (Avatar vuelve
+        // al valor por defecto, Veneno elegido se borra). Sin efecto
+        // real en Fase 1 (ahí nada depende de que persista entre
+        // movimientos).
+        selectedPiece: {
+          ...state.selectedPiece,
+          [me]: "pig",
+        },
+        selectedVenom: {
+          ...state.selectedVenom,
+          [me]: null,
+        },
 // v15 (10 agosto 2026) — bug real reproducido: antes esto forzaba
 // realmAscension a null en CADA movimiento que no fuera él mismo una
 // ascensión — es decir, borraba el evento un turno después de que

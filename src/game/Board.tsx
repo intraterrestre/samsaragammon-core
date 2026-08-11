@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import type { GameState, MoveOption, PieceKind, BasePieceKind, PlayerId } from "./types";
+import type { GameState, MoveOption, PieceKind, BasePieceKind, PlayerId, RealmPieceKind } from "./types";
+import { REALM_PIECE_ORDER } from "./types";
 import {  cellStyle as ringCellStyle, RING_SIZE,  piecePosition, CELL,} from "../UI/geometry";
 import { realmFromPos, REALM_LABEL, pickLine } from "../UI/realm";
 import { ExplainModal } from "../UI/ExplainModal";
@@ -333,12 +334,10 @@ function buildUnifiedStackMap(
   };
 
   (["P1", "P2"] as PlayerId[]).forEach((player) => {
-    // v25 — mismo criterio que el renderizado: en Fase 2 (desde Oriol)
-    // el Veneno de este jugador ya no es un token visible, así que no
-    // debe reservar un espacio en el apilamiento de su casilla.
-    const playerPhase2 = state.realmProgress[player].currentRealmStep >= 3;
-    if (playerPhase2) return;
-
+    // v27 (11 agosto 2026) — revertido el v25: los Venenos siguen
+    // visibles y ocupando su lugar en el apilamiento en Fase 2 (siguen
+    // siendo piezas físicas reales, solo perdieron la capacidad de
+    // moverse por su cuenta — decisión cerrada con Federico/Chat).
     ACTIVE_PIECE_KINDS.forEach((kind) => {
       const piece = state.pieces[player][kind];
 
@@ -575,13 +574,14 @@ useEffect(() => {
       player === "P1" ? p1VenomsRevealed : p2VenomsRevealed;
     if (!playerRevealed) return [];
 
-    // v25 (10 agosto 2026) — decisión de diseño: desde Oriol en adelante,
-    // los Venenos dejan de ser piezas físicas del tablero. Ya no se
-    // dibujan como tokens — siguen existiendo como dato interno (motor
-    // de cálculo de los Avatares), pero visualmente el jugador ya no
-    // los ve ni puede clicarlos por su cuenta.
-    const playerPhase2 = state.realmProgress[player].currentRealmStep >= 3;
-    if (playerPhase2) return [];
+    // v27 (11 agosto 2026) — revertido el v25: los Venenos siguen
+    // visibles en el tablero en Fase 2 (decisión cerrada con
+    // Federico/Chat — "los Venenos permanecen VISIBLES, pero pierden
+    // la capacidad de iniciar movimientos independientes"). Lo que
+    // cambia en Fase 2 no es su visibilidad, sino qué hace clicarlos
+    // (ver reducer, case SELECT_PIECE: solo cuentan como el segundo
+    // paso de una selección Avatar+Veneno, nunca inician un movimiento
+    // por su cuenta).
 
     return ACTIVE_PIECE_KINDS.map((kind) => {
       const pieceState = state.pieces[player][kind];
@@ -589,8 +589,15 @@ useEffect(() => {
 
       const pos = pieceState.pos;
 
+      // v27 (11 agosto 2026) — en Fase 2, el Veneno "seleccionado" es el
+      // segundo paso (selectedVenom), no selectedPiece (que ahora es el
+      // Avatar). Se agranda con cualquiera de los dos, para que Fase 1
+      // (donde solo existe selectedPiece) siga funcionando igual que
+      // antes.
       const isCurrentSelected =
-        player === state.turn && state.selectedPiece[player] === kind;
+        player === state.turn &&
+        (state.selectedPiece[player] === kind ||
+          state.selectedVenom[player] === kind);
 
     const base = piecePosition(pos, size);
 
@@ -928,12 +935,19 @@ animation: "nidanaReveal 2.6s cubic-bezier(.16,1.25,.32,1) both",
   const isHoveredTarget = hoveredOption?.toPos === i;
 
   const enemyPlayer = state.turn === "P1" ? "P2" : "P1";
-  // v25 — si el rival ya está en Fase 2, sus Venenos ya no son piezas
-  // físicas del tablero: no deben marcar ninguna casilla como bloqueada.
+  // v28 (11 agosto 2026) — decisión de diseño cerrada: "esa regla de
+  // backgammon (2+ = bloqueado) pasa a los Avatares solamente". Un
+  // Veneno acompañando a su propio Avatar ya no suma para el bloqueo —
+  // solo 2+ Avatares del mismo jugador bloquean, desde que ese jugador
+  // entra en Fase 2 (Oriol). Antes de eso, sin cambios (Venenos +
+  // Avatares combinados, como backgammon con 3 fichas).
   const enemyPhase2 = state.realmProgress[enemyPlayer].currentRealmStep >= 3;
 
   const enemiesOnCell = enemyPhase2
-    ? []
+    ? REALM_PIECE_ORDER.filter((kind: RealmPieceKind) => {
+        const piece = state.realmPieces[enemyPlayer]?.[kind];
+        return piece?.unlocked && !piece.inLimbo && piece.pos === i;
+      })
     : ACTIVE_PIECE_KINDS.filter((kind) => {
         const piece = state.pieces[enemyPlayer][kind];
         return !piece.inLimbo && piece.pos === i;

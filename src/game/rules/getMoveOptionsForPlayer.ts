@@ -71,17 +71,17 @@ function countEnemyPiecesAtPos(
   targetPos: number
 ): number {
   const opp = otherPlayer(player);
-  // v25 — si el rival ya está en Fase 2, sus Venenos dejaron de ser
-  // piezas físicas: no deben contar como bloqueadores en su posición
-  // congelada.
-  const oppPhase2 = state.realmProgress[opp].currentRealmStep >= 3;
 
-  const enemyVenoms = oppPhase2
-    ? 0
-    : ACTIVE_BASE_PIECES.filter((kind) => {
-        const piece = state.pieces[opp][kind];
-        return !piece.inLimbo && piece.pos === targetPos;
-      }).length;
+  // v27 (11 agosto 2026) — revertido el v25: los Venenos NO desaparecen
+  // en Fase 2, siguen siendo piezas físicas reales con posición en el
+  // tablero (decisión cerrada con Federico/Chat: "conservan una
+  // posición física real"). Solo pierden la capacidad de iniciar un
+  // movimiento por su cuenta — eso se controla en getMoveOptionsForPlayer,
+  // no aquí.
+  const enemyVenoms = ACTIVE_BASE_PIECES.filter((kind) => {
+    const piece = state.pieces[opp][kind];
+    return !piece.inLimbo && piece.pos === targetPos;
+  }).length;
 
   // v6 — Avatar-vs-Avatar (D-014): antes esta función solo contaba
   // Venenos, así que la UI nunca marcaba ni bloqueaba correctamente un
@@ -93,6 +93,28 @@ function countEnemyPiecesAtPos(
   }).length;
 
   return enemyVenoms + enemyRealmPieces;
+}
+
+// v28 (11 agosto 2026) — decisión de diseño cerrada: "un Avatar más su
+// Veneno cuentan solo los Avatares por pares — la regla de backgammon
+// (2+ = bloqueado) pasa a los Avatares solamente". Cuenta SOLO para el
+// umbral de bloqueo (2+) — countEnemyPiecesAtPos arriba sigue contando
+// todo (Venenos + Avatares) para la detección de IMPACT (1 sola pieza
+// enemiga, capturable), que no cambia.
+function countEnemyAvatarsForBlocking(
+  state: GameState,
+  player: PlayerId,
+  targetPos: number
+): number {
+  const opp = otherPlayer(player);
+  const oppPhase2 = state.realmProgress[opp].currentRealmStep >= 3;
+
+  if (!oppPhase2) return countEnemyPiecesAtPos(state, player, targetPos);
+
+  return REALM_PIECE_ORDER.filter((kind) => {
+    const piece = state.realmPieces[opp]?.[kind];
+    return piece && piece.unlocked && !piece.inLimbo && piece.pos === targetPos;
+  }).length;
 }
 
 function inferMeaning(
@@ -120,14 +142,21 @@ function pushMoveIfLegal(params: {
   isSame?: boolean;
   venomId?: BasePieceKind; // v3: Veneno cuya posición originó este destino
 }) {
-  const enemyCount = countEnemyPiecesAtPos(
+  const blockingCount = countEnemyAvatarsForBlocking(
     params.state,
     params.player,
     params.toPos
   );
 
-  // 2+ enemigos = casilla bloqueada
-  if (enemyCount >= 2) return;
+  // 2+ enemigos = casilla bloqueada (solo Avatares desde Fase 2, ver
+  // countEnemyAvatarsForBlocking)
+  if (blockingCount >= 2) return;
+
+  const enemyCount = countEnemyPiecesAtPos(
+    params.state,
+    params.player,
+    params.toPos
+  );
 
   params.options.push({
     pieceKind: params.pieceKind,
@@ -268,14 +297,13 @@ export function getMoveOptionsForPlayer(
   // físicas normales, igual que hoy. Mismo umbral que ya se usa para
   // nidanas/buda (currentRealmStep >= 3).
   const phase2 = state.realmProgress[player].currentRealmStep >= 3;
-  const oppPhase2 = state.realmProgress[opp].currentRealmStep >= 3;
 
+  // v27 — revertido el v25: los Venenos rivales siguen contando para
+  // enemyPositions (posición física real), sin importar la fase.
   const enemyPositions = [
-    ...(oppPhase2
-      ? []
-      : ACTIVE_BASE_PIECES.filter(
-          (kind) => !state.pieces[opp][kind].inLimbo
-        ).map((kind) => state.pieces[opp][kind].pos)),
+    ...ACTIVE_BASE_PIECES.filter(
+      (kind) => !state.pieces[opp][kind].inLimbo
+    ).map((kind) => state.pieces[opp][kind].pos),
     ...REALM_PIECE_ORDER.filter((kind) => {
       const p = state.realmPieces[opp]?.[kind];
       return p && p.unlocked && !p.inLimbo;
@@ -349,21 +377,27 @@ export function getMoveOptionsForPlayer(
 
   if (!phase2) return options;
 
-  // v25 — En Fase 2, "seleccionar" un Avatar de verdad filtra qué
-  // opciones se muestran (antes de esto, selectedPiece era puramente
-  // decorativo — el panel mezclaba TODAS las opciones de TODAS las
-  // piezas activas, sin importar cuál había clicado el jugador; ese fue
-  // exactamente el bug real que Federico reportó con Margot). Si no hay
-  // un Avatar propio válido seleccionado (selectedPiece sigue en su
-  // valor por defecto "pig", o algo no desbloqueado), no se muestra
-  // ninguna opción — el jugador debe clicar un Avatar primero.
-  const selected = state.selectedPiece[player];
+  // v27 (11 agosto 2026) — decisión de diseño cerrada con Federico/Chat:
+  // en Fase 2 la selección es AVATAR + VENENO acumulados en dos clics
+  // (ver reducer, case SELECT_PIECE). Sin un Avatar propio válido
+  // seleccionado, no se muestra ninguna opción. Con Avatar pero sin
+  // Veneno todavía, TAMPOCO se muestra ninguna — las líneas de destino
+  // solo aparecen una vez elegidos los dos (regla 6 del diseño: "no
+  // mostraría las tres líneas antes de elegir Veneno").
+  const selectedAvatar = state.selectedPiece[player];
   const isValidAvatarSelected =
-    !isBasePiece(selected as PieceKind) &&
-    REALM_PIECE_ORDER.includes(selected as RealmPieceKind) &&
-    Boolean(state.realmPieces[player]?.[selected as RealmPieceKind]?.unlocked);
+    !isBasePiece(selectedAvatar as PieceKind) &&
+    REALM_PIECE_ORDER.includes(selectedAvatar as RealmPieceKind) &&
+    Boolean(
+      state.realmPieces[player]?.[selectedAvatar as RealmPieceKind]?.unlocked
+    );
 
   if (!isValidAvatarSelected) return [];
 
-  return options.filter((o) => o.pieceKind === selected);
+  const selectedVenom = state.selectedVenom[player];
+  if (!selectedVenom) return [];
+
+  return options.filter(
+    (o) => o.pieceKind === selectedAvatar && o.venomId === selectedVenom
+  );
 }
