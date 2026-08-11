@@ -333,6 +333,12 @@ function buildUnifiedStackMap(
   };
 
   (["P1", "P2"] as PlayerId[]).forEach((player) => {
+    // v25 — mismo criterio que el renderizado: en Fase 2 (desde Oriol)
+    // el Veneno de este jugador ya no es un token visible, así que no
+    // debe reservar un espacio en el apilamiento de su casilla.
+    const playerPhase2 = state.realmProgress[player].currentRealmStep >= 3;
+    if (playerPhase2) return;
+
     ACTIVE_PIECE_KINDS.forEach((kind) => {
       const piece = state.pieces[player][kind];
 
@@ -568,6 +574,14 @@ useEffect(() => {
     const playerRevealed =
       player === "P1" ? p1VenomsRevealed : p2VenomsRevealed;
     if (!playerRevealed) return [];
+
+    // v25 (10 agosto 2026) — decisión de diseño: desde Oriol en adelante,
+    // los Venenos dejan de ser piezas físicas del tablero. Ya no se
+    // dibujan como tokens — siguen existiendo como dato interno (motor
+    // de cálculo de los Avatares), pero visualmente el jugador ya no
+    // los ve ni puede clicarlos por su cuenta.
+    const playerPhase2 = state.realmProgress[player].currentRealmStep >= 3;
+    if (playerPhase2) return [];
 
     return ACTIVE_PIECE_KINDS.map((kind) => {
       const pieceState = state.pieces[player][kind];
@@ -914,11 +928,16 @@ animation: "nidanaReveal 2.6s cubic-bezier(.16,1.25,.32,1) both",
   const isHoveredTarget = hoveredOption?.toPos === i;
 
   const enemyPlayer = state.turn === "P1" ? "P2" : "P1";
+  // v25 — si el rival ya está en Fase 2, sus Venenos ya no son piezas
+  // físicas del tablero: no deben marcar ninguna casilla como bloqueada.
+  const enemyPhase2 = state.realmProgress[enemyPlayer].currentRealmStep >= 3;
 
-  const enemiesOnCell = ACTIVE_PIECE_KINDS.filter((kind) => {
-    const piece = state.pieces[enemyPlayer][kind];
-    return !piece.inLimbo && piece.pos === i;
-  });
+  const enemiesOnCell = enemyPhase2
+    ? []
+    : ACTIVE_PIECE_KINDS.filter((kind) => {
+        const piece = state.pieces[enemyPlayer][kind];
+        return !piece.inLimbo && piece.pos === i;
+      });
 
   const isBlockedCell = enemiesOnCell.length >= 2;
 
