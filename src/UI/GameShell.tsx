@@ -50,6 +50,13 @@ nidanaCoinSide: "front" | "back";
   onLogout: () => void;
   onRoll: () => void;
   onReset: () => void;
+  // v11 — sonido de dados durante los clics decorativos de Genesis
+  // (10 agosto 2026). onRoll solo se llama tras genesisComplete, así que
+  // el sonido real (playDiceSound, App.tsx) nunca sonaba en los clics
+  // decorativos — mismo patrón que ya se corrigió para el NÚMERO del
+  // dado (genesisDiceA/B). Prop opcional para no romper otros usos de
+  // GameShell que no la pasen.
+  playDiceSound?: (player: "P1" | "P2") => void;
 
   onConsciousMove: (option: MoveOption, all: MoveOption[]) => void;
   onGenesisUIComplete?: () => void;
@@ -76,6 +83,7 @@ export function GameShell({
   onLogout,
   onRoll,
   onReset,
+  playDiceSound,
   onConsciousMove,
   onGenesisUIComplete,
   onSelectPiece,
@@ -113,6 +121,9 @@ const handleRollWithPopup = () => {
     setGenesisClickCount((n) => n + 1);
     setGenesisDiceA(1 + Math.floor(Math.random() * 6));
     setGenesisDiceB(1 + Math.floor(Math.random() * 6));
+    // Mismo criterio de paridad que isWhiteTurn (más abajo) para que el
+    // sonido coincida con qué color de dado se ve girando.
+    playDiceSound?.(genesisClickCount % 2 === 0 ? "P1" : "P2");
   } else {
     onRoll();
   }
@@ -278,8 +289,16 @@ React.useEffect(() => {
 // de lo previsto. El trigger real y riguroso ya vive en el reducer/
 // Orchestrator (evaluateGenesisToBruno: ambos jugadores usaron los 3
 // Venenos, mínimo de turnos, 4 eventos de novedad) y se expone como
-// state.brunoRevealed — lo usamos directo en vez de duplicar la lógica.
-const brunoAwakened = Boolean(state.brunoRevealed);
+// state.brunoRevealed.
+//
+// v19 (10 agosto 2026) — Federico confirmó explícitamente (dos veces)
+// que el buda/conector y las nidanas deben esperar a Oriol, no a
+// Bruno — mismo criterio que ya se corrigió para shouldTriggerNidana
+// en App.tsx. "THE FIRST EYE OPENS" seguía sonando a "el momento de
+// Bruno" por el nombre, pero el diseño real es que todo este sistema
+// (conector, globo de texto, nidanas) es una capa que arranca en
+// Oriol — no antes.
+const brunoAwakened = state.realmProgress[state.turn].currentRealmStep >= 3;
 
 // 2026-08-05 — secuencia pedida por el usuario: después de las 24
 // casillas verdes (6 clics, GenesisReveal), NO se revela todo junto.
@@ -310,23 +329,21 @@ const oriolEntered =
 
 // 2026-08-05 — pedido del usuario: el mural de "Bruno" no debe verse
 // apenas se pintan las casillas — debe esperar hasta que el video intro
-// de Bruno (el viejo sistema de realmAscension) se dispare de verdad.
-// cosmicClock.era arranca en "bruno" como valor por defecto (nunca lo
-// pone ahí ninguna transición real) y en la PRIMERA ascensión real salta
-// directo a "margot" (desfase de nombres entre avatarStep y
-// REALM_PIECE_ORDER, sistemas preexistentes). Para que el mural muestre
-// "Bruno" justo cuando ese primer video se dispara, desplazamos un paso
-// SOLO la selección visual del mural — no toca cosmicClock.era real ni
-// el desbloqueo de actors/SacredProgress, que siguen igual.
+// de Bruno se dispare de verdad (cosmicClock.transitionSequence === 0
+// todavía cubre exactamente ese caso: antes de la primera transición
+// real, no se muestra ningún mural de Avatar).
+//
+// v20 (10 agosto 2026) — el desplazamiento de "-1" que había aquí
+// compensaba a propósito el desfase de nombres entre avatarStep y
+// REALM_PIECE_ORDER que ya se corrigió de raíz hoy (ver "reparación de
+// identidad de etapa", reducer.ts) — cosmicClock.era ya dice "bruno" en
+// el momento real en que Bruno nace, no "margot". Mantener el "-1" aquí
+// ahora mostraría el mural del Avatar ANTERIOR al que realmente está
+// activo. Se quita — cosmicClock.era ya es la fuente de verdad directa.
 const muralEra =
   state.cosmicClock.transitionSequence === 0
     ? "none"
-    : ERA_ORDER[
-        Math.max(
-          0,
-          ERA_ORDER.indexOf(state.cosmicClock.era as (typeof ERA_ORDER)[number]) - 1
-        )
-      ];
+    : state.cosmicClock.era;
 
 const [genesisPhase, setGenesisPhase] = React.useState<string>("VIDEO");
 

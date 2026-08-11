@@ -71,11 +71,17 @@ function countEnemyPiecesAtPos(
   targetPos: number
 ): number {
   const opp = otherPlayer(player);
+  // v25 — si el rival ya está en Fase 2, sus Venenos dejaron de ser
+  // piezas físicas: no deben contar como bloqueadores en su posición
+  // congelada.
+  const oppPhase2 = state.realmProgress[opp].currentRealmStep >= 3;
 
-  const enemyVenoms = ACTIVE_BASE_PIECES.filter((kind) => {
-    const piece = state.pieces[opp][kind];
-    return !piece.inLimbo && piece.pos === targetPos;
-  }).length;
+  const enemyVenoms = oppPhase2
+    ? 0
+    : ACTIVE_BASE_PIECES.filter((kind) => {
+        const piece = state.pieces[opp][kind];
+        return !piece.inLimbo && piece.pos === targetPos;
+      }).length;
 
   // v6 — Avatar-vs-Avatar (D-014): antes esta función solo contaba
   // Venenos, así que la UI nunca marcaba ni bloqueaba correctamente un
@@ -254,10 +260,22 @@ export function getMoveOptionsForPlayer(
   const isDouble = a === b;
   const opp = otherPlayer(player);
 
+  // v25 (10 agosto 2026) — decisión de diseño cerrada con Federico:
+  // desde que aparece Oriol (3er Avatar) en adelante, los Venenos dejan
+  // de ser piezas móviles independientes y pasan a ser SOLO motores de
+  // cálculo para los Avatares — global al jugador, no por Avatar
+  // individual. Antes de Oriol (Bruno, Margot) siguen siendo piezas
+  // físicas normales, igual que hoy. Mismo umbral que ya se usa para
+  // nidanas/buda (currentRealmStep >= 3).
+  const phase2 = state.realmProgress[player].currentRealmStep >= 3;
+  const oppPhase2 = state.realmProgress[opp].currentRealmStep >= 3;
+
   const enemyPositions = [
-    ...ACTIVE_BASE_PIECES.filter(
-      (kind) => !state.pieces[opp][kind].inLimbo
-    ).map((kind) => state.pieces[opp][kind].pos),
+    ...(oppPhase2
+      ? []
+      : ACTIVE_BASE_PIECES.filter(
+          (kind) => !state.pieces[opp][kind].inLimbo
+        ).map((kind) => state.pieces[opp][kind].pos)),
     ...REALM_PIECE_ORDER.filter((kind) => {
       const p = state.realmPieces[opp]?.[kind];
       return p && p.unlocked && !p.inLimbo;
@@ -266,15 +284,21 @@ export function getMoveOptionsForPlayer(
 
   const options: MoveOption[] = [];
 
-  const activePieceKinds: PieceKind[] = [
-    ...ACTIVE_BASE_PIECES,
-    ...REALM_PIECES.filter(
-      (kind) => state.realmPieces[player]?.[kind]?.unlocked
-    ),
-  ];
+  const activePieceKinds: PieceKind[] = phase2
+    ? REALM_PIECES.filter(
+        (kind) => state.realmPieces[player]?.[kind]?.unlocked
+      )
+    : [
+        ...ACTIVE_BASE_PIECES,
+        ...REALM_PIECES.filter(
+          (kind) => state.realmPieces[player]?.[kind]?.unlocked
+        ),
+      ];
 
   for (const pieceKind of activePieceKinds) {
     if (isBasePiece(pieceKind)) {
+      // Solo se llega aquí cuando !phase2 — en Fase 2, activePieceKinds
+      // ya excluye los Venenos por completo (ver arriba).
       // Es un Veneno moviéndose por sí mismo (Fase 1: PHYSICAL_CAPTURABLE,
       // Fase 2: PHYSICAL_MOBILE). Origen = su propia posición.
       const piece = state.pieces[player][pieceKind];
@@ -299,6 +323,8 @@ export function getMoveOptionsForPlayer(
     // calcula desde la posición de CADA Veneno propio, no de la posición del
     // Avatar. Cuando el jugador elige una de estas opciones, ese Veneno se
     // mueve junto con el Avatar (ver reducer CONSCIOUS_MOVE, option.venomId).
+    // Esto no cambia en Fase 2 — el Veneno sigue siendo el "motor" del
+    // cálculo, solo que ya no aparece como pieza jugable por su cuenta.
     const realmPiece = state.realmPieces[player]?.[pieceKind];
     if (!realmPiece || realmPiece.inLimbo) continue;
 
@@ -321,5 +347,23 @@ export function getMoveOptionsForPlayer(
     }
   }
 
-  return options;
+  if (!phase2) return options;
+
+  // v25 — En Fase 2, "seleccionar" un Avatar de verdad filtra qué
+  // opciones se muestran (antes de esto, selectedPiece era puramente
+  // decorativo — el panel mezclaba TODAS las opciones de TODAS las
+  // piezas activas, sin importar cuál había clicado el jugador; ese fue
+  // exactamente el bug real que Federico reportó con Margot). Si no hay
+  // un Avatar propio válido seleccionado (selectedPiece sigue en su
+  // valor por defecto "pig", o algo no desbloqueado), no se muestra
+  // ninguna opción — el jugador debe clicar un Avatar primero.
+  const selected = state.selectedPiece[player];
+  const isValidAvatarSelected =
+    !isBasePiece(selected as PieceKind) &&
+    REALM_PIECE_ORDER.includes(selected as RealmPieceKind) &&
+    Boolean(state.realmPieces[player]?.[selected as RealmPieceKind]?.unlocked);
+
+  if (!isValidAvatarSelected) return [];
+
+  return options.filter((o) => o.pieceKind === selected);
 }

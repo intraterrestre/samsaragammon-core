@@ -79,6 +79,40 @@ function playerHasActivePiece(state: GameState, player: PlayerId): boolean {
   return BASE_PIECES.some((kind) => !state.pieces[player][kind].inLimbo);
 }
 
+// v18 (10 agosto 2026) — bug real reportado por Federico: Bruno nacía en
+// posiciones fijas (0 para P1, 12 para P2) sin comprobar si ya había
+// algo ahí. Con muchos turnos pasando antes de que Bruno naciera, un
+// Veneno rival podía terminar parado justo en esa casilla — el token
+// blanco de Bruno apareció encima de un Veneno negro. Busca la primera
+// casilla libre (sin ningún Veneno ni ficha de reino de NINGÚN jugador)
+// empezando en preferredPos, igual que ya hace el retorno de Mara más
+// abajo para no repetir ese mismo problema.
+function findEmptySpawnPos(
+  state: GameState,
+  preferredPos: number
+): number {
+  const isOccupied = (pos: number): boolean => {
+    for (const player of ["P1", "P2"] as PlayerId[]) {
+      for (const kind of BASE_PIECES) {
+        const p = state.pieces[player][kind];
+        if (!p.inLimbo && p.pos === pos) return true;
+      }
+      for (const kind of REALM_PIECE_ORDER) {
+        const p = state.realmPieces[player]?.[kind];
+        if (p && p.unlocked && !p.inLimbo && p.pos === pos) return true;
+      }
+    }
+    return false;
+  };
+
+  for (let offset = 0; offset < state.trackSize; offset++) {
+    const candidate = (preferredPos + offset) % state.trackSize;
+    if (!isOccupied(candidate)) return candidate;
+  }
+
+  return preferredPos; // tablero lleno (no debería pasar nunca) — mejor esto que crashear
+}
+
 function detectVenomTrio(
   pieces: GameState["pieces"]
 ): GameState["venomTrio"] {
@@ -207,7 +241,9 @@ const releasedPiecesRealm: Record<PlayerId, PlayerRealmPiecesState> = {
 };
 
 for (const player of ["P1", "P2"] as PlayerId[]) {
-  const opp = otherPlayer(player);
+  // v23 — 'opp' ya no hace falta aquí: findEmptySpawnPos revisa todas
+  // las piezas de los dos jugadores directamente, no hay que armar la
+  // comparación contra el rival a mano.
 
   for (const kind of BASE_PIECES) {
     const piece = releasedPieces[player][kind];
@@ -216,19 +252,17 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
       const nextLevel = piece.maraLevel + 1;
 
       if (nextLevel > 6) {
-        let spawnPos: number | null = null;
-
-        for (let i = 0; i < state.trackSize; i++) {
-          const occupied = BASE_PIECES.some((k) => {
-            const e = releasedPieces[opp][k];
-            return !e.inLimbo && e.pos === i;
-          });
-
-          if (!occupied) {
-            spawnPos = i;
-            break;
-          }
-        }
+        // v23 (10 agosto 2026) — bug real reportado: un Avatar volviendo
+        // de Mara podía aterrizar donde ya había un Veneno (o viceversa,
+        // ver el otro bucle más abajo) porque cada uno solo comprobaba
+        // colisión contra piezas de su MISMO tipo, nunca contra el otro.
+        // findEmptySpawnPos ya revisa Venenos + Avatares de los dos
+        // jugadores — mismo helper que ya arregló esto para el
+        // nacimiento de Bruno.
+        const spawnPos = findEmptySpawnPos(
+          { pieces: releasedPieces, realmPieces: releasedPiecesRealm, trackSize: state.trackSize } as GameState,
+          piece.pos
+        );
 
         if (spawnPos !== null) {
           piece.pos = spawnPos;
@@ -251,19 +285,13 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
     const nextLevel = piece.maraLevel + 1;
 
     if (nextLevel > 6) {
-      let spawnPos: number | null = null;
-
-      for (let i = 0; i < state.trackSize; i++) {
-        const occupied = REALM_PIECE_ORDER.some((k) => {
-          const e = releasedPiecesRealm[opp][k];
-          return e && !e.inLimbo && e.pos === i;
-        });
-
-        if (!occupied) {
-          spawnPos = i;
-          break;
-        }
-      }
+      // v23 — mismo arreglo que el bucle de Venenos de arriba: antes
+      // solo comprobaba colisión contra OTROS Avatares del rival, nunca
+      // contra Venenos. findEmptySpawnPos ya revisa todo.
+      const spawnPos = findEmptySpawnPos(
+        { pieces: releasedPieces, realmPieces: releasedPiecesRealm, trackSize: state.trackSize } as GameState,
+        piece.pos
+      );
 
       if (spawnPos !== null) {
         releasedPiecesRealm[player][kind] = {
@@ -303,17 +331,87 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
       const nextBrunoRevealed =
         state.brunoRevealed || evaluateGenesisToBruno(nextState);
 
-      // v5 — "Bruno despierta": el momento en que el trigger pasa de false
-      // a true por primera vez, se desbloquea el actor (además del flag
-      // brunoRevealed que gatea la UI). No se toca si ya estaba
-      // desbloqueado o si todavía no se cumplió la condición.
-      const nextActorsOnRoll =
-        !state.brunoRevealed && nextBrunoRevealed
-          ? {
-              ...state.actors,
-              bruno: { ...state.actors.bruno, unlocked: true },
-            }
-          : state.actors;
+      // v10 — reparación de identidad de etapa (10 agosto 2026). Antes:
+      // brunoRevealed solo marcaba una bandera narrativa y desbloqueaba el
+      // actor legacy sin renderizado; la ficha/video/mural de Bruno de
+      // verdad nacían mucho después, cuando el Orquestador cumplía sus
+      // propios umbrales (bruno_to_margot) — y para entonces cosmicClock.era
+      // ya decía "margot" (ver hallazgo del off-by-one). Ahora: el momento
+      // en que brunoRevealed pasa de false a true ES el único evento
+      // Genesis→Bruno y crea el paquete completo de una vez, para los dos
+      // jugadores a la vez (un acontecimiento, dos manifestaciones — P-001).
+      const brunoJustRevealed = !state.brunoRevealed && nextBrunoRevealed;
+
+      const nextActorsOnRoll = brunoJustRevealed
+        ? {
+            ...state.actors,
+            bruno: { ...state.actors.bruno, unlocked: true },
+          }
+        : state.actors;
+
+      const brunoP1SpawnPos = brunoJustRevealed ? findEmptySpawnPos(nextState, 0) : 0;
+      const nextStateWithBrunoP1 = brunoJustRevealed
+        ? {
+            ...nextState,
+            realmPieces: {
+              ...nextState.realmPieces,
+              P1: {
+                ...nextState.realmPieces.P1,
+                hungry_ghost: {
+                  id: "P1-hungry_ghost",
+                  kind: "hungry_ghost" as RealmPieceKind,
+                  pos: brunoP1SpawnPos,
+                  inLimbo: false,
+                  maraLevel: null,
+                  unlocked: true,
+                },
+              },
+            },
+          }
+        : nextState;
+
+      const nextPiecesRealmWithBruno = brunoJustRevealed
+        ? {
+            P1: nextStateWithBrunoP1.realmPieces.P1,
+            P2: {
+              ...nextState.realmPieces.P2,
+              hungry_ghost: {
+                id: "P2-hungry_ghost",
+                kind: "hungry_ghost" as RealmPieceKind,
+                // busca desde nextStateWithBrunoP1 para no caer sobre la
+                // casilla que le acabamos de dar a Bruno-P1.
+                pos: findEmptySpawnPos(nextStateWithBrunoP1, 12),
+                inLimbo: false,
+                maraLevel: null,
+                unlocked: true,
+              },
+            },
+          }
+        : nextState.realmPieces;
+
+      const nextCosmicClockOnRoll = brunoJustRevealed
+        ? {
+            era: "bruno" as const,
+            progress: 0,
+            transitionSequence: state.cosmicClock.transitionSequence + 1,
+          }
+        : state.cosmicClock;
+
+      const nextRealmAscensionOnRoll = brunoJustRevealed
+        ? {
+            player: state.turn,
+            realmStep: 1,
+            realmKey: "hungry_ghost" as RealmPieceKind,
+            at: Date.now(),
+          }
+        : state.realmAscension;
+
+      const nextRealmProgressOnRoll = brunoJustRevealed
+        ? {
+            P1: { ...state.realmProgress.P1, stageStartedAtRoll: nextRollCount },
+            P2: { ...state.realmProgress.P2, stageStartedAtRoll: nextRollCount },
+          }
+        : state.realmProgress;
 
       if (!playerHasActivePiece(nextState, state.turn)) {
         return {
@@ -324,6 +422,10 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
           rollOptions: null,
           brunoRevealed: nextBrunoRevealed,
           actors: nextActorsOnRoll,
+          realmPieces: nextPiecesRealmWithBruno,
+          cosmicClock: nextCosmicClockOnRoll,
+          realmAscension: nextRealmAscensionOnRoll,
+          realmProgress: nextRealmProgressOnRoll,
         };
       }
 
@@ -332,6 +434,10 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
         venomTrio: nextVenomTrio,
         brunoRevealed: nextBrunoRevealed,
         actors: nextActorsOnRoll,
+        realmPieces: nextPiecesRealmWithBruno,
+        cosmicClock: nextCosmicClockOnRoll,
+        realmAscension: nextRealmAscensionOnRoll,
+        realmProgress: nextRealmProgressOnRoll,
       };
     }
 
@@ -492,8 +598,17 @@ const nextActors = {
   nextLoopProgress = 0;
 
  // ===== DESBLOQUEAR FICHA DE REINO =====
+ // v10 — reparación de identidad de etapa (10 agosto 2026). Antes:
+ // `nextRealmStepValue - 2`. Con avatarStep = currentStep + 1 (mismo
+ // valor que nextRealmStepValue) usado para cosmicClock.era más arriba,
+ // esa fórmula quedaba UN Avatar por detrás de lo que decía el reloj
+ // cósmico — cuando el Orquestador revelaba "margot" en cosmicClock.era,
+ // esta línea creaba en realidad la ficha de "hungry_ghost" (Bruno).
+ // Con Bruno ahora creado directamente en Genesis (ver case "ROLL"),
+ // esta cadena empieza en Margot: `bruno_to_margot` debe crear a Margot
+ // (hell), no a Bruno. -1 alinea el índice con avatarStep.
 unlockedRealmKey =
-  REALM_PIECE_ORDER[nextRealmStepValue - 2] ?? null;
+  REALM_PIECE_ORDER[nextRealmStepValue - 1] ?? null;
 
 const nextRealmKey = unlockedRealmKey;
 
@@ -674,6 +789,14 @@ const currentRealm = realmFromPos(finalToPos);
           completedLoopsInRealm: nextCompletedLoops,
           currentLoopProgress: nextLoopProgress,
           realmTransitions: nextRealmTransitions,
+          // v10 — reparación de identidad de etapa: se resetea SOLO cuando
+          // esta jugada de verdad ascendió de Avatar (didAscendRealm),
+          // para que el guardrail relativo del Orquestador (sección 1.5,
+          // rollsInCurrentStage) cuente desde que el Avatar actual
+          // apareció, no desde el inicio de la partida.
+          stageStartedAtRoll: didAscendRealm
+            ? state.globalRollCount
+            : state.realmProgress[me].stageStartedAtRoll,
         },
       };
 
@@ -826,9 +949,73 @@ if (shouldCollapse) {
           genesisNovelty: nextGenesisNovelty,
         });
 
-      // v5 — "Bruno despierta" (ver ROLL más arriba para la misma lógica).
-      if (!state.brunoRevealed && nextBrunoRevealed) {
+      // v15 (10 agosto 2026) — mismo paquete completo de nacimiento de
+      // Bruno que ya existe en case "ROLL", replicado aquí. Caso límite
+      // real: si hasMaraReturn ya estaba en true de antes (de un ciclo
+      // de Mara anterior sin relación con Genesis) y las otras tres
+      // condiciones se completan durante un CONSCIOUS_MOVE en vez de un
+      // ROLL, la transición ocurre AQUÍ — y antes de este arreglo, este
+      // camino solo tocaba el actor legacy sin renderizado, sin crear
+      // la ficha real, el video, ni el reloj cósmico.
+      const brunoJustRevealedInMove = !state.brunoRevealed && nextBrunoRevealed;
+
+      if (brunoJustRevealedInMove) {
         nextActors.bruno = { ...nextActors.bruno, unlocked: true };
+
+        const searchBaseForBruno: GameState = {
+          ...state,
+          pieces: nextPieces,
+          realmPieces: nextPiecesRealm,
+        };
+
+        const p1SpawnPos = nextPiecesRealm.P1.hungry_ghost
+          ? nextPiecesRealm.P1.hungry_ghost.pos
+          : findEmptySpawnPos(searchBaseForBruno, 0);
+
+        nextPiecesRealm.P1 = {
+          ...nextPiecesRealm.P1,
+          hungry_ghost: nextPiecesRealm.P1.hungry_ghost ?? {
+            id: "P1-hungry_ghost",
+            kind: "hungry_ghost" as RealmPieceKind,
+            pos: p1SpawnPos,
+            inLimbo: false,
+            maraLevel: null,
+            unlocked: true,
+          },
+        };
+
+        const searchBaseForBrunoP2: GameState = {
+          ...searchBaseForBruno,
+          realmPieces: { ...searchBaseForBruno.realmPieces, P1: nextPiecesRealm.P1 },
+        };
+
+        nextPiecesRealm.P2 = {
+          ...nextPiecesRealm.P2,
+          hungry_ghost: nextPiecesRealm.P2.hungry_ghost ?? {
+            id: "P2-hungry_ghost",
+            kind: "hungry_ghost" as RealmPieceKind,
+            pos: findEmptySpawnPos(searchBaseForBrunoP2, 12),
+            inLimbo: false,
+            maraLevel: null,
+            unlocked: true,
+          },
+        };
+      }
+
+      const nextCosmicClockForBrunoInMove = brunoJustRevealedInMove
+        ? { era: "bruno" as const, progress: 0, transitionSequence: state.cosmicClock.transitionSequence + 1 }
+        : nextCosmicClock;
+
+      const nextRealmAscensionForBrunoInMove = brunoJustRevealedInMove
+        ? { player: me, realmStep: 1, realmKey: "hungry_ghost" as RealmPieceKind, at: Date.now() }
+        : undefined; // undefined = dejar que el cálculo normal de más abajo decida
+
+      if (brunoJustRevealedInMove) {
+        nextRealmProgress = {
+          ...nextRealmProgress,
+          P1: { ...nextRealmProgress.P1, stageStartedAtRoll: state.globalRollCount },
+          P2: { ...nextRealmProgress.P2, stageStartedAtRoll: state.globalRollCount },
+        };
       }
 
       return {
@@ -839,17 +1026,27 @@ if (shouldCollapse) {
         actors: nextActors,
         curvature: nextCurvature,
         realmProgress: nextRealmProgress,
-        cosmicClock: nextCosmicClock,
+        cosmicClock: nextCosmicClockForBrunoInMove,
         genesisNovelty: nextGenesisNovelty,
         brunoRevealed: nextBrunoRevealed,
-realmAscension: didAscendRealm && unlockedRealmKey
+// v15 (10 agosto 2026) — bug real reproducido: antes esto forzaba
+// realmAscension a null en CADA movimiento que no fuera él mismo una
+// ascensión — es decir, borraba el evento un turno después de que
+// naciera. En un navegador real eso puede alcanzar a dispararse (si
+// App.tsx procesa el efecto antes del siguiente movimiento), pero no
+// es confiable, y en la reproducción directa contra el reducer el
+// evento se perdía en cuanto el jugador hacía su siguiente jugada
+// normal. No hay ninguna razón para resetearlo — el dedup del video
+// ya lo maneja un ref en App.tsx (playedRealmIntrosRef), así que aquí
+// solo hace falta conservar el último evento, no borrarlo.
+realmAscension: nextRealmAscensionForBrunoInMove ?? (didAscendRealm && unlockedRealmKey
   ? {
       player: me,
       realmStep: nextRealmStep,
       realmKey: unlockedRealmKey,
       at: Date.now(),
     }
-  : null,
+  : state.realmAscension),
         behavior: nextBehavior,
         pattern: patternNext,
         decisionSignature: nextDecisionSignature,

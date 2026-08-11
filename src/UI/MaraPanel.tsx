@@ -8,6 +8,13 @@ import cobraBlack from "../assets/pieces/cobra_black.png";
 
 import roosterWhite from "../assets/pieces/rooster_white.png";
 import roosterBlack from "../assets/pieces/rooster_black.png";
+
+// v21 (10 agosto 2026) — REALM_TOKEN_MAP exportado desde Board.tsx para
+// que un Avatar capturado también pueda mostrarse aquí (antes solo se
+// sabían dibujar Venenos — el estado ya movía bien al Avatar por Mara,
+// pero visualmente no aparecía nunca).
+import { REALM_TOKEN_MAP } from "../game/Board";
+
 const LEFT_EYE = {
   x: 118,
   y: 182,
@@ -21,6 +28,14 @@ const RIGHT_EYE = {
 };
 
 const PIECES = ["pig", "snake", "rooster"] as const;
+const REALM_KINDS = [
+  "hungry_ghost",
+  "hell",
+  "animals",
+  "humans",
+  "asura",
+  "deva",
+] as const;
 
 function EyeCell({ piece }: { piece?: any }) {
 
@@ -37,6 +52,13 @@ if (piece?.player === "P2") {
   if (piece.kind === "snake") image = cobraBlack;
   if (piece.kind === "rooster") image = roosterBlack;
 }
+
+// v21 — un Avatar capturado usa la misma imagen de token que ya se ve
+// en el tablero (REALM_TOKEN_MAP), en vez de quedar sin dibujar.
+if (piece?.player && (REALM_TOKEN_MAP as any)[piece.kind]) {
+  image = (REALM_TOKEN_MAP as any)[piece.kind][piece.player] ?? image;
+}
+
   // Antes, cuando no había ficha en este nivel de Mara, se dibujaba un
   // cuadrito con borde/fondo — eso es lo que hacía visible "el circuito
   // de Mara" (12 cuadritos, 6 por ojo) incluso sin fichas comidas. El
@@ -138,6 +160,23 @@ function buildMaraCells(state: any, player: "P1" | "P2") {
     const index = 6 - level;
 
   cells[index] = { player, kind };
+
+  }
+
+  // v21 — mismo criterio, ahora también para Avatares (state.realmPieces).
+  // Antes de esto, un Avatar capturado sí ciclaba por Mara en el estado
+  // real (confirmado con pruebas), pero nunca aparecía dibujado aquí.
+  for (const kind of REALM_KINDS) {
+
+    const piece = state.realmPieces?.[player]?.[kind];
+
+    if (!piece?.inLimbo || piece.maraLevel == null) continue;
+
+    const level = Math.max(1, Math.min(6, piece.maraLevel));
+
+    const index = 6 - level;
+
+    if (!cells[index]) cells[index] = { player, kind };
 
   }
 

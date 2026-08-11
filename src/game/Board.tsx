@@ -18,7 +18,10 @@ import cobraWhite from "../assets/pieces/cobra_white.webp";
 import cobraBlack from "../assets/pieces/cobra_black.webp";
 
 // 🔊 SONIDOS
-import captureWhite from "../assets/sounds/capture_white.mp3";
+// v22 (10 agosto 2026) — capture_white.mp3 confirmado sin audio real
+// (silencioso). Federico pidió usar capture_black.mp3 para los dos
+// hasta tener un archivo blanco de verdad.
+import captureWhite from "../assets/sounds/capture_black.mp3";
 import captureBlack from "../assets/sounds/capture_black.mp3";
 import moveSound from "../assets/sounds/move.mp3";
 
@@ -192,7 +195,11 @@ const pieceShort = (k: PieceKind) => {
   if (k === "snake") return "S";
   return "R";
 };
-const REALM_TOKEN_MAP = {
+// v21 (10 agosto 2026) — exportado para que MaraPanel.tsx pueda
+// mostrar Avatares capturados con su propia imagen (antes solo sabía
+// dibujar Venenos — un Avatar capturado no aparecía en Mara, aunque el
+// estado real ya lo movía por ahí correctamente).
+export const REALM_TOKEN_MAP = {
   hungry_ghost: { P1: brunoP1, P2: brunoP2 },
   hell: { P1: margotP1, P2: margotP2 },
   animals: { P1: oriolP1, P2: oriolP2 },
@@ -326,6 +333,12 @@ function buildUnifiedStackMap(
   };
 
   (["P1", "P2"] as PlayerId[]).forEach((player) => {
+    // v25 — mismo criterio que el renderizado: en Fase 2 (desde Oriol)
+    // el Veneno de este jugador ya no es un token visible, así que no
+    // debe reservar un espacio en el apilamiento de su casilla.
+    const playerPhase2 = state.realmProgress[player].currentRealmStep >= 3;
+    if (playerPhase2) return;
+
     ACTIVE_PIECE_KINDS.forEach((kind) => {
       const piece = state.pieces[player][kind];
 
@@ -416,7 +429,13 @@ const beatTimer = useRef<number | null>(null);
     captureAudioBlack.current = new Audio(captureBlack);
     moveAudio.current = new Audio(moveSound);
 
-    if (moveAudio.current) moveAudio.current.volume = 0.03;
+    // v22 (10 agosto 2026) — Federico reportó "el efecto sonoro de
+    // arrastre no suena". El archivo está bien (mismo hash que el que
+    // subió como referencia) — el volumen estaba en 0.03 (3%),
+    // prácticamente inaudible junto al resto de efectos. Subido a un
+    // nivel audible pero discreto (suena en cada movimiento, más
+    // seguido que una captura).
+    if (moveAudio.current) moveAudio.current.volume = 0.18;
     if (captureAudioWhite.current) captureAudioWhite.current.volume = 0.35;
     if (captureAudioBlack.current) captureAudioBlack.current.volume = 0.35;
     
@@ -555,6 +574,14 @@ useEffect(() => {
     const playerRevealed =
       player === "P1" ? p1VenomsRevealed : p2VenomsRevealed;
     if (!playerRevealed) return [];
+
+    // v25 (10 agosto 2026) — decisión de diseño: desde Oriol en adelante,
+    // los Venenos dejan de ser piezas físicas del tablero. Ya no se
+    // dibujan como tokens — siguen existiendo como dato interno (motor
+    // de cálculo de los Avatares), pero visualmente el jugador ya no
+    // los ve ni puede clicarlos por su cuenta.
+    const playerPhase2 = state.realmProgress[player].currentRealmStep >= 3;
+    if (playerPhase2) return [];
 
     return ACTIVE_PIECE_KINDS.map((kind) => {
       const pieceState = state.pieces[player][kind];
@@ -901,11 +928,16 @@ animation: "nidanaReveal 2.6s cubic-bezier(.16,1.25,.32,1) both",
   const isHoveredTarget = hoveredOption?.toPos === i;
 
   const enemyPlayer = state.turn === "P1" ? "P2" : "P1";
+  // v25 — si el rival ya está en Fase 2, sus Venenos ya no son piezas
+  // físicas del tablero: no deben marcar ninguna casilla como bloqueada.
+  const enemyPhase2 = state.realmProgress[enemyPlayer].currentRealmStep >= 3;
 
-  const enemiesOnCell = ACTIVE_PIECE_KINDS.filter((kind) => {
-    const piece = state.pieces[enemyPlayer][kind];
-    return !piece.inLimbo && piece.pos === i;
-  });
+  const enemiesOnCell = enemyPhase2
+    ? []
+    : ACTIVE_PIECE_KINDS.filter((kind) => {
+        const piece = state.pieces[enemyPlayer][kind];
+        return !piece.inLimbo && piece.pos === i;
+      });
 
   const isBlockedCell = enemiesOnCell.length >= 2;
 

@@ -216,6 +216,18 @@ export default function App() {
   const [state, dispatchBase] = useReducer(reducer, initialState);
 const [activeRealmIntro, setActiveRealmIntro] = useState<string | null>(null);
 const playedRealmIntrosRef = useRef<Record<string, boolean>>({});
+// v13 (10 agosto 2026) — reinicio real de Genesis. GameShell guarda su
+// propio estado local de los clics decorativos (genesisClickCount,
+// casillasFinished, genesisPhase, genesisDiceA/B) — ese estado NUNCA se
+// tocaba en RESET porque vive en un componente hijo, no en el reducer.
+// Resultado real de playtest: tras reiniciar, esos valores quedaban tan
+// altos como en la partida anterior, así que genesisComplete/
+// casillasFinished ya estaban en true desde el primer render de la
+// partida nueva — se saltaba todo Genesis, incluida la intro de Bruno.
+// Forzar un remount completo de GameShell (key) es más seguro que ir
+// limpiando cada useState uno por uno: garantiza que TODO su estado
+// local decorativo empiece de cero, sin tener que enumerar cada campo.
+const [genesisResetSeq, setGenesisResetSeq] = useState(0);
 // 2026-08-05: este video se disparaba con muted={false} + play() dentro de
 // un useEffect/setTimeout — fuera de la cadena directa de un gesto del
 // usuario, así que los navegadores lo bloqueaban silenciosamente (catch
@@ -489,16 +501,18 @@ useEffect(() => {
 
   if (!realmKey || !player) return;
 
-  // v9 — Bruno ("hungry_ghost") solo reproduce el video UNA VEZ para
-  // toda la partida, sin importar cuál jugador llegue primero. Antes
-  // se disparaba por jugador (dedup incluía el player), así que el
-  // segundo jugador en llegar volvía a abrir el mismo video — Federico
-  // confirmó en playtest que eso se siente redundante y pidió apagar
-  // solo el segundo disparo. El resto de los Avatares NO cambia: siguen
-  // reproduciéndose una vez por jugador como siempre. Los efectos de
-  // fiesta/aplausos (fireworks/cheering) están en otro useEffect, sin
-  // relación con esto — no se tocan.
-  const introId = realmKey === "hungry_ghost" ? realmKey : `${player}-${realmKey}`;
+  // v12 (10 agosto 2026) — generalizado a los seis Avatares: el video de
+  // cada Avatar se reproduce UNA SOLA VEZ para toda la partida, sin
+  // importar cuál jugador llegue primero. Antes solo Bruno tenía esta
+  // regla (v9); Federico confirmó que quiere el mismo patrón para el
+  // resto: video una vez para quien llega primero, y solo aplausos/
+  // fuegos artificiales (otro useEffect, sin relación) para el segundo
+  // jugador — sin repetir el video. La ficha de CADA jugador se sigue
+  // creando de forma independiente cuando ese jugador individualmente
+  // alcanza la etapa (Orchestrator/reducer, sin cambios) — esto solo
+  // afecta cuántas veces se ve el video.
+  const introId = realmKey;
+
 
   if (playedRealmIntrosRef.current[introId]) return;
 
@@ -790,6 +804,7 @@ window.setTimeout(() => {
   playedRealmIntrosRef.current = {};
   setActiveRealmIntro(null);
   setRealmIntroMuted(true);
+  setGenesisResetSeq((n) => n + 1);
 
   setRollsCount(0);
   setShowVestigium(false);
@@ -975,6 +990,7 @@ window.setTimeout(() => {
   ) : (
     <>
     <GameShell
+      key={genesisResetSeq}
       state={state}
       a={a}
       b={b}
@@ -1018,17 +1034,16 @@ onRoll={() => {
 // de terminar Genesis — daba la impresión de "saltar" a una partida ya
 // avanzada (ver reporte del usuario: "salta a una foto vieja con todo
 // el juego andando"). Los Nidanas son, según el diseño, activos "desde
-// Oriol en adelante" — es decir, una vez que el jugador ya usó los tres
-// Venenos al menos una vez (equivalente al "despertar de Bruno" que ve
-// GameShell). Antes de eso, no deberían dispararse.
+// Oriol en adelante".
 //
-// 2026-08-05: esto usaba .some() sobre P1/P2 — bastaba con que UN SOLO
-// jugador usara sus 3 Venenos (unos pocos lances) para disparar el
-// efecto. El trigger real y riguroso (ambos jugadores, mínimo de turnos,
-// eventos de novedad) ya vive en el reducer/Orchestrator y se expone
-// como state.brunoRevealed — usamos ese mismo flag para que este efecto
-// y "THE FIRST EYE OPENS" (GameShell) queden sincronizados.
-const shouldTriggerNidana = Boolean(state.brunoRevealed);
+// v17 (10 agosto 2026) — bug real confirmado por Federico: el comentario
+// de arriba YA decía "desde Oriol en adelante", pero el código usaba
+// state.brunoRevealed (Bruno es el PRIMER Avatar, Oriol es el TERCERO —
+// dos etapas completas de diferencia). Las nidanas se encendían apenas
+// nacía Bruno, mucho antes de lo previsto. Corregido para comprobar de
+// verdad la etapa de Oriol: avatarStep 3 en STEP_TO_ACTOR_ID
+// (Orchestrator.ts) — currentRealmStep >= 3 del jugador activo.
+const shouldTriggerNidana = state.realmProgress[state.turn].currentRealmStep >= 3;
 
 if (shouldTriggerNidana) {
   triggerNidanaCoin();
@@ -1054,6 +1069,7 @@ if (shouldTriggerNidana) {
     type: "ROLL"
   });
 }}
+playDiceSound={playDiceSound}
 onReset={() => dispatch({ type: "RESET" })}
 
 onConsciousMove={(option, allOptions) => {

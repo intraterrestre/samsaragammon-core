@@ -30,6 +30,23 @@ const THRESHOLDS: Record<TransitionId, TransitionConfig> = {
   rufus_to_whitman: { minTurns: 65, captureRateMin: 0.30, maraVisitsRequired: 2, bothPlayersParticipated: true, hysteresisTurns: 4 },
 };
 
+// v10 — reparación de identidad de etapa (10 agosto 2026). minTurns es un
+// guardrail ABSOLUTO (nunca antes del lance global X de toda la partida) y
+// se conserva sin cambios. Pero si un Avatar tarda en aparecer, ese
+// guardrail absoluto ya puede estar cumplido para VARIAS transiciones
+// futuras a la vez, provocando que se disparen en cascada apenas aparece
+// el Avatar actual. Este guardrail es RELATIVO: lances mínimos desde que
+// el Avatar actual (no el siguiente) apareció de verdad — recupera el
+// propósito original de los números de D-020 (6/8/10/10/12), que habían
+// quedado sin uso tras la limpieza de la RFC v1.1.
+const MIN_ROLLS_IN_STAGE: Record<TransitionId, number> = {
+  bruno_to_margot: 6,
+  margot_to_oriol: 8,
+  oriol_to_marino: 10,
+  marino_to_rufus: 10,
+  rufus_to_whitman: 12,
+};
+
 const STEP_TO_TRANSITION: Record<number, TransitionId> = {
   1: "bruno_to_margot",
   2: "margot_to_oriol",
@@ -42,6 +59,16 @@ export function evaluateOrchestrator(
   state: GameState,
   player: PlayerId
 ): OrchestratorEvent {
+  // v14 (10 agosto 2026) — bug real reproducido: esta función nunca
+  // comprobaba state.brunoRevealed. La condición real para que Bruno
+  // nazca (evaluateGenesisToBruno) exige que cada jugador haya movido
+  // los 3 Venenos al menos una vez — en partida real eso puede tardar
+  // más lances que el umbral que necesita bruno_to_margot para
+  // disparar. Sin este guardrail, el Orquestador avanzaba a Margot (y
+  // más allá) aunque Bruno nunca se hubiera creado. Reproducido con una
+  // simulación directa contra el reducer antes de este arreglo.
+  if (!state.brunoRevealed) return { event: "NONE" };
+
   const realmProgress = state.realmProgress[player];
   const currentStep = realmProgress.currentRealmStep;
 
@@ -54,8 +81,18 @@ export function evaluateOrchestrator(
   const sig = state.decisionSignature?.[player];
   if (!sig) return { event: "NONE" };
 
-  // 1. Mínimo de turnos globales
+  // 1. Mínimo de turnos globales (guardrail absoluto — nunca antes del
+  // lance X de toda la partida)
   if (state.globalRollCount < cfg.minTurns) return { event: "NONE" };
+
+  // 1.5 — Mínimo de lances DESDE que el Avatar actual apareció (guardrail
+  // relativo — evita cascadas cuando el Avatar actual tardó en aparecer y
+  // el guardrail absoluto de arriba ya estaba cumplido de sobra).
+  const rollsInCurrentStage =
+    state.globalRollCount - (realmProgress.stageStartedAtRoll ?? 0);
+  if (rollsInCurrentStage < MIN_ROLLS_IN_STAGE[transitionId]) {
+    return { event: "NONE" };
+  }
 
   // 2. CaptureRate — capturas / turnos en la etapa
   const turnsInStage = Math.max(1, realmProgress.completedLoopsInRealm * 4 + 1);
