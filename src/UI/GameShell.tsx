@@ -576,7 +576,13 @@ return (
         onGenesisPhaseChange={(phase) => setGenesisPhase(phase)}
       />
 
-      {oriolEntered && (
+      {/* v29 (11 agosto 2026) — apagado a pedido de Federico: el Yin-Yang
+          (dentro de SacredProgress) no comunica información legible en
+          juego ("¿quién domina? ¿qué significa esta pepa aquí? ¿qué
+          consecuencia estratégica tiene?"). No se borra el componente —
+          solo se apaga el render, por si se retoma como elemento visual
+          puro o se rediseña con una intención más específica por reino. */}
+      {false && oriolEntered && (
         <SacredProgress
           p1Completed={state.realmProgress.P1.realmTransitions}
           p2Completed={state.realmProgress.P2.realmTransitions}
