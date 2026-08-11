@@ -1049,6 +1049,16 @@ const stackedPosition = getStackedTokenPosition({
   spacing: 34,
 });
 
+// v30 (11 agosto 2026) — bug real reportado: los Avatares nunca tuvieron
+// el efecto de "se agranda al seleccionar" que sí tienen los Venenos
+// (isCurrentSelected más arriba, línea ~597). Con el flujo de hoy (donde
+// seleccionar el Avatar es el primer paso obligatorio en Fase 2), esa
+// falta de señal visual dejaba al jugador sin saber cuál Avatar estaba
+// activo — especialmente grave con dos Avatares propios en la misma
+// casilla (ej. Margot y Oriol juntos, reportado por Federico). Mismo
+// criterio que ya usan los Venenos.
+const isAvatarSelected =
+  player === state.turn && state.selectedPiece[player] === piece.kind;
 
     return (
       <div
@@ -1069,9 +1079,12 @@ style={{
   height: 48,
   borderRadius: "50%",
   position: "absolute",
-  zIndex: 9999 + stackedPosition.zIndex,
+  zIndex: isAvatarSelected ? 9999 : 9999 + stackedPosition.zIndex,
   pointerEvents: player === state.turn ? "auto" : "none",
   cursor: player === state.turn ? "pointer" : "default",
+  boxShadow: isAvatarSelected
+    ? "0 0 0 2px rgba(255,255,255,0.25)"
+    : "none",
   /* glow: dejar que overlays.css maneje box-shadow y border */
 }}
         title={`${player} ${piece.kind}`}
@@ -1083,6 +1096,14 @@ style={{
   }
   alt={`${piece.kind} token`}
   className="realmPieceTokenImg"
+  style={{
+    transform: isAvatarSelected
+      ? "scale(1.12) translateY(-4px)"
+      : "translateY(-1px)",
+    filter: isAvatarSelected
+      ? "drop-shadow(0 0 8px rgba(255,255,255,0.5))"
+      : "none",
+  }}
 />
       </div>
     );
