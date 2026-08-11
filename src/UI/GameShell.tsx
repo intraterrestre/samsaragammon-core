@@ -219,15 +219,30 @@ const prevTransitionsRef = React.useRef({
 });
 
 const triggerCelebrationSound = () => {
-  if (cheeringAudio.current) {
-    cheeringAudio.current.currentTime = 0;
-    cheeringAudio.current.play().catch(() => {});
-  }
+  // v26 (11 agosto 2026) — reportado dos veces (Margot y Oriol): el
+  // audio de aplausos/cohetes a veces no suena tras una ascensión. El
+  // trigger en sí dispara bien (independiente por jugador, sin
+  // depender del video) — el problema es que .play() puede fallar de
+  // forma silenciosa en el navegador (autoplay, dos audios
+  // solapándose, etc.) y el .catch() vacío se lo tragaba sin dejar
+  // rastro. Ahora: si falla, reintenta una vez tras un instante, y deja
+  // un aviso en consola para poder diagnosticar si sigue pasando.
+  const playWithRetry = (audio: HTMLAudioElement | null, label: string) => {
+    if (!audio) return;
+    audio.currentTime = 0;
+    audio.play().catch(() => {
+      console.warn(`[celebración] ${label} falló al reproducir, reintentando...`);
+      window.setTimeout(() => {
+        audio.currentTime = 0;
+        audio.play().catch(() => {
+          console.warn(`[celebración] ${label} falló también en el reintento.`);
+        });
+      }, 120);
+    });
+  };
 
-  if (fireworksAudio.current) {
-    fireworksAudio.current.currentTime = 0;
-    fireworksAudio.current.play().catch(() => {});
-  }
+  playWithRetry(cheeringAudio.current, "aplausos");
+  playWithRetry(fireworksAudio.current, "cohetes");
 };
 React.useEffect(() => {
   const p1Now = state.realmProgress.P1.realmTransitions;
