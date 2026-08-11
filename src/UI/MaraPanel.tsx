@@ -16,14 +16,14 @@ import roosterBlack from "../assets/pieces/rooster_black.png";
 import { REALM_TOKEN_MAP } from "../game/Board";
 
 const LEFT_EYE = {
-  x: 136,
-  y: 200,
+  x: 140,
+  y: 185,
   rotate: -11,
 };
 
 const RIGHT_EYE = {
-  x: 182,
-  y: 196,
+  x: 186,
+  y: 181,
   rotate: -11,
 };
 
