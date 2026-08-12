@@ -3,6 +3,7 @@ import type { RealmPieceKind } from "../game/types";
 
 type SamsaraStageProps = {
   dharmaMessage?: string;
+  dharmaBig?: boolean;
   realmStep?: number;
   lastRealmKey?: RealmPieceKind | null;
   globalRollCount?: number;
@@ -22,6 +23,7 @@ type SamsaraStageProps = {
 
 export function SamsaraStage({
   dharmaMessage,
+  dharmaBig,
   realmStep = 1,
   lastRealmKey = null,
   globalRollCount = 0,
@@ -34,6 +36,7 @@ export function SamsaraStage({
   return (
     <MaraLayer
       dharmaMessage={dharmaMessage}
+      dharmaBig={dharmaBig}
       realmStep={realmStep}
       lastRealmKey={lastRealmKey}
       globalRollCount={globalRollCount}

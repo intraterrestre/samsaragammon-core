@@ -8,6 +8,15 @@
   max-width: 300px;
 }
 
+/* v35 (12 agosto 2026) — el mensaje grande necesita más ancho para no
+   partirse feo, y un z-index alto para que no quede tapado por fichas
+   apiladas (mismo problema que ya arreglamos hoy para el panel de
+   destinos). */
+.dharma-bubble-big {
+  max-width: 90vw;
+  z-index: 10600;
+}
+
 .dharma-bubble-text {
   white-space: pre-line;
   color: white;
@@ -28,4 +37,17 @@
     0 0 8px rgba(255,255,255,.80),
     0 0 18px rgba(255,255,255,.40),
     0 4px 12px rgba(0,0,0,.90);
+}
+
+/* v35 (12 agosto 2026) — 3x el tamaño normal, para el aviso de "a un
+   Avatar del final" (5 de 6 en Humans). Mismo globo, mismo estilo,
+   solo más grande y con un poco más de contraste para que se lea de
+   lejos en pantallas chicas. */
+.dharma-bubble-text-big {
+  font-size: 60px;
+  -webkit-text-stroke: 1.6px rgba(0,0,0,.9);
+  text-shadow:
+    0 0 14px rgba(255,255,255,.9),
+    0 0 30px rgba(255,255,255,.5),
+    0 6px 18px rgba(0,0,0,.95);
 }

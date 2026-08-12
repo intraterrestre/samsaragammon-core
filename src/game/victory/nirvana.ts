@@ -70,9 +70,23 @@ export function checkNirvanaFormation(
   state: GameState,
   player: PlayerId
 ): boolean {
+  return countNirvanaFormationProgress(state, player) === REALM_PIECE_ORDER.length;
+}
+
+/**
+ * v35 (12 agosto 2026) — mismo chequeo pieza por pieza que
+ * checkNirvanaFormation, pero devuelve CUÁNTOS de los 6 ya cumplen la
+ * condición en vez de exigir los 6 de una vez. Nace del pedido de
+ * Federico de un aviso ("SOLO FALTA UNO") cuando un jugador llega a 5 —
+ * reutiliza esta misma función en vez de duplicar el criterio.
+ */
+export function countNirvanaFormationProgress(
+  state: GameState,
+  player: PlayerId
+): number {
   const pieces = state.realmPieces[player];
 
-  return REALM_PIECE_ORDER.every((kind) => {
+  return REALM_PIECE_ORDER.filter((kind) => {
     const piece = pieces[kind];
     return (
       !!piece &&
@@ -80,7 +94,7 @@ export function checkNirvanaFormation(
       !piece.inLimbo &&
       realmFromPos(piece.pos) === "HUMAN"
     );
-  });
+  }).length;
 }
 
 /**

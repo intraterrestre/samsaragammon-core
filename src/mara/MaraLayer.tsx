@@ -51,6 +51,7 @@ import type { RealmPieceKind } from "../game/types";
 
 interface MaraLayerProps {
   dharmaMessage?: string;
+  dharmaBig?: boolean;
   realmStep?: number;
   lastRealmKey?: RealmPieceKind | null;
   globalRollCount?: number;
@@ -66,6 +67,7 @@ interface MaraLayerProps {
 
 export function MaraLayer({
   dharmaMessage = "",
+  dharmaBig = false,
   realmStep = 1,
   lastRealmKey = null,
   globalRollCount = 0,
@@ -137,6 +139,7 @@ export function MaraLayer({
         <DharmaBubble
           ref={bubbleRef}
           message={dharmaMessage}
+          big={dharmaBig}
         />
       )}
     </div>

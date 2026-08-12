@@ -26,6 +26,7 @@ import claritySound from "../assets/sounds/clarity.mp3";
 import distortionSound from "../assets/sounds/distortion.wav";
 import tensionSound from "../assets/sounds/tension.mp3";
 import { SacredProgress } from "./SacredProgress";
+import { countNirvanaFormationProgress } from "../game/victory/nirvana";
 import { VictoryScreen } from "./VictoryScreen";
 
 type MirrorData = {
@@ -516,7 +517,30 @@ console.log(
 // aparece una vez que de verdad se cumplió la condición narrativa
 // (brunoAwakened === state.brunoRevealed, ver arriba: ambos jugadores
 // usaron los 3 Venenos, mínimo de turnos y 4 eventos de novedad).
-const buddhaMessage = brunoAwakened ? "THE FIRST EYE OPENS." : "";
+//
+// v35 (12 agosto 2026) — Federico señaló que ese texto se queda pegado
+// ahí sin cambiar nunca por el resto de la partida ("¿y qué? ¿es
+// tuerto?"). Se reutiliza el mismo cartel para algo que sí cambia con
+// la partida: cuando CUALQUIERA de los dos jugadores llega a 5 de los
+// 6 Avatares reunidos en Humans (a un Avatar del final), el cartel
+// avisa a los dos — "el evento de 5 no pertenece solo al jugador,
+// lo ven ambos" (decisión de diseño). isDharmaBig indica si este
+// mensaje en particular debe verse 3 veces más grande.
+const p1NearWin = countNirvanaFormationProgress(state, "P1");
+const p2NearWin = countNirvanaFormationProgress(state, "P2");
+const nearWinMessage =
+  p1NearWin === 5
+    ? "WHITE: ONLY ONE MORE."
+    : p2NearWin === 5
+    ? "BLACK: ONLY ONE MORE."
+    : null;
+
+const buddhaMessage = nearWinMessage
+  ? nearWinMessage
+  : brunoAwakened
+  ? "THE FIRST EYE OPENS."
+  : "";
+const isDharmaBig = Boolean(nearWinMessage);
   
 return (
 
@@ -564,6 +588,7 @@ return (
     <div className="samsaraScene">
       <SamsaraStage
         dharmaMessage={buddhaMessage}
+        dharmaBig={isDharmaBig}
         realmStep={Math.max(
           state.realmProgress.P1.currentRealmStep,
           state.realmProgress.P2.currentRealmStep
