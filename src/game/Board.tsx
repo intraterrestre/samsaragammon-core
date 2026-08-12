@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { GameState, MoveOption, PieceKind, BasePieceKind, PlayerId, RealmPieceKind } from "./types";
 import { REALM_PIECE_ORDER } from "./types";
-import {  cellStyle as ringCellStyle, RING_SIZE,  piecePosition, CELL,} from "../UI/geometry";
+import {  cellStyle as ringCellStyle, RING_SIZE,  piecePosition,} from "../UI/geometry";
 import { realmFromPos, REALM_LABEL, pickLine } from "../UI/realm";
 import { ExplainModal } from "../UI/ExplainModal";
 import { MoveEmanations } from "../UI/MoveEmanations";
@@ -243,147 +243,11 @@ function stackOffset(index: number, total: number) {
    STACK ENGINE
    ===================================================== */
 
-function getStackedTokenPosition({
-  base,
-  pieceSize,
-  indexInStack,
-  totalInStack,
-  wheelCenter,
-  spacing = 26,
-}: {
-  base: { left: number; top: number };
-  pieceSize: number;
-  indexInStack: number;
-  totalInStack: number;
-  wheelCenter: { x: number; y: number };
-  spacing?: number;
-}) {
-  // `base.left/top` come from piecePosition(), which sizes them for a
-  // CELL x CELL (44x44) box — i.e. base.left = trueCenterX - CELL/2. The
-  // true cell-circle center has to be recovered using CELL here, not
-  // `pieceSize`: using pieceSize instead (the piece's own rendered size)
-  // silently drags every token off-center by (pieceSize-CELL)/2 px,
-  // growing worse the bigger a piece gets drawn (this is what made the
-  // enlarged Pig visibly drift down-right off the cell circle).
-  const cellCenterX = base.left + CELL / 2;
-  const cellCenterY = base.top + CELL / 2;
-
-  if (totalInStack <= 1) {
-    return {
-      left: cellCenterX - pieceSize / 2,
-      top: cellCenterY - pieceSize / 2,
-      zIndex: 40,
-    };
-  }
-
-  const dx = wheelCenter.x - cellCenterX;
-  const dy = wheelCenter.y - cellCenterY;
-
-  const len = Math.hypot(dx, dy) || 1;
-
-  const ux = dx / len;
-  const uy = dy / len;
-
-  const px = -uy;
-  const py = ux;
-
-  const compressedSpacing =
-    totalInStack >= 6 ? 18 :
-    totalInStack === 5 ? 21 :
-    totalInStack === 4 ? 25 :
-    totalInStack === 3 ? 30 :
-    spacing;
-
-  const radialOffset = indexInStack * compressedSpacing;
-
-  const midIndex = (totalInStack - 1) / 2;
-
-  const lateralOffset =
-    totalInStack > 4
-      ? (indexInStack - midIndex) * 10
-      : 0;
-
-  return {
-    left:
-      cellCenterX +
-      ux * radialOffset +
-      px * lateralOffset -
-      pieceSize / 2,
-
-    top:
-      cellCenterY +
-      uy * radialOffset +
-      py * lateralOffset -
-      pieceSize / 2,
-
-    zIndex: 40 + indexInStack,
-  };
-}
-
-function buildUnifiedStackMap(
-  state: GameState
-): Map<string, { stackIndex: number; stackTotal: number }> {
-  const byPos = new Map<
-    number,
-    { player: PlayerId; kind: string }[]
-  >();
-
-  const addToken = (pos: number, player: PlayerId, kind: string) => {
-    if (!byPos.has(pos)) byPos.set(pos, []);
-    byPos.get(pos)!.push({ player, kind });
-  };
-
-  (["P1", "P2"] as PlayerId[]).forEach((player) => {
-    // v27 (11 agosto 2026) — revertido el v25: los Venenos siguen
-    // visibles y ocupando su lugar en el apilamiento en Fase 2 (siguen
-    // siendo piezas físicas reales, solo perdieron la capacidad de
-    // moverse por su cuenta — decisión cerrada con Federico/Chat).
-    ACTIVE_PIECE_KINDS.forEach((kind) => {
-      const piece = state.pieces[player][kind];
-
-      if (!piece.inLimbo) {
-        addToken(piece.pos, player, kind);
-      }
-    });
-  });
-
-  const realmOrder = [
-    "hungry_ghost",
-    "hell",
-    "animals",
-    "humans",
-    "asura",
-    "deva",
-  ] as const;
-
-  (["P1", "P2"] as PlayerId[]).forEach((player) => {
-    realmOrder.forEach((kind) => {
-      const piece = state.realmPieces?.[player]?.[kind];
-
-      if (piece && !piece.inLimbo && piece.unlocked) {
-        addToken(piece.pos, player, kind);
-      }
-    });
-  });
-
-  const result = new Map<
-    string,
-    { stackIndex: number; stackTotal: number }
-  >();
-
-  byPos.forEach((tokens) => {
-    const stackTotal = tokens.length;
-
-    tokens.forEach(({ player, kind }, stackIndex) => {
-      result.set(`${player}-${kind}`, {
-        stackIndex,
-        stackTotal,
-      });
-    });
-  });
-
-  return result;
-}
+// v31 (11 agosto 2026) — getStackedTokenPosition/buildUnifiedStackMap
+// se movieron a stacking.ts (lógica pura, sin imports de imágenes) para
+// poder probarlas directamente. Mismo comportamiento, solo cambió dónde
+// viven.
+import { getStackedTokenPosition, buildUnifiedStackMap } from "./stacking";
 
 export function Board({
   state,
@@ -602,10 +466,11 @@ useEffect(() => {
     const base = piecePosition(pos, size);
 
 const stackKey = `${player}-${kind}`;
-const { stackIndex, stackTotal } =
+const { stackIndex, stackTotal, extraRadialOffset } =
   unifiedStackMap.get(stackKey) ?? {
     stackIndex: 0,
     stackTotal: 1,
+    extraRadialOffset: 0,
   };
 
 const visualSize = PIECE_VISUAL_SIZE[kind as BasePieceKind] ?? 50;
@@ -620,6 +485,7 @@ const stackedPosition = getStackedTokenPosition({
   totalInStack: stackTotal,
   wheelCenter,
   spacing: 32,
+  extraRadialOffset,
 });
 
       let src = player === "P1" ? pigWhite : pigBlack;
@@ -1035,6 +901,7 @@ const { stackIndex, stackTotal } =
   unifiedStackMap.get(stackKey) ?? {
     stackIndex: 0,
     stackTotal: 1,
+    extraRadialOffset: 0,
   };
 
 const stackedPosition = getStackedTokenPosition({
