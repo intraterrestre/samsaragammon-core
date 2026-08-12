@@ -5,6 +5,7 @@ import {  cellStyle as ringCellStyle, RING_SIZE,  piecePosition,} from "../UI/ge
 import { realmFromPos, REALM_LABEL, pickLine } from "../UI/realm";
 import { ExplainModal } from "../UI/ExplainModal";
 import { MoveEmanations } from "../UI/MoveEmanations";
+import { MoveOptionsPanel } from "../UI/MoveOptionsPanel";
 import budaKarmaER from "../assets/tokens/buda-karma-er.webp";
 import BigHeadSchoolOverlay from "../UI/BigHeadSchoolOverlay";
 import { getUnlockedBasePieces } from "./era";
@@ -862,6 +863,18 @@ animation: "nidanaReveal 2.6s cubic-bezier(.16,1.25,.32,1) both",
             selectedPiece={state.selectedPiece[state.turn]}
             onChoose={onChooseMove}
           />
+        )}
+      {/* v32 (12 agosto 2026) — panel de botones grandes, alternativa
+          segura para pantallas chicas a las líneas del tablero (que
+          pueden quedar tapadas por fichas apiladas encima, sobre todo
+          en Fase 2 donde hay más fichas juntas por casilla). Solo se
+          muestra desde Fase 2 (Oriol) — antes de eso las líneas ya
+          funcionan bien sin este problema. */}
+      {genesisComplete &&
+        moveOptions.length > 0 &&
+        onChooseMove &&
+        state.realmProgress[state.turn].currentRealmStep >= 3 && (
+          <MoveOptionsPanel options={moveOptions} onChoose={onChooseMove} />
         )}
 {genesisComplete && (["P1", "P2"] as PlayerId[]).flatMap((player) => {
  const realmOrder = [
