@@ -26,6 +26,7 @@ import claritySound from "../assets/sounds/clarity.mp3";
 import distortionSound from "../assets/sounds/distortion.wav";
 import tensionSound from "../assets/sounds/tension.mp3";
 import { SacredProgress } from "./SacredProgress";
+import { VictoryScreen } from "./VictoryScreen";
 
 type MirrorData = {
   title: string;
@@ -590,6 +591,12 @@ return (
       )}
 
       {genesisComplete && <MaraPanel state={state} />}
+
+      {/* v34 (12 agosto 2026) — state.winner ya se calculaba bien, nada
+          en la interfaz lo mostraba. Encima de todo lo demás. */}
+      {state.winner && (
+        <VictoryScreen winner={state.winner} onPlayAgain={onReset} />
+      )}
 
      {oriolEntered && <FandangoKarma />}
 
