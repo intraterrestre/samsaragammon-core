@@ -116,6 +116,7 @@ actors: {
 
   level: 3,
   currentNidana: null,
+  lastNidanaAtTurn: -999,
   activeNidanaEffect: null,
 
   lastMove: null,

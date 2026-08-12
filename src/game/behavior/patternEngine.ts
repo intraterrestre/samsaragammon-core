@@ -9,7 +9,7 @@ export type PatternEventType =
   | "avoidance_bias"
   | "realm_stuck"
   | "realm_hopping"
-  | "naraka_return"
+  | "naraka_entry"
   | "stability_streak"
   | "volatility_spike";
 
@@ -141,10 +141,20 @@ export function recordMove(
   const key = `${input.fromRealm}->${input.toRealm}`;
   next.realmTransitions[key] = (next.realmTransitions[key] ?? 0) + 1;
 
+  // v36 (12 agosto 2026) — renombrado de "naraka_return" a
+  // "naraka_entry": el nombre viejo mentía. Esto dispara al ENTRAR a
+  // Mara (fromRealm distinto de NARAKA, toRealm === NARAKA — el
+  // "details" siempre apunta hacia adentro), no al volver. Mapeado a
+  // la Nidana DEATH ("What formed must pass."). Candidato anotado para
+  // más adelante, NO implementado todavía: un evento real
+  // "mara_return" quede ficha SALE de Mara — hoy no existe ninguno,
+  // porque recordMove() solo se llama desde CONSCIOUS_MOVE y el
+  // regreso real de Mara ocurre en el bucle de ROLL, que nunca llama a
+  // recordMove. Ese evento futuro mapearía bien a BIRTH.
   if (input.toRealm === "NARAKA" && input.fromRealm !== "NARAKA") {
     next.narakaReturns += 1;
     pushEvent(next, {
-      type: "naraka_return",
+      type: "naraka_entry",
       severity: 2,
       atTurn: input.turnIndex,
       atCycle: input.cycleIndex,

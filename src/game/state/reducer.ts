@@ -17,7 +17,7 @@ import { recordMove } from "../behavior/patternEngine";
 import { realmFromPos } from "../../UI/realm";
 import { updateDecisionSignature } from "../Karma/updateDecisionSignature";
 import { computeKarmaTurn } from "../engine/computeKarmaTurn";
-import { NIDANA_LIST } from "../nidanas";
+import { NIDANA_BY_PATTERN_EVENT } from "../behavior/nidanaMapping";
 import type { NidanaId } from "../nidanas";
 import { isBasePieceUnlocked } from "../era";
 import { evaluateOrchestrator, evaluateGenesisToBruno } from "../orchestrator/Orchestrator";
@@ -215,8 +215,12 @@ export function reducer(state: GameState, action: Action): GameState {
     case "ROLL": {
       if (state.phase === "rolled") return state;
 
-      const randomNidana =
-        NIDANA_LIST[Math.floor(Math.random() * NIDANA_LIST.length)];
+      // v36 (12 agosto 2026) — decisión de diseño cerrada: se elimina
+      // la Nidana aleatoria en cada tirada. Ahora currentNidana solo
+      // cambia como consecuencia real de una jugada (ver CONSCIOUS_MOVE
+      // más abajo, donde se calcula a partir de un evento genuino del
+      // Pattern Engine) — al tirar los dados, simplemente se conserva
+      // lo que ya había.
 
       const nextRollCount = state.globalRollCount + 1;
 
@@ -324,7 +328,6 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
         realmPieces: releasedPiecesRealm,
         phase: "rolled",
         rollOptions: [rollDie(), rollDie()],
-        currentNidana: randomNidana,
         genesisNovelty: nextGenesisNovelty,
       };
 
@@ -991,6 +994,39 @@ if (!didCapture) {
         toRealm: realmFromPos(finalToPos),
       });
 
+      // v36 (12 agosto 2026) — decisión de diseño cerrada con
+      // Federico/Chat: una Nidana solo puede mostrarse si lastEvents
+      // contiene un evento generado EN ESTA JUGADA (no uno viejo que
+      // sigue en la lista de los últimos 12) y ese tipo de evento tiene
+      // correspondencia en NIDANA_BY_PATTERN_EVENT (mapa parcial —
+      // IGNORANCE, NAME_AND_FORM, SIX_SENSES, CONTACT y BIRTH quedan
+      // deliberadamente sin trigger por ahora). Si varios eventos
+      // nuevos mapean en la misma jugada, se usa el primero (más
+      // reciente) de la lista. Enfriamiento simple: no dos Nidanas
+      // pegadas aunque dos eventos ocurran en turnos consecutivos.
+      const MIN_TURNS_BETWEEN_NIDANAS = 4;
+
+      const newEventsThisTurn = patternNext.lastEvents.filter(
+        (ev) => ev.atTurn === state.turnIndex && ev.atCycle === state.cycleIndex
+      );
+
+      const mappedNidana = newEventsThisTurn
+        .map((ev) => NIDANA_BY_PATTERN_EVENT[ev.type])
+        .find((id): id is NonNullable<typeof id> => Boolean(id));
+
+      const cooldownElapsed =
+        state.turnIndex - state.lastNidanaAtTurn >= MIN_TURNS_BETWEEN_NIDANAS;
+
+      const shouldShowNewNidana = Boolean(mappedNidana) && cooldownElapsed;
+
+      const nextCurrentNidana = shouldShowNewNidana
+        ? mappedNidana!
+        : state.currentNidana;
+
+      const nextLastNidanaAtTurn = shouldShowNewNidana
+        ? state.turnIndex
+        : state.lastNidanaAtTurn;
+
       const nextTurn = didWin ? me : opp;
       const nextTurnIndex = state.turnIndex + 1;
       const nextCycleIndex =
@@ -1150,6 +1186,8 @@ realmAscension: nextRealmAscensionForBrunoInMove ?? (didAscendRealm && unlockedR
   : state.realmAscension),
         behavior: nextBehavior,
         pattern: patternNext,
+        currentNidana: nextCurrentNidana,
+        lastNidanaAtTurn: nextLastNidanaAtTurn,
         decisionSignature: nextDecisionSignature,
         lastKarma: karma,
         karmaTotal: {

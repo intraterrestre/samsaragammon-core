@@ -258,6 +258,10 @@ export type GameState = {
 
   level: number;
   currentNidana: NidanaId | null;
+  // v36 (12 agosto 2026) — turnIndex en el que se mostró la última
+  // Nidana real, para el enfriamiento entre Nidanas (no dos pegadas
+  // aunque dos eventos del Pattern Engine ocurran en turnos seguidos).
+  lastNidanaAtTurn: number;
   activeNidanaEffect: "CLARITY" | "DISTORTION" | "TENSION" | null;
 
   lastMove: LastMove | null;
