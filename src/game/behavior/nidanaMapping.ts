@@ -10,17 +10,31 @@
 // deliberadamente SIN mapear — no hay una señal mecánica limpia para
 // ellas hoy. No se les asigna un evento solo para llenar la tabla.
 //
+// v37 (12 agosto 2026) — corrección: naraka_entry se QUITÓ de este
+// mapa. Es un evento posicional (casillas 0-3, ver src/UI/realm.ts) —
+// caminar hasta ahí no es lo mismo que ser capturado, y mapearlo a
+// DEATH rompía la relación causa→mensaje que las Nidanas necesitan
+// para sentirse justificadas. naraka_entry sigue existiendo en el
+// Pattern Engine (útil para telemetría/lectura de comportamiento),
+// simplemente ya no dispara ninguna Nidana.
+//
+// DEATH ahora depende de avatar_sent_to_mara — el evento real de
+// captura de un Avatar (no un Veneno), que sí representa lo que la
+// Nidana necesita significar.
+//
 // Candidato anotado para más adelante, NO implementado: un evento real
-// "mara_return" (ficha SALE de Mara, no existe todavía — ver nota en
-// patternEngine.ts) mapearía a BIRTH, formando el par narrativo
-// entra Mara → DEATH / sale de Mara → BIRTH.
+// "avatar_returned_from_mara" (Avatar SALE de Mara, no existe todavía
+// — recordMove() solo se llama desde CONSCIOUS_MOVE, y el regreso real
+// de Mara ocurre en el bucle de ROLL, que nunca llama a recordMove)
+// mapearía a BIRTH, formando el par narrativo:
+// captura → Mara → DEATH / regreso de Mara → BIRTH.
 import type { PatternEventType } from "./patternEngine";
 import type { NidanaId } from "../nidanas";
 
 export const NIDANA_BY_PATTERN_EVENT: Partial<
   Record<PatternEventType, NidanaId>
 > = {
-  naraka_entry: "DEATH",
+  avatar_sent_to_mara: "DEATH",
   capture_bias: "CRAVING",
   avoidance_bias: "FEELING",
   realm_stuck: "CLINGING",

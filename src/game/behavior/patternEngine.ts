@@ -10,6 +10,7 @@ export type PatternEventType =
   | "realm_stuck"
   | "realm_hopping"
   | "naraka_entry"
+  | "avatar_sent_to_mara"
   | "stability_streak"
   | "volatility_spike";
 
@@ -63,6 +64,11 @@ export type RecordMoveInput = {
   toPos: number;
   fromRealm: Realm;
   toRealm: Realm;
+
+  // v37 (12 agosto 2026) — true solo cuando esta jugada capturó
+  // específicamente un Avatar (no un Veneno) y lo mandó a Mara. Evento
+  // real, distinto de naraka_entry (que es posicional, no de captura).
+  capturedAvatarThisMove?: boolean;
 };
 
 export type PatternEngineState = PatternSnapshot;
@@ -141,16 +147,13 @@ export function recordMove(
   const key = `${input.fromRealm}->${input.toRealm}`;
   next.realmTransitions[key] = (next.realmTransitions[key] ?? 0) + 1;
 
-  // v36 (12 agosto 2026) — renombrado de "naraka_return" a
-  // "naraka_entry": el nombre viejo mentía. Esto dispara al ENTRAR a
-  // Mara (fromRealm distinto de NARAKA, toRealm === NARAKA — el
-  // "details" siempre apunta hacia adentro), no al volver. Mapeado a
-  // la Nidana DEATH ("What formed must pass."). Candidato anotado para
-  // más adelante, NO implementado todavía: un evento real
-  // "mara_return" quede ficha SALE de Mara — hoy no existe ninguno,
-  // porque recordMove() solo se llama desde CONSCIOUS_MOVE y el
-  // regreso real de Mara ocurre en el bucle de ROLL, que nunca llama a
-  // recordMove. Ese evento futuro mapearía bien a BIRTH.
+  // v37 (12 agosto 2026) — corrección: naraka_entry NO representa una
+  // captura (es posicional, casillas 0-3 — ver src/UI/realm.ts). El
+  // par narrativo entra a Mara/sale de Mara vive en avatar_sent_to_mara
+  // (arriba) y en el candidato futuro avatar_returned_from_mara, NO
+  // AQUÍ. No implementado todavía: recordMove() solo se llama desde
+  // CONSCIOUS_MOVE y el regreso real de Mara ocurre en el bucle de
+  // ROLL, que nunca llama a recordMove.
   if (input.toRealm === "NARAKA" && input.fromRealm !== "NARAKA") {
     next.narakaReturns += 1;
     pushEvent(next, {
@@ -160,6 +163,21 @@ export function recordMove(
       atCycle: input.cycleIndex,
       player: input.player,
       details: `${input.fromRealm}→NARAKA`,
+    });
+  }
+
+  // v37 (12 agosto 2026) — evento real de captura, separado de
+  // naraka_entry (que es posicional y no implica captura de nadie).
+  // Este SÍ representa lo que la Nidana DEATH debería significar: un
+  // Avatar rival fue capturado y mandado a Mara en esta jugada exacta.
+  if (input.capturedAvatarThisMove) {
+    pushEvent(next, {
+      type: "avatar_sent_to_mara",
+      severity: 2,
+      atTurn: input.turnIndex,
+      atCycle: input.cycleIndex,
+      player: input.player,
+      details: "captured avatar -> Mara",
     });
   }
 

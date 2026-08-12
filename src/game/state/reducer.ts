@@ -732,6 +732,13 @@ if (nextRealmKey) {
 // Backgammon, sección 6.3 de la RFC.
 let didCapture = false;
 let capturedPieceKind: PieceKind | null = null;
+// v37 (12 agosto 2026) — corrección de diseño: naraka_entry (zona
+// posicional del tablero) NO debe mapear a DEATH — Federico/Chat
+// señalaron que eso rompía la relación causa→mensaje (caminar a esas
+// casillas no es lo mismo que ser capturado). Este flag distingue si
+// lo capturado esta jugada fue específicamente un Avatar (no un
+// Veneno), para el evento real avatar_sent_to_mara -> DEATH.
+let capturedWasAvatar = false;
 
 type EnemyRef =
   | { system: "base"; kind: BasePieceKind }
@@ -792,6 +799,7 @@ if (enemyRefsAtTarget.length >= 1) {
 
   didCapture = true;
   capturedPieceKind = enemyRef.kind;
+  capturedWasAvatar = enemyRef.system === "realm";
   nextCaptures[me] += 1;
 
   if (enemyRef.system === "base") {
@@ -992,6 +1000,7 @@ if (!didCapture) {
         toPos,
         fromRealm: realmFromPos(fromPos),
         toRealm: realmFromPos(finalToPos),
+        capturedAvatarThisMove: didCapture && capturedWasAvatar,
       });
 
       // v36 (12 agosto 2026) — decisión de diseño cerrada con
