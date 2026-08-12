@@ -21,6 +21,7 @@ import { NIDANA_LIST } from "../nidanas";
 import type { NidanaId } from "../nidanas";
 import { isBasePieceUnlocked } from "../era";
 import { evaluateOrchestrator, evaluateGenesisToBruno } from "../orchestrator/Orchestrator";
+import { getMoveOptionsForPlayer } from "../rules/getMoveOptionsForPlayer";
 
 const BASE_PIECE_KINDS: BasePieceKind[] = ["pig", "snake", "rooster"];
 const isBasePieceKind = (kind: PieceKind): kind is BasePieceKind =>
@@ -557,6 +558,38 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
       const { option, allOptions } = action;
 
       if (!option) return state;
+
+      // v33 (12 agosto 2026) — bug real reportado: Whitman blanco capturó
+      // a Marino negro aunque hubiera 2 Avatares negros (Marino+Oriol)
+      // juntos en esa casilla, que debían bloquear la jugada — Federico
+      // confirmó que la línea se veía normal (no bloqueada) al momento
+      // de clicarla. No se pudo reproducir el mecanismo exacto con
+      // pruebas directas (el bloqueo SÍ funciona con un estado limpio
+      // construido a mano), pero se encontró la debilidad real de fondo:
+      // el reducer nunca comprobaba que `option` fuera de verdad una de
+      // las opciones legales del momento — ejecutaba cualquier cosa que
+      // le llegara, confiando ciegamente en el origen (útil solo si la
+      // UI nunca pudiera mandar algo desactualizado, que es justo lo que
+      // parece haber pasado aquí). Validación defensiva: recalcula las
+      // opciones legales AHORA MISMO y rechaza silenciosamente cualquier
+      // `option` que no sea una de ellas — cierra esta clase entera de
+      // bug, no solo esta jugada puntual, sin importar qué causó
+      // exactamente que la UI ofreciera algo desactualizado.
+      const legalOptionsNow = getMoveOptionsForPlayer(state, me);
+      const isOptionStillLegal = legalOptionsNow.some(
+        (o) =>
+          o.pieceKind === option.pieceKind &&
+          o.venomId === option.venomId &&
+          o.toPos === option.toPos &&
+          o.choice === option.choice
+      );
+      if (!isOptionStillLegal) {
+        console.warn(
+          "[CONSCIOUS_MOVE] opción rechazada — ya no es legal en el estado actual",
+          option
+        );
+        return state;
+      }
 
       const activePiece = option.pieceKind;
       const fromPos = option.fromPos;
