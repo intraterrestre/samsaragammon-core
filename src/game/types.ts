@@ -23,6 +23,22 @@ export type RealmPieceKind =
   | "asura"
   | "deva";
 
+// v48 (13 agosto 2026) — a pedido de Federico: un unico tipo canonico
+// compartido, para que ningun modulo (UI, Karma, movimiento, victoria)
+// pueda volver a declarar su propia version de "que reinos existen".
+// Es un alias intencional de RealmPieceKind, no un tipo nuevo — ambos
+// preguntan lo mismo (que reino, de los 6) desde dos angulos distintos
+// (identidad del Avatar vs ubicacion espacial de una ficha), asi que
+// comparten una sola fuente de verdad en vez de mantenerse
+// sincronizados a mano. "asura"/"deva" quedan como los IDs canonicos
+// reales (son los que ya usa REALM_PIECE_ORDER y las claves de
+// state.realmPieces[jugador] en todo el reducer/Orchestrator — cambiar
+// esos nombres es un rename de la forma del GameState, no una
+// normalizacion de vocabulario, y por eso no se toca aca). "Titans" y
+// "SemiGods" quedan como nombres de PRESENTACION unicamente — ver
+// CANONICAL_REALM_LABEL en src/UI/realm.ts.
+export type CanonicalRealmId = RealmPieceKind;
+
 // Orden canónico de las 6 fichas de reino (una por Avatar/era). Única
 // fuente de verdad — reducer.ts y el módulo de victoria (src/game/victory)
 // importan esta lista en vez de declararla cada uno por su cuenta.

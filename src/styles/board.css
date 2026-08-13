@@ -147,13 +147,17 @@
   opacity: 0.85;
 }
 
-/* NARAKA (Hell / Black) */
-.cellBtn.realmCell-NARAKA { background: rgba(0,0,0,0.22); }
-.cellBtn.realmCell-NARAKA::before { background: rgba(0,0,0,0.55); }
+/* v46 (13 agosto 2026) — colores de NARAKA y PRETA intercambiados:
+   Federico confirmo que en el mural real Margot/Hell(Naraka) es MORADO
+   y Bruno/Hungry Ghosts(Preta) es NEGRO — al reves de como estaba. */
 
-/* PRETA (Hungry Ghost / Purple) */
-.cellBtn.realmCell-PRETA { background: rgba(120,0,160,0.16); }
-.cellBtn.realmCell-PRETA::before { background: rgba(170,60,220,0.60); }
+/* NARAKA (Hell / Purple, Margot) */
+.cellBtn.realmCell-NARAKA { background: rgba(120,0,160,0.16); }
+.cellBtn.realmCell-NARAKA::before { background: rgba(170,60,220,0.60); }
+
+/* PRETA (Hungry Ghost / Black, Bruno) */
+.cellBtn.realmCell-PRETA { background: rgba(0,0,0,0.22); }
+.cellBtn.realmCell-PRETA::before { background: rgba(0,0,0,0.55); }
 
 /* ANIMAL (Yellow / Gold) */
 .cellBtn.realmCell-ANIMAL { background: rgba(255,190,0,0.16); }
@@ -170,6 +174,26 @@
 /* DEVA (White) */
 .cellBtn.realmCell-DEVA { background: rgba(255,255,255,0.10); }
 .cellBtn.realmCell-DEVA::before { background: rgba(255,255,255,0.60); }
+
+/* v45 (13 agosto 2026) — numero de casilla legible a pedido de
+   Federico. Antes el texto de .cellBtn usaba color blanco al 55% de
+   opacidad, casi invisible sobre el mural pintado. Blanco solido +
+   contorno oscuro (text-shadow en 4 direcciones, mas barato que
+   -webkit-text-stroke que no anda parejo en todos los navegadores)
+   para que se lea sobre cualquier color de fondo/reino. */
+.cellNumLabel {
+  position: relative;
+  z-index: 1;
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow:
+    -1px -1px 0 rgba(0,0,0,0.9),
+     1px -1px 0 rgba(0,0,0,0.9),
+    -1px  1px 0 rgba(0,0,0,0.9),
+     1px  1px 0 rgba(0,0,0,0.9),
+     0 0 4px rgba(0,0,0,0.6);
+}
 
 .mcTitle{
   font-size: 12px;

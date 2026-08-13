@@ -14,7 +14,7 @@ import { initialState } from "./state";
 
 import { behaviorAfterMove } from "../behavior/behavior";
 import { recordMove } from "../behavior/patternEngine";
-import { realmFromPos } from "../../UI/realm";
+import { realmFromPos, canonicalRealmFromPos } from "../../UI/realm";
 import { updateDecisionSignature } from "../Karma/updateDecisionSignature";
 import { computeKarmaTurn } from "../engine/computeKarmaTurn";
 import { NIDANA_BY_PATTERN_EVENT } from "../behavior/nidanaMapping";
@@ -1058,7 +1058,16 @@ if (capturedAvatarVacatedPos !== null) {
     }
   }
 }
-const currentRealm = realmFromPos(finalToPos);
+// v47 (13 agosto 2026) — cierre de deuda tecnica a pedido de Federico:
+      // Karma debe recibir el ID canonico de reino (RealmPieceKind), no el
+      // vocabulario espacial de UI/realm.ts (NARAKA/HUMAN/etc) que
+      // computeKarmaTurn nunca reconocia (por eso getRealmModifier
+      // siempre caia en su default). Los otros dos usos de
+      // realmFromPos() en este archivo (fromRealm/toRealm, mas abajo,
+      // que alimentan al Pattern Engine via recordMove) NO se tocan —
+      // el Pattern Engine sigue recibiendo exactamente los mismos
+      // valores que siempre recibio.
+      const currentRealm = canonicalRealmFromPos(finalToPos);
       let nextRealmProgress = {
         ...state.realmProgress,
         [me]: {
@@ -1191,8 +1200,9 @@ if (!didCapture) {
         captureWasAvoidable,
         fromPos,
         toPos,
-        fromRealm: realmFromPos(fromPos),
-        toRealm: realmFromPos(finalToPos),
+        // v47 (13 agosto 2026) — cast documentado, sin cambio de comportamiento: el import de src/UI/realm.ts se arreglo hoy (ver ese archivo), y ahora su tipo Realm (NARAKA/PRETA/ANIMAL/HUMAN/ASURA/DEVA, vocabulario espacial) type-checkea de verdad contra si mismo, en vez de colar como 'any' por el import roto de antes. El Pattern Engine (patternEngine.ts) declara su PROPIO tipo Realm (game/types.ts: HUNGRY_GHOST/HELL/ANIMALS/HUMANS/ASURA/DEVA/NIRVANA) y esa es zona 'no tocar' — no se toca su logica ni su tipo. Este 'as any' preserva EXACTAMENTE el mismo valor en tiempo de ejecucion que siempre recibio (antes colaba silenciosamente; ahora se declara explicitamente), solo para no dejar un error de compilacion nuevo por arreglar el otro archivo.
+        fromRealm: realmFromPos(fromPos) as any,
+        toRealm: realmFromPos(finalToPos) as any,
         capturedAvatarThisMove: didCapture && capturedWasAvatar,
       });
 
@@ -1438,8 +1448,9 @@ realmAscension: nextRealmAscensionForBrunoInMove ?? (didAscendRealm && unlockedR
           toPos: finalToPos,
           didCapture,
           capturedPieceKind,
-          fromRealm: realmFromPos(fromPos),
-          toRealm: realmFromPos(finalToPos),
+          // v47 (13 agosto 2026) — cast documentado, sin cambio de comportamiento: el import de src/UI/realm.ts se arreglo hoy (ver ese archivo), y ahora su tipo Realm (NARAKA/PRETA/ANIMAL/HUMAN/ASURA/DEVA, vocabulario espacial) type-checkea de verdad contra si mismo, en vez de colar como 'any' por el import roto de antes. El Pattern Engine (patternEngine.ts) declara su PROPIO tipo Realm (game/types.ts: HUNGRY_GHOST/HELL/ANIMALS/HUMANS/ASURA/DEVA/NIRVANA) y esa es zona 'no tocar' — no se toca su logica ni su tipo. Este 'as any' preserva EXACTAMENTE el mismo valor en tiempo de ejecucion que siempre recibio (antes colaba silenciosamente; ahora se declara explicitamente), solo para no dejar un error de compilacion nuevo por arreglar el otro archivo.
+          fromRealm: realmFromPos(fromPos) as any,
+          toRealm: realmFromPos(finalToPos) as any,
           turnIndex: nextTurnIndex,
           cycleIndex: nextCycleIndex,
           level: state.level,

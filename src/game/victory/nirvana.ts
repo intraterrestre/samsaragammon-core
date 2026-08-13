@@ -59,7 +59,10 @@ export function isVictoryEnabled(state: GameState, player: PlayerId): boolean {
 /**
  * Condición física de Nirvana: los 6 Avatares propios (uno por reino,
  * ver REALM_PIECE_ORDER), desbloqueados y fuera de Mara, ubicados
- * dentro del reino Humans (posiciones 12–15 del track de 24 casillas).
+ * dentro del reino Humans — posiciones 20-23 del track de 24 casillas
+ * (v46, 13 agosto 2026: corregido para que coincida con el mural real;
+ * ver REALMS en src/UI/realm.ts — antes decía 12-15 por error, que en
+ * el mural pintado es Hell/Margot, no Humans/Marino).
  *
  * No importa cómo se repartan entre las 4 casillas de Humans — 2+2+2,
  * 4+1+1, 3+3, etc. La geometría exacta es táctica emergente (stacks de

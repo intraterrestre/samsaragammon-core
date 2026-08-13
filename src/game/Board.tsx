@@ -875,7 +875,7 @@ animation: "nidanaReveal 2.6s cubic-bezier(.16,1.25,.32,1) both",
       key={i}
       type="button"
       disabled={true}
-      className={`cellBtn ${
+      className={`cellBtn realmCell realmCell-${cellRealm} ${
         isHoveredTarget
           ? hoveredOption?.meaning === "IMPACT"
             ? "moveB"
@@ -888,9 +888,19 @@ animation: "nidanaReveal 2.6s cubic-bezier(.16,1.25,.32,1) both",
       }`}
       style={ringCellStyle(i, size)}
       onClick={() => {}}
-      title={`${REALM_LABEL[cellRealm]}`}
+      title={`${i} — ${REALM_LABEL[cellRealm]}`}
     >
-      {i}
+      {/* v45 (13 agosto 2026) — a pedido de Federico ("no puedo ver los
+          numeros de las casillas... las casillas numeradas no
+          corresponden con los colores"): el numero de casilla existia
+          en el DOM pero era ilegible (gris translucido de 0.55 de
+          opacidad, sobre el mural pintado de fondo) y el sistema de
+          colores por reino (realmCell-NARAKA/PRETA/ANIMAL/HUMAN/ASURA/
+          DEVA) ya estaba definido en board.css pero nunca se conectaba
+          a esta clase — se agrega arriba. El numero ahora tiene alto
+          contraste (blanco solido + contorno oscuro) para leerse sobre
+          cualquier fondo. */}
+      <span className="cellNumLabel">{i}</span>
               {isHoveredTarget && (
                 <>
                   <div className="moveTag">{hoveredOption?.choice}</div>

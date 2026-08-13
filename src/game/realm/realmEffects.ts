@@ -1,31 +1,31 @@
 // src/game/realm/realmEffects.ts
-import type { PlayerId, Realm } from "../types";
+import type { PlayerId, CanonicalRealmId } from "../types";
+import { canonicalRealmFromPos } from "../../UI/realm";
 
 export type RealmEffectResult = {
   tier: number;
-  realm: Realm;
+  realm: CanonicalRealmId;
   delta: number;
   label: string;
   applied: boolean;
   finalPos: number;
 };
 
-/**
- * 6 reinos × 4 casillas = 24
- */
-const REALMS: Realm[] = [
-  "HELL",
-  "HUNGRY_GHOST",
-  "ANIMALS",
-  "HUMANS",
-  "TITANS",
-  "SEMIGODS",
-];
-
-export function realmFromPos(pos: number): Realm {
-  const idx = Math.max(0, Math.min(5, Math.floor(pos / 4)));
-  return REALMS[idx] ?? "HUMANS";
-}
+// v47 (13 agosto 2026) — cierre de deuda tecnica a pedido de Federico.
+// Este archivo tenia su PROPIO REALMS[]/realmFromPos() local, un
+// tercer mapeo posicion->reino independiente del de src/UI/realm.ts
+// (ni siquiera coincidian entre si). Ademas su vocabulario
+// ("HELL"/"HUNGRY_GHOST"/"TITANS"/"SEMIGODS") no era valido para el
+// tipo Realm real de game/types.ts (ya daba error de TypeScript,
+// TS2678, tratado como "ruido de siempre" en el baseline). Se
+// reemplaza por canonicalRealmFromPos() — el unico traductor
+// posicion->RealmPieceKind canonico — para que solo exista una fuente
+// de verdad de "que reino es esta casilla" en todo el repo.
+//
+// Confirmado antes de este cambio: NINGUN caller usa realm/label de
+// esta funcion (solo finalPos, ver getMoveOptionsForPlayer.ts), y
+// TODOS los delta ya estaban en 0 — cero efecto de juego, antes y
+// despues. Cambio de vocabulario/tipos unicamente.
 
 export function tierFromLevel(level: number): number {
   if (level >= 7) return 3;
@@ -51,42 +51,42 @@ export function applyRealmEffect(params: {
 }): RealmEffectResult {
   const { level, trackSize, toPos, didCapture } = params;
   const tier = tierFromLevel(level);
-  const realm = realmFromPos(toPos);
+  const realm = canonicalRealmFromPos(toPos);
 
   let delta = 0;
   let label = "—";
 
   switch (realm) {
-    case "HELL":
+    case "hell":
       delta = 0;
       label = "HELL drag";
       break;
 
-    case "HUNGRY_GHOST":
+    case "hungry_ghost":
       delta = 0;
       label = didCapture
         ? "HUNGRY GHOST quiet"
         : "HUNGRY GHOST hunger";
       break;
 
-    case "ANIMALS":
+    case "animals":
       delta = 0;
       label = didCapture
         ? "ANIMALS still"
         : "ANIMALS rut";
       break;
 
-    case "HUMANS":
+    case "humans":
       delta = 0;
       label = "HUMANS agency";
       break;
 
-    case "TITANS":
+    case "asura":
       delta = 0;
       label = didCapture ? "TITANS surge" : "TITANS idle";
       break;
 
-    case "SEMIGODS":
+    case "deva":
       delta = 0;
       label = didCapture ? "SEMIGODS veil" : "SEMIGODS blessing";
       break;

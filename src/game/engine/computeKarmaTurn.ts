@@ -2,7 +2,7 @@ import type {
   DecisionSignature,
   LastMove,
   MoveOption,
-  Realm,
+  CanonicalRealmId,
   PieceKind,
 } from "../types";
 
@@ -19,7 +19,7 @@ type KarmaInput = {
   lastMove: LastMove | null;
   currentMove: MoveOption;
   didCapture: boolean;
-  realm: Realm;
+  realm: CanonicalRealmId;
   decisionSignature: DecisionSignature;
   capturedPieceKind: PieceKind | null;
 };
@@ -61,22 +61,37 @@ function getContextValue(didCapture: boolean): number {
   return didCapture ? 2 : 0;
 }
 
-function getRealmModifier(realm: Realm): number {
+// v47 (13 agosto 2026) — cierre de deuda tecnica a pedido de Federico.
+// Esta funcion comparaba contra "HUNGRY_GHOST"/"HELL"/"TITANS"/
+// "SEMIGODS"/"BUDDHA" (vocabulario que ni siquiera pertenecia al tipo
+// Realm real de game/types.ts — ya daba error de TypeScript,
+// TS2678, ignorado como "ruido de siempre"), mientras que el valor
+// que de verdad le llegaba en tiempo de ejecucion (via
+// src/UI/realm.ts, que tenia su import roto) era otro vocabulario
+// distinto ("NARAKA"/"HUMAN"/etc). Ningun caso coincidia jamas: esta
+// funcion SIEMPRE devolvio 0 por el default, para cualquier reino,
+// desde que se escribio. Con el import de UI/realm.ts arreglado y
+// canonicalRealmFromPos() como unico traductor, ahora compara contra
+// los 6 IDs canonicos reales (RealmPieceKind) y queda correctamente
+// tipada — pero a proposito TODOS los casos siguen devolviendo 0, tal
+// cual pidio Federico ("aunque todos los modificadores sigan siendo
+// 0... asi cuando algun dia pongas un +1/-1 no despiertas un sistema
+// roto"). Ajustar estos valores es una decision de diseño aparte, no
+// parte de esta normalizacion.
+function getRealmModifier(realm: CanonicalRealmId): number {
   switch (realm) {
-    case "HUNGRY_GHOST":
-      return -2;
-    case "HELL":
-      return -1;
-    case "ANIMALS":
+    case "hungry_ghost":
       return 0;
-    case "HUMANS":
-      return 1;
-    case "TITANS":
-      return 2;
-    case "SEMIGODS":
-      return 1;
-    case "BUDDHA":
-      return 3;
+    case "hell":
+      return 0;
+    case "animals":
+      return 0;
+    case "humans":
+      return 0;
+    case "asura":
+      return 0;
+    case "deva":
+      return 0;
     default:
       return 0;
   }
