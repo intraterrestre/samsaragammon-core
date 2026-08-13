@@ -133,11 +133,26 @@ const ACTIVE_PIECE_KINDS: PieceKind[] = getUnlockedBasePieces(
 // samsaraScene (which clips overflow), so anything much bigger than this
 // gets its head cut off on the topmost/bottommost cells. Snake/Rooster
 // keep the original size for whenever their era switches them back on.
+//
+// v42 (13 agosto 2026) — pedido de Federico: el cochino grande es una
+// metáfora de la Era 1 (Bruno, todavía "ignorante" — el cochino como
+// único drive activo). Una vez que entra Margot, esa metáfora ya no
+// aplica — el cochino debe verse igual que serpiente y gallo. Ver
+// PIG_NORMAL_SIZE_ERA más abajo, donde se usa junto a state.cosmicClock.era.
 const PIECE_VISUAL_SIZE: Record<BasePieceKind, number> = {
   pig: 90,
   snake: 50,
   rooster: 50,
 };
+const PIG_NORMAL_SIZE = 50;
+const ERA_ORDER_FOR_PIG_SIZE = [
+  "bruno",
+  "margot",
+  "oriol",
+  "marino",
+  "rufus",
+  "whitman",
+] as const;
 const NIDANA_EFFECT_LINES: Record<number, {
   title: string;
   body: string;
@@ -474,7 +489,19 @@ const { stackIndex, stackTotal, extraRadialOffset } =
     extraRadialOffset: 0,
   };
 
-const visualSize = PIECE_VISUAL_SIZE[kind as BasePieceKind] ?? 50;
+// v42 (13 agosto 2026) — el cochino vuelve a su tamaño normal (igual
+// a serpiente/gallo) apenas entra Margot — antes de eso (todavía en
+// Bruno/"ignorancia") se mantiene grande como el drive único de la
+// Era 1.
+const margotEntered =
+  ERA_ORDER_FOR_PIG_SIZE.indexOf(
+    state.cosmicClock.era as (typeof ERA_ORDER_FOR_PIG_SIZE)[number]
+  ) >= ERA_ORDER_FOR_PIG_SIZE.indexOf("margot");
+
+const visualSize =
+  kind === "pig" && margotEntered
+    ? PIG_NORMAL_SIZE
+    : PIECE_VISUAL_SIZE[kind as BasePieceKind] ?? 50;
 
 const stackedPosition = getStackedTokenPosition({
   base: {

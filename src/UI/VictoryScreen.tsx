@@ -14,7 +14,7 @@ type Props = {
 };
 
 export function VictoryScreen({ winner, onPlayAgain }: Props) {
-  const label = winner === "P1" ? "Blanco" : "Negro";
+  const label = winner === "P1" ? "White" : "Black";
 
   return (
     <div
@@ -42,7 +42,7 @@ export function VictoryScreen({ winner, onPlayAgain }: Props) {
           fontWeight: 700,
         }}
       >
-        Nirvana alcanzado
+        Nirvana reached
       </div>
 
       <div
@@ -55,7 +55,7 @@ export function VictoryScreen({ winner, onPlayAgain }: Props) {
           lineHeight: 1.15,
         }}
       >
-        {label} ha completado el ciclo
+        {label} has completed the cycle
       </div>
 
       <div
@@ -66,8 +66,8 @@ export function VictoryScreen({ winner, onPlayAgain }: Props) {
           lineHeight: 1.5,
         }}
       >
-        Los seis Avatares llegaron juntos a Humans. La rueda se detiene
-        para {label.toLowerCase()}.
+        All six Avatars arrived together in Humans. The wheel stops
+        for {label.toLowerCase()}.
       </div>
 
       <button
@@ -86,7 +86,7 @@ export function VictoryScreen({ winner, onPlayAgain }: Props) {
           boxShadow: "0 0 16px rgba(255,220,140,0.35)",
         }}
       >
-        Jugar de nuevo
+        Play again
       </button>
     </div>
   );
