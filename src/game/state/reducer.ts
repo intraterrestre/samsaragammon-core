@@ -50,7 +50,8 @@ type Action =
     }
   | { type: "EMOJI"; emoji: string; player: PlayerId }
   | { type: "SET_MULTIPLAYER_STATE"; state: GameState }
-  | { type: "SET_GENESIS_UI_COMPLETE" };
+  | { type: "SET_GENESIS_UI_COMPLETE" }
+  | { type: "DEV_SKIP_TO_WHITMAN" };
 
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 const rollDie = () => 1 + Math.floor(Math.random() * 6);
@@ -211,6 +212,84 @@ export function reducer(state: GameState, action: Action): GameState {
 
     case "RESET":
       return initialState;
+
+    // DEV ONLY (13 agosto 2026) — atajo pedido por Federico para no jugar
+    // toda la progresion Bruno->Whitman cada vez que necesita probar
+    // contenido de fin de partida (5/6, 6/6, Nirvana, Buda DJ). Replica el
+    // ESTADO FINAL que el Orquestador/Pattern Engine ya producirian con las
+    // condiciones cumplidas -- no toca su logica ni sus condiciones, solo
+    // escribe directamente los campos de GameState que ellos leen.
+    // Desbloquea las 6 fichas de reino de AMBOS jugadores (si no estaban ya
+    // desbloqueadas -- no pisa progreso existente) y pone el reloj cosmico
+    // en "whitman". Las posiciones se buscan libres una por una (mismo
+    // criterio que findEmptySpawnPos ya usa en Genesis/Mara), evitando a
+    // proposito el rango de Humans (12-15) para no regalar la formacion.
+    case "DEV_SKIP_TO_WHITMAN": {
+      let working: GameState = {
+        ...state,
+        realmPieces: {
+          P1: { ...state.realmPieces.P1 },
+          P2: { ...state.realmPieces.P2 },
+        },
+      };
+
+      (["P1", "P2"] as PlayerId[]).forEach((player) => {
+        const seed = player === "P1" ? 16 : 4;
+
+        REALM_PIECE_ORDER.forEach((kind, idx) => {
+          const existing = working.realmPieces[player]?.[kind];
+          if (existing?.unlocked) return;
+
+          const pos = findEmptySpawnPos(working, (seed + idx) % working.trackSize);
+
+          working = {
+            ...working,
+            realmPieces: {
+              ...working.realmPieces,
+              [player]: {
+                ...working.realmPieces[player],
+                [kind]: {
+                  id: `${player}-${kind}`,
+                  kind,
+                  pos,
+                  inLimbo: false,
+                  maraLevel: null,
+                  unlocked: true,
+                },
+              },
+            },
+          };
+        });
+      });
+
+      const brunoActor = working.actors.bruno;
+
+      return {
+        ...working,
+        brunoRevealed: true,
+        actors: brunoActor
+          ? {
+              ...working.actors,
+              bruno: {
+                ...brunoActor,
+                unlocked: true,
+                inLimbo: false,
+                maraLevel: null,
+                pos: working.realmPieces.P1.hungry_ghost?.pos ?? brunoActor.pos,
+              },
+            }
+          : working.actors,
+        cosmicClock: {
+          era: "whitman",
+          progress: 0,
+          transitionSequence: state.cosmicClock.transitionSequence + 1,
+        },
+        realmProgress: {
+          P1: { ...state.realmProgress.P1, currentRealmStep: 6 },
+          P2: { ...state.realmProgress.P2, currentRealmStep: 6 },
+        },
+      };
+    }
 
     case "ROLL": {
       if (state.phase === "rolled") return state;

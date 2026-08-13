@@ -1080,6 +1080,7 @@ useEffect(() => {
 nidanaCoinId={activeNidanaId}
 nidanaCoinSide={nidanaSide}
       onGenesisUIComplete={() => dispatch({ type: "SET_GENESIS_UI_COMPLETE" })}
+      onDevSkipToWhitman={() => dispatch({ type: "DEV_SKIP_TO_WHITMAN" })}
       onVestigiumDone={() => setShowVestigium(false)}
       onCloseLedger={() => dispatch({ type: "CLOSE_LEDGER" })}
       onIntroDone={() => dispatch({ type: "INTRO_DONE" })}

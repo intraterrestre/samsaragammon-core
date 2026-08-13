@@ -77,6 +77,11 @@ nidanaCoinSide: "front" | "back";
   onSendEmoji: (emoji: string) => void;
 
   onCloseLedger: () => void;
+
+  // DEV ONLY (13 agosto 2026) — atajo pedido por Federico, ver reducer.ts
+  // case "DEV_SKIP_TO_WHITMAN". Opcional para no romper otros usos de
+  // GameShell que no la pasen.
+  onDevSkipToWhitman?: () => void;
 };
 
 export function GameShell({
@@ -96,6 +101,7 @@ export function GameShell({
   onLogout,
   onRoll,
   onReset,
+  onDevSkipToWhitman,
   playDiceSound,
   onConsciousMove,
   onGenesisUIComplete,
@@ -693,6 +699,31 @@ return (
 
   <div className="samsaraStage">
     <div className="samsaraScene">
+      {/* DEV ONLY (13 agosto 2026) — atajo a pedido de Federico para
+          probar contenido de fin de partida sin jugar toda la
+          progresion Bruno->Whitman cada vez. No aparece en el flujo
+          normal de juego, solo un boton chico y discreto. */}
+      {genesisComplete && onDevSkipToWhitman && (
+        <button
+          onClick={onDevSkipToWhitman}
+          style={{
+            position: "absolute",
+            right: 8,
+            top: 8,
+            zIndex: 20000,
+            fontSize: 11,
+            padding: "4px 8px",
+            borderRadius: 6,
+            background: "rgba(0,0,0,0.55)",
+            color: "#f5d76e",
+            border: "1px solid rgba(245,215,110,0.4)",
+            cursor: "pointer",
+          }}
+        >
+          DEV: → Whitman
+        </button>
+      )}
+
       <SamsaraStage
         dharmaMessage={buddhaMessage}
         dharmaBig={isDharmaBig}
