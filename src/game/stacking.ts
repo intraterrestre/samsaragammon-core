@@ -91,7 +91,28 @@ export function getStackedTokenPosition({
 // un Avatar RIVAL — reutiliza el sistema radial existente en vez de
 // crear un componente nuevo. No toca pos, reducer, captura, Mara,
 // Orquestador, Karma ni selección — solo el cálculo de píxeles.
+//
+// v40 (13 agosto 2026) — bug real reportado por Federico: un Veneno
+// que viaja con SU PROPIO Avatar (mismo jugador, ej. la serpiente con
+// Bruno) quedaba pegado casi 100% debajo del Avatar — imposible de
+// clickear para el segundo paso de selección (selectedVenom, ver v27
+// en Board.tsx). La separación de acá arriba solo se activaba para
+// Avatar RIVAL, nunca para el propio. Se extiende el mismo offset a
+// cualquier Avatar en la casilla (propio o rival) — sigue siendo solo
+// separación visual, mismo mecanismo ya aprobado, nada nuevo.
 export const VENOM_ENEMY_AVATAR_OFFSET = 22;
+
+// v40 (13 agosto 2026) — bug real reportado por Federico: el cochino
+// (pig) es visualmente el doble de grande que serpiente/gallo
+// (PIECE_VISUAL_SIZE en Board.tsx: pig=90, snake/rooster=50 — "para que
+// se lea como el unico drive activo de la Era 1"). Cuando un pig
+// comparte casilla con otro Veneno (propio o rival), su tamano extra
+// se comia el offset radial normal y el otro Veneno quedaba tapado del
+// todo, sin borde clickeable — mismo sintoma que el caso Avatar+Veneno
+// de arriba, causa distinta (tamano, no z-index). La mitad de la
+// diferencia de tamano (90-50)/2=20, con un margen chico, alcanza para
+// dejar un borde visible.
+export const PIG_OVERSIZE_OFFSET = 24;
 
 export function buildUnifiedStackMap(
   state: GameState
@@ -149,16 +170,29 @@ export function buildUnifiedStackMap(
     const stackTotal = tokens.length;
 
     tokens.forEach(({ player, kind, system }, stackIndex) => {
-      const hasEnemyAvatarSameCell =
+      // v40 (13 agosto 2026) — antes: "&& t.player !== player" (solo
+      // avatar rival). Ahora separa al Veneno de CUALQUIER Avatar en
+      // la casilla, sea propio o rival, para que siempre quede un
+      // borde clickable.
+      const hasAvatarSameCell =
+        system === "base" && tokens.some((t) => t.system === "realm");
+
+      // v40 (13 agosto 2026) — separacion extra cuando comparte casilla
+      // con un pig (propio o rival) y esta pieza NO es el pig — el pig
+      // ya es casi el doble de grande, no necesita offset propio.
+      const hasPigPeerSameCell =
         system === "base" &&
-        tokens.some((t) => t.system === "realm" && t.player !== player);
+        kind !== "pig" &&
+        tokens.some((t) => t.system === "base" && t.kind === "pig");
+
+      const extraRadialOffset =
+        (hasAvatarSameCell ? VENOM_ENEMY_AVATAR_OFFSET : 0) +
+        (hasPigPeerSameCell ? PIG_OVERSIZE_OFFSET : 0);
 
       result.set(`${player}-${kind}`, {
         stackIndex,
         stackTotal,
-        extraRadialOffset: hasEnemyAvatarSameCell
-          ? VENOM_ENEMY_AVATAR_OFFSET
-          : 0,
+        extraRadialOffset,
       });
     });
   });

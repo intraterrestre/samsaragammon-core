@@ -959,7 +959,14 @@ style={{
   height: 48,
   borderRadius: "50%",
   position: "absolute",
-  zIndex: isAvatarSelected ? 9999 : 9999 + stackedPosition.zIndex,
+  // v40 (13 agosto 2026) — bug real: las dos ramas de este ternario
+  // daban siempre >= 9999, sin importar si estaba seleccionado — un
+  // Avatar SIEMPRE ganaba el clic sobre cualquier Veneno apilado en
+  // la misma casilla, sin distinguir seleccion. Ahora el no-seleccionado
+  // sigue por encima de los Venenos normales (comportamiento que ya
+  // existia y se mantiene), pero el ternario vuelve a tener sentido:
+  // el seleccionado de verdad queda por encima de todo.
+  zIndex: isAvatarSelected ? 9999 : 9000 + stackedPosition.zIndex,
   pointerEvents: player === state.turn ? "auto" : "none",
   cursor: player === state.turn ? "pointer" : "default",
   boxShadow: isAvatarSelected
