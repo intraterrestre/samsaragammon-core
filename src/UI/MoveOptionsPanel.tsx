@@ -136,7 +136,7 @@ export function MoveOptionsPanel({ options, onChoose }: Props) {
               boxShadow: `0 0 10px ${color}`,
             }}
           >
-            <span>Casilla {opt.toPos}</span>
+            <span>Cell {opt.toPos}</span>
             {label && (
               <span style={{ fontSize: 11, fontWeight: 700, color, marginTop: 2 }}>
                 {label}
