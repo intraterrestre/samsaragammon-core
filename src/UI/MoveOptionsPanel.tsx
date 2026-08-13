@@ -24,13 +24,13 @@ type Props = {
 function meaningLabel(meaning: MoveOption["meaning"]): string {
   switch (meaning) {
     case "IMPACT":
-      return "¡Captura!";
+      return "Capture!";
     case "RISK":
-      return "Riesgo";
+      return "Risk";
     case "SAFE":
-      return "Seguro";
+      return "Safe";
     case "SAME":
-      return "Se queda";
+      return "Stays";
     default:
       return "";
   }
