@@ -315,7 +315,18 @@ React.useEffect(() => {
 // Bruno" por el nombre, pero el diseño real es que todo este sistema
 // (conector, globo de texto, nidanas) es una capa que arranca en
 // Oriol — no antes.
-const brunoAwakened = state.realmProgress[state.turn].currentRealmStep >= 3;
+//
+// v36 (13 agosto 2026) — se retira el viejo "brunoAwakened" local
+// (`state.realmProgress[state.turn].currentRealmStep >= 3`): era
+// re-derivado del TURNO ACTUAL, así que alternaba false/true solo por
+// cambiar de jugador (aunque ningún evento narrativo nuevo hubiera
+// pasado) — eso rompía el pedido de Federico de que el cartel sea un
+// evento único, no una condición que parpadea con cada movida/turno.
+// La fuente de verdad real y global para "Oriol ya entró" es
+// `oriolEntered` (más abajo, deriva de state.cosmicClock.era) — es la
+// MISMA que ya gatea el resto de la capa Oriol en este archivo
+// (FandangoKarma, línea ~626). El disparo del cartel ahora vive en el
+// useEffect de flanco (edge) más abajo, después de definir oriolEntered.
 
 // 2026-08-05 — secuencia pedida por el usuario: después de las 24
 // casillas verdes (6 clics, GenesisReveal), NO se revela todo junto.
@@ -343,6 +354,65 @@ const ERA_ORDER = ["bruno", "margot", "oriol", "marino", "rufus", "whitman"] as 
 const oriolEntered =
   ERA_ORDER.indexOf(state.cosmicClock.era as (typeof ERA_ORDER)[number]) >=
   ERA_ORDER.indexOf("oriol");
+
+// v36 (13 agosto 2026) — cartel del buda (DharmaBubble/DharmaConnector,
+// mismo cupo visual de siempre, ver MaraLayer) convertido de condición
+// persistente a EVENTO efímero de un solo disparo: aparece ~5s y se
+// desvanece (~700ms de fade), nunca queda pegado. Dos disparadores,
+// cada uno detectado por FLANCO (edge) sobre fuentes de verdad que YA
+// existen — no se crea ningún estado de juego nuevo, solo el
+// temporizador de UI (mismo patrón que ya usa este archivo para las
+// nidanas: nidanaTimerRef/showNidanaSpinner más arriba):
+//   1) "THE FIRST EYE OPENS." — al cruce false→true de oriolEntered
+//      (arriba), que ya es la fuente de verdad global para "Oriol
+//      entró de verdad" (misma que gatea FandangoKarma más abajo).
+//   2) "WHITE/BLACK: ONLY ONE MORE." — al cruce a exactamente 5 de 6
+//      en countNirvanaFormationProgress (ver más abajo, junto a
+//      p1NearWin/p2NearWin) — se re-arma solo si el jugador baja de 5
+//      y vuelve a subir (flanco real, no "está en 5" continuo). 6/6
+//      (victoria) NO pasa por acá — queda para el futuro evento de
+//      Nirvana, sin tocar la condición de victoria.
+const prevOriolEnteredRef = React.useRef(false);
+const prevNearWinRef = React.useRef<{ P1: boolean; P2: boolean }>({
+  P1: false,
+  P2: false,
+});
+const dharmaHideTimerRef = React.useRef<number | null>(null);
+const dharmaFadeTimerRef = React.useRef<number | null>(null);
+const [transientDharma, setTransientDharma] = React.useState<{
+  message: string;
+  big: boolean;
+  fading: boolean;
+} | null>(null);
+
+const fireDharmaEvent = React.useCallback((message: string, big: boolean) => {
+  if (dharmaHideTimerRef.current) window.clearTimeout(dharmaHideTimerRef.current);
+  if (dharmaFadeTimerRef.current) window.clearTimeout(dharmaFadeTimerRef.current);
+
+  setTransientDharma({ message, big, fading: false });
+
+  dharmaHideTimerRef.current = window.setTimeout(() => {
+    setTransientDharma((cur) => (cur ? { ...cur, fading: true } : cur));
+
+    dharmaFadeTimerRef.current = window.setTimeout(() => {
+      setTransientDharma(null);
+    }, 700);
+  }, 5000);
+}, []);
+
+React.useEffect(() => {
+  return () => {
+    if (dharmaHideTimerRef.current) window.clearTimeout(dharmaHideTimerRef.current);
+    if (dharmaFadeTimerRef.current) window.clearTimeout(dharmaFadeTimerRef.current);
+  };
+}, []);
+
+React.useEffect(() => {
+  if (oriolEntered && !prevOriolEnteredRef.current) {
+    fireDharmaEvent("THE FIRST EYE OPENS.", false);
+  }
+  prevOriolEnteredRef.current = oriolEntered;
+}, [oriolEntered, fireDharmaEvent]);
 
 // 2026-08-05 — pedido del usuario: el mural de "Bruno" no debe verse
 // apenas se pintan las casillas — debe esperar hasta que el video intro
@@ -513,34 +583,42 @@ console.log(
 
 // Antes esto era un string fijo ("THE FIRST EYE OPENS.") que se mostraba
 // apenas terminaba Genesis, sin haber pasado nada en la partida real —
-// daba la sensación de "saltar" a una partida ya avanzada. Ahora solo
-// aparece una vez que de verdad se cumplió la condición narrativa
-// (brunoAwakened === state.brunoRevealed, ver arriba: ambos jugadores
-// usaron los 3 Venenos, mínimo de turnos y 4 eventos de novedad).
+// daba la sensación de "saltar" a una partida ya avanzada. Luego (v35,
+// 12 agosto) pasó a ser una condición persistente reusando el mismo
+// cartel para "a un Avatar del final" (5 de 6 en Humans) — pero
+// Federico señaló que quedaba pegado en pantalla el resto de la
+// partida sin motivo ("¿y qué? ¿es tuerto?").
 //
-// v35 (12 agosto 2026) — Federico señaló que ese texto se queda pegado
-// ahí sin cambiar nunca por el resto de la partida ("¿y qué? ¿es
-// tuerto?"). Se reutiliza el mismo cartel para algo que sí cambia con
-// la partida: cuando CUALQUIERA de los dos jugadores llega a 5 de los
-// 6 Avatares reunidos en Humans (a un Avatar del final), el cartel
-// avisa a los dos — "el evento de 5 no pertenece solo al jugador,
-// lo ven ambos" (decisión de diseño). isDharmaBig indica si este
-// mensaje en particular debe verse 3 veces más grande.
+// v36 (13 agosto 2026) — ambos casos son ahora EVENTOS de flanco (ver
+// fireDharmaEvent y los dos useEffect más arriba, junto a
+// oriolEntered). Acá solo se calculan las fuentes de verdad
+// (p1NearWin/p2NearWin, sin cambios) y se dispara el evento de
+// "ONLY ONE MORE" cuando cualquiera de los dos CRUZA a exactamente 5 —
+// se re-arma solo si el jugador baja de 5 y vuelve a subir (flanco
+// real). isDharmaBig ya no se deriva de nearWinMessage: viaja adentro
+// de transientDharma, fijado en el momento del disparo (ver
+// fireDharmaEvent), para que el cartel de "THE FIRST EYE OPENS." (no
+// grande) y el de "ONLY ONE MORE." (3x, ver DharmaBubble.css) no se
+// mezclen aunque ambas condiciones cambien en el mismo render.
 const p1NearWin = countNirvanaFormationProgress(state, "P1");
 const p2NearWin = countNirvanaFormationProgress(state, "P2");
-const nearWinMessage =
-  p1NearWin === 5
-    ? "WHITE: ONLY ONE MORE."
-    : p2NearWin === 5
-    ? "BLACK: ONLY ONE MORE."
-    : null;
 
-const buddhaMessage = nearWinMessage
-  ? nearWinMessage
-  : brunoAwakened
-  ? "THE FIRST EYE OPENS."
-  : "";
-const isDharmaBig = Boolean(nearWinMessage);
+React.useEffect(() => {
+  const p1At5 = p1NearWin === 5;
+  const p2At5 = p2NearWin === 5;
+
+  if (p1At5 && !prevNearWinRef.current.P1) {
+    fireDharmaEvent("WHITE: ONLY ONE MORE.", true);
+  } else if (p2At5 && !prevNearWinRef.current.P2) {
+    fireDharmaEvent("BLACK: ONLY ONE MORE.", true);
+  }
+
+  prevNearWinRef.current = { P1: p1At5, P2: p2At5 };
+}, [p1NearWin, p2NearWin, fireDharmaEvent]);
+
+const buddhaMessage = transientDharma?.message ?? "";
+const isDharmaBig = transientDharma?.big ?? false;
+const isDharmaFading = transientDharma?.fading ?? false;
   
 return (
 
@@ -589,6 +667,7 @@ return (
       <SamsaraStage
         dharmaMessage={buddhaMessage}
         dharmaBig={isDharmaBig}
+        dharmaFading={isDharmaFading}
         realmStep={Math.max(
           state.realmProgress.P1.currentRealmStep,
           state.realmProgress.P2.currentRealmStep

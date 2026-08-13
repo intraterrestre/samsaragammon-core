@@ -7,6 +7,14 @@
   height: 100%;
   pointer-events: none;
   z-index: 4; /* encima de la pintura, debajo de la burbuja */
+  opacity: 1;
+  transition: opacity 700ms ease;
+}
+
+/* v36 (13 agosto 2026) — evento efímero: se desvanece junto con el
+   texto (DharmaBubble) en vez de desaparecer de golpe. */
+.dharma-connector-fading {
+  opacity: 0;
 }
 .dharma-connector-path {
   stroke-dasharray: 6 10;

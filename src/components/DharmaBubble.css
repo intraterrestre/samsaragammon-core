@@ -6,6 +6,16 @@
   pointer-events: none;
   width: fit-content;
   max-width: 300px;
+  opacity: 1;
+  transition: opacity 700ms ease;
+}
+
+/* v36 (13 agosto 2026) — evento efímero (~5s en pantalla): esta clase
+   se agrega justo antes de que GameShell deje de pasar message del
+   todo, para que el cartel se desvanezca en vez de desaparecer de
+   golpe. */
+.dharma-bubble-fading {
+  opacity: 0;
 }
 
 /* v35 (12 agosto 2026) — el mensaje grande necesita más ancho para no

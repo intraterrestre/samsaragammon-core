@@ -1,5 +1,13 @@
 
-/* Intro video full screen */
+/* Intro video — v35 (13 agosto 2026): antes esto era 100vw/100dvh con
+   object-fit:cover a pantalla completa. Con "cover", cualquier video
+   cuyo aspecto no calce EXACTO con el del viewport del usuario se
+   recorta para llenar la pantalla — le paso a Bruno (resolucion/aspecto
+   distinto) y despues tambien a Margot en pantallas mas anchas que 16:9,
+   comiendose el cartel de texto en ambos casos. Cambiado a object-fit:
+   contain dentro de un marco un poco mas chico que la pantalla (94%):
+   se ve el video COMPLETO siempre, sin recortar nada, con un margen
+   negro fino alrededor en vez de cartel cortado. */
 .realmIntroOverlay {
   position: fixed;
   inset: 0;
@@ -14,9 +22,11 @@
 }
 
 .realmIntroVideo {
-  width: 100vw;
-  height: 100dvh;
-  object-fit: cover;
+  max-width: 94vw;
+  max-height: 94dvh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
   display: block;
 }
 

@@ -739,6 +739,12 @@ let capturedPieceKind: PieceKind | null = null;
 // lo capturado esta jugada fue específicamente un Avatar (no un
 // Veneno), para el evento real avatar_sent_to_mara -> DEATH.
 let capturedWasAvatar = false;
+// v36 (13 agosto 2026) — a pedido de Federico: cuando se captura un
+// Avatar, la casilla donde estaba se guarda aca para poder reubicar,
+// mas abajo (despues del movimiento final), el Veneno propio del
+// oponente que haya quedado ahi (ver bloque despues de "movimiento
+// final").
+let capturedAvatarVacatedPos: number | null = null;
 
 type EnemyRef =
   | { system: "base"; kind: BasePieceKind }
@@ -791,7 +797,30 @@ if (enemiesAtFinalPos.length >= 2) {
 
 const possibleCapturePositions = Array.from(new Set([toPos, finalToPos]));
 
-const enemyRefsAtTarget = possibleCapturePositions.flatMap(getEnemyRefsAtPos);
+const enemyRefsAtTarget = possibleCapturePositions.flatMap((pos) =>
+  getEnemyRefsAtPos(pos).map((ref) => ({ ...ref, pos }))
+);
+
+// DEBUG TEMPORAL (13 agosto 2026) — Federico reportó: Margot negra
+// viajó hasta el cochino blanco y no comió. Este log se saca apenas
+// se identifique la causa.
+console.log("[CAPTURE DEBUG]", {
+  me,
+  opp,
+  activePiece,
+  fromPos,
+  toPos,
+  finalToPos,
+  enemiesAtFinalPos,
+  possibleCapturePositions,
+  enemyRefsAtTarget,
+  oppBasePieces: {
+    pig: nextPieces[opp].pig,
+    snake: nextPieces[opp].snake,
+    rooster: nextPieces[opp].rooster,
+  },
+  oppRealmPieces: nextPiecesRealm[opp],
+});
 
 // se captura si hay 1 enemiga sola en la casilla
 if (enemyRefsAtTarget.length >= 1) {
@@ -800,6 +829,9 @@ if (enemyRefsAtTarget.length >= 1) {
   didCapture = true;
   capturedPieceKind = enemyRef.kind;
   capturedWasAvatar = enemyRef.system === "realm";
+  if (capturedWasAvatar) {
+    capturedAvatarVacatedPos = enemyRef.pos;
+  }
   nextCaptures[me] += 1;
 
   if (enemyRef.system === "base") {
@@ -876,6 +908,38 @@ if (isBasePiece) {
         ...venomPiece,
         pos: finalToPos,
       };
+    }
+  }
+}
+// v36 (13 agosto 2026) — a pedido de Federico: antes, cuando se
+// capturaba un Avatar, su Veneno acompanante "quedaba intacto en la
+// casilla" (D-028) — es decir, ahi nomas, y si despues cualquier otra
+// ficha terminaba compartiendo esa casilla, el render solo muestra la
+// de encima: confusion real y repetida sobre que hay en el tablero
+// (reportado varias veces). Decision de diseno: en vez de arreglar el
+// render para apilar visualmente, se evita el apilamiento — el Veneno
+// se reubica solo a la casilla vacia mas cercana (mismo criterio de
+// busqueda que findEmptySpawnPos: hacia adelante desde su posicion,
+// dando la vuelta al tablero si hace falta).
+if (capturedAvatarVacatedPos !== null) {
+  const vacatedPos = capturedAvatarVacatedPos;
+  for (const kind of BASE_PIECES) {
+    const venom = nextPieces[opp][kind];
+    if (!venom.inLimbo && venom.pos === vacatedPos) {
+      const relocatedPos = findEmptySpawnPos(
+        {
+          pieces: nextPieces,
+          realmPieces: nextPiecesRealm,
+          trackSize: state.trackSize,
+        } as GameState,
+        vacatedPos
+      );
+      if (relocatedPos !== vacatedPos) {
+        nextPieces[opp][kind] = {
+          ...nextPieces[opp][kind],
+          pos: relocatedPos,
+        };
+      }
     }
   }
 }

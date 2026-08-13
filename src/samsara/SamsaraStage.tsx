@@ -4,6 +4,11 @@ import type { RealmPieceKind } from "../game/types";
 type SamsaraStageProps = {
   dharmaMessage?: string;
   dharmaBig?: boolean;
+  // v36 (13 agosto 2026) — el cartel del buda ahora es un evento
+  // efímero (~5s + fade) en vez de una condición pegada — GameShell
+  // calcula cuándo está en la fase de desvanecerse y la pasa acá para
+  // que DharmaBubble le aplique la clase CSS de fade-out.
+  dharmaFading?: boolean;
   realmStep?: number;
   lastRealmKey?: RealmPieceKind | null;
   globalRollCount?: number;
@@ -24,6 +29,7 @@ type SamsaraStageProps = {
 export function SamsaraStage({
   dharmaMessage,
   dharmaBig,
+  dharmaFading,
   realmStep = 1,
   lastRealmKey = null,
   globalRollCount = 0,
@@ -37,6 +43,7 @@ export function SamsaraStage({
     <MaraLayer
       dharmaMessage={dharmaMessage}
       dharmaBig={dharmaBig}
+      dharmaFading={dharmaFading}
       realmStep={realmStep}
       lastRealmKey={lastRealmKey}
       globalRollCount={globalRollCount}

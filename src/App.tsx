@@ -11,6 +11,7 @@ import "./App.css";
 
 import { getGameDerivedState } from "./game/getGameDerivedState";
 import type { PieceKind } from "./game/types";
+import { NIDANA_LIST } from "./game/nidanas";
 import { reducer } from "./game/state/reducer";
 import { initialState } from "./game/state/state";
 
@@ -622,11 +623,16 @@ const [showNidana, setShowNidana] = useState(false);
 
 const nidanaTimersRef = useRef<number[]>([]);
 
-const triggerNidanaCoin = () => {
+// v38 (13 agosto 2026) — a pedido de Federico/Chat: este disparador
+// ya NO elige la Nidana al azar. Ahora solo reproduce la presentacion
+// visual (moneda front/back + banner) para el "id" que le pasen — la
+// decision de CUAL Nidana y CUANDO viene unicamente de
+// state.currentNidana (Pattern Engine + cooldown, ver el useEffect
+// mas abajo que la dispara). triggerNidanaCoin no decide nada, solo
+// anima.
+const triggerNidanaCoin = (id: number) => {
   nidanaTimersRef.current.forEach((t) => window.clearTimeout(t));
   nidanaTimersRef.current = [];
-
-  const id = 1 + Math.floor(Math.random() * 12);
 
   setActiveNidanaId(id);
 
@@ -650,6 +656,65 @@ window.setTimeout(() => {
 }, 5600)
   );
 };
+
+// v38 (13 agosto 2026) — UNICA fuente de verdad para "que Nidana
+// aparece y cuando": state.currentNidana (Pattern Engine real +
+// cooldown, calculado en reducer.ts). Este efecto solo REPRODUCE la
+// presentacion visual existente (triggerNidanaCoin) cuando ese valor
+// cambia por un evento nuevo de verdad.
+//
+// currentNidana NUNCA vuelve a null (ver reducer.ts: nextCurrentNidana
+// = shouldShowNewNidana ? mappedNidana! : state.currentNidana) — se
+// queda pegado en la ultima Nidana real hasta que otro evento lo
+// reemplace. Por eso NO alcanza con mirar solo currentNidana en las
+// dependencias del efecto: la MISMA Nidana puede repetirse mas
+// adelante en la partida (ej. CRAVING dos veces, con cooldown de por
+// medio) y ese caso no cambiaria el string, pero SI es una aparicion
+// nueva. lastNidanaAtTurn (el turno exacto del ultimo evento real) es
+// la señal correcta para detectar "esto es nuevo" — se compara contra
+// un ref, no se dispara en cada render ni en cambios no relacionados.
+const lastAnimatedNidanaTurnRef = useRef<number | null>(null);
+
+// v39 (13 agosto 2026) — bug reportado por Federico: salio una Nidana
+// EN MEDIO DE GENESIS, sin avatares todavia. El Pattern Engine
+// (recordMove, reducer.ts) no tiene ningun gate de era — puede marcar
+// state.currentNidana desde el primer movimiento de un Veneno, mucho
+// antes de Oriol. Antes esto no se notaba porque la UNICA fuente
+// visual (el viejo triggerNidanaCoin() al azar en onRoll) SI tenia su
+// propio gate (shouldTriggerNidana, currentRealmStep >= 3) — pero ese
+// gate nunca protegio a este efecto, que escucha state.currentNidana
+// directo. No se toca el Pattern Engine ni el reducer (fuera del
+// alcance acordado) — se agrega el mismo gate de "Oriol ya entro" que
+// ya usa GameShell.tsx (oriolEntered, derivado de state.cosmicClock.era)
+// solo del lado de la presentacion visual.
+const ERA_ORDER_FOR_NIDANA = ["bruno", "margot", "oriol", "marino", "rufus", "whitman"] as const;
+const oriolEnteredForNidana =
+  ERA_ORDER_FOR_NIDANA.indexOf(
+    state.cosmicClock.era as (typeof ERA_ORDER_FOR_NIDANA)[number]
+  ) >= ERA_ORDER_FOR_NIDANA.indexOf("oriol");
+
+useEffect(() => {
+  if (!oriolEnteredForNidana) {
+    // Antes de Oriol: no se anima nada, pero SI se sincroniza el ref
+    // con el turno actual — asi ningun evento de Genesis queda
+    // "pendiente" para dispararse de golpe apenas Oriol entre (eso
+    // repetiria el bug de 12 agosto: "salta a una foto vieja con todo
+    // el juego andando", esta vez con una Nidana vieja en vez de un
+    // efecto viejo).
+    lastAnimatedNidanaTurnRef.current = state.lastNidanaAtTurn;
+    return;
+  }
+  if (!state.currentNidana) return;
+  if (lastAnimatedNidanaTurnRef.current === state.lastNidanaAtTurn) return;
+
+  lastAnimatedNidanaTurnRef.current = state.lastNidanaAtTurn;
+
+  const id = NIDANA_LIST.indexOf(state.currentNidana) + 1;
+  if (id < 1) return; // no deberia pasar, pero mejor no animar basura
+
+  triggerNidanaCoin(id);
+}, [oriolEnteredForNidana, state.currentNidana, state.lastNidanaAtTurn]);
+
   useEffect(() => {
     const prev = prevPhaseRef.current;
     const now = state.phase;
@@ -1046,8 +1111,13 @@ onRoll={() => {
 const shouldTriggerNidana = state.realmProgress[state.turn].currentRealmStep >= 3;
 
 if (shouldTriggerNidana) {
-  triggerNidanaCoin();
-
+  // v38 (13 agosto 2026) — ya NO se dispara la moneda de Nidana aca.
+  // Antes esto elegia una al azar en CADA tirada valida, en paralelo
+  // (y sin ninguna relacion) con state.currentNidana, el sistema real
+  // basado en Pattern Engine — el jugador podia ver una Nidana sin
+  // ninguna conexion con lo que el motor detecto. Ver el useEffect que
+  // escucha state.currentNidana/lastNidanaAtTurn mas abajo: esa es
+  // ahora la UNICA fuente de verdad para decidir que Nidana aparece.
   const r = Math.random();
 
   const effect =

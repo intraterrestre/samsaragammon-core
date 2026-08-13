@@ -13,6 +13,7 @@
 // Este panel es una alternativa segura: botones grandes, sin ambigüedad
 // de zonas superpuestas. No reemplaza las líneas — conviven, dan
 // contexto visual distinto del mismo destino.
+import { createPortal } from "react-dom";
 import type { MoveOption } from "../game/types";
 
 type Props = {
@@ -62,20 +63,43 @@ export function MoveOptionsPanel({ options, onChoose }: Props) {
     return true;
   });
 
-  return (
+  // v33 (13 agosto 2026) — portal a document.body + position:fixed.
+  // Antes vivia dentro de .ringWrap (position:absolute), asi que
+  // "bottom: 12" se media contra la caja del ANILLO (520x520), no contra
+  // la pantalla real — el anillo ocupa casi toda la escena, asi que el
+  // panel terminaba superpuesto sobre el circuito bajo (reportado por
+  // Federico). Con portal + fixed queda anclado al fondo real de la
+  // pantalla, como un HUD, sin depender del tamano/escala del tablero.
+  //
+  // v34 (13 agosto 2026) — reposicionado arriba a la izquierda, afuera
+  // del anillo, sobre la zona de Mara (a pedido de Federico).
+  //
+  // v35 (13 agosto 2026) — portal a document.body + position:fixed
+  // anclaba esto a la ventana REAL del navegador, no al lienzo del
+  // juego (.samsaraScene, 1100x620, que se escala/centra distinto en
+  // cada pantalla) — en Mac quedaba flotando en la franja negra arriba
+  // del cuadro pintado en vez de "sobre Mara". Portal ahora directo a
+  // .samsaraScene (position:relative) + position:absolute: las
+  // coordenadas quedan relativas al LIENZO, no a la ventana, así que
+  // escala y se reposiciona junto con el arte en cualquier dispositivo.
+  const sceneEl =
+    typeof document !== "undefined"
+      ? document.querySelector(".samsaraScene")
+      : null;
+
+  return createPortal(
     <div
       style={{
-        position: "absolute",
-        left: "50%",
-        bottom: 12,
-        transform: "translateX(-50%)",
+        position: sceneEl ? "absolute" : "fixed",
+        left: 20,
+        top: 20,
         zIndex: 10500,
         display: "flex",
         flexDirection: "row",
         flexWrap: "wrap",
-        justifyContent: "center",
+        justifyContent: "flex-start",
         gap: 8,
-        maxWidth: "92%",
+        maxWidth: "min(92vw, 260px)",
         padding: "8px 10px",
         borderRadius: 14,
         background: "rgba(10, 10, 14, 0.82)",
@@ -121,7 +145,8 @@ export function MoveOptionsPanel({ options, onChoose }: Props) {
           </button>
         );
       })}
-    </div>
+    </div>,
+    sceneEl ?? document.body
   );
 }
 

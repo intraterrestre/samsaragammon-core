@@ -7,9 +7,12 @@ interface DharmaConnectorProps {
   fromY: number;
   toX: number;
   toY: number;
+  // v36 (13 agosto 2026) — mismo fade que DharmaBubble, para que el
+  // hilo blanco no desaparezca de golpe mientras el texto se desvanece.
+  fading?: boolean;
 }
 
-const DharmaConnector: React.FC<DharmaConnectorProps> = ({ fromX, fromY, toX, toY }) => {
+const DharmaConnector: React.FC<DharmaConnectorProps> = ({ fromX, fromY, toX, toY, fading }) => {
   const c1x = fromX + (toX - fromX) * 0.5;
   const c1y = fromY;
   const c2x = fromX + (toX - fromX) * 0.5;
@@ -19,7 +22,7 @@ const DharmaConnector: React.FC<DharmaConnectorProps> = ({ fromX, fromY, toX, to
 
   return (
     <svg
-      className="dharma-connector"
+      className={`dharma-connector${fading ? " dharma-connector-fading" : ""}`}
       viewBox="0 0 100 100"
       preserveAspectRatio="none"
       xmlns="http://www.w3.org/2000/svg"
