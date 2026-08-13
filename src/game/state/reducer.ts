@@ -9,7 +9,7 @@ import type {
   RealmPieceKind,
 } from "../types";
 import { REALM_PIECE_ORDER } from "../types";
-import { checkNirvana } from "../victory/nirvana";
+import { checkNirvana, isVictoryEnabled, checkNirvanaFormation, countNirvanaFormationProgress, getNirvanaReadiness } from "../victory/nirvana";
 import { initialState } from "./state";
 
 import { behaviorAfterMove } from "../behavior/behavior";
@@ -1058,6 +1058,20 @@ if (!didCapture) {
         },
       };
       const didWin = checkNirvana(stateAfterThisMove, me);
+
+      // DEBUG TEMPORAL (13 agosto 2026) — Federico reportó: 6 Avatares
+      // negros ya en Humans (2 pilas) y la pantalla de victoria nunca
+      // saltó. Este log se saca apenas se identifique la causa.
+      console.log("[NIRVANA DEBUG]", {
+        me,
+        didWin,
+        currentRealmStep: stateAfterThisMove.realmProgress[me].currentRealmStep,
+        isVictoryEnabled: isVictoryEnabled(stateAfterThisMove, me),
+        checkNirvanaFormation: checkNirvanaFormation(stateAfterThisMove, me),
+        formationProgress: countNirvanaFormationProgress(stateAfterThisMove, me),
+        nirvanaReadiness: getNirvanaReadiness(stateAfterThisMove, me),
+        myRealmPieces: stateAfterThisMove.realmPieces[me],
+      });
 
       const samePieceAlternatives = allOptions.filter(
         (o) => o.pieceKind === activePiece
