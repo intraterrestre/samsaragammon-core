@@ -526,6 +526,20 @@ const stackedPosition = getStackedTokenPosition({
 
       const badgeSize = kind === "pig" ? 22 : 14;
 
+      // v41 (13 agosto 2026) — bug real reportado por Federico: en
+      // casillas con varias fichas apiladas, un Veneno rival puede
+      // quedar 100% tapado visualmente (la separación radial de v40
+      // solo garantiza un borde, no visibilidad total con 3+ fichas).
+      // En vez de perseguir una solución geométrica perfecta, Federico
+      // propuso señalizar la inicial (P/S/R) en un círculo ROJO cuando
+      // esa ficha comparte casilla con un Veneno rival — "aunque no se
+      // vea" la ficha en sí, el círculo rojo avisa que ahí hay algo.
+      // Solo cambia color/estilo del badge existente, nada de mecánica,
+      // selección ni z-index.
+      const hasRivalVenomSameCell = (piecesByPos[pos] ?? []).some(
+        (p) => p.player !== player
+      );
+
       return (
         <div
           key={`${player}-${kind}`}
@@ -580,8 +594,15 @@ top: stackedPosition.top,
               minWidth: badgeSize,
               height: badgeSize,
               borderRadius: badgeSize / 2,
-              background: "rgba(0,0,0,0.72)",
-              border: "1px solid rgba(255,255,255,0.2)",
+              background: hasRivalVenomSameCell
+                ? "#dc2626"
+                : "rgba(0,0,0,0.72)",
+              border: hasRivalVenomSameCell
+                ? "1.5px solid #fecaca"
+                : "1px solid rgba(255,255,255,0.2)",
+              boxShadow: hasRivalVenomSameCell
+                ? "0 0 6px rgba(220,38,38,0.9)"
+                : "none",
               color: "white",
               fontSize: kind === "pig" ? 13 : 9,
               fontWeight: 800,
