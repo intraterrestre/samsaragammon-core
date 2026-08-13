@@ -25,6 +25,17 @@ import fireworksSound from "../assets/sounds/fireworks.wav";
 import claritySound from "../assets/sounds/clarity.mp3";
 import distortionSound from "../assets/sounds/distortion.wav";
 import tensionSound from "../assets/sounds/tension.mp3";
+
+// v43 (13 agosto 2026) — pedido de Federico: cuando se dispara el aviso
+// "ONLY ONE MORE" (5 de 6 en Humans), ademas del cartel de texto entra
+// esta imagen desde la izquierda tapando a Mara un momento, con un
+// scratch de DJ. Mismo evento efimero de hoy (fireDharmaEvent), no un
+// sistema nuevo — ver mas abajo, withDjBuddha.
+import djBuddhaPoster from "../assets/intro/buda_dj_poster.png";
+// v44 (13 agosto 2026) — Federico reemplazó el primer scratch por uno
+// mejor/más suave. scratch_pre_win.wav queda sin usar en el repo (no
+// se pudo borrar el archivo desde acá) — se puede eliminar a mano.
+import scratchSound from "../assets/sounds/scratch_buda_dj.mp3";
 import { SacredProgress } from "./SacredProgress";
 import { countNirvanaFormationProgress } from "../game/victory/nirvana";
 import { VictoryScreen } from "./VictoryScreen";
@@ -166,6 +177,7 @@ const distortionAudio = React.useRef<HTMLAudioElement | null>(null);
 const tensionAudio = React.useRef<HTMLAudioElement | null>(null);
 const cheeringAudio = React.useRef<HTMLAudioElement | null>(null);
 const fireworksAudio = React.useRef<HTMLAudioElement | null>(null);
+const scratchAudio = React.useRef<HTMLAudioElement | null>(null);
 const [showNidanaTitle, setShowNidanaTitle] = React.useState(false);
 
 // Escala dinámica del scene para llenar el viewport
@@ -210,9 +222,11 @@ React.useEffect(() => {
 
   cheeringAudio.current = new Audio(cheeringSound);
   fireworksAudio.current = new Audio(fireworksSound);
+  scratchAudio.current = new Audio(scratchSound);
 
   if (cheeringAudio.current) cheeringAudio.current.volume = 0.18;
   if (fireworksAudio.current) fireworksAudio.current.volume = 0.12;
+  if (scratchAudio.current) scratchAudio.current.volume = 0.55;
 }, []);
 
 const prevTransitionsRef = React.useRef({
@@ -383,22 +397,36 @@ const [transientDharma, setTransientDharma] = React.useState<{
   message: string;
   big: boolean;
   fading: boolean;
+  withDjBuddha: boolean;
 } | null>(null);
 
-const fireDharmaEvent = React.useCallback((message: string, big: boolean) => {
-  if (dharmaHideTimerRef.current) window.clearTimeout(dharmaHideTimerRef.current);
-  if (dharmaFadeTimerRef.current) window.clearTimeout(dharmaFadeTimerRef.current);
+// v43 (13 agosto 2026) — withDjBuddha es opcional (default false) para
+// no afectar "THE FIRST EYE OPENS.", que sigue sin la imagen/sonido.
+// Mismo timing exacto que ya usa el cartel de texto (5s + 700ms fade) —
+// se reutiliza transientDharma.fading para las dos cosas a la vez, no
+// se crean timers nuevos ni una segunda fuente de verdad de timing.
+const fireDharmaEvent = React.useCallback(
+  (message: string, big: boolean, withDjBuddha: boolean = false) => {
+    if (dharmaHideTimerRef.current) window.clearTimeout(dharmaHideTimerRef.current);
+    if (dharmaFadeTimerRef.current) window.clearTimeout(dharmaFadeTimerRef.current);
 
-  setTransientDharma({ message, big, fading: false });
+    setTransientDharma({ message, big, fading: false, withDjBuddha });
 
-  dharmaHideTimerRef.current = window.setTimeout(() => {
-    setTransientDharma((cur) => (cur ? { ...cur, fading: true } : cur));
+    if (withDjBuddha && scratchAudio.current) {
+      scratchAudio.current.currentTime = 0;
+      scratchAudio.current.play().catch(() => {});
+    }
 
-    dharmaFadeTimerRef.current = window.setTimeout(() => {
-      setTransientDharma(null);
-    }, 700);
-  }, 5000);
-}, []);
+    dharmaHideTimerRef.current = window.setTimeout(() => {
+      setTransientDharma((cur) => (cur ? { ...cur, fading: true } : cur));
+
+      dharmaFadeTimerRef.current = window.setTimeout(() => {
+        setTransientDharma(null);
+      }, 700);
+    }, 5000);
+  },
+  []
+);
 
 React.useEffect(() => {
   return () => {
@@ -608,9 +636,9 @@ React.useEffect(() => {
   const p2At5 = p2NearWin === 5;
 
   if (p1At5 && !prevNearWinRef.current.P1) {
-    fireDharmaEvent("WHITE: ONLY ONE MORE.", true);
+    fireDharmaEvent("WHITE: ONLY ONE MORE.", true, true);
   } else if (p2At5 && !prevNearWinRef.current.P2) {
-    fireDharmaEvent("BLACK: ONLY ONE MORE.", true);
+    fireDharmaEvent("BLACK: ONLY ONE MORE.", true, true);
   }
 
   prevNearWinRef.current = { P1: p1At5, P2: p2At5 };
@@ -619,6 +647,7 @@ React.useEffect(() => {
 const buddhaMessage = transientDharma?.message ?? "";
 const isDharmaBig = transientDharma?.big ?? false;
 const isDharmaFading = transientDharma?.fading ?? false;
+const showDjBuddha = transientDharma?.withDjBuddha ?? false;
   
 return (
 
@@ -695,6 +724,32 @@ return (
       )}
 
       {genesisComplete && <MaraPanel state={state} />}
+
+      {/* v43 (13 agosto 2026) — buda DJ: entra desde la izquierda
+          tapando a Mara cuando se dispara "ONLY ONE MORE" (5 de 6 en
+          Humans), mismo timing que el cartel de texto (isDharmaFading,
+          ver fireDharmaEvent más arriba). Posicionado adentro de
+          .samsaraScene (no document.body) para que trackee el tablero
+          escalado en vez del viewport crudo — mismo criterio que ya
+          usa MoveOptionsPanel. */}
+      {showDjBuddha && (
+        <img
+          src={djBuddhaPoster}
+          alt=""
+          className={`djBuddhaPoster${
+            isDharmaFading ? " djBuddhaPosterFading" : ""
+          }`}
+          style={{
+            position: "absolute",
+            left: 0,
+            top: "50%",
+            width: 220,
+            zIndex: 10550,
+            pointerEvents: "none",
+            filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.6))",
+          }}
+        />
+      )}
 
       {/* v34 (12 agosto 2026) — state.winner ya se calculaba bien, nada
           en la interfaz lo mostraba. Encima de todo lo demás. */}
