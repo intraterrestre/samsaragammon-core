@@ -804,6 +804,22 @@ const enemyRefsAtTarget = possibleCapturePositions.flatMap((pos) =>
 // DEBUG TEMPORAL (13 agosto 2026) — Federico reportó: Margot negra
 // viajó hasta el cochino blanco y no comió. Este log se saca apenas
 // se identifique la causa.
+//
+// v41 (13 agosto 2026) — se agrega oppPositionsFlat: un resumen plano
+// "kind: pos" de TODAS las piezas del rival, para no tener que ir
+// expandiendo objetos anidados en el inspector a mano — de un vistazo
+// se ve si alguna pieza realmente esta en toPos o no.
+const oppPositionsFlat: Record<string, number | "inLimbo"> = {};
+for (const k of ["pig", "snake", "rooster"] as const) {
+  const p = nextPieces[opp][k];
+  oppPositionsFlat[k] = p.inLimbo ? "inLimbo" : p.pos;
+}
+for (const k of REALM_PIECE_ORDER) {
+  const p = nextPiecesRealm[opp][k];
+  if (!p) continue;
+  oppPositionsFlat[k] = !p.unlocked ? "inLimbo" : p.inLimbo ? "inLimbo" : p.pos;
+}
+
 console.log("[CAPTURE DEBUG]", {
   me,
   opp,
@@ -811,6 +827,7 @@ console.log("[CAPTURE DEBUG]", {
   fromPos,
   toPos,
   finalToPos,
+  oppPositionsFlat,
   enemiesAtFinalPos,
   possibleCapturePositions,
   enemyRefsAtTarget,
