@@ -107,12 +107,31 @@ function findEmptySpawnPos(
     return false;
   };
 
+  // v44 (13 agosto 2026) — bug real encontrado investigando el reporte de
+  // Federico ("Margot blanca volvio de Mara y entro donde ya estaba Rufus
+  // negro"): las fichas capturadas quedan con pos:-1 mientras estan en
+  // Mara (ver "capturado" mas arriba, tanto Venenos como Avatares) y ESE
+  // -1 es justo el preferredPos que se le pasa aca cuando el ciclo de 6
+  // lances termina y hay que reubicarlas. El operador % de JS no envuelve
+  // numeros negativos como uno esperaria: (-1) % 24 da -1, no 23. Con
+  // offset=0 el primer candidato ya era -1, y como isOccupied() nunca
+  // encuentra una ficha en el tablero con pos -1 (todas las que siguen
+  // ahi tienen inLimbo:true y se filtran aparte), -1 se aceptaba de
+  // entrada como "casilla libre" y la ficha volvia a una posicion fuera
+  // del tablero real. Esa posicion invalida despues rompia todo lo que
+  // depende de pos: se dibujaba en cualquier lado (coincidiendo visualmente
+  // con otra ficha por casualidad, no por diseño) y realmFromPos(-1) cae
+  // en su fallback "HUMAN" (Math.floor(-1/4) = -1, REALMS[-1] = undefined
+  // -> "HUMAN"), contaminando en silencio el conteo de formacion de
+  // Nirvana. Normalizando el modulo para que nunca de negativo.
   for (let offset = 0; offset < state.trackSize; offset++) {
-    const candidate = (preferredPos + offset) % state.trackSize;
+    const candidate =
+      (((preferredPos + offset) % state.trackSize) + state.trackSize) %
+      state.trackSize;
     if (!isOccupied(candidate)) return candidate;
   }
 
-  return preferredPos; // tablero lleno (no debería pasar nunca) — mejor esto que crashear
+  return ((preferredPos % state.trackSize) + state.trackSize) % state.trackSize; // tablero lleno (no debería pasar nunca) — mejor esto que crashear
 }
 
 function detectVenomTrio(
