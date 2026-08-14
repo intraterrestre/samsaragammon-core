@@ -418,9 +418,25 @@ const fireDharmaEvent = React.useCallback(
 
     setTransientDharma({ message, big, fading: false, withDjBuddha });
 
+    // v51 (14 agosto 2026) — Federico reportó el scratch del Buda DJ sin
+    // sonar en un playtest real (el cartel y la imagen sí aparecieron).
+    // Mismo problema ya visto y arreglado en aplausos/cohetes (v26, 11
+    // agosto): .play() puede fallar de forma silenciosa (autoplay,
+    // audios solapados, buffer todavía cargando) y el .catch() vacío se
+    // lo tragaba sin dejar rastro. Mismo arreglo: un reintento + aviso
+    // en consola para diagnosticar si vuelve a pasar.
     if (withDjBuddha && scratchAudio.current) {
-      scratchAudio.current.currentTime = 0;
-      scratchAudio.current.play().catch(() => {});
+      const audio = scratchAudio.current;
+      audio.currentTime = 0;
+      audio.play().catch(() => {
+        console.warn("[buda dj] scratch falló al reproducir, reintentando...");
+        window.setTimeout(() => {
+          audio.currentTime = 0;
+          audio.play().catch(() => {
+            console.warn("[buda dj] scratch falló también en el reintento.");
+          });
+        }, 120);
+      });
     }
 
     dharmaHideTimerRef.current = window.setTimeout(() => {
@@ -724,62 +740,10 @@ return (
         </button>
       )}
 
-      {/* v45 (13 agosto 2026) — leyenda de reinos a pedido de Federico:
-          "las casillas numeradas no corresponden con los colores...
-          no puedo ver los numeros de las casillas". El numero ahora es
-          legible (ver Board.tsx/board.css) y cada reino ya tiene una
-          franja de color propia (realmCell-NARAKA/PRETA/ANIMAL/HUMAN/
-          ASURA/DEVA) — esta leyenda chica mapea color -> reino -> rango
-          de casillas, para no tener que memorizar ni pasar el mouse
-          celda por celda. */}
-      {genesisComplete && (
-        <div
-          style={{
-            position: "absolute",
-            right: 8,
-            bottom: 8,
-            zIndex: 10500,
-            display: "flex",
-            flexDirection: "column",
-            gap: 3,
-            padding: "6px 8px",
-            borderRadius: 8,
-            background: "rgba(0,0,0,0.6)",
-            border: "1px solid rgba(255,255,255,0.15)",
-            fontSize: 10,
-            color: "rgba(255,255,255,0.85)",
-            pointerEvents: "none",
-          }}
-        >
-          {[
-            { key: "PRETA", label: "Bruno · Hungry Ghosts", range: "1-4", dot: "rgba(0,0,0,0.85)" },
-            { key: "ASURA", label: "Rufus · Titans", range: "5-8", dot: "rgba(255,90,90,0.95)" },
-            { key: "DEVA", label: "Whitman · SemiGods", range: "9-12", dot: "rgba(255,255,255,0.95)" },
-            { key: "NARAKA", label: "Margot · Hell", range: "13-16", dot: "rgba(170,60,220,0.9)" },
-            { key: "ANIMAL", label: "Oriol · Animals", range: "17-20", dot: "rgba(255,210,80,0.95)" },
-            { key: "HUMAN", label: "Marino · Humans", range: "21-23,0", dot: "rgba(70,180,255,0.95)" },
-          ].map((r) => (
-            <div
-              key={r.key}
-              style={{ display: "flex", alignItems: "center", gap: 5 }}
-            >
-              <span
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: r.dot,
-                  border: "1px solid rgba(255,255,255,0.4)",
-                  flexShrink: 0,
-                }}
-              />
-              <span>
-                {r.label} ({r.range})
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* v51 (14 agosto 2026) — leyenda de reinos (v45, 13 agosto)
+          quitada a pedido de Federico: ya quedó claro en pantalla cuál
+          color/rango es cada reino, no hace falta el cartelito
+          permanente abajo a la derecha. */}
 
       <SamsaraStage
         dharmaMessage={buddhaMessage}
