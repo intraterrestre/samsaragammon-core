@@ -104,49 +104,59 @@ export function MaraLayer({
   }, [dharmaMessage]);
 
   return (
-    <div ref={layerRef} className="maraLayer">
-      <img
-        src={currentMural}
-        alt="Samsara Painting"
-        className="maraPainting"
-        style={{ opacity: isBoardPainted ? 1 : 0, transition: "opacity 0.8s ease" }}
-      />
-
-      {/* v2: Genesis — import.meta.glob resuelve assets en build y runtime */}
-      {!genesisComplete && (
-        <GenesisReveal
-          globalRollCount={globalRollCount}
-          realmStep={realmStep}
-          onComplete={onGenesisComplete}
-          onPhaseChange={onGenesisPhaseChange}
+    <>
+      <div ref={layerRef} className="maraLayer">
+        <img
+          src={currentMural}
+          alt="Samsara Painting"
+          className="maraPainting"
+          style={{ opacity: isBoardPainted ? 1 : 0, transition: "opacity 0.8s ease" }}
         />
-      )}
 
-      {/* 2026-08-05: estaban gateados solo en genesisComplete (true a los
-          pocos clics de Genesis), independiente de si dharmaMessage tenía
-          contenido real — el conector se dibujaba igual aunque la burbuja
-          no tuviera nada que decir todavía. dharmaMessage ya es "" hasta
-          que brunoRevealed es real (ver GameShell buddhaMessage), así que
-          basta con exigir que además haya mensaje. */}
-      {genesisComplete && dharmaMessage && (
-        <DharmaConnector
-          fromX={46}
-          fromY={79}
-          toX={connectorEnd.x}
-          toY={connectorEnd.y}
-          fading={dharmaFading}
-        />
-      )}
+        {/* v2: Genesis — import.meta.glob resuelve assets en build y runtime */}
+        {!genesisComplete && (
+          <GenesisReveal
+            globalRollCount={globalRollCount}
+            realmStep={realmStep}
+            onComplete={onGenesisComplete}
+            onPhaseChange={onGenesisPhaseChange}
+          />
+        )}
+      </div>
 
-      {genesisComplete && dharmaMessage && (
-        <DharmaBubble
-          ref={bubbleRef}
-          message={dharmaMessage}
-          big={dharmaBig}
-          fading={dharmaFading}
-        />
-      )}
-    </div>
+      {/* v50 (14 agosto 2026) — DharmaConnector/DharmaBubble sacados de
+          .maraLayer a .maraDharmaOverlay (mismo tamaño/posicion exacta,
+          ver mara.css) para que puedan quedar por encima de las fichas
+          apiladas de Board.tsx. layerRef sigue apuntando a .maraLayer
+          para medir layerRect — ambos divs tienen la misma geometria,
+          asi que el calculo de connectorEnd no cambia. */}
+      <div className="maraDharmaOverlay">
+        {/* 2026-08-05: estaban gateados solo en genesisComplete (true a los
+            pocos clics de Genesis), independiente de si dharmaMessage tenía
+            contenido real — el conector se dibujaba igual aunque la burbuja
+            no tuviera nada que decir todavía. dharmaMessage ya es "" hasta
+            que brunoRevealed es real (ver GameShell buddhaMessage), así que
+            basta con exigir que además haya mensaje. */}
+        {genesisComplete && dharmaMessage && (
+          <DharmaConnector
+            fromX={46}
+            fromY={79}
+            toX={connectorEnd.x}
+            toY={connectorEnd.y}
+            fading={dharmaFading}
+          />
+        )}
+
+        {genesisComplete && dharmaMessage && (
+          <DharmaBubble
+            ref={bubbleRef}
+            message={dharmaMessage}
+            big={dharmaBig}
+            fading={dharmaFading}
+          />
+        )}
+      </div>
+    </>
   );
 }
 

@@ -819,11 +819,18 @@ return (
           ver fireDharmaEvent más arriba). Posicionado adentro de
           .samsaraScene (no document.body) para que trackee el tablero
           escalado en vez del viewport crudo — mismo criterio que ya
-          usa MoveOptionsPanel. */}
+          usa MoveOptionsPanel.
+
+          v50 (14 agosto 2026) — a pedido de Federico: 80% mas grande
+          (220px -> 396px) y espejada horizontalmente para que la luna
+          del poster caiga del mismo lado que la luna pintada en el
+          mural del tablero. El slide/fade (clases djBuddhaPoster/
+          djBuddhaPosterFading, ver overlays.css) sigue animando el
+          DIV contenedor sin tocar transform ahi; el espejo
+          (scaleX(-1)) va aparte, solo en el <img> interno, para no
+          pelear con esas animaciones de transform. */}
       {showDjBuddha && (
-        <img
-          src={djBuddhaPoster}
-          alt=""
+        <div
           className={`djBuddhaPoster${
             isDharmaFading ? " djBuddhaPosterFading" : ""
           }`}
@@ -831,12 +838,22 @@ return (
             position: "absolute",
             left: 0,
             top: "50%",
-            width: 220,
+            width: 396,
             zIndex: 10550,
             pointerEvents: "none",
-            filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.6))",
           }}
-        />
+        >
+          <img
+            src={djBuddhaPoster}
+            alt=""
+            style={{
+              display: "block",
+              width: "100%",
+              transform: "scaleX(-1)",
+              filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.6))",
+            }}
+          />
+        </div>
       )}
 
       {/* v34 (12 agosto 2026) — state.winner ya se calculaba bien, nada

@@ -13,6 +13,32 @@
   overflow: visible;
 }
 
+/* v50 (14 agosto 2026) — Federico reporto el cartel "ONLY ONE MORE"
+   tapado por las fichas apiladas. Causa real: .maraLayer tiene
+   position+z-index propios, asi que crea su PROPIO contexto de
+   apilamiento — el z-index alto de .dharma-bubble-big (10600, ver
+   DharmaBubble.css) solo competia contra sus hermanos DENTRO de
+   .maraLayer, nunca contra las fichas de Board.tsx (zIndex hasta 9999),
+   que viven en otro contexto. Subir el z-index de .maraLayer entero
+   hundiria el mural pintado (maraPainting) por encima del tablero, que
+   se rompe visualmente. Solución: mismo tamaño/posicion exacta que
+   .maraLayer, pero SOLO para DharmaConnector + DharmaBubble, en un
+   contexto de apilamiento propio bien por encima de las fichas. */
+.maraDharmaOverlay {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+
+  width: 1100px;
+  height: 620px;
+
+  transform: translate(-50%, -50%);
+
+  z-index: 999000;
+  pointer-events: none;
+  overflow: visible;
+}
+
 .maraPainting {
   position: absolute;
   inset: 0;
