@@ -31,9 +31,17 @@ export type MuralZoneId = "NARAKA" | "PRETA" | "ANIMAL" | "HUMAN" | "ASURA" | "D
  *   Bruno/Hungry Ghosts = negro, Margot/Hell = morado,
  *   Oriol/Animals = amarillo, Marino/Humans = azul,
  *   Rufus/Titans(Asura) = rojo, Whitman/SemiGods(Deva) = blanco.
- * Canonical order (6 realms x 4 cells), AHORA por color real pintado:
- * 0–3 PRETA (negro), 4–7 ASURA (rojo), 8–11 DEVA (blanco),
- * 12–15 NARAKA (morado), 16–19 ANIMAL (amarillo), 20–23 HUMAN (azul)
+ * Canonical order (6 realms x 4 cells), por color real pintado.
+ *
+ * v49 (14 agosto 2026) — la tabla de v46 seguia un cuadrante entero
+ * corrida respecto de lo que Federico ve en pantalla: confirmo que
+ * Humans (azul) pinta las casillas 21,22,23,0 (con el corte de vuelta
+ * al cero incluido), no 20-23. Toda la rueda esta corrida +1 respecto
+ * de v46. Se implemento con una fase (PHASE_OFFSET) en vez de mover el
+ * array MURAL_ZONES, para que el orden de reinos siga siendo el mismo
+ * dato que describe realmInvariants.test.ts.
+ * 1–4 PRETA (negro), 5–8 ASURA (rojo), 9–12 DEVA (blanco),
+ * 13–16 NARAKA (morado), 17–20 ANIMAL (amarillo), 21–23,0 HUMAN (azul)
  */
 export const MURAL_ZONES: MuralZoneId[] = ["PRETA", "ASURA", "DEVA", "NARAKA", "ANIMAL", "HUMAN"];
 
@@ -41,8 +49,14 @@ export const MURAL_ZONES: MuralZoneId[] = ["PRETA", "ASURA", "DEVA", "NARAKA", "
 // nombre); mismo array, mismo orden.
 export const REALMS = MURAL_ZONES;
 
+// v49: desfasaje de la rueda respecto del array MURAL_ZONES. La casilla
+// 0 cae dentro del ULTIMO bloque (HUMAN) en vez de arrancar un bloque
+// nuevo — de ahi que se reste antes de tomar el modulo.
+const PHASE_OFFSET = 1;
+
 export function muralZoneFromPos(pos: number): MuralZoneId {
-  const idx = Math.max(0, Math.min(5, Math.floor(pos / 4)));
+  const normalized = ((pos - PHASE_OFFSET) % 24 + 24) % 24;
+  const idx = Math.max(0, Math.min(5, Math.floor(normalized / 4)));
   return MURAL_ZONES[idx] ?? "HUMAN";
 }
 

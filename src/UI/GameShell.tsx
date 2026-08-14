@@ -752,12 +752,12 @@ return (
           }}
         >
           {[
-            { key: "PRETA", label: "Bruno · Hungry Ghosts", range: "0-3", dot: "rgba(0,0,0,0.85)" },
-            { key: "ASURA", label: "Rufus · Titans", range: "4-7", dot: "rgba(255,90,90,0.95)" },
-            { key: "DEVA", label: "Whitman · SemiGods", range: "8-11", dot: "rgba(255,255,255,0.95)" },
-            { key: "NARAKA", label: "Margot · Hell", range: "12-15", dot: "rgba(170,60,220,0.9)" },
-            { key: "ANIMAL", label: "Oriol · Animals", range: "16-19", dot: "rgba(255,210,80,0.95)" },
-            { key: "HUMAN", label: "Marino · Humans", range: "20-23", dot: "rgba(70,180,255,0.95)" },
+            { key: "PRETA", label: "Bruno · Hungry Ghosts", range: "1-4", dot: "rgba(0,0,0,0.85)" },
+            { key: "ASURA", label: "Rufus · Titans", range: "5-8", dot: "rgba(255,90,90,0.95)" },
+            { key: "DEVA", label: "Whitman · SemiGods", range: "9-12", dot: "rgba(255,255,255,0.95)" },
+            { key: "NARAKA", label: "Margot · Hell", range: "13-16", dot: "rgba(170,60,220,0.9)" },
+            { key: "ANIMAL", label: "Oriol · Animals", range: "17-20", dot: "rgba(255,210,80,0.95)" },
+            { key: "HUMAN", label: "Marino · Humans", range: "21-23,0", dot: "rgba(70,180,255,0.95)" },
           ].map((r) => (
             <div
               key={r.key}

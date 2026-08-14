@@ -4,11 +4,16 @@ import { REALM_PIECE_ORDER } from "../../types";
 import { checkNirvanaFormation, countNirvanaFormationProgress } from "../../victory/nirvana";
 import type { GameState, CanonicalRealmId } from "../../types";
 
-// Tabla canonica congelada por Federico (13 agosto 2026) — si este test
-// falla, alguien movio una casilla, un color o un Avatar sin actualizar
-// el resto de la cadena. Ver src/UI/realm.ts (REALM_TO_CANONICAL /
-// canonicalRealmFromPos / CANONICAL_REALM_LABEL) para el porque de cada
-// numero y cada nombre.
+// Tabla canonica congelada por Federico (13 agosto 2026, corrida +1 el
+// 14 agosto 2026 — v49) — si este test falla, alguien movio una
+// casilla, un color o un Avatar sin actualizar el resto de la cadena.
+// Ver src/UI/realm.ts (REALM_TO_CANONICAL / canonicalRealmFromPos /
+// CANONICAL_REALM_LABEL / PHASE_OFFSET) para el porque de cada numero y
+// cada nombre.
+//
+// v49 (14 agosto 2026) — Federico confirmo mirando la pantalla real que
+// Humans (azul) pinta 21,22,23,0, no 20-23 como decia la tabla v46/v48.
+// Toda la rueda esta corrida +1 respecto de la version anterior.
 //
 // v48 (13 agosto 2026) — a pedido de Federico, "titans"/"semigods" son
 // los nombres que el jugador ve para Rufus/Whitman, pero el ID interno
@@ -36,12 +41,14 @@ const REALM_COLOR: Record<CanonicalRealmId, string> = {
 };
 
 const REALM_CELLS: Record<CanonicalRealmId, number[]> = {
-  hungry_ghost: [0, 1, 2, 3],
-  asura: [4, 5, 6, 7],
-  deva: [8, 9, 10, 11],
-  hell: [12, 13, 14, 15],
-  animals: [16, 17, 18, 19],
-  humans: [20, 21, 22, 23],
+  hungry_ghost: [1, 2, 3, 4],
+  asura: [5, 6, 7, 8],
+  deva: [9, 10, 11, 12],
+  hell: [13, 14, 15, 16],
+  animals: [17, 18, 19, 20],
+  // getCellsByRealm recorre pos 0..23 en orden, asi que la casilla 0
+  // (que pertenece a Humans tras el corte de vuelta) aparece primero.
+  humans: [0, 21, 22, 23],
 };
 
 function getCellsByRealm(id: CanonicalRealmId): number[] {
@@ -52,9 +59,9 @@ function getCellsByRealm(id: CanonicalRealmId): number[] {
   return cells;
 }
 
-describe("Tabla canonica de reinos (congelada 13 agosto 2026)", () => {
-  it("Humans son exactamente las casillas 20-23", () => {
-    expect(getCellsByRealm("humans")).toEqual([20, 21, 22, 23]);
+describe("Tabla canonica de reinos (congelada 13 agosto 2026, corrida +1 en v49)", () => {
+  it("Humans son exactamente las casillas 21,22,23,0", () => {
+    expect(getCellsByRealm("humans")).toEqual([0, 21, 22, 23]);
   });
 
   it("Marino es el avatar de Humans", () => {
@@ -93,7 +100,7 @@ describe("Tabla canonica de reinos (congelada 13 agosto 2026)", () => {
   });
 });
 
-describe("checkNirvanaFormation usa realmente las casillas de Humans (20-23)", () => {
+describe("checkNirvanaFormation usa realmente las casillas de Humans (21,22,23,0)", () => {
   function fakeState(positions: Partial<Record<CanonicalRealmId, number>>): GameState {
     const realmPieces: any = {};
     for (const kind of REALM_PIECE_ORDER) {
@@ -128,7 +135,23 @@ describe("checkNirvanaFormation usa realmente las casillas de Humans (20-23)", (
     } as unknown as GameState;
   }
 
-  it("6 avatares en Humans (20-23) SI completan la formacion", () => {
+  it("6 avatares en Humans (21,22,23,0) SI completan la formacion", () => {
+    const state = fakeState({
+      hungry_ghost: 21,
+      hell: 22,
+      animals: 23,
+      humans: 0,
+      asura: 21,
+      deva: 22,
+    });
+    expect(countNirvanaFormationProgress(state, "P1")).toBe(6);
+    expect(checkNirvanaFormation(state, "P1")).toBe(true);
+  });
+
+  it("6 avatares en la vieja zona 20-23 (Humans pre-v49) NO cuentan todos como Humans", () => {
+    // pos 20 cayo del lado de Animals con el corrimiento de v49; solo
+    // 21,22,23 siguen siendo Humans — por eso la formacion completa NO
+    // se logra (quedaria 1 pieza fuera de Humans).
     const state = fakeState({
       hungry_ghost: 20,
       hell: 21,
@@ -137,11 +160,11 @@ describe("checkNirvanaFormation usa realmente las casillas de Humans (20-23)", (
       asura: 20,
       deva: 21,
     });
-    expect(countNirvanaFormationProgress(state, "P1")).toBe(6);
-    expect(checkNirvanaFormation(state, "P1")).toBe(true);
+    expect(countNirvanaFormationProgress(state, "P1")).toBeLessThan(6);
+    expect(checkNirvanaFormation(state, "P1")).toBe(false);
   });
 
-  it("6 avatares en la vieja zona 12-15 (Hell/morado) NO cuentan como Humans", () => {
+  it("6 avatares en la vieja zona 12-15 (Hell/morado pre-v46) NO cuentan como Humans", () => {
     const state = fakeState({
       hungry_ghost: 12,
       hell: 13,
