@@ -216,6 +216,15 @@ export default function App() {
   const { handleLogin } = useGameController();
   const [state, dispatchBase] = useReducer(reducer, initialState);
 const [activeRealmIntro, setActiveRealmIntro] = useState<string | null>(null);
+// v53 (17 agosto 2026) — pedido de Federico: la fanfarria (militar +
+// campanitas tibetanas) que anima la entrada del 6to Avatar (Whitman)
+// arranca cuando TERMINA whitman_deva_intro.mp4, no al mismo tiempo
+// (el video ya trae su propio audio de fondo, ~11.6s, y se pisarían).
+// Contador simple en vez de un booleano: GameShell detecta el CAMBIO de
+// valor (flanco), no "es distinto de cero", así que sobrevive bien a
+// que este estado no se resetee en cada partida (ver RESET más abajo,
+// sí lo resetea, pero no depende de eso para andar bien).
+const [whitmanIntroEndSignal, setWhitmanIntroEndSignal] = useState(0);
 const playedRealmIntrosRef = useRef<Record<string, boolean>>({});
 // v13 (10 agosto 2026) — reinicio real de Genesis. GameShell guarda su
 // propio estado local de los clics decorativos (genesisClickCount,
@@ -869,6 +878,7 @@ useEffect(() => {
   playedRealmIntrosRef.current = {};
   setActiveRealmIntro(null);
   setRealmIntroMuted(true);
+  setWhitmanIntroEndSignal(0);
   setGenesisResetSeq((n) => n + 1);
 
   setRollsCount(0);
@@ -961,7 +971,14 @@ useEffect(() => {
   // loop (pantalla "congelada" aunque el audio de fiesta sí sonaba).
   // El atributo autoPlay ya es suficiente para arrancar solo (empieza
   // muted, así que ningún navegador lo bloquea).
-  onEnded={() => setActiveRealmIntro(null)}
+  onEnded={() => {
+    // v53 (17 agosto 2026) — ver whitmanIntroEndSignal más arriba: solo
+    // el video de Whitman (6to Avatar) dispara la fanfarria.
+    if (activeRealmIntro === whitmanIntro) {
+      setWhitmanIntroEndSignal((n) => n + 1);
+    }
+    setActiveRealmIntro(null);
+  }}
 />
   <button
     type="button"
@@ -1079,6 +1096,7 @@ useEffect(() => {
 }
 nidanaCoinId={activeNidanaId}
 nidanaCoinSide={nidanaSide}
+      whitmanIntroEndSignal={whitmanIntroEndSignal}
       onGenesisUIComplete={() => dispatch({ type: "SET_GENESIS_UI_COMPLETE" })}
       onDevSkipToWhitman={() => dispatch({ type: "DEV_SKIP_TO_WHITMAN" })}
       onVestigiumDone={() => setShowVestigium(false)}

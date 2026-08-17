@@ -32,10 +32,30 @@ import tensionSound from "../assets/sounds/tension.mp3";
 // scratch de DJ. Mismo evento efimero de hoy (fireDharmaEvent), no un
 // sistema nuevo — ver mas abajo, withDjBuddha.
 import djBuddhaPoster from "../assets/intro/buda_dj_poster.png";
+// v52 (17 agosto 2026) — pedido de Federico: agregar "7 A one more.webp"
+// (ya subida a assets/intro) como SEGUNDO frame del mismo evento — no
+// reemplaza a buda_dj_poster.png, aparece después de él mientras el
+// cartel sigue en pantalla (ver djImageSwapTimerRef / showOneMoreImage
+// más abajo).
+import djBuddhaOneMore from "../assets/intro/7 A  one more .webp";
 // v44 (13 agosto 2026) — Federico reemplazó el primer scratch por uno
 // mejor/más suave. scratch_pre_win.wav queda sin usar en el repo (no
 // se pudo borrar el archivo desde acá) — se puede eliminar a mano.
 import scratchSound from "../assets/sounds/scratch_buda_dj.mp3";
+// v53 (17 agosto 2026) — pedido de Federico: la fanfarria (militar +
+// campanitas tibetanas) anima la entrada del 6to Avatar (Whitman) — NO
+// es del evento de Buda DJ/"ONLY ONE MORE" (ese ya tenía su propio
+// scratch, sin tocar). Arranca cuando termina whitman_deva_intro.mp4
+// (whitmanIntroEndSignal, prop que sube App.tsx), no junto con el video
+// — el video ya trae su propio audio y se pisarían. Ver el efecto de
+// flanco sobre whitmanIntroEndSignal más abajo.
+import fanfarriaSound from "../assets/sounds/fanfarria 5to Avatar.mp3";
+// v53 (17 agosto 2026) — cuando termina la fanfarria (evento 'ended',
+// mismo patrón), suena esta campana tibetana sola y el mural de fondo
+// pasa a "7 nirvana dj.webp" (la única de las 7 fotos con la luna ya
+// destapada — antes tapada por nubes en "6 entra whitman.webp"). Ver
+// nirvanaMuralRevealed más abajo.
+import campanaFinalSound from "../assets/sounds/campana final.mp3";
 import { SacredProgress } from "./SacredProgress";
 import { countNirvanaFormationProgress } from "../game/victory/nirvana";
 import { VictoryScreen } from "./VictoryScreen";
@@ -82,6 +102,12 @@ nidanaCoinSide: "front" | "back";
   // case "DEV_SKIP_TO_WHITMAN". Opcional para no romper otros usos de
   // GameShell que no la pasen.
   onDevSkipToWhitman?: () => void;
+
+  // v53 (17 agosto 2026) — contador que App.tsx sube cada vez que termina
+  // whitman_deva_intro.mp4 (ver ese archivo). GameShell mira el CAMBIO de
+  // valor (flanco), no el valor en sí, para disparar la fanfarria del 6to
+  // Avatar exactamente una vez por fin de video.
+  whitmanIntroEndSignal?: number;
 };
 
 export function GameShell({
@@ -102,6 +128,7 @@ export function GameShell({
   onRoll,
   onReset,
   onDevSkipToWhitman,
+  whitmanIntroEndSignal = 0,
   playDiceSound,
   onConsciousMove,
   onGenesisUIComplete,
@@ -184,7 +211,17 @@ const tensionAudio = React.useRef<HTMLAudioElement | null>(null);
 const cheeringAudio = React.useRef<HTMLAudioElement | null>(null);
 const fireworksAudio = React.useRef<HTMLAudioElement | null>(null);
 const scratchAudio = React.useRef<HTMLAudioElement | null>(null);
+const fanfarriaAudio = React.useRef<HTMLAudioElement | null>(null);
+const campanaFinalAudio = React.useRef<HTMLAudioElement | null>(null);
 const [showNidanaTitle, setShowNidanaTitle] = React.useState(false);
+// v53 (17 agosto 2026) — ver import de campanaFinalSound: se pone en
+// true cuando termina la fanfarria del 6to Avatar, y hace que el mural
+// de fondo (SamsaraStage/MaraLayer) muestre "7 nirvana dj.webp" (luna
+// destapada) en vez de quedarse en "6 entra whitman.webp". No se
+// resetea a mano: GameShell se remonta entero en cada reset de partida
+// (App.tsx le pasa key={genesisResetSeq}), así que este estado vuelve
+// solo a false en la partida siguiente.
+const [nirvanaMuralRevealed, setNirvanaMuralRevealed] = React.useState(false);
 
 // Escala dinámica del scene para llenar el viewport
 React.useEffect(() => {
@@ -229,11 +266,71 @@ React.useEffect(() => {
   cheeringAudio.current = new Audio(cheeringSound);
   fireworksAudio.current = new Audio(fireworksSound);
   scratchAudio.current = new Audio(scratchSound);
+  fanfarriaAudio.current = new Audio(fanfarriaSound);
+  campanaFinalAudio.current = new Audio(campanaFinalSound);
 
   if (cheeringAudio.current) cheeringAudio.current.volume = 0.18;
   if (fireworksAudio.current) fireworksAudio.current.volume = 0.12;
   if (scratchAudio.current) scratchAudio.current.volume = 0.55;
+  if (fanfarriaAudio.current) fanfarriaAudio.current.volume = 0.5;
+  if (campanaFinalAudio.current) campanaFinalAudio.current.volume = 0.5;
+
+  // v53 (17 agosto 2026) — pedido de Federico: cuando termina la
+  // fanfarria del 6to Avatar (whitmanIntroEndSignal más abajo dispara
+  // el .play(), ver ese efecto), suena esta campana tibetana sola y el
+  // mural pasa a mostrar la luna destapada. Enganchada al 'ended'
+  // nativo del audio (no un setTimeout con la duración copiada a mano)
+  // para no desincronizarse si el archivo de fanfarria cambia de
+  // duración — ya pasó una vez con el scratch del Buda DJ (ver v44).
+  // Mismo patrón de reintento que ya usa este archivo (v26, v51) para
+  // el .play() que puede fallar en silencio.
+  const fanfarria = fanfarriaAudio.current;
+  const onFanfarriaEnded = () => {
+    setNirvanaMuralRevealed(true);
+    const campana = campanaFinalAudio.current;
+    if (!campana) return;
+    campana.currentTime = 0;
+    campana.play().catch(() => {
+      console.warn("[whitman] campana final falló al reproducir, reintentando...");
+      window.setTimeout(() => {
+        campana.currentTime = 0;
+        campana.play().catch(() => {
+          console.warn("[whitman] campana final falló también en el reintento.");
+        });
+      }, 120);
+    });
+  };
+  fanfarria?.addEventListener("ended", onFanfarriaEnded);
+
+  return () => {
+    fanfarria?.removeEventListener("ended", onFanfarriaEnded);
+  };
 }, []);
+
+// v53 (17 agosto 2026) — dispara la fanfarria al FLANCO de
+// whitmanIntroEndSignal (App.tsx lo sube en el onEnded de
+// whitman_deva_intro.mp4). Baseline capturada en el valor que trae la
+// prop AL MONTAR (no 0 fijo): así, si esta pantalla se remonta después
+// de que el video ya terminó (por ejemplo, tras un refresh a mitad de
+// partida), no dispara la fanfarria de nuevo sin que haya pasado nada.
+const prevWhitmanIntroEndSignalRef = React.useRef(whitmanIntroEndSignal);
+React.useEffect(() => {
+  if (whitmanIntroEndSignal === prevWhitmanIntroEndSignalRef.current) return;
+  prevWhitmanIntroEndSignalRef.current = whitmanIntroEndSignal;
+
+  const audio = fanfarriaAudio.current;
+  if (!audio) return;
+  audio.currentTime = 0;
+  audio.play().catch(() => {
+    console.warn("[whitman] fanfarria falló al reproducir, reintentando...");
+    window.setTimeout(() => {
+      audio.currentTime = 0;
+      audio.play().catch(() => {
+        console.warn("[whitman] fanfarria falló también en el reintento.");
+      });
+    }, 120);
+  });
+}, [whitmanIntroEndSignal]);
 
 const prevTransitionsRef = React.useRef({
   P1: state.realmProgress.P1.realmTransitions,
@@ -399,11 +496,15 @@ const prevNearWinRef = React.useRef<{ P1: boolean; P2: boolean }>({
 });
 const dharmaHideTimerRef = React.useRef<number | null>(null);
 const dharmaFadeTimerRef = React.useRef<number | null>(null);
+// v52 (17 agosto 2026) — timer del segundo frame ("7 A one more.webp"),
+// ver import de djBuddhaOneMore más arriba.
+const djImageSwapTimerRef = React.useRef<number | null>(null);
 const [transientDharma, setTransientDharma] = React.useState<{
   message: string;
   big: boolean;
   fading: boolean;
   withDjBuddha: boolean;
+  showOneMore: boolean;
 } | null>(null);
 
 // v43 (13 agosto 2026) — withDjBuddha es opcional (default false) para
@@ -415,8 +516,9 @@ const fireDharmaEvent = React.useCallback(
   (message: string, big: boolean, withDjBuddha: boolean = false) => {
     if (dharmaHideTimerRef.current) window.clearTimeout(dharmaHideTimerRef.current);
     if (dharmaFadeTimerRef.current) window.clearTimeout(dharmaFadeTimerRef.current);
+    if (djImageSwapTimerRef.current) window.clearTimeout(djImageSwapTimerRef.current);
 
-    setTransientDharma({ message, big, fading: false, withDjBuddha });
+    setTransientDharma({ message, big, fading: false, withDjBuddha, showOneMore: false });
 
     // v51 (14 agosto 2026) — Federico reportó el scratch del Buda DJ sin
     // sonar en un playtest real (el cartel y la imagen sí aparecieron).
@@ -439,6 +541,17 @@ const fireDharmaEvent = React.useCallback(
       });
     }
 
+    // v52 (17 agosto 2026) — a los 2.5s (mitad de los 5s que el cartel
+    // queda en pantalla, ver dharmaHideTimerRef abajo) el poster pasa de
+    // buda_dj_poster.png a "7 A one more.webp" — cross-fade en el JSX
+    // (showOneMoreImage), no se toca el timing del cartel de texto ni el
+    // del fade-out (isDharmaFading), son cosas independientes.
+    if (withDjBuddha) {
+      djImageSwapTimerRef.current = window.setTimeout(() => {
+        setTransientDharma((cur) => (cur ? { ...cur, showOneMore: true } : cur));
+      }, 2500);
+    }
+
     dharmaHideTimerRef.current = window.setTimeout(() => {
       setTransientDharma((cur) => (cur ? { ...cur, fading: true } : cur));
 
@@ -454,6 +567,7 @@ React.useEffect(() => {
   return () => {
     if (dharmaHideTimerRef.current) window.clearTimeout(dharmaHideTimerRef.current);
     if (dharmaFadeTimerRef.current) window.clearTimeout(dharmaFadeTimerRef.current);
+    if (djImageSwapTimerRef.current) window.clearTimeout(djImageSwapTimerRef.current);
   };
 }, []);
 
@@ -477,8 +591,14 @@ React.useEffect(() => {
 // el momento real en que Bruno nace, no "margot". Mantener el "-1" aquí
 // ahora mostraría el mural del Avatar ANTERIOR al que realmente está
 // activo. Se quita — cosmicClock.era ya es la fuente de verdad directa.
-const muralEra =
-  state.cosmicClock.transitionSequence === 0
+// v53 (17 agosto 2026) — nirvanaMuralRevealed (campana final del 6to
+// Avatar, ver más arriba) pisa a state.cosmicClock.era: ese campo real
+// del juego nunca llega a valer "nirvana" (llega hasta "whitman" y se
+// queda ahí hasta la victoria real), así que sin este override el
+// mural se quedaría en "6 entra whitman.webp" para siempre.
+const muralEra = nirvanaMuralRevealed
+  ? "nirvana"
+  : state.cosmicClock.transitionSequence === 0
     ? "none"
     : state.cosmicClock.era;
 
@@ -670,6 +790,9 @@ const buddhaMessage = transientDharma?.message ?? "";
 const isDharmaBig = transientDharma?.big ?? false;
 const isDharmaFading = transientDharma?.fading ?? false;
 const showDjBuddha = transientDharma?.withDjBuddha ?? false;
+// v52 (17 agosto 2026) — segundo frame ("7 A one more.webp"), ver
+// djImageSwapTimerRef en fireDharmaEvent.
+const showOneMoreImage = transientDharma?.showOneMore ?? false;
   
 return (
 
@@ -815,6 +938,28 @@ return (
               width: "100%",
               transform: "scaleX(-1)",
               filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.6))",
+              transition: "opacity 220ms ease",
+              opacity: showOneMoreImage ? 0 : 1,
+            }}
+          />
+          {/* v52 (17 agosto 2026) — segundo frame a pedido de Federico:
+              "7 A one more.webp" (assets/intro), apilada sobre el poster
+              original y cross-fadeada a los 2.5s (djImageSwapTimerRef
+              en fireDharmaEvent), no lo reemplaza. */}
+          <img
+            src={djBuddhaOneMore}
+            alt=""
+            style={{
+              display: "block",
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              position: "absolute",
+              inset: 0,
+              transform: "scaleX(-1)",
+              filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.6))",
+              transition: "opacity 220ms ease",
+              opacity: showOneMoreImage ? 1 : 0,
             }}
           />
         </div>
