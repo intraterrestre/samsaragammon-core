@@ -42,13 +42,13 @@ import djBuddhaOneMore from "../assets/intro/7 A  one more .webp";
 // mejor/más suave. scratch_pre_win.wav queda sin usar en el repo (no
 // se pudo borrar el archivo desde acá) — se puede eliminar a mano.
 import scratchSound from "../assets/sounds/scratch_buda_dj.mp3";
-// v53 (17 agosto 2026) — pedido de Federico: la fanfarria (militar +
-// campanitas tibetanas) anima la entrada del 6to Avatar (Whitman) — NO
-// es del evento de Buda DJ/"ONLY ONE MORE" (ese ya tenía su propio
-// scratch, sin tocar). Arranca cuando termina whitman_deva_intro.mp4
-// (whitmanIntroEndSignal, prop que sube App.tsx), no junto con el video
-// — el video ya trae su propio audio y se pisarían. Ver el efecto de
-// flanco sobre whitmanIntroEndSignal más abajo.
+// v55 (17 agosto 2026) — pedido de Federico, coreografía correcta
+// (corrige v53, que la disparaba al terminar whitman_deva_intro.mp4 —
+// eso confundía "Whitman ya jugable" con "formación completa" y hacía
+// salir la foto de la luna antes de tiempo). La fanfarria suena cuando
+// un jugador COMPLETA la formación física: 6/6 fichas en Humans. Ver el
+// flanco p1FullFormation/p2FullFormation más abajo, junto a
+// p1NearWin/p2NearWin.
 import fanfarriaSound from "../assets/sounds/fanfarria 5to Avatar.mp3";
 // v53 (17 agosto 2026) — cuando termina la fanfarria (evento 'ended',
 // mismo patrón), suena esta campana tibetana sola y el mural de fondo
@@ -104,12 +104,6 @@ nidanaCoinSide: "front" | "back";
   // entrada real de Whitman se siga jugando a mano). Opcional para no
   // romper otros usos de GameShell que no la pasen.
   onDevSkipToRufus?: () => void;
-
-  // v53 (17 agosto 2026) — contador que App.tsx sube cada vez que termina
-  // whitman_deva_intro.mp4 (ver ese archivo). GameShell mira el CAMBIO de
-  // valor (flanco), no el valor en sí, para disparar la fanfarria del 6to
-  // Avatar exactamente una vez por fin de video.
-  whitmanIntroEndSignal?: number;
 };
 
 export function GameShell({
@@ -130,7 +124,6 @@ export function GameShell({
   onRoll,
   onReset,
   onDevSkipToRufus,
-  whitmanIntroEndSignal = 0,
   playDiceSound,
   onConsciousMove,
   onGenesisUIComplete,
@@ -224,6 +217,16 @@ const [showNidanaTitle, setShowNidanaTitle] = React.useState(false);
 // (App.tsx le pasa key={genesisResetSeq}), así que este estado vuelve
 // solo a false en la partida siguiente.
 const [nirvanaMuralRevealed, setNirvanaMuralRevealed] = React.useState(false);
+// v55 (17 agosto 2026) — pedido de Federico: mural intermedio entre
+// "6 entra whitman" y "7 nirvana dj". Se pone en true junto con el
+// cartel "ONLY ONE MORE" (5/6 en Humans, ver p1NearWin/p2NearWin más
+// abajo) y hace que el mural de fondo muestre "7 A one more.webp"
+// (destapa el turbante, todavía NO la luna) en vez de "6 entra
+// whitman.webp". nirvanaMuralRevealed (arriba) tiene prioridad sobre
+// este cuando ambos son true (formación completa ya pasó por los 5/6
+// en camino a los 6/6). Mismo criterio de no-reset-a-mano que
+// nirvanaMuralRevealed: GameShell se remonta entero en cada reset.
+const [oneMoreMuralRevealed, setOneMoreMuralRevealed] = React.useState(false);
 
 // Escala dinámica del scene para llenar el viewport
 React.useEffect(() => {
@@ -285,10 +288,13 @@ React.useEffect(() => {
   if (fanfarriaAudio.current) fanfarriaAudio.current.volume = 0.5;
   if (campanaFinalAudio.current) campanaFinalAudio.current.volume = 0.5;
 
-  // v53 (17 agosto 2026) — pedido de Federico: cuando termina la
-  // fanfarria del 6to Avatar (whitmanIntroEndSignal más abajo dispara
-  // el .play(), ver ese efecto), suena esta campana tibetana sola y el
-  // mural pasa a mostrar la luna destapada. Enganchada al 'ended'
+  // v55 (17 agosto 2026) — pedido de Federico, coreografía correcta
+  // (corrige v53): la fanfarria NO suena cuando termina el video de
+  // Whitman — suena cuando un jugador COMPLETA la formación física (6/6
+  // fichas en Humans, ver el flanco p1FullFormation/p2FullFormation más
+  // abajo, junto a p1NearWin/p2NearWin). Cuando la fanfarria termina de
+  // sonar sola, esta campana tibetana suena y el mural pasa a mostrar
+  // la luna destapada ("7 nirvana dj.webp"). Enganchada al 'ended'
   // nativo del audio (no un setTimeout con la duración copiada a mano)
   // para no desincronizarse si el archivo de fanfarria cambia de
   // duración — ya pasó una vez con el scratch del Buda DJ (ver v44).
@@ -316,31 +322,6 @@ React.useEffect(() => {
     fanfarria?.removeEventListener("ended", onFanfarriaEnded);
   };
 }, []);
-
-// v53 (17 agosto 2026) — dispara la fanfarria al FLANCO de
-// whitmanIntroEndSignal (App.tsx lo sube en el onEnded de
-// whitman_deva_intro.mp4). Baseline capturada en el valor que trae la
-// prop AL MONTAR (no 0 fijo): así, si esta pantalla se remonta después
-// de que el video ya terminó (por ejemplo, tras un refresh a mitad de
-// partida), no dispara la fanfarria de nuevo sin que haya pasado nada.
-const prevWhitmanIntroEndSignalRef = React.useRef(whitmanIntroEndSignal);
-React.useEffect(() => {
-  if (whitmanIntroEndSignal === prevWhitmanIntroEndSignalRef.current) return;
-  prevWhitmanIntroEndSignalRef.current = whitmanIntroEndSignal;
-
-  const audio = fanfarriaAudio.current;
-  if (!audio) return;
-  audio.currentTime = 0;
-  audio.play().catch(() => {
-    console.warn("[whitman] fanfarria falló al reproducir, reintentando...");
-    window.setTimeout(() => {
-      audio.currentTime = 0;
-      audio.play().catch(() => {
-        console.warn("[whitman] fanfarria falló también en el reintento.");
-      });
-    }, 120);
-  });
-}, [whitmanIntroEndSignal]);
 
 const prevTransitionsRef = React.useRef({
   P1: state.realmProgress.P1.realmTransitions,
@@ -601,16 +582,21 @@ React.useEffect(() => {
 // el momento real en que Bruno nace, no "margot". Mantener el "-1" aquí
 // ahora mostraría el mural del Avatar ANTERIOR al que realmente está
 // activo. Se quita — cosmicClock.era ya es la fuente de verdad directa.
-// v53 (17 agosto 2026) — nirvanaMuralRevealed (campana final del 6to
-// Avatar, ver más arriba) pisa a state.cosmicClock.era: ese campo real
-// del juego nunca llega a valer "nirvana" (llega hasta "whitman" y se
-// queda ahí hasta la victoria real), así que sin este override el
-// mural se quedaría en "6 entra whitman.webp" para siempre.
+// v55 (17 agosto 2026) — nirvanaMuralRevealed/oneMoreMuralRevealed (ver
+// más arriba) pisan a state.cosmicClock.era: ese campo real del juego
+// nunca llega a valer "nirvana" ni "one_more" (llega hasta "whitman" y
+// se queda ahí hasta la victoria real), así que sin este override el
+// mural se quedaría en "6 entra whitman.webp" para siempre. Orden:
+// nirvana (6/6, luna destapada) gana sobre one_more (5/6, turbante
+// destapado) — para cuando llega la formación completa, los 5/6 ya
+// pasaron.
 const muralEra = nirvanaMuralRevealed
   ? "nirvana"
-  : state.cosmicClock.transitionSequence === 0
-    ? "none"
-    : state.cosmicClock.era;
+  : oneMoreMuralRevealed
+    ? "one_more"
+    : state.cosmicClock.transitionSequence === 0
+      ? "none"
+      : state.cosmicClock.era;
 
 const [genesisPhase, setGenesisPhase] = React.useState<string>("VIDEO");
 
@@ -789,12 +775,56 @@ React.useEffect(() => {
 
   if (p1At5 && !prevNearWinRef.current.P1) {
     fireDharmaEvent("WHITE: ONLY ONE MORE.", true, true);
+    // v55 (17 agosto 2026) — mismo flanco de "ONLY ONE MORE": el mural
+    // de fondo pasa a "7 A one more.webp" (turbante destapado).
+    setOneMoreMuralRevealed(true);
   } else if (p2At5 && !prevNearWinRef.current.P2) {
     fireDharmaEvent("BLACK: ONLY ONE MORE.", true, true);
+    setOneMoreMuralRevealed(true);
   }
 
   prevNearWinRef.current = { P1: p1At5, P2: p2At5 };
 }, [p1NearWin, p2NearWin, fireDharmaEvent]);
+
+// v55 (17 agosto 2026) — pedido de Federico: cuando un jugador COMPLETA
+// la formación física (6/6 fichas en Humans — mismo p1NearWin/p2NearWin
+// de arriba, reusado, ya cuenta 0-6), suena la fanfarria. Mismo patrón
+// de flanco que el resto de este archivo (prevFullFormationRef, edge
+// false→true, se re-arma si baja de 6 y vuelve a subir — no debería
+// pasar en la práctica, pero mantiene el mismo criterio que
+// prevNearWinRef por consistencia). Cuando la fanfarria termina de
+// sonar sola, el listener 'ended' (ver useEffect de setup de audios,
+// más arriba) dispara la campana + nirvanaMuralRevealed.
+const prevFullFormationRef = React.useRef<{ P1: boolean; P2: boolean }>({
+  P1: false,
+  P2: false,
+});
+
+React.useEffect(() => {
+  const p1Full = p1NearWin === 6;
+  const p2Full = p2NearWin === 6;
+
+  if (
+    (p1Full && !prevFullFormationRef.current.P1) ||
+    (p2Full && !prevFullFormationRef.current.P2)
+  ) {
+    const audio = fanfarriaAudio.current;
+    if (audio) {
+      audio.currentTime = 0;
+      audio.play().catch(() => {
+        console.warn("[whitman] fanfarria falló al reproducir, reintentando...");
+        window.setTimeout(() => {
+          audio.currentTime = 0;
+          audio.play().catch(() => {
+            console.warn("[whitman] fanfarria falló también en el reintento.");
+          });
+        }, 120);
+      });
+    }
+  }
+
+  prevFullFormationRef.current = { P1: p1Full, P2: p2Full };
+}, [p1NearWin, p2NearWin]);
 
 const buddhaMessage = transientDharma?.message ?? "";
 const isDharmaBig = transientDharma?.big ?? false;
