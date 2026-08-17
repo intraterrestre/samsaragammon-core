@@ -1098,7 +1098,20 @@ nidanaCoinId={activeNidanaId}
 nidanaCoinSide={nidanaSide}
       whitmanIntroEndSignal={whitmanIntroEndSignal}
       onGenesisUIComplete={() => dispatch({ type: "SET_GENESIS_UI_COMPLETE" })}
-      onDevSkipToWhitman={() => dispatch({ type: "DEV_SKIP_TO_WHITMAN" })}
+      onDevSkipToWhitman={() => {
+        dispatch({ type: "DEV_SKIP_TO_WHITMAN" });
+        // v53 (17 agosto 2026) — DEV_SKIP_TO_WHITMAN nunca toca
+        // state.realmAscension (a propósito: es un atajo directo al
+        // estado final, no simula la progresión narrativa), así que
+        // whitman_deva_intro.mp4 nunca se dispara para este botón y
+        // la fanfarria/campana/foto final tampoco. Reportado por
+        // Federico: probó el botón esperando ver la secuencia de
+        // cierre y no pasó nada (no era caché, era esto). Para que el
+        // botón siga sirviendo como atajo de testeo del cierre
+        // completo, simulamos acá mismo "el video ya terminó" en vez
+        // de reproducirlo — mismo signal que usa el video real.
+        setWhitmanIntroEndSignal((n) => n + 1);
+      }}
       onVestigiumDone={() => setShowVestigium(false)}
       onCloseLedger={() => dispatch({ type: "CLOSE_LEDGER" })}
       onIntroDone={() => dispatch({ type: "INTRO_DONE" })}
