@@ -1098,20 +1098,15 @@ nidanaCoinId={activeNidanaId}
 nidanaCoinSide={nidanaSide}
       whitmanIntroEndSignal={whitmanIntroEndSignal}
       onGenesisUIComplete={() => dispatch({ type: "SET_GENESIS_UI_COMPLETE" })}
-      onDevSkipToWhitman={() => {
-        dispatch({ type: "DEV_SKIP_TO_WHITMAN" });
-        // v53 (17 agosto 2026) — DEV_SKIP_TO_WHITMAN nunca toca
-        // state.realmAscension (a propósito: es un atajo directo al
-        // estado final, no simula la progresión narrativa), así que
-        // whitman_deva_intro.mp4 nunca se dispara para este botón y
-        // la fanfarria/campana/foto final tampoco. Reportado por
-        // Federico: probó el botón esperando ver la secuencia de
-        // cierre y no pasó nada (no era caché, era esto). Para que el
-        // botón siga sirviendo como atajo de testeo del cierre
-        // completo, simulamos acá mismo "el video ya terminó" en vez
-        // de reproducirlo — mismo signal que usa el video real.
-        setWhitmanIntroEndSignal((n) => n + 1);
-      }}
+      // v54 (17 agosto 2026) — revertido el disparo directo de
+      // whitmanIntroEndSignal que este botón tenía (v53): Federico lo
+      // probó y la foto de la luna se destapaba ANTES de que él
+      // "coronara" al 6to Avatar de verdad — ese momento tiene que
+      // salir del juego real (video de Whitman → fanfarria → campana),
+      // nunca de un atajo de dev. El atajo ahora se llama
+      // DEV_SKIP_TO_RUFUS y se detiene un Avatar antes (ver reducer.ts)
+      // para que Federico pueda jugar el último tramo a mano.
+      onDevSkipToRufus={() => dispatch({ type: "DEV_SKIP_TO_RUFUS" })}
       onVestigiumDone={() => setShowVestigium(false)}
       onCloseLedger={() => dispatch({ type: "CLOSE_LEDGER" })}
       onIntroDone={() => dispatch({ type: "INTRO_DONE" })}

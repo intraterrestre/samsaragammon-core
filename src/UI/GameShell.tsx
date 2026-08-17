@@ -99,9 +99,11 @@ nidanaCoinSide: "front" | "back";
   onCloseLedger: () => void;
 
   // DEV ONLY (13 agosto 2026) — atajo pedido por Federico, ver reducer.ts
-  // case "DEV_SKIP_TO_WHITMAN". Opcional para no romper otros usos de
-  // GameShell que no la pasen.
-  onDevSkipToWhitman?: () => void;
+  // case "DEV_SKIP_TO_RUFUS" (v54, 17 agosto 2026: renombrado — el atajo
+  // se detiene en Rufus/5to Avatar, ya no en Whitman/6to, para que la
+  // entrada real de Whitman se siga jugando a mano). Opcional para no
+  // romper otros usos de GameShell que no la pasen.
+  onDevSkipToRufus?: () => void;
 
   // v53 (17 agosto 2026) — contador que App.tsx sube cada vez que termina
   // whitman_deva_intro.mp4 (ver ese archivo). GameShell mira el CAMBIO de
@@ -127,7 +129,7 @@ export function GameShell({
   onLogout,
   onRoll,
   onReset,
-  onDevSkipToWhitman,
+  onDevSkipToRufus,
   whitmanIntroEndSignal = 0,
   playDiceSound,
   onConsciousMove,
@@ -848,11 +850,15 @@ return (
     <div className="samsaraScene">
       {/* DEV ONLY (13 agosto 2026) — atajo a pedido de Federico para
           probar contenido de fin de partida sin jugar toda la
-          progresion Bruno->Whitman cada vez. No aparece en el flujo
-          normal de juego, solo un boton chico y discreto. */}
-      {genesisComplete && onDevSkipToWhitman && (
+          progresion Bruno->Rufus cada vez. No aparece en el flujo
+          normal de juego, solo un boton chico y discreto.
+          v54 (17 agosto 2026) — se detiene en Rufus (5to Avatar), no en
+          Whitman (6to): Federico quiere jugar a mano el último tramo y
+          ver la entrada real de Whitman (video/fanfarria/campana/foto
+          de la luna) en su momento real, no adelantada por el atajo. */}
+      {genesisComplete && onDevSkipToRufus && (
         <button
-          onClick={onDevSkipToWhitman}
+          onClick={onDevSkipToRufus}
           style={{
             position: "absolute",
             right: 8,
@@ -867,7 +873,7 @@ return (
             cursor: "pointer",
           }}
         >
-          DEV: → Whitman
+          DEV: → Rufus
         </button>
       )}
 
