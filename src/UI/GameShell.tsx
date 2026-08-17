@@ -271,7 +271,15 @@ React.useEffect(() => {
 
   if (cheeringAudio.current) cheeringAudio.current.volume = 0.18;
   if (fireworksAudio.current) fireworksAudio.current.volume = 0.12;
-  if (scratchAudio.current) scratchAudio.current.volume = 0.55;
+  // v54 (17 agosto 2026) — pedido de Federico: reemplazó el archivo de
+  // scratch_buda_dj.mp3 por uno nuevo (mismo nombre/ruta, sin cambios
+  // de código) pero sonaba "muy bajo, sin potencia". El archivo nuevo
+  // no viene distorsionado ni recortado (llega a 0dB de pico), así que
+  // el volumen 0.55 heredado del archivo VIEJO le dejaba ~45% de
+  // volumen del navegador sin usar — subido a full (1.0, tope real de
+  // HTMLAudioElement.volume) para que suene con toda la fuerza que
+  // trae el archivo.
+  if (scratchAudio.current) scratchAudio.current.volume = 1.0;
   if (fanfarriaAudio.current) fanfarriaAudio.current.volume = 0.5;
   if (campanaFinalAudio.current) campanaFinalAudio.current.volume = 0.5;
 
