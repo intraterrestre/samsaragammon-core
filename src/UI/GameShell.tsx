@@ -33,11 +33,19 @@ import tensionSound from "../assets/sounds/tension.mp3";
 // sistema nuevo — ver mas abajo, withDjBuddha.
 import djBuddhaPoster from "../assets/intro/buda_dj_poster.png";
 // v52 (17 agosto 2026) — pedido de Federico: agregar "7 A one more.webp"
-// (ya subida a assets/intro) como SEGUNDO frame del mismo evento — no
-// reemplaza a buda_dj_poster.png, aparece después de él mientras el
-// cartel sigue en pantalla (ver djImageSwapTimerRef / showOneMoreImage
-// más abajo).
-import djBuddhaOneMore from "../assets/intro/7 A  one more .webp";
+// como segundo frame del poster de Buda DJ, cross-fadeado adentro del
+// mismo popup.
+// v57 (17 agosto 2026) — revertido: Federico reportó un glitch visual
+// ("intenta entrar la foto siguiente, pero se detiene a medio camino y
+// se retira") con las dos imágenes apiladas + cross-fade DENTRO del
+// popup que YA está siendo animado por su propio keyframe de entrada/
+// salida (djBuddhaEnter / djBuddhaPosterFading, ver overlays.css) — dos
+// animaciones de opacidad/transform compitiendo en el mismo layout.
+// Además quedaba redundante: "7 A one more.webp" ahora se muestra en el
+// MURAL de fondo (oneMoreMuralRevealed, ver más abajo), que es lo que
+// Federico describió realmente ("entra la foto: 7 A one more" como
+// etapa del mural, no como detalle del popup). El popup vuelve a ser
+// una sola imagen fija (buda_dj_poster.png), sin segundo frame.
 // v44 (13 agosto 2026) — Federico reemplazó el primer scratch por uno
 // mejor/más suave. scratch_pre_win.wav queda sin usar en el repo (no
 // se pudo borrar el archivo desde acá) — se puede eliminar a mano.
@@ -462,6 +470,16 @@ const ERA_ORDER = ["bruno", "margot", "oriol", "marino", "rufus", "whitman"] as 
 const oriolEntered =
   ERA_ORDER.indexOf(state.cosmicClock.era as (typeof ERA_ORDER)[number]) >=
   ERA_ORDER.indexOf("oriol");
+// v56 (17 agosto 2026) — pedido de Federico: reportó "ONLY ONE MORE" +
+// Buda DJ + mural de turbante destapado disparándose con el 5to Avatar
+// (Rufus) recién llegando a Humans, SIN que Whitman hubiera entrado
+// todavía. Causa real: countNirvanaFormationProgress cuenta CUALQUIER
+// 5 de las 6 fichas propias en Humans, sin importar cuáles — nada
+// obligaba a que la ficha faltante fuera justo la de Whitman. Ver el
+// gate whitmanEntered && más abajo, junto a p1NearWin/p2NearWin.
+const whitmanEntered =
+  ERA_ORDER.indexOf(state.cosmicClock.era as (typeof ERA_ORDER)[number]) >=
+  ERA_ORDER.indexOf("whitman");
 
 // v36 (13 agosto 2026) — cartel del buda (DharmaBubble/DharmaConnector,
 // mismo cupo visual de siempre, ver MaraLayer) convertido de condición
@@ -487,15 +505,11 @@ const prevNearWinRef = React.useRef<{ P1: boolean; P2: boolean }>({
 });
 const dharmaHideTimerRef = React.useRef<number | null>(null);
 const dharmaFadeTimerRef = React.useRef<number | null>(null);
-// v52 (17 agosto 2026) — timer del segundo frame ("7 A one more.webp"),
-// ver import de djBuddhaOneMore más arriba.
-const djImageSwapTimerRef = React.useRef<number | null>(null);
 const [transientDharma, setTransientDharma] = React.useState<{
   message: string;
   big: boolean;
   fading: boolean;
   withDjBuddha: boolean;
-  showOneMore: boolean;
 } | null>(null);
 
 // v43 (13 agosto 2026) — withDjBuddha es opcional (default false) para
@@ -507,9 +521,8 @@ const fireDharmaEvent = React.useCallback(
   (message: string, big: boolean, withDjBuddha: boolean = false) => {
     if (dharmaHideTimerRef.current) window.clearTimeout(dharmaHideTimerRef.current);
     if (dharmaFadeTimerRef.current) window.clearTimeout(dharmaFadeTimerRef.current);
-    if (djImageSwapTimerRef.current) window.clearTimeout(djImageSwapTimerRef.current);
 
-    setTransientDharma({ message, big, fading: false, withDjBuddha, showOneMore: false });
+    setTransientDharma({ message, big, fading: false, withDjBuddha });
 
     // v51 (14 agosto 2026) — Federico reportó el scratch del Buda DJ sin
     // sonar en un playtest real (el cartel y la imagen sí aparecieron).
@@ -532,17 +545,6 @@ const fireDharmaEvent = React.useCallback(
       });
     }
 
-    // v52 (17 agosto 2026) — a los 2.5s (mitad de los 5s que el cartel
-    // queda en pantalla, ver dharmaHideTimerRef abajo) el poster pasa de
-    // buda_dj_poster.png a "7 A one more.webp" — cross-fade en el JSX
-    // (showOneMoreImage), no se toca el timing del cartel de texto ni el
-    // del fade-out (isDharmaFading), son cosas independientes.
-    if (withDjBuddha) {
-      djImageSwapTimerRef.current = window.setTimeout(() => {
-        setTransientDharma((cur) => (cur ? { ...cur, showOneMore: true } : cur));
-      }, 2500);
-    }
-
     dharmaHideTimerRef.current = window.setTimeout(() => {
       setTransientDharma((cur) => (cur ? { ...cur, fading: true } : cur));
 
@@ -558,7 +560,6 @@ React.useEffect(() => {
   return () => {
     if (dharmaHideTimerRef.current) window.clearTimeout(dharmaHideTimerRef.current);
     if (dharmaFadeTimerRef.current) window.clearTimeout(dharmaFadeTimerRef.current);
-    if (djImageSwapTimerRef.current) window.clearTimeout(djImageSwapTimerRef.current);
   };
 }, []);
 
@@ -770,8 +771,19 @@ const p1NearWin = countNirvanaFormationProgress(state, "P1");
 const p2NearWin = countNirvanaFormationProgress(state, "P2");
 
 React.useEffect(() => {
-  const p1At5 = p1NearWin === 5;
-  const p2At5 = p2NearWin === 5;
+  // v56 (17 agosto 2026) — gate whitmanEntered && agregado (ver más
+  // arriba): sin esto, un jugador podía juntar 5 de sus OTRAS 5 fichas
+  // en Humans (bruno..rufus) antes de que Whitman siquiera entrara al
+  // juego, y "ONLY ONE MORE" salía igual — mal, porque la ficha que
+  // falta ahí NO es necesariamente la de Whitman. Se evalúa como
+  // condición combinada (no solo en el valor de count) para que el
+  // flanco dispare correctamente sin importar el orden en que se
+  // cumplen las dos cosas: si Whitman entra DESPUÉS de que el jugador
+  // ya tenía 5 en Humans, el cruce de whitmanEntered (false→true) es lo
+  // que arma el disparo en ese momento, aunque el count no haya
+  // cambiado en ese render.
+  const p1At5 = whitmanEntered && p1NearWin === 5;
+  const p2At5 = whitmanEntered && p2NearWin === 5;
 
   if (p1At5 && !prevNearWinRef.current.P1) {
     fireDharmaEvent("WHITE: ONLY ONE MORE.", true, true);
@@ -784,7 +796,7 @@ React.useEffect(() => {
   }
 
   prevNearWinRef.current = { P1: p1At5, P2: p2At5 };
-}, [p1NearWin, p2NearWin, fireDharmaEvent]);
+}, [p1NearWin, p2NearWin, whitmanEntered, fireDharmaEvent]);
 
 // v55 (17 agosto 2026) — pedido de Federico: cuando un jugador COMPLETA
 // la formación física (6/6 fichas en Humans — mismo p1NearWin/p2NearWin
@@ -830,9 +842,6 @@ const buddhaMessage = transientDharma?.message ?? "";
 const isDharmaBig = transientDharma?.big ?? false;
 const isDharmaFading = transientDharma?.fading ?? false;
 const showDjBuddha = transientDharma?.withDjBuddha ?? false;
-// v52 (17 agosto 2026) — segundo frame ("7 A one more.webp"), ver
-// djImageSwapTimerRef en fireDharmaEvent.
-const showOneMoreImage = transientDharma?.showOneMore ?? false;
   
 return (
 
@@ -982,28 +991,6 @@ return (
               width: "100%",
               transform: "scaleX(-1)",
               filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.6))",
-              transition: "opacity 220ms ease",
-              opacity: showOneMoreImage ? 0 : 1,
-            }}
-          />
-          {/* v52 (17 agosto 2026) — segundo frame a pedido de Federico:
-              "7 A one more.webp" (assets/intro), apilada sobre el poster
-              original y cross-fadeada a los 2.5s (djImageSwapTimerRef
-              en fireDharmaEvent), no lo reemplaza. */}
-          <img
-            src={djBuddhaOneMore}
-            alt=""
-            style={{
-              display: "block",
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              position: "absolute",
-              inset: 0,
-              transform: "scaleX(-1)",
-              filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.6))",
-              transition: "opacity 220ms ease",
-              opacity: showOneMoreImage ? 1 : 0,
             }}
           />
         </div>
