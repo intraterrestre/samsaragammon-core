@@ -104,6 +104,8 @@ actors: {
       currentLoopProgress: 0,
       realmTransitions: 0,
       stageStartedAtRoll: 0,
+      capturesInStage: 0,
+      movesInStage: 0,
     },
     P2: {
       currentRealmStep: 1,
@@ -111,6 +113,8 @@ actors: {
       currentLoopProgress: 0,
       realmTransitions: 0,
       stageStartedAtRoll: 0,
+      capturesInStage: 0,
+      movesInStage: 0,
     },
   },
 

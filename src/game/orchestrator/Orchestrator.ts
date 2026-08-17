@@ -94,13 +94,25 @@ export function evaluateOrchestrator(
     return { event: "NONE" };
   }
 
-  // 2. CaptureRate — capturas / turnos en la etapa
+  // 2. CaptureRate — capturas / turnos EN ESTA ETAPA.
+  // v58 (17 agosto 2026) — antes usaba sig.capturesMade, un contador
+  // ACUMULADO DE TODA LA PARTIDA que nunca se resetea (el Karma/Mirror
+  // Panel sí lo necesita así, ver getMirrorPatternReading.ts — no se
+  // toca). Dividido entre turnsInStage (que SÍ se resetea por etapa), la
+  // tasa se volvía cada vez más difícil de alcanzar cuanto más se jugaba
+  // sin capturar — el gate empeoraba con el tiempo en vez de medir lo que
+  // pasó en la etapa actual. realmProgress.capturesInStage es el par
+  // exclusivo del Orquestador, reseteado en cada ascenso real (ver
+  // reducer.ts).
   const turnsInStage = Math.max(1, realmProgress.completedLoopsInRealm * 4 + 1);
-  const captureRate = (sig.capturesMade ?? 0) / turnsInStage;
+  const captureRate = (realmProgress.capturesInStage ?? 0) / turnsInStage;
   if (captureRate < cfg.captureRateMin) return { event: "NONE" };
 
-  // 3. Visitas a Mara (aproximado con totalMoves)
-  if ((sig.totalMoves ?? 0) < cfg.maraVisitsRequired) return { event: "NONE" };
+  // 3. Visitas a Mara (aproximado con movimientos EN ESTA ETAPA, mismo
+  // motivo que el punto 2 — no con sig.totalMoves de toda la partida).
+  if ((realmProgress.movesInStage ?? 0) < cfg.maraVisitsRequired) {
+    return { event: "NONE" };
+  }
 
   // 4. Ambos jugadores participaron
   if (cfg.bothPlayersParticipated) {

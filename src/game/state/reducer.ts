@@ -318,9 +318,28 @@ export function reducer(state: GameState, action: Action): GameState {
           progress: 0,
           transitionSequence: state.cosmicClock.transitionSequence + 1,
         },
+        // v58 (17 agosto 2026) — el atajo dejaba stageStartedAtRoll y
+        // capturesInStage/movesInStage con lo que tuvieran de antes (en la
+        // práctica, del arranque de la partida), así que el guardrail
+        // relativo de lances (MIN_ROLLS_IN_STAGE) y la tasa de captura de
+        // rufus_to_whitman partían de una base incorrecta. Un salto de DEV
+        // es, a todo efecto del Orquestador, el inicio de una etapa nueva —
+        // se resetea igual que un ascenso real.
         realmProgress: {
-          P1: { ...state.realmProgress.P1, currentRealmStep: 5 },
-          P2: { ...state.realmProgress.P2, currentRealmStep: 5 },
+          P1: {
+            ...state.realmProgress.P1,
+            currentRealmStep: 5,
+            stageStartedAtRoll: state.globalRollCount,
+            capturesInStage: 0,
+            movesInStage: 0,
+          },
+          P2: {
+            ...state.realmProgress.P2,
+            currentRealmStep: 5,
+            stageStartedAtRoll: state.globalRollCount,
+            capturesInStage: 0,
+            movesInStage: 0,
+          },
         },
       };
     }
@@ -743,6 +762,14 @@ const nextActors = {
         nextLoopProgress = nextLoopProgress % state.trackSize;
       }
 
+      // v58 (17 agosto 2026) — par exclusivo del Orquestador (ver types.ts,
+      // RealmProgress.capturesInStage). Arrancan en lo que traía la etapa
+      // actual; se resetean a 0 más abajo si esta jugada asciende de
+      // Avatar, y se incrementan al armar nextRealmProgress (más abajo,
+      // una vez que didCapture ya se calculó).
+      let nextCapturesInStage = prevRealmProgress.capturesInStage ?? 0;
+      let nextMovesInStage = prevRealmProgress.movesInStage ?? 0;
+
       let nextRealmStep = prevRealmProgress.currentRealmStep;
       let nextRealmTransitions = prevRealmProgress.realmTransitions;
       let didAscendRealm = false;
@@ -784,6 +811,8 @@ const nextActors = {
   nextRealmTransitions += 1;
   nextCompletedLoops = 0;
   nextLoopProgress = 0;
+  nextCapturesInStage = 0;
+  nextMovesInStage = 0;
 
  // ===== DESBLOQUEAR FICHA DE REINO =====
  // v10 — reparación de identidad de etapa (10 agosto 2026). Antes:
@@ -1099,6 +1128,15 @@ if (capturedAvatarVacatedPos !== null) {
           stageStartedAtRoll: didAscendRealm
             ? state.globalRollCount
             : state.realmProgress[me].stageStartedAtRoll,
+          // v58 (17 agosto 2026) — ver types.ts (RealmProgress) y
+          // Orquestador (evaluateOrchestrator, sección 2/3): tasa de
+          // captura y "visitas a Mara" EN ESTA ETAPA, no acumuladas de
+          // toda la partida. nextCapturesInStage/nextMovesInStage ya
+          // vienen en 0 si esta jugada ascendió de Avatar (ver más
+          // arriba); didCapture recién se conoce acá, así que el +1 se
+          // aplica en este punto.
+          capturesInStage: nextCapturesInStage + (didCapture ? 1 : 0),
+          movesInStage: nextMovesInStage + 1,
         },
       };
 

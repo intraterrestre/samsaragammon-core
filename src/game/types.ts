@@ -187,6 +187,21 @@ export type RealmProgress = {
   // un Avatar tarda en aparecer). minTurns/minGlobalRolls sigue existiendo
   // como guardrail absoluto — esto es un guardrail relativo adicional.
   stageStartedAtRoll: number;
+  // v58 (17 agosto 2026) — arreglo de fondo pedido por Federico: el
+  // Orquestador (captureRateMin de rufus_to_whitman, sección 2 en
+  // evaluateOrchestrator) usaba decisionSignature.capturesMade/totalMoves,
+  // contadores de TODA la partida que nunca se resetean (los necesita el
+  // Karma/Mirror Panel tal cual, ver getMirrorPatternReading.ts — no se
+  // pueden tocar). Divididos entre turnsInStage (que SÍ se resetea junto
+  // con completedLoopsInRealm en cada ascenso real), la tasa de captura
+  // se volvía cada vez MÁS difícil de alcanzar cuanto más se jugaba sin
+  // capturar — el sistema empeoraba con el tiempo en vez de reflejar lo
+  // que pasó en la etapa actual. Estos dos campos son el par exclusivo
+  // del Orquestador: se resetean a 0 en cada ascenso real (igual que
+  // completedLoopsInRealm), no en el atajo DEV_SKIP_TO_RUFUS le
+  // corresponde el mismo reseteo por tratarse de un "inicio de etapa".
+  capturesInStage: number;
+  movesInStage: number;
 };
 
 export type CurvatureState = {
