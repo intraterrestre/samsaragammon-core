@@ -460,9 +460,9 @@ React.useEffect(() => {
 const [casillasFinished, setCasillasFinished] = React.useState(false);
 const [introSkipped, setIntroSkipped] = React.useState(false);
 const p1VenomsRevealed =
-  introSkipped || (casillasFinished && genesisClickCount >= 7);
+  introSkipped || (casillasFinished && genesisClickCount >= 1);
 const p2VenomsRevealed =
-  introSkipped || (casillasFinished && genesisClickCount >= 8);
+  introSkipped || (casillasFinished && genesisClickCount >= 2);
 const genesisComplete = p2VenomsRevealed;
 // Notificar al reducer cuando el Genesis visual termina
 React.useEffect(() => {
