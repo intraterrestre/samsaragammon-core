@@ -29,9 +29,8 @@ const oneMoreMuralModules = import.meta.glob(
   { eager: true, query: "?url", import: "default" }
 ) as Record<string, string>;
 
-// Fallback: el último frame de las 24 casillas verdes, por si algún
-// mural de era todavía no está disponible.
-import fallbackMural from "../assets/intro/genesis_cv24.webp";
+// Fallback: por si algún mural de era todavía no está disponible.
+const fallbackMural = Object.values(eraMuralModules)[0] ?? "";
 
 const ERA_KEYS = ["bruno", "margot", "oriol", "marino", "rufus", "whitman"] as const;
 type EraKey = (typeof ERA_KEYS)[number] | "nirvana" | "one_more";
@@ -82,6 +81,7 @@ interface MaraLayerProps {
   era?: string;
   onGenesisComplete?: () => void;
   onGenesisPhaseChange?: (phase: string) => void;
+  onGenesisSkip?: () => void;
 }
 
 export function MaraLayer({
@@ -96,6 +96,7 @@ export function MaraLayer({
   era = "bruno",
   onGenesisComplete,
   onGenesisPhaseChange,
+  onGenesisSkip,
 }: MaraLayerProps) {
   const isBoardPainted = boardPainted ?? genesisComplete;
   const currentMural = ERA_MURALS[(era as EraKey)] ?? fallbackMural;
@@ -138,6 +139,7 @@ export function MaraLayer({
             realmStep={realmStep}
             onComplete={onGenesisComplete}
             onPhaseChange={onGenesisPhaseChange}
+            onSkip={onGenesisSkip}
           />
         )}
       </div>

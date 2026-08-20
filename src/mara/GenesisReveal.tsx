@@ -49,9 +49,15 @@ type Props = {
   realmStep: number;
   onComplete?: () => void;
   onPhaseChange?: (phase: GenesisPhase) => void;
+  onSkip?: () => void;
 };
 
-export function GenesisReveal({ globalRollCount, onComplete, onPhaseChange }: Props) {
+export function GenesisReveal({
+  globalRollCount,
+  onComplete,
+  onPhaseChange,
+  onSkip,
+}: Props) {
   const [phase, setPhase] = useState<GenesisPhase>(
     VIDEO_SRC ? "VIDEO" : CASILLAS_FRAMES.length > 0 ? "CASILLAS" : "COMPLETE"
   );
@@ -104,10 +110,8 @@ export function GenesisReveal({ globalRollCount, onComplete, onPhaseChange }: Pr
   }, [phase]);
 
   const handleVideoEnd = () => {
-    // Pequeño delay para que no haya un frame en negro entre el fin del
-    // video y el primer frame de casillas.
     setTimeout(() => {
-      setPhase(CASILLAS_FRAMES.length > 0 ? "CASILLAS" : "COMPLETE");
+      setPhase("COMPLETE");
     }, 300);
   };
 
@@ -120,6 +124,11 @@ export function GenesisReveal({ globalRollCount, onComplete, onPhaseChange }: Pr
       setPhase("COMPLETE");
     }
   }, [phase, relativeRoll]);
+
+  const handleSkipIntro = () => {
+    setPhase("COMPLETE");
+    onSkip?.();
+  };
 
   if (phase === "VIDEO" && VIDEO_SRC) {
     return (
@@ -143,6 +152,27 @@ export function GenesisReveal({ globalRollCount, onComplete, onPhaseChange }: Pr
           onEnded={handleVideoEnd}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
+        <button
+          type="button"
+          onClick={handleSkipIntro}
+          style={{
+            position: "absolute",
+            right: 20,
+            top: 20,
+            padding: "10px 18px",
+            borderRadius: 999,
+            border: "2px solid rgba(255,255,255,0.7)",
+            background: "rgba(0,0,0,0.55)",
+            color: "#fff",
+            fontSize: 14,
+            fontWeight: 700,
+            letterSpacing: 1,
+            cursor: "pointer",
+            backdropFilter: "blur(2px)",
+          }}
+        >
+          SKIP INTRO →
+        </button>
         <button
           type="button"
           onClick={toggleMute}

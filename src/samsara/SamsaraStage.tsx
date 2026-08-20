@@ -24,6 +24,7 @@ type SamsaraStageProps = {
   era?: string;
   onGenesisComplete?: () => void;
   onGenesisPhaseChange?: (phase: string) => void;
+  onGenesisSkip?: () => void;
 };
 
 export function SamsaraStage({
@@ -38,6 +39,7 @@ export function SamsaraStage({
   era,
   onGenesisComplete,
   onGenesisPhaseChange,
+  onGenesisSkip,
 }: SamsaraStageProps) {
   return (
     <MaraLayer
@@ -52,6 +54,7 @@ export function SamsaraStage({
       era={era}
       onGenesisComplete={onGenesisComplete}
       onGenesisPhaseChange={onGenesisPhaseChange}
+      onGenesisSkip={onGenesisSkip}
     />
   );
 }

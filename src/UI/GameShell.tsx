@@ -458,8 +458,11 @@ React.useEffect(() => {
 // jugador negro. genesisComplete (que gatea el resto — anillo, chat,
 // buda, yin-yang) ya no es un estado propio: es "ambos ya revelados".
 const [casillasFinished, setCasillasFinished] = React.useState(false);
-const p1VenomsRevealed = casillasFinished && genesisClickCount >= 7;
-const p2VenomsRevealed = casillasFinished && genesisClickCount >= 8;
+const [introSkipped, setIntroSkipped] = React.useState(false);
+const p1VenomsRevealed =
+  introSkipped || (casillasFinished && genesisClickCount >= 7);
+const p2VenomsRevealed =
+  introSkipped || (casillasFinished && genesisClickCount >= 8);
 const genesisComplete = p2VenomsRevealed;
 // Notificar al reducer cuando el Genesis visual termina
 React.useEffect(() => {
@@ -1065,6 +1068,10 @@ return (
         era={muralEra}
         onGenesisComplete={() => setCasillasFinished(true)}
         onGenesisPhaseChange={(phase) => setGenesisPhase(phase)}
+        onGenesisSkip={() => {
+          setCasillasFinished(true);
+          setIntroSkipped(true);
+        }}
       />
 
       {/* v29 (11 agosto 2026) — apagado a pedido de Federico: el Yin-Yang
