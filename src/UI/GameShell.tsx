@@ -1038,6 +1038,7 @@ return (
       <HistoricalTimeCounter
         currentAvatarIndex={currentAvatarIndex}
         frozen={diceFrozen}
+        moveSignal={state.lastMove?.at ?? 0}
       />
 
       <VenomBanner
