@@ -115,6 +115,8 @@ nidanaCoinSide: "front" | "back";
   // entrada real de Whitman se siga jugando a mano). Opcional para no
   // romper otros usos de GameShell que no la pasen.
   onDevSkipToRufus?: () => void;
+
+  avatarVideoPlaying?: boolean;
 };
 
 export function GameShell({
@@ -141,6 +143,7 @@ export function GameShell({
   onSelectPiece,
   onSendEmoji,
   onCloseLedger,
+  avatarVideoPlaying = false,
 }: Props) {
 const [hoveredOption, setHoveredOption] = React.useState<MoveOption | null>(null);
 const [dicePopupVisible, setDicePopupVisible] = React.useState(false);
@@ -1039,6 +1042,7 @@ return (
         currentAvatarIndex={currentAvatarIndex}
         frozen={diceFrozen}
         moveSignal={state.lastMove?.at ?? 0}
+        avatarVideoPlaying={avatarVideoPlaying}
       />
 
       <VenomBanner

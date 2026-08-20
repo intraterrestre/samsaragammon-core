@@ -1066,6 +1066,7 @@ useEffect(() => {
       sum={sum}
       hasRolled={hasRolled}
       rollsCount={rollsCount}
+      avatarVideoPlaying={activeRealmIntro !== null}
       karmaSnap={karmaSnap}
       activeRealmData={activeRealmData}
       activeEra={activeEra}
