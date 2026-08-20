@@ -134,10 +134,18 @@ export function HistoricalTimeCounter({
   const currentLabelText = label === null ? "" : label.text;
   const glowColor = isPresent ? "#ffffff" : (label === null ? activeColor : label.color);
 
+  const [hintVisible, setHintVisible] = React.useState(false);
+  const showHint = () => setHintVisible(true);
+  const hideHint = () => setHintVisible(false);
+
   return (
     <div
-      className={`htc-wrap${frozen ? " htc-frozen" : ""}`}
+      className={`htc-wrap${frozen ? " htc-frozen" : ""}${hintVisible ? " htc-hint-visible" : ""}`}
       style={{ ["--htc-color" as string]: glowColor }}
+      onPointerDown={showHint}
+      onPointerUp={hideHint}
+      onPointerLeave={hideHint}
+      onPointerCancel={hideHint}
     >
       <div className="htc-display">
         {isPresent ? (
@@ -148,6 +156,7 @@ export function HistoricalTimeCounter({
           <span className="htc-digits">{formatDigits(displayValue)}</span>
         )}
       </div>
+      <div className="htc-hint">Years of Human Evolution</div>
     </div>
   );
 }
