@@ -29,11 +29,19 @@ const oneMoreMuralModules = import.meta.glob(
   { eager: true, query: "?url", import: "default" }
 ) as Record<string, string>;
 
-// Fallback: por si algún mural de era todavía no está disponible.
-const fallbackMural = Object.values(eraMuralModules)[0] ?? "";
+// v65 (20 agosto 2026) — entre que se revelan los Venenos y que
+// Bruno aparece de verdad, el tablero debe verse "totalmente
+// pintado de verde, sin ningún Avatar todavía" — no en blanco.
+// Federico restauró genesis_cv24.webp en assets/genesis/ (no en
+// intro/ donde vivía antes).
+import boardBaseMural from "../assets/genesis/genesis_cv24.webp";
+
+// Fallback genérico: usa el tablero base neutro en vez de mostrar
+// por error el mural de un Avatar específico.
+const fallbackMural = boardBaseMural;
 
 const ERA_KEYS = ["bruno", "margot", "oriol", "marino", "rufus", "whitman"] as const;
-type EraKey = (typeof ERA_KEYS)[number] | "nirvana" | "one_more";
+type EraKey = (typeof ERA_KEYS)[number] | "nirvana" | "one_more" | "none";
 
 function findMuralFor(era: string): string {
   if (era === "nirvana") {
@@ -59,6 +67,7 @@ const ERA_MURALS: Record<EraKey, string> = {
   whitman: findMuralFor("whitman"),
   one_more: findMuralFor("one_more"),
   nirvana: findMuralFor("nirvana"),
+  none: boardBaseMural,
 };
 
 import DharmaBubble from "../components/DharmaBubble";

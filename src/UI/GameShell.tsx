@@ -1064,7 +1064,7 @@ return (
         lastRealmKey={state.realmAscension?.realmKey ?? null}
         globalRollCount={genesisClickCount}
         genesisComplete={genesisComplete}
-        boardPainted={casillasFinished && muralEra !== "none"}
+        boardPainted={casillasFinished}
         era={muralEra}
         onGenesisComplete={() => setCasillasFinished(true)}
         onGenesisPhaseChange={(phase) => setGenesisPhase(phase)}
