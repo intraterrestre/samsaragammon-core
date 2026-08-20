@@ -27,7 +27,7 @@ const THRESHOLDS: Record<TransitionId, TransitionConfig> = {
   margot_to_oriol:  { minTurns: 20, captureRateMin: 0.20, maraVisitsRequired: 2, bothPlayersParticipated: true, hysteresisTurns: 2 },
   oriol_to_marino:  { minTurns: 35, captureRateMin: 0.25, maraVisitsRequired: 2, bothPlayersParticipated: true, hysteresisTurns: 3 },
   marino_to_rufus:  { minTurns: 50, captureRateMin: 0.25, maraVisitsRequired: 2, bothPlayersParticipated: true, hysteresisTurns: 3 },
-  rufus_to_whitman: { minTurns: 65, captureRateMin: 0.30, maraVisitsRequired: 2, bothPlayersParticipated: true, hysteresisTurns: 4 },
+  rufus_to_whitman: { minTurns: 65, captureRateMin: 0.20, maraVisitsRequired: 2, bothPlayersParticipated: true, hysteresisTurns: 4 },
 };
 
 // v10 — reparación de identidad de etapa (10 agosto 2026). minTurns es un
