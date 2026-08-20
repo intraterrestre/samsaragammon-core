@@ -156,7 +156,7 @@ export function HistoricalTimeCounter({
           <span className="htc-digits">{formatDigits(displayValue)}</span>
         )}
       </div>
-      <div className="htc-hint">Years of Human Evolution</div>
+      <div className="htc-hint">Human Evolution Timer</div>
     </div>
   );
 }
