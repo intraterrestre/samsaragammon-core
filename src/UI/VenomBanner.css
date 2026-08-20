@@ -1,0 +1,83 @@
+.venom-banner {
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10500;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  opacity: 1;
+  transition: opacity 250ms ease;
+  animation: venomBannerIn 180ms ease;
+}
+
+.venom-banner-fading {
+  opacity: 0;
+}
+
+.venom-banner-icon {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+}
+
+/* Snake usa un emoji provisorio (sin asset real todavía, ver
+   poisonMeta.ts) — mismo tamaño visual aproximado que los íconos de
+   imagen de al lado. */
+.venom-banner-emoji {
+  font-size: 30px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+}
+
+.venom-banner-label {
+  color: white;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-shadow:
+    0 0 8px rgba(255, 255, 255, 0.7),
+    0 3px 10px rgba(0, 0, 0, 0.9);
+}
+
+@keyframes venomBannerIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Pantallas chicas: un toque más grande y más arriba, para que no
+   quede tapado por fichas apiladas ni por el panel de opciones de
+   destino (ver MoveOptionsPanel). */
+@media (max-width: 480px) {
+  .venom-banner {
+    top: 6%;
+    padding: 10px 20px;
+  }
+  .venom-banner-icon {
+    width: 40px;
+    height: 40px;
+  }
+  .venom-banner-emoji {
+    font-size: 36px;
+  }
+  .venom-banner-label {
+    font-size: 26px;
+  }
+}

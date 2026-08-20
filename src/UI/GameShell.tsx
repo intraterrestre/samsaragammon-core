@@ -17,7 +17,8 @@ import { MaraPanel } from "./MaraPanel";
 import { SamsaraStage } from "../samsara/SamsaraStage";
 
 import watcherVideo from "../assets/video/jesus_watch.mp4";
-import type { MoveOption, PieceKind } from "../game/types";
+import type { MoveOption, PieceKind, PlayerId } from "../game/types";
+import { AVATAR_ORDER } from "../game/historicalClock";
 
 import cheeringSound from "../assets/sounds/cheering.mp3";
 import fireworksSound from "../assets/sounds/fireworks.wav";
@@ -67,6 +68,8 @@ import campanaFinalSound from "../assets/sounds/campana final.mp3";
 import { SacredProgress } from "./SacredProgress";
 import { countNirvanaFormationProgress } from "../game/victory/nirvana";
 import { VictoryScreen } from "./VictoryScreen";
+import { VenomBanner } from "./VenomBanner";
+import { HistoricalTimeCounter } from "./HistoricalTimeCounter";
 
 type MirrorData = {
   title: string;
@@ -195,8 +198,9 @@ const WATCHER_LINES = [
   "I see you.",
 ];
 
-const triggerWatcher = () => {
+const triggerWatcher = (forcedLine?: string) => {
   const line =
+    forcedLine ??
     WATCHER_LINES[Math.floor(Math.random() * WATCHER_LINES.length)];
 
   setWatcherLine(line);
@@ -466,7 +470,12 @@ React.useEffect(() => {
 // reducer cuando el Orquestador revela cada Avatar (ver RFC Cosmic
 // Clock — leer ese estado para gatear otra UI sí es un uso válido de
 // "consumidor", no se está construyendo el componente aplazado).
-const ERA_ORDER = ["bruno", "margot", "oriol", "marino", "rufus", "whitman"] as const;
+//
+// v59 (20 agosto 2026) — ERA_ORDER pasó a ser un alias de AVATAR_ORDER
+// (historicalClock.ts, usado por el Historical Time Counter): mismos 6
+// valores que ya vivían acá, ahora en una sola fuente de verdad en vez
+// de dos arrays idénticos mantenidos a mano por separado.
+const ERA_ORDER = AVATAR_ORDER;
 const oriolEntered =
   ERA_ORDER.indexOf(state.cosmicClock.era as (typeof ERA_ORDER)[number]) >=
   ERA_ORDER.indexOf("oriol");
@@ -480,6 +489,16 @@ const oriolEntered =
 const whitmanEntered =
   ERA_ORDER.indexOf(state.cosmicClock.era as (typeof ERA_ORDER)[number]) >=
   ERA_ORDER.indexOf("whitman");
+
+// v59 (20 agosto 2026) — Historical Time Counter: índice del avatar
+// actual dentro de AVATAR_ORDER (-1 si todavía no apareció Bruno).
+// Único punto donde GameShell traduce cosmicClock.era a un índice
+// numérico para el contador — HistoricalTimeCounter no conoce nombres
+// de avatar, solo índices.
+const currentAvatarIndex = ERA_ORDER.indexOf(
+  state.cosmicClock.era as (typeof ERA_ORDER)[number]
+);
+const diceFrozen = state.phase === "rolled";
 
 // v36 (13 agosto 2026) — cartel del buda (DharmaBubble/DharmaConnector,
 // mismo cupo visual de siempre, ver MaraLayer) convertido de condición
@@ -570,6 +589,66 @@ React.useEffect(() => {
   prevOriolEnteredRef.current = oriolEntered;
 }, [oriolEntered, fireDharmaEvent]);
 
+// v58 (18 agosto 2026) — pedido de Federico: banner de Veneno
+// (icono + IGNORANCE/ANGER/IMPULSE, ver VenomBanner.tsx) que aparece
+// cada vez que un jugador escoge un Veneno, en Fase 1 (selectedPiece
+// es directamente el Veneno) o Fase 2 (selectedVenom, segundo clic
+// después de elegir Avatar). Timer propio y corto (no comparte
+// dharmaHideTimerRef/fadeTimerRef de arriba): esto dispara mucho más
+// seguido que un evento narrativo, un cartel de 5s sería molesto.
+const BASE_PIECE_KINDS_LOCAL = ["pig", "snake", "rooster"] as const;
+const me = state.turn as "P1" | "P2";
+const phase2Active = state.realmProgress[me].currentRealmStep >= 3;
+const rawSelection = phase2Active
+  ? state.selectedVenom[me]
+  : state.selectedPiece[me];
+const selectedVenomKind = BASE_PIECE_KINDS_LOCAL.includes(rawSelection)
+  ? (rawSelection as (typeof BASE_PIECE_KINDS_LOCAL)[number])
+  : null;
+
+// v58 — arranca en el valor YA seleccionado al montar (selectedPiece
+// por defecto es "pig" para ambos jugadores desde el estado inicial,
+// no null) para no disparar el banner solo por cargar la partida;
+// useRef(initialValue) solo usa este valor en el primer render, así
+// que sigue detectando bien los cambios reales después.
+const prevVenomSelectionRef = React.useRef<string | null>(selectedVenomKind);
+const venomBannerHideTimerRef = React.useRef<number | null>(null);
+const venomBannerFadeTimerRef = React.useRef<number | null>(null);
+const [venomBanner, setVenomBanner] = React.useState<{
+  kind: (typeof BASE_PIECE_KINDS_LOCAL)[number];
+  fading: boolean;
+} | null>(null);
+
+React.useEffect(() => {
+  // Flanco: solo dispara cuando la selección de Veneno CAMBIA a una
+  // nueva pieza (no en cada render, no al deseleccionar).
+  if (selectedVenomKind && selectedVenomKind !== prevVenomSelectionRef.current) {
+    if (venomBannerHideTimerRef.current)
+      window.clearTimeout(venomBannerHideTimerRef.current);
+    if (venomBannerFadeTimerRef.current)
+      window.clearTimeout(venomBannerFadeTimerRef.current);
+
+    setVenomBanner({ kind: selectedVenomKind, fading: false });
+
+    venomBannerHideTimerRef.current = window.setTimeout(() => {
+      setVenomBanner((cur) => (cur ? { ...cur, fading: true } : cur));
+      venomBannerFadeTimerRef.current = window.setTimeout(() => {
+        setVenomBanner(null);
+      }, 250);
+    }, 1400);
+  }
+  prevVenomSelectionRef.current = selectedVenomKind;
+}, [selectedVenomKind]);
+
+React.useEffect(() => {
+  return () => {
+    if (venomBannerHideTimerRef.current)
+      window.clearTimeout(venomBannerHideTimerRef.current);
+    if (venomBannerFadeTimerRef.current)
+      window.clearTimeout(venomBannerFadeTimerRef.current);
+  };
+}, []);
+
 // 2026-08-05 — pedido del usuario: el mural de "Bruno" no debe verse
 // apenas se pintan las casillas — debe esperar hasta que el video intro
 // de Bruno se dispare de verdad (cosmicClock.transitionSequence === 0
@@ -608,8 +687,43 @@ const handleMove = (opt: MoveOption, all: MoveOption[]) => {
 React.useEffect(() => {
   if (state.phase !== "rolled") setHoveredOption(null);
 }, [state.phase]);
+// v58 (18 agosto 2026) — pedido de Federico: el video de Jesús (watcher)
+// debe salir cuando un jugador usa la Culebra (Snake) 2 veces SEGUIDAS,
+// pero solo después de que Oriol haya entrado (mismo gate `oriolEntered`
+// que ya usa "THE FIRST EYE OPENS" más arriba). Antes de este cambio el
+// watcher solo tenía dos disparadores: captura (siempre) y 35% random en
+// cualquier movimiento — ninguno de los dos tenía relación con la
+// Culebra ni con Oriol.
+//
+// snakeStreakRef cuenta rachas POR JUGADOR (no rachas globales de
+// movimientos): solo se incrementa cuando el propio Veneno usado en el
+// movimiento (state.lastMove.venomUsed, ya sea Fase 1 directo o Fase 2
+// vía Avatar+Veneno) es "snake", y se resetea a 0 en cualquier otro
+// movimiento de ese jugador. Como el jugador rival no toca el contador
+// del otro, esto ya captura "2 veces seguidas" del MISMO jugador aunque
+// el turno del rival quede intercalado en el medio.
+const snakeStreakRef = React.useRef<{ P1: number; P2: number }>({
+  P1: 0,
+  P2: 0,
+});
+
 React.useEffect(() => {
   if (!state.lastMove) return;
+
+  const player = state.lastMove.player as PlayerId;
+  const usedSnake = state.lastMove.venomUsed === "snake";
+
+  if (usedSnake) {
+    snakeStreakRef.current[player] += 1;
+  } else {
+    snakeStreakRef.current[player] = 0;
+  }
+
+  if (oriolEntered && snakeStreakRef.current[player] >= 2) {
+    snakeStreakRef.current[player] = 0;
+    triggerWatcher("Anger, again?");
+    return;
+  }
 
   if (state.lastMove.didCapture) {
     triggerWatcher();
@@ -619,7 +733,7 @@ React.useEffect(() => {
   if (Math.random() < 0.35) {
     triggerWatcher();
   }
-}, [state.lastMove]);
+}, [state.lastMove, oriolEntered]);
 
 React.useEffect(() => {
   if (!currentNidana) return;
@@ -920,6 +1034,16 @@ return (
           quitada a pedido de Federico: ya quedó claro en pantalla cuál
           color/rango es cada reino, no hace falta el cartelito
           permanente abajo a la derecha. */}
+
+      <HistoricalTimeCounter
+        currentAvatarIndex={currentAvatarIndex}
+        frozen={diceFrozen}
+      />
+
+      <VenomBanner
+        kind={venomBanner?.kind ?? null}
+        fading={venomBanner?.fading ?? false}
+      />
 
       <SamsaraStage
         dharmaMessage={buddhaMessage}

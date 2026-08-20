@@ -1,0 +1,116 @@
+/* v59 (20 agosto 2026) — Historical Time Counter, a pedido de
+   Federico: aspecto de display LED rojo de 7 segmentos, fondo negro,
+   glow, "aparato electrónico real". Aproximación 100% CSS (fuente
+   monoespaciada + letter-spacing + text-shadow de glow) en vez de
+   importar una fuente 7-segmentos externa — evita depender de un CDN
+   o de subir un archivo de fuente nueva; se ve digital sin agregar
+   dependencias. Si Federico quiere segmentos pixel-perfect después,
+   se puede sumar una @font-face tipo "DSEG7" sin tocar la lógica de
+   este componente. */
+
+.htc-wrap {
+  position: absolute;
+  /* v60 (20 agosto 2026) — pedido de Federico: centrar el contador en
+     el centro geométrico exacto de la rueda del samsara, no en una
+     esquina de la pantalla.
+     Coordenadas tomadas de las MISMAS fuentes que usa la rueda real
+     (no valores inventados): ringWrap en Board.tsx se posiciona en
+     left:512, top:50 dentro de .samsaraScene (canvas fijo de
+     1100x620, ver layout.css); RING_SIZE=520 en UI/geometry.ts, así
+     que su centro cae en +260,+260 desde esa esquina:
+       centerX = 512 + 520/2 = 772
+       centerY = 50  + 520/2 = 310
+     HistoricalTimeCounter ya se renderiza en GameShell.tsx como
+     hermano directo de <Board> dentro de .samsaraScene (mismo
+     sistema de coordenadas, mismo --scene-scale), así que estos px
+     quedan perfectamente centrados en la rueda en cualquier tamaño
+     de pantalla sin cálculos adicionales. Si algún día se mueve el
+     ringWrap o cambia RING_SIZE, este punto hay que recalcularlo a
+     mano (no hay una constante compartida entre Board.tsx y este
+     archivo todavía). */
+  left: 772px;
+  top: 310px;
+  transform: translate(-50%, -50%);
+  z-index: 9000;
+  pointer-events: none;
+
+  background: #0a0a0a;
+  border: 2px solid #1c1c1c;
+  border-radius: 8px;
+  padding: 6px 12px;
+  box-shadow:
+    inset 0 0 6px rgba(0, 0, 0, 0.8),
+    0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.htc-display {
+  font-family: "Courier New", "Consolas", monospace;
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 3px;
+  white-space: nowrap;
+  color: var(--htc-color, #ff2b2b);
+  text-shadow:
+    0 0 4px var(--htc-color, #ff2b2b),
+    0 0 10px var(--htc-color, #ff2b2b),
+    0 0 18px var(--htc-color, #ff2b2b);
+  transition: color 400ms ease, text-shadow 400ms ease;
+}
+
+.htc-digits {
+  display: inline-block;
+  min-width: 8ch;
+}
+
+.htc-era-flash {
+  display: inline-block;
+  font-size: 16px;
+  letter-spacing: 2px;
+  animation: htcFlashIn 200ms ease;
+}
+
+.htc-present {
+  display: inline-block;
+  font-size: 18px;
+  letter-spacing: 4px;
+  animation: htcFlashIn 200ms ease;
+}
+
+/* Congelado por los dados: leve atenuación del glow, sin detener el
+   número (no debe parecer roto, solo "en pausa"). */
+.htc-frozen .htc-display {
+  opacity: 0.82;
+}
+
+@keyframes htcFlashIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 480px) {
+  .htc-wrap {
+    /* v60 — ya no reposiciona a una esquina: el centro de la rueda
+       (772px, 310px dentro de .samsaraScene) sigue siendo correcto en
+       cualquier tamaño porque toda la escena se escala junto con
+       --scene-scale (ver layout.css). Acá solo se achica el propio
+       display para no taparse con las fichas apiladas cerca del
+       centro en pantallas chicas. */
+    padding: 5px 9px;
+  }
+  .htc-display {
+    font-size: 17px;
+    letter-spacing: 2px;
+  }
+  .htc-era-flash {
+    font-size: 13px;
+  }
+  .htc-present {
+    font-size: 14px;
+  }
+}

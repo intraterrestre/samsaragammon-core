@@ -1,0 +1,809 @@
+diff --git a/src/UI/GameShell.tsx b/src/UI/GameShell.tsx
+index a029841..b7df71a 100644
+--- a/src/UI/GameShell.tsx
++++ b/src/UI/GameShell.tsx
+@@ -17,7 +17,8 @@ import { MaraPanel } from "./MaraPanel";
+ import { SamsaraStage } from "../samsara/SamsaraStage";
+ 
+ import watcherVideo from "../assets/video/jesus_watch.mp4";
+-import type { MoveOption, PieceKind } from "../game/types";
++import type { MoveOption, PieceKind, PlayerId } from "../game/types";
++import { AVATAR_ORDER } from "../game/historicalClock";
+ 
+ import cheeringSound from "../assets/sounds/cheering.mp3";
+ import fireworksSound from "../assets/sounds/fireworks.wav";
+@@ -67,6 +68,8 @@ import campanaFinalSound from "../assets/sounds/campana final.mp3";
+ import { SacredProgress } from "./SacredProgress";
+ import { countNirvanaFormationProgress } from "../game/victory/nirvana";
+ import { VictoryScreen } from "./VictoryScreen";
++import { VenomBanner } from "./VenomBanner";
++import { HistoricalTimeCounter } from "./HistoricalTimeCounter";
+ 
+ type MirrorData = {
+   title: string;
+@@ -195,8 +198,9 @@ const WATCHER_LINES = [
+   "I see you.",
+ ];
+ 
+-const triggerWatcher = () => {
++const triggerWatcher = (forcedLine?: string) => {
+   const line =
++    forcedLine ??
+     WATCHER_LINES[Math.floor(Math.random() * WATCHER_LINES.length)];
+ 
+   setWatcherLine(line);
+@@ -466,7 +470,12 @@ React.useEffect(() => {
+ // reducer cuando el Orquestador revela cada Avatar (ver RFC Cosmic
+ // Clock — leer ese estado para gatear otra UI sí es un uso válido de
+ // "consumidor", no se está construyendo el componente aplazado).
+-const ERA_ORDER = ["bruno", "margot", "oriol", "marino", "rufus", "whitman"] as const;
++//
++// v59 (20 agosto 2026) — ERA_ORDER pasó a ser un alias de AVATAR_ORDER
++// (historicalClock.ts, usado por el Historical Time Counter): mismos 6
++// valores que ya vivían acá, ahora en una sola fuente de verdad en vez
++// de dos arrays idénticos mantenidos a mano por separado.
++const ERA_ORDER = AVATAR_ORDER;
+ const oriolEntered =
+   ERA_ORDER.indexOf(state.cosmicClock.era as (typeof ERA_ORDER)[number]) >=
+   ERA_ORDER.indexOf("oriol");
+@@ -481,6 +490,16 @@ const whitmanEntered =
+   ERA_ORDER.indexOf(state.cosmicClock.era as (typeof ERA_ORDER)[number]) >=
+   ERA_ORDER.indexOf("whitman");
+ 
++// v59 (20 agosto 2026) — Historical Time Counter: índice del avatar
++// actual dentro de AVATAR_ORDER (-1 si todavía no apareció Bruno).
++// Único punto donde GameShell traduce cosmicClock.era a un índice
++// numérico para el contador — HistoricalTimeCounter no conoce nombres
++// de avatar, solo índices.
++const currentAvatarIndex = ERA_ORDER.indexOf(
++  state.cosmicClock.era as (typeof ERA_ORDER)[number]
++);
++const diceFrozen = state.phase === "rolled";
++
+ // v36 (13 agosto 2026) — cartel del buda (DharmaBubble/DharmaConnector,
+ // mismo cupo visual de siempre, ver MaraLayer) convertido de condición
+ // persistente a EVENTO efímero de un solo disparo: aparece ~5s y se
+@@ -570,6 +589,66 @@ React.useEffect(() => {
+   prevOriolEnteredRef.current = oriolEntered;
+ }, [oriolEntered, fireDharmaEvent]);
+ 
++// v58 (18 agosto 2026) — pedido de Federico: banner de Veneno
++// (icono + IGNORANCE/ANGER/IMPULSE, ver VenomBanner.tsx) que aparece
++// cada vez que un jugador escoge un Veneno, en Fase 1 (selectedPiece
++// es directamente el Veneno) o Fase 2 (selectedVenom, segundo clic
++// después de elegir Avatar). Timer propio y corto (no comparte
++// dharmaHideTimerRef/fadeTimerRef de arriba): esto dispara mucho más
++// seguido que un evento narrativo, un cartel de 5s sería molesto.
++const BASE_PIECE_KINDS_LOCAL = ["pig", "snake", "rooster"] as const;
++const me = state.turn as "P1" | "P2";
++const phase2Active = state.realmProgress[me].currentRealmStep >= 3;
++const rawSelection = phase2Active
++  ? state.selectedVenom[me]
++  : state.selectedPiece[me];
++const selectedVenomKind = BASE_PIECE_KINDS_LOCAL.includes(rawSelection)
++  ? (rawSelection as (typeof BASE_PIECE_KINDS_LOCAL)[number])
++  : null;
++
++// v58 — arranca en el valor YA seleccionado al montar (selectedPiece
++// por defecto es "pig" para ambos jugadores desde el estado inicial,
++// no null) para no disparar el banner solo por cargar la partida;
++// useRef(initialValue) solo usa este valor en el primer render, así
++// que sigue detectando bien los cambios reales después.
++const prevVenomSelectionRef = React.useRef<string | null>(selectedVenomKind);
++const venomBannerHideTimerRef = React.useRef<number | null>(null);
++const venomBannerFadeTimerRef = React.useRef<number | null>(null);
++const [venomBanner, setVenomBanner] = React.useState<{
++  kind: (typeof BASE_PIECE_KINDS_LOCAL)[number];
++  fading: boolean;
++} | null>(null);
++
++React.useEffect(() => {
++  // Flanco: solo dispara cuando la selección de Veneno CAMBIA a una
++  // nueva pieza (no en cada render, no al deseleccionar).
++  if (selectedVenomKind && selectedVenomKind !== prevVenomSelectionRef.current) {
++    if (venomBannerHideTimerRef.current)
++      window.clearTimeout(venomBannerHideTimerRef.current);
++    if (venomBannerFadeTimerRef.current)
++      window.clearTimeout(venomBannerFadeTimerRef.current);
++
++    setVenomBanner({ kind: selectedVenomKind, fading: false });
++
++    venomBannerHideTimerRef.current = window.setTimeout(() => {
++      setVenomBanner((cur) => (cur ? { ...cur, fading: true } : cur));
++      venomBannerFadeTimerRef.current = window.setTimeout(() => {
++        setVenomBanner(null);
++      }, 250);
++    }, 1400);
++  }
++  prevVenomSelectionRef.current = selectedVenomKind;
++}, [selectedVenomKind]);
++
++React.useEffect(() => {
++  return () => {
++    if (venomBannerHideTimerRef.current)
++      window.clearTimeout(venomBannerHideTimerRef.current);
++    if (venomBannerFadeTimerRef.current)
++      window.clearTimeout(venomBannerFadeTimerRef.current);
++  };
++}, []);
++
+ // 2026-08-05 — pedido del usuario: el mural de "Bruno" no debe verse
+ // apenas se pintan las casillas — debe esperar hasta que el video intro
+ // de Bruno se dispare de verdad (cosmicClock.transitionSequence === 0
+@@ -608,9 +687,44 @@ const handleMove = (opt: MoveOption, all: MoveOption[]) => {
+ React.useEffect(() => {
+   if (state.phase !== "rolled") setHoveredOption(null);
+ }, [state.phase]);
++// v58 (18 agosto 2026) — pedido de Federico: el video de Jesús (watcher)
++// debe salir cuando un jugador usa la Culebra (Snake) 2 veces SEGUIDAS,
++// pero solo después de que Oriol haya entrado (mismo gate `oriolEntered`
++// que ya usa "THE FIRST EYE OPENS" más arriba). Antes de este cambio el
++// watcher solo tenía dos disparadores: captura (siempre) y 35% random en
++// cualquier movimiento — ninguno de los dos tenía relación con la
++// Culebra ni con Oriol.
++//
++// snakeStreakRef cuenta rachas POR JUGADOR (no rachas globales de
++// movimientos): solo se incrementa cuando el propio Veneno usado en el
++// movimiento (state.lastMove.venomUsed, ya sea Fase 1 directo o Fase 2
++// vía Avatar+Veneno) es "snake", y se resetea a 0 en cualquier otro
++// movimiento de ese jugador. Como el jugador rival no toca el contador
++// del otro, esto ya captura "2 veces seguidas" del MISMO jugador aunque
++// el turno del rival quede intercalado en el medio.
++const snakeStreakRef = React.useRef<{ P1: number; P2: number }>({
++  P1: 0,
++  P2: 0,
++});
++
+ React.useEffect(() => {
+   if (!state.lastMove) return;
+ 
++  const player = state.lastMove.player as PlayerId;
++  const usedSnake = state.lastMove.venomUsed === "snake";
++
++  if (usedSnake) {
++    snakeStreakRef.current[player] += 1;
++  } else {
++    snakeStreakRef.current[player] = 0;
++  }
++
++  if (oriolEntered && snakeStreakRef.current[player] >= 2) {
++    snakeStreakRef.current[player] = 0;
++    triggerWatcher("Anger, again?");
++    return;
++  }
++
+   if (state.lastMove.didCapture) {
+     triggerWatcher();
+     return;
+@@ -619,7 +733,7 @@ React.useEffect(() => {
+   if (Math.random() < 0.35) {
+     triggerWatcher();
+   }
+-}, [state.lastMove]);
++}, [state.lastMove, oriolEntered]);
+ 
+ React.useEffect(() => {
+   if (!currentNidana) return;
+@@ -921,6 +1035,16 @@ return (
+           color/rango es cada reino, no hace falta el cartelito
+           permanente abajo a la derecha. */}
+ 
++      <HistoricalTimeCounter
++        currentAvatarIndex={currentAvatarIndex}
++        frozen={diceFrozen}
++      />
++
++      <VenomBanner
++        kind={venomBanner?.kind ?? null}
++        fading={venomBanner?.fading ?? false}
++      />
++
+       <SamsaraStage
+         dharmaMessage={buddhaMessage}
+         dharmaBig={isDharmaBig}
+diff --git a/src/UI/HistoricalTimeCounter.css b/src/UI/HistoricalTimeCounter.css
+new file mode 100644
+index 0000000..93915b8
+--- /dev/null
++++ b/src/UI/HistoricalTimeCounter.css
+@@ -0,0 +1,116 @@
++/* v59 (20 agosto 2026) — Historical Time Counter, a pedido de
++   Federico: aspecto de display LED rojo de 7 segmentos, fondo negro,
++   glow, "aparato electrónico real". Aproximación 100% CSS (fuente
++   monoespaciada + letter-spacing + text-shadow de glow) en vez de
++   importar una fuente 7-segmentos externa — evita depender de un CDN
++   o de subir un archivo de fuente nueva; se ve digital sin agregar
++   dependencias. Si Federico quiere segmentos pixel-perfect después,
++   se puede sumar una @font-face tipo "DSEG7" sin tocar la lógica de
++   este componente. */
++
++.htc-wrap {
++  position: absolute;
++  /* v60 (20 agosto 2026) — pedido de Federico: centrar el contador en
++     el centro geométrico exacto de la rueda del samsara, no en una
++     esquina de la pantalla.
++     Coordenadas tomadas de las MISMAS fuentes que usa la rueda real
++     (no valores inventados): ringWrap en Board.tsx se posiciona en
++     left:512, top:50 dentro de .samsaraScene (canvas fijo de
++     1100x620, ver layout.css); RING_SIZE=520 en UI/geometry.ts, así
++     que su centro cae en +260,+260 desde esa esquina:
++       centerX = 512 + 520/2 = 772
++       centerY = 50  + 520/2 = 310
++     HistoricalTimeCounter ya se renderiza en GameShell.tsx como
++     hermano directo de <Board> dentro de .samsaraScene (mismo
++     sistema de coordenadas, mismo --scene-scale), así que estos px
++     quedan perfectamente centrados en la rueda en cualquier tamaño
++     de pantalla sin cálculos adicionales. Si algún día se mueve el
++     ringWrap o cambia RING_SIZE, este punto hay que recalcularlo a
++     mano (no hay una constante compartida entre Board.tsx y este
++     archivo todavía). */
++  left: 772px;
++  top: 310px;
++  transform: translate(-50%, -50%);
++  z-index: 9000;
++  pointer-events: none;
++
++  background: #0a0a0a;
++  border: 2px solid #1c1c1c;
++  border-radius: 8px;
++  padding: 6px 12px;
++  box-shadow:
++    inset 0 0 6px rgba(0, 0, 0, 0.8),
++    0 2px 6px rgba(0, 0, 0, 0.6);
++}
++
++.htc-display {
++  font-family: "Courier New", "Consolas", monospace;
++  font-weight: 700;
++  font-size: 22px;
++  letter-spacing: 3px;
++  white-space: nowrap;
++  color: var(--htc-color, #ff2b2b);
++  text-shadow:
++    0 0 4px var(--htc-color, #ff2b2b),
++    0 0 10px var(--htc-color, #ff2b2b),
++    0 0 18px var(--htc-color, #ff2b2b);
++  transition: color 400ms ease, text-shadow 400ms ease;
++}
++
++.htc-digits {
++  display: inline-block;
++  min-width: 8ch;
++}
++
++.htc-era-flash {
++  display: inline-block;
++  font-size: 16px;
++  letter-spacing: 2px;
++  animation: htcFlashIn 200ms ease;
++}
++
++.htc-present {
++  display: inline-block;
++  font-size: 18px;
++  letter-spacing: 4px;
++  animation: htcFlashIn 200ms ease;
++}
++
++/* Congelado por los dados: leve atenuación del glow, sin detener el
++   número (no debe parecer roto, solo "en pausa"). */
++.htc-frozen .htc-display {
++  opacity: 0.82;
++}
++
++@keyframes htcFlashIn {
++  from {
++    opacity: 0;
++    transform: scale(0.92);
++  }
++  to {
++    opacity: 1;
++    transform: scale(1);
++  }
++}
++
++@media (max-width: 480px) {
++  .htc-wrap {
++    /* v60 — ya no reposiciona a una esquina: el centro de la rueda
++       (772px, 310px dentro de .samsaraScene) sigue siendo correcto en
++       cualquier tamaño porque toda la escena se escala junto con
++       --scene-scale (ver layout.css). Acá solo se achica el propio
++       display para no taparse con las fichas apiladas cerca del
++       centro en pantallas chicas. */
++    padding: 5px 9px;
++  }
++  .htc-display {
++    font-size: 17px;
++    letter-spacing: 2px;
++  }
++  .htc-era-flash {
++    font-size: 13px;
++  }
++  .htc-present {
++    font-size: 14px;
++  }
++}
+diff --git a/src/UI/HistoricalTimeCounter.tsx b/src/UI/HistoricalTimeCounter.tsx
+new file mode 100644
+index 0000000..faaaacf
+--- /dev/null
++++ b/src/UI/HistoricalTimeCounter.tsx
+@@ -0,0 +1,189 @@
++import React from "react";
++import "./HistoricalTimeCounter.css";
++import {
++  HISTORICAL_TIMELINE,
++  PRESENT_COUNTER,
++  PRESENT_LABEL,
++  BASE_LED_COLOR,
++} from "../game/historicalClock";
++
++type HistoricalTimeCounterProps = {
++  // Índice del avatar actual en AVATAR_ORDER, -1 si Bruno no apareció
++  // todavía. GameShell.tsx es el único traductor cosmicClock.era -> índice.
++  currentAvatarIndex: number;
++  // true mientras state.phase === "rolled" (lance de dados + resolución
++  // en curso) — el contador se congela exactamente en ese tramo.
++  frozen: boolean;
++};
++
++const DIGITS = 7;
++const TICK_MS = 140;
++// v59 (20 agosto 2026) — cuánto de la distancia restante recorre cada
++// tick (curva de desaceleración natural: al principio los saltos son
++// enormes, cerca del target se van achicando solos sin necesidad de
++// calcular un tiempo de llegada).
++const STEP_FRACTION = 0.12;
++const MIN_STEP = 1;
++// Para los tramos ligados a un Avatar real (Bruno→Margot,
++// Margot→Oriol, etc.): el cruise NUNCA debe llegar solo al checkpoint
++// exacto — ver nota de diseño abajo. Se detiene a este % de la
++// distancia del tramo, y el salto final EXACTO ocurre recién cuando
++// GameShell reporta que currentAvatarIndex avanzó de verdad.
++const CRUISE_HOLDBACK_FRACTION = 0.002;
++const FLASH_MS = 1400;
++
++function formatDigits(value: number): string {
++  return Math.floor(value).toString().padStart(DIGITS, "0");
++}
++
++// v59 (20 agosto 2026) — DECISIÓN DE DISEÑO a marcar con Federico:
++// el juego no puede saber POR ADELANTADO en qué momento real (dados,
++// clics) va a aparecer el próximo Avatar — depende de las tiradas.
++// Por eso el contador nunca "planea" una animación que termine justo
++// a tiempo (eso requeriría conocer el futuro). En cambio: mientras
++// espera al próximo Avatar, el display SE ACERCA (cruise) al valor del
++// checkpoint con una curva de desaceleración natural, pero se detiene
++// un poco antes (CRUISE_HOLDBACK_FRACTION) y se queda ahí quieto. En
++// el instante real en que el Avatar aparece (currentAvatarIndex sube),
++// el display SALTA exactamente al valor canónico del checkpoint, con
++// el flash de nombre de era + glow de color. Esto cumple las dos
++// reglas de Federico a la vez: "el contador nunca decide cuándo
++// aparece el Avatar" y "debe llegar EXACTAMENTE al valor cuando
++// aparece" — sin inventar tiempos de llegada imposibles de calcular.
++//
++// La ÚNICA excepción es el tramo final Whitman → THE PRESENT: no hay
++// un séptimo Avatar real que dispare ese salto (Whitman es el último
++// de los 6; Nirvana es la condición de VICTORIA, un evento aparte, no
++// una aparición de Avatar). Para ese tramo el cruise SÍ llega hasta el
++// final y dispara el freeze de "THE PRESENT" por sí solo, unos ticks
++// después de que aparece Whitman. Avisado en el chat para que Federico
++// confirme si prefiere otro disparador para ese último paso.
++export function HistoricalTimeCounter({
++  currentAvatarIndex,
++  frozen,
++}: HistoricalTimeCounterProps) {
++  const [displayValue, setDisplayValue] = React.useState(0);
++  const [activeColor, setActiveColor] = React.useState(BASE_LED_COLOR);
++  const [flash, setFlash] = React.useState<{
++    text: string;
++    color: string;
++  } | null>(null);
++  const [isPresent, setIsPresent] = React.useState(false);
++
++  // Último checkpoint YA alcanzado de verdad (no el cruise). -1 = Bruno
++  // todavía no apareció.
++  const reachedIndexRef = React.useRef(-1);
++  const flashTimerRef = React.useRef<number | null>(null);
++  const tickTimerRef = React.useRef<number | null>(null);
++
++  // Salto exacto al checkpoint cuando currentAvatarIndex avanza de
++  // verdad (evento canónico real: state.cosmicClock.era cambió).
++  React.useEffect(() => {
++    if (currentAvatarIndex <= reachedIndexRef.current) return;
++    if (currentAvatarIndex < 0 || currentAvatarIndex >= HISTORICAL_TIMELINE.length)
++      return;
++
++    const entry = HISTORICAL_TIMELINE[currentAvatarIndex];
++    reachedIndexRef.current = currentAvatarIndex;
++
++    setDisplayValue(entry.counter);
++    if (entry.intensified) setActiveColor(entry.color);
++
++    if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current);
++    setFlash({ text: entry.eraName.toUpperCase(), color: entry.color });
++    flashTimerRef.current = window.setTimeout(() => setFlash(null), FLASH_MS);
++  }, [currentAvatarIndex]);
++
++  // Cruise: avanza hacia el próximo checkpoint mientras no esté
++  // congelado por los dados y todavía no se llegó al final.
++  React.useEffect(() => {
++    if (isPresent) return;
++    if (reachedIndexRef.current < 0) return; // Bruno no apareció aún
++
++    tickTimerRef.current = window.setInterval(() => {
++      if (frozen) return; // PAUSE TIME COUNTER — lance de dados en curso
++
++      const idx = reachedIndexRef.current;
++      const isFinalLeg = idx >= HISTORICAL_TIMELINE.length - 1; // Whitman → Present
++
++      const legStart = HISTORICAL_TIMELINE[idx]?.counter ?? 0;
++      const legTarget = isFinalLeg
++        ? PRESENT_COUNTER
++        : HISTORICAL_TIMELINE[idx + 1].counter;
++
++      setDisplayValue((cur) => {
++        const diff = legTarget - cur;
++        if (diff <= 0) return cur;
++
++        const step = Math.max(MIN_STEP, Math.round(diff * STEP_FRACTION));
++        let next = cur + step;
++
++        if (isFinalLeg) {
++          if (next >= legTarget) {
++            next = legTarget;
++            if (flashTimerRef.current)
++              window.clearTimeout(flashTimerRef.current);
++            setFlash({ text: PRESENT_LABEL, color: "#ffffff" });
++            setActiveColor("#ffffff");
++            window.setTimeout(() => {
++              setFlash(null);
++              setIsPresent(true);
++            }, FLASH_MS);
++          }
++        } else {
++          // Nunca cruzar solo el checkpoint real — se queda a
++          // holdback% de la distancia del tramo, esperando el salto
++          // exacto disparado por el otro efecto.
++          const legSize = legTarget - legStart;
++          const maxReach =
++            legTarget - Math.max(1, Math.round(legSize * CRUISE_HOLDBACK_FRACTION));
++          next = Math.min(next, maxReach);
++        }
++
++        return next;
++      });
++    }, TICK_MS);
++
++    return () => {
++      if (tickTimerRef.current) window.clearInterval(tickTimerRef.current);
++    };
++    // reachedIndexRef.current cambia dentro del otro efecto sin
++    // re-render propio — currentAvatarIndex como dependencia alcanza
++    // para reprogramar el intervalo con el tramo correcto en cada
++    // checkpoint nuevo.
++    // eslint-disable-next-line react-hooks/exhaustive-deps
++  }, [frozen, isPresent, currentAvatarIndex]);
++
++  React.useEffect(() => {
++    return () => {
++      if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current);
++      if (tickTimerRef.current) window.clearInterval(tickTimerRef.current);
++    };
++  }, []);
++
++  const showingFlash = !!flash && !isPresent;
++  const glowColor = isPresent ? "#ffffff" : flash?.color ?? activeColor;
++
++  return (
++    <div
++      className={`htc-wrap${frozen ? " htc-frozen" : ""}`}
++      style={{ ["--htc-color" as string]: glowColor }}
++    >
++      <div className="htc-display">
++        {isPresent ? (
++          <span className="htc-present">{PRESENT_LABEL}</span>
++        ) : showingFlash ? (
++          <span className="htc-era-flash">{flash!.text}</span>
++        ) : (
++          <span className="htc-digits">
++            {reachedIndexRef.current < 0
++              ? formatDigits(0)
++              : formatDigits(displayValue)}
++          </span>
++        )}
++      </div>
++    </div>
++  );
++}
++
++export default HistoricalTimeCounter;
+diff --git a/src/UI/VenomBanner.css b/src/UI/VenomBanner.css
+new file mode 100644
+index 0000000..d4a9e1a
+--- /dev/null
++++ b/src/UI/VenomBanner.css
+@@ -0,0 +1,83 @@
++.venom-banner {
++  position: absolute;
++  top: 8%;
++  left: 50%;
++  transform: translateX(-50%);
++  z-index: 10500;
++  pointer-events: none;
++  display: flex;
++  align-items: center;
++  gap: 10px;
++  padding: 8px 18px;
++  border-radius: 999px;
++  background: rgba(0, 0, 0, 0.55);
++  border: 1px solid rgba(255, 255, 255, 0.25);
++  backdrop-filter: blur(2px);
++  -webkit-backdrop-filter: blur(2px);
++  opacity: 1;
++  transition: opacity 250ms ease;
++  animation: venomBannerIn 180ms ease;
++}
++
++.venom-banner-fading {
++  opacity: 0;
++}
++
++.venom-banner-icon {
++  width: 34px;
++  height: 34px;
++  object-fit: contain;
++  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
++}
++
++/* Snake usa un emoji provisorio (sin asset real todavía, ver
++   poisonMeta.ts) — mismo tamaño visual aproximado que los íconos de
++   imagen de al lado. */
++.venom-banner-emoji {
++  font-size: 30px;
++  line-height: 1;
++  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
++}
++
++.venom-banner-label {
++  color: white;
++  font-size: 22px;
++  font-weight: 900;
++  letter-spacing: 1.5px;
++  text-transform: uppercase;
++  white-space: nowrap;
++  text-shadow:
++    0 0 8px rgba(255, 255, 255, 0.7),
++    0 3px 10px rgba(0, 0, 0, 0.9);
++}
++
++@keyframes venomBannerIn {
++  from {
++    opacity: 0;
++    transform: translateX(-50%) translateY(-6px);
++  }
++  to {
++    opacity: 1;
++    transform: translateX(-50%) translateY(0);
++  }
++}
++
++/* Pantallas chicas: un toque más grande y más arriba, para que no
++   quede tapado por fichas apiladas ni por el panel de opciones de
++   destino (ver MoveOptionsPanel). */
++@media (max-width: 480px) {
++  .venom-banner {
++    top: 6%;
++    padding: 10px 20px;
++  }
++  .venom-banner-icon {
++    width: 40px;
++    height: 40px;
++  }
++  .venom-banner-emoji {
++    font-size: 36px;
++  }
++  .venom-banner-label {
++    font-size: 26px;
++  }
++}
+diff --git a/src/UI/VenomBanner.tsx b/src/UI/VenomBanner.tsx
+new file mode 100644
+index 0000000..19678d6
+--- /dev/null
++++ b/src/UI/VenomBanner.tsx
+@@ -0,0 +1,49 @@
++import "./VenomBanner.css";
++import { POISON_META } from "../game/poisonMeta";
++import type { BasePieceKind } from "../game/types";
++
++type VenomBannerProps = {
++  kind: BasePieceKind | null;
++  fading: boolean;
++};
++
++// v58 (18 agosto 2026) — pedido de Federico: banner que aparece al
++// escoger un Veneno (Pig/Snake/Rooster), mostrando ícono + la palabra
++// del Veneno correspondiente (IGNORANCE/ANGER/IMPULSE) — pantallas
++// chicas no dejan apreciar bien qué ficha se seleccionó, y la mayoría
++// de jugadores no sabe qué representa cada Veneno. Mismo patrón de
++// evento efímero que ya usa DharmaBubble (fireDharmaEvent en
++// GameShell.tsx), pero componente separado: este dispara mucho más
++// seguido (cada selección de Veneno, no un evento narrativo raro), así
++// que usa su propio timer más corto en vez de compartir el de 5s del
++// buda.
++//
++// isEmoji(): POISON_META.icon puede ser una ruta de imagen importada
++// (pig/rooster, ambos con asset real) o el emoji 🐍 provisorio de
++// snake (sin asset real todavía, ver poisonMeta.ts). Las rutas de
++// imagen importadas por Vite siempre empiezan con "/" o "data:"; un
++// emoji nunca lo hace — suficiente para distinguir sin agregar un
++// campo aparte.
++function isEmoji(icon: string): boolean {
++  return !icon.startsWith("/") && !icon.startsWith("data:") && !icon.startsWith("http");
++}
++
++export function VenomBanner({ kind, fading }: VenomBannerProps) {
++  if (!kind) return null;
++  const meta = POISON_META[kind];
++
++  return (
++    <div className={`venom-banner${fading ? " venom-banner-fading" : ""}`}>
++      {isEmoji(meta.icon) ? (
++        <span className="venom-banner-emoji" aria-hidden="true">
++          {meta.icon}
++        </span>
++      ) : (
++        <img src={meta.icon} alt="" className="venom-banner-icon" />
++      )}
++      <div className="venom-banner-label">{meta.label}</div>
++    </div>
++  );
++}
++
++export default VenomBanner;
+diff --git a/src/game/historicalClock.ts b/src/game/historicalClock.ts
+new file mode 100644
+index 0000000..16043dc
+--- /dev/null
++++ b/src/game/historicalClock.ts
+@@ -0,0 +1,106 @@
++// src/game/historicalClock.ts
++//
++// v59 (20 agosto 2026) — Historical Time Counter, a pedido de Federico.
++// Capa de PRESENTACIÓN únicamente: los años acumulados que siguen no
++// existen en ningún lado del código (confirmado con grep en todo el
++// repo antes de este archivo — no había ningún valor numérico de años,
++// solo nombres de era en REALM_CANON). Son valores canónicos que
++// Federico cerró explícitamente para el contador, no fechas BCE/CE:
++// representan AÑOS ACUMULADOS DRAMATIZADOS desde que aparece Bruno,
++// no una cronología arqueológica real. REALM_CANON sigue siendo la
++// ÚNICA fuente de verdad para Avatar/Realm/Era/color — este archivo
++// solo le agrega el valor temporal de presentación a cada checkpoint,
++// nunca redeclara el orden ni los nombres de era.
++import { REALM_CANON } from "./realm/realmCanon";
++
++export type AvatarId =
++  | "bruno"
++  | "margot"
++  | "oriol"
++  | "marino"
++  | "rufus"
++  | "whitman";
++
++// Mismo orden que ERA_ORDER (GameShell.tsx) y REALM_PIECE_ORDER
++// (game/types.ts) — los tres describen la misma secuencia de 6 desde
++// ángulos distintos (era activa / ficha de reino / checkpoint
++// histórico). AVATAR_ORDER[i] corresponde a REALM_CANON[i] (step i+1).
++export const AVATAR_ORDER: AvatarId[] = [
++  "bruno",
++  "margot",
++  "oriol",
++  "marino",
++  "rufus",
++  "whitman",
++];
++
++// Años acumulados en el momento en que CADA avatar aparece (no lo que
++// dura su propia era — el valor ya incluye todo lo recorrido antes).
++export const HISTORICAL_CHECKPOINTS: Record<AvatarId, number> = {
++  bruno: 0,
++  margot: 2_500_000,
++  oriol: 2_510_000,
++  marino: 2_513_000,
++  rufus: 2_516_500,
++  whitman: 2_516_800,
++};
++
++// Checkpoint final, posterior a Whitman — no corresponde a ningún
++// avatar/evento adicional del juego (Whitman es el último de los 6).
++// Ver nota en HistoricalTimeCounter.tsx sobre cómo se dispara esta
++// transición sin un evento canónico propio.
++export const PRESENT_COUNTER = 2_517_100;
++export const PRESENT_LABEL = "THE PRESENT";
++
++// A partir de qué avatar (índice en AVATAR_ORDER) se activa el
++// tratamiento visual intensificado (glow de color de era + cambios de
++// color en cada checkpoint) — pedido explícito de Federico: "desde
++// Oriol". Bruno/Margot quedan en el tratamiento sobrio (rojo LED
++// clásico) que pidió para esa primera parte del recorrido.
++export const INTENSIFIED_FROM_AVATAR: AvatarId = "oriol";
++export const INTENSIFIED_FROM_INDEX = AVATAR_ORDER.indexOf(
++  INTENSIFIED_FROM_AVATAR
++);
++
++// Color base "sobrio" del display antes de que arranque el
++// tratamiento intensificado (Bruno/Margot) — no viene de REALM_CANON
++// porque Federico pidió explícitamente NO tocar el rojo clásico del
++// contador en esa primera parte ("no cambiaría el rojo base... haría
++// que el propio display evolucione con las eras" a partir de Oriol).
++export const BASE_LED_COLOR = "#ff2b2b";
++
++export type HistoricalCheckpointEntry = {
++  avatar: AvatarId;
++  counter: number;
++  eraName: string;
++  color: string;
++  intensified: boolean;
++};
++
++// Une AVATAR_ORDER + HISTORICAL_CHECKPOINTS + REALM_CANON en una sola
++// lista ordenada, sin redeclarar nombres de era ni colores — los lee
++// de REALM_CANON (única fuente de verdad, pedido explícito de
++// Federico: "Claude debería leer esos colores de REALM_CANON, no
++// volver a hardcodearlos en el contador").
++export const HISTORICAL_TIMELINE: HistoricalCheckpointEntry[] =
++  AVATAR_ORDER.map((avatar, i) => {
++    const canon = REALM_CANON[i]; // step i+1, mismo índice que AVATAR_ORDER
++    return {
++      avatar,
++      counter: HISTORICAL_CHECKPOINTS[avatar],
++      eraName: canon?.era ?? "",
++      color: i >= INTENSIFIED_FROM_INDEX ? (canon?.hex ?? BASE_LED_COLOR) : BASE_LED_COLOR,
++      intensified: i >= INTENSIFIED_FROM_INDEX,
++    };
++  });
++
++export function getCheckpointByAvatar(
++  avatar: AvatarId
++): HistoricalCheckpointEntry | undefined {
++  return HISTORICAL_TIMELINE.find((c) => c.avatar === avatar);
++}
++
++export function getCheckpointIndex(avatar: AvatarId | null): number {
++  if (!avatar) return -1;
++  return AVATAR_ORDER.indexOf(avatar);
++}
+diff --git a/src/game/poisonMeta.ts b/src/game/poisonMeta.ts
+new file mode 100644
+index 0000000..25c56b8
+--- /dev/null
++++ b/src/game/poisonMeta.ts
+@@ -0,0 +1,27 @@
++import type { BasePieceKind } from "./types";
++
++import pigWhite from "../assets/pieces/pig_white.webp";
++import roosterWhite from "../assets/pieces/rooster_white.webp";
++
++// v58 (18 agosto 2026) — pedido de Federico: cuando un jugador escoge un
++// Veneno, muchos no distinguen bien la ficha en pantallas chicas ni saben
++// qué representa cada una de los Tres Venenos. Este mapa alimenta el
++// banner de selección (ver VenomBanner.tsx) con ícono + palabra corta.
++//
++// Snake: no existe ningún asset de imagen en el repo (busqué .png/.webp
++// en src/assets/pieces y en todo src, no hay ninguno) — Federico pidió
++// "poner una culebra, la que tenga" como solución provisoria, así que
++// se usa el emoji 🐍 en vez de una imagen. Reemplazable después: basta
++// con importar el archivo real y asignarlo a `icon` cuando exista.
++export type PoisonMeta = {
++  label: string;
++  // Ruta de imagen importada (pig/rooster) o un emoji de texto plano
++  // (snake, provisorio). VenomBanner.tsx distingue cuál es con isEmoji().
++  icon: string;
++};
++
++export const POISON_META: Record<BasePieceKind, PoisonMeta> = {
++  pig: { label: "IGNORANCE", icon: pigWhite },
++  snake: { label: "ANGER", icon: "🐍" },
++  rooster: { label: "IMPULSE", icon: roosterWhite },
++};
