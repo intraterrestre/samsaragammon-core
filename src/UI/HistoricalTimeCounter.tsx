@@ -61,6 +61,30 @@ export function HistoricalTimeCounter({
   const hasRolledOnceRef = React.useRef(false);
   const pendingLabelRef = React.useRef<EraLabel | null>(null);
   const prevVideoPlayingRef = React.useRef(avatarVideoPlaying);
+  // 2026-08-23 — reportado por Federico: al llegar a Oriol, el cartel
+  // de era ("METAL AGE") aparecia un instante DENTRO de la rueda y era
+  // ilegible porque el video de Oriol arrancaba encima. Causa real:
+  // App.tsx cambia state.cosmicClock.era (currentAvatarIndex acá) en
+  // el mismo momento en que se dispara state.realmAscension, pero el
+  // video (activeRealmIntro / avatarVideoPlaying) recien arranca
+  // 800ms despues (setTimeout en App.tsx, "dejar sonar la fanfarria
+  // antes"). Esta condicion `if (avatarVideoPlaying) {...} else {...}`
+  // leia avatarVideoPlaying=false durante esos 800ms y mostraba el
+  // cartel de inmediato — para taparlo el video un instante despues.
+  // No es un cartel DISTINTO del que aparece despues del video: es el
+  // MISMO texto (era.toUpperCase()), solo que quedaba cortado por la
+  // aparicion del video antes de poder leerse. Fix: siempre guardar en
+  // pendingLabelRef primero, y recien decidir mostrarlo de una vez
+  // pasado este margen (mayor al setTimeout de 800ms de App.tsx) leyendo
+  // el valor MAS RECIENTE de avatarVideoPlaying vía un ref — si para
+  // entonces el video ya arranco, se deja pendiente y lo revela el
+  // efecto de abajo cuando el video termina, en vez de mostrarlo y
+  // taparlo dos veces.
+  const avatarVideoPlayingRef = React.useRef(avatarVideoPlaying);
+
+  React.useEffect(() => {
+    avatarVideoPlayingRef.current = avatarVideoPlaying;
+  }, [avatarVideoPlaying]);
 
   React.useEffect(() => {
     if (currentAvatarIndex <= reachedIndexRef.current) return;
@@ -74,11 +98,16 @@ export function HistoricalTimeCounter({
     if (entry.intensified) setActiveColor(entry.color);
 
     const newLabel: EraLabel = { text: entry.eraName.toUpperCase(), color: entry.color };
-    if (avatarVideoPlaying) {
-      pendingLabelRef.current = newLabel;
-    } else {
-      setLabel(newLabel);
-    }
+    pendingLabelRef.current = newLabel;
+
+    const revealIfNoVideoYet = window.setTimeout(() => {
+      if (!avatarVideoPlayingRef.current && pendingLabelRef.current === newLabel) {
+        setLabel(newLabel);
+        pendingLabelRef.current = null;
+      }
+    }, 900);
+
+    return () => window.clearTimeout(revealIfNoVideoYet);
   }, [currentAvatarIndex]);
 
   React.useEffect(() => {
