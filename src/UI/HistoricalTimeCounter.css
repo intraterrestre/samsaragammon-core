@@ -11,6 +11,20 @@
   align-items: center;
 }
 
+/* 2026-08-22 — a pedido de Federico: los números/letras del contador se
+   perdían contra fondos claros del mural. Reborde blanco (stroke) en
+   todo el texto del widget, además del glow de color que ya tenía.
+   -webkit-text-stroke funciona en Chrome/Edge/Safari y también en
+   Firefox moderno (sin prefijo "webkit" no es todavía estándar, pero
+   el prefijado tiene soporte amplio); paint-order deja el relleno de
+   color por ENCIMA del trazo para que el glow no quede tapado. */
+.htc-display,
+.htc-unit,
+.htc-sub-banner {
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.95);
+  paint-order: stroke fill;
+}
+
 .htc-display {
   font-family: "Courier New", "Consolas", monospace;
   font-weight: 700;
@@ -42,6 +56,57 @@
   font-size: 24px;
   letter-spacing: 4px;
   animation: htcFlashIn 200ms ease;
+}
+
+/* Fila = display (años o mm) + su unidad, alineados sobre la misma
+   línea de base para que "years"/"mm" queden pegados al número. */
+.htc-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.htc-unit {
+  font-family: "Georgia", "Times New Roman", serif;
+  font-style: italic;
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+  white-space: nowrap;
+}
+
+/* Contador de milímetros — misma familia visual que el de años pero
+   más chico, para que se lea claramente como el secundario/derivado
+   de los dos ("corren en paralelo, uno debajo del otro"). */
+.htc-row-mm {
+  margin-top: 2px;
+}
+
+.htc-display-mm {
+  font-size: 22px;
+  letter-spacing: 2px;
+  color: #ff2b2b;
+  text-shadow:
+    0 0 4px #ff2b2b,
+    0 0 9px #ff2b2b;
+}
+
+/* Cartel extra bajo "METAL AGE" — replica el mensaje de la regla de
+   1000mm del intro de Genesis ("996 -> 1000mm — metal age to today")
+   directamente en el HUD del juego. */
+.htc-sub-banner {
+  font-family: "Georgia", "Times New Roman", serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  text-align: center;
+  color: #ff2b2b;
+  text-shadow:
+    0 0 5px #ff2b2b,
+    0 0 12px #ff2b2b;
+  animation: htcFlashIn 200ms ease;
+  margin-top: 2px;
 }
 
 .htc-frozen .htc-display {
@@ -90,6 +155,15 @@
   }
   .htc-present {
     font-size: 19px;
+  }
+  .htc-unit {
+    font-size: 11px;
+  }
+  .htc-display-mm {
+    font-size: 18px;
+  }
+  .htc-sub-banner {
+    font-size: 11px;
   }
   .htc-hint {
     font-size: 9px;

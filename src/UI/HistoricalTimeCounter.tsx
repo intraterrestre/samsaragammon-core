@@ -19,8 +19,22 @@ const STEP_FRACTION_MIN = 0.02;
 const STEP_FRACTION_MAX = 0.04;
 const CRUISE_HOLDBACK_FRACTION = 0.002;
 
+// 2026-08-22, a pedido de Federico: contador de milímetros "en
+// paralelo" al de años, misma escala de la regla de 1000mm del intro
+// de Genesis (GenesisReveal.tsx) — 0mm = Bruno, 1000mm = el presente.
+// Se deriva de displayValue (nunca un estado propio) para que ambos
+// contadores avancen exactamente juntos, sin lógica duplicada.
+const RULER_TOTAL_MM = 1000;
+
 function formatDigits(value: number): string {
   return Math.floor(value).toString().padStart(DIGITS, "0");
+}
+
+function formatMm(value: number): string {
+  const clamped = Math.max(0, Math.min(RULER_TOTAL_MM, value));
+  const rounded = Math.round(clamped * 10) / 10;
+  const [intPart, decPart] = rounded.toFixed(1).split(".");
+  return `${intPart.padStart(4, "0")}.${decPart}`;
 }
 
 function randomStep(legSize: number): number {
@@ -134,6 +148,16 @@ export function HistoricalTimeCounter({
   const currentLabelText = label === null ? "" : label.text;
   const glowColor = isPresent ? "#ffffff" : (label === null ? activeColor : label.color);
 
+  // Misma escala 0-1000mm de la regla del intro de Genesis (996mm
+  // Paleolítico+Neolítico, 4mm resto de la historia) — derivado de
+  // displayValue, nunca un contador independiente.
+  const mmValue = (displayValue / PRESENT_COUNTER) * RULER_TOTAL_MM;
+
+  // "METAL AGE" es el único checkpoint que coincide con el arranque de
+  // los últimos 4mm de la regla (ver GenesisReveal.tsx) — el cartel
+  // extra solo tiene sentido ahí, no en el resto de las eras.
+  const showLast4mmBanner = showingLabel && currentLabelText === "METAL AGE";
+
   const [hintVisible, setHintVisible] = React.useState(false);
   const showHint = () => setHintVisible(true);
   const hideHint = () => setHintVisible(false);
@@ -147,15 +171,32 @@ export function HistoricalTimeCounter({
       onPointerLeave={hideHint}
       onPointerCancel={hideHint}
     >
-      <div className="htc-display">
-        {isPresent ? (
-          <span className="htc-present">{PRESENT_LABEL}</span>
-        ) : showingLabel ? (
-          <span className="htc-era-flash">{currentLabelText}</span>
-        ) : (
-          <span className="htc-digits">{formatDigits(displayValue)}</span>
+      <div className="htc-row htc-row-years">
+        <div className="htc-display">
+          {isPresent ? (
+            <span className="htc-present">{PRESENT_LABEL}</span>
+          ) : showingLabel ? (
+            <span className="htc-era-flash">{currentLabelText}</span>
+          ) : (
+            <span className="htc-digits">{formatDigits(displayValue)}</span>
+          )}
+        </div>
+        {!showingLabel && (
+          <span className="htc-unit">years</span>
         )}
       </div>
+
+      {showLast4mmBanner && (
+        <div className="htc-sub-banner">LAST 4 MILLIMETERS OF HISTORY</div>
+      )}
+
+      <div className="htc-row htc-row-mm">
+        <div className="htc-display htc-display-mm">
+          <span className="htc-digits">{formatMm(mmValue)}</span>
+        </div>
+        <span className="htc-unit">mm</span>
+      </div>
+
       <div className="htc-hint">Human Evolution Timer</div>
     </div>
   );
