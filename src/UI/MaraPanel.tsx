@@ -1,4 +1,3 @@
-import React from "react";
 
 import pigWhite from "../assets/pieces/pig_white.png";
 import pigBlack from "../assets/pieces/pig_black.png";

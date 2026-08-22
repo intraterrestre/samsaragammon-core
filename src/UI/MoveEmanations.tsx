@@ -1,4 +1,3 @@
-import React from "react";
 import type { MoveOption, PieceKind, PlayerId } from "../game/types";
 import { piecePosition, RING_SIZE } from "./geometry";
 

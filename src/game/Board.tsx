@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
-import type { GameState, MoveOption, PieceKind, BasePieceKind, PlayerId, RealmPieceKind } from "./types";
+import { useEffect, useRef, useState } from "react";
+import type { GameState, MoveOption, PieceKind, BasePieceKind, PlayerId, RealmPieceKind, RealmPieceState } from "./types";
 import { REALM_PIECE_ORDER } from "./types";
 import {  cellStyle as ringCellStyle, RING_SIZE,  piecePosition,} from "../UI/geometry";
 import { realmFromPos, REALM_LABEL, pickLine } from "../UI/realm";
@@ -88,7 +88,13 @@ function StoneDiceIcon({ color }: { color: "white" | "black" }) {
 
 type Props = {
   state: GameState;
-  onSelectPiece?: (piece: string) => void;
+  // 2026-08-22: estaba tipado como (piece: string) => void — demasiado
+  // amplio. GameShell.tsx pasa un callback (piece: PieceKind) => void
+  // (su Props ya lo declara así). Los dos únicos call sites internos
+  // (onSelectPiece?.(kind) con kind: BasePieceKind, y
+  // onSelectPiece?.(piece.kind) con piece.kind: RealmPieceKind) nunca
+  // pasan nada fuera de PieceKind = BasePieceKind | RealmPieceKind.
+  onSelectPiece?: (piece: PieceKind) => void;
   hoveredOption?: MoveOption | null;
   moveOptions?: MoveOption[];
   onChooseMove?: (option: MoveOption, allOptions: MoveOption[]) => void;
@@ -114,16 +120,16 @@ type Props = {
   // genesisComplete — recién con la entrada real de Oriol. Ver GameShell.tsx.
   oriolEntered?: boolean;
 };
-const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
-
-const playerLabel = (p: PlayerId) => (p === "P1" ? "⚪ White" : "⚫ Black");
-const PIECE_KINDS: PieceKind[] = ["pig", "snake", "rooster"];
-
 // Era 1 (Ignorance) gate: only unlocked base pieces render on the board or
 // can be clicked/selected. Snake and Rooster stay fully coded (imports,
 // styles, sort keys, etc. are untouched below) — they're just filtered out
 // of the active render list until a later era unlocks them.
-const ACTIVE_PIECE_KINDS: PieceKind[] = getUnlockedBasePieces(
+// 2026-08-22: tipado como PieceKind[] (union con hungry_ghost/hell/...)
+// aunque getUnlockedBasePieces() SOLO puede devolver BasePieceKind[] —
+// eso es lo que TS7053 señalaba mas abajo, cada vez que se usa esta
+// lista para indexar state.pieces[player][kind] (que solo tiene
+// pig/snake/rooster). Mismos valores en runtime, tipo correcto.
+const ACTIVE_PIECE_KINDS: BasePieceKind[] = getUnlockedBasePieces(
   ["pig", "snake", "rooster"] as BasePieceKind[]
 );
 
@@ -206,7 +212,6 @@ const NIDANA_EFFECT_LINES: Record<number, {
     body: "The ending prepares the next beginning.",
   },
 };
-const EMOJIS = ["😴", "🔥", "🐷", "🐍", "⚔️", "🧘", "😂", "😡"];
 const pieceShort = (k: PieceKind) => {
   if (k === "pig") return "P";
   if (k === "snake") return "S";
@@ -230,30 +235,6 @@ function pieceSortKey(player: PlayerId, kind: PieceKind) {
   return playerOrder + kindOrder;
 }
 
-function stackOffset(index: number, total: number) {
-  if (total <= 1) return { x: 0, y: 0 };
-
-  if (total === 2) {
-    return index === 0 ? { x: -10, y: 0 } : { x: 10, y: 0 };
-  }
-
-  if (total === 3) {
-    const offsets = [
-      { x: 0, y: -10 },
-      { x: -9, y: 8 },
-      { x: 9, y: 8 },
-    ];
-    return offsets[index] ?? { x: 0, y: 0 };
-  }
-
-  const radius = 10;
-  const angle = (index / total) * Math.PI * 2 - Math.PI / 2;
-
-  return {
-    x: Math.cos(angle) * radius,
-    y: Math.sin(angle) * radius,
-  };
-}
 /* =====================================================
    /* =====================================================
    STACK ENGINE
@@ -269,9 +250,12 @@ export function Board({
   state,
   onSelectPiece,
   hoveredOption,
-  moveOptions,
+  // 2026-08-22: moveOptions?: MoveOption[] es opcional en Props, pero el
+  // único caller real (GameShell.tsx) siempre pasa un array de verdad
+  // (getMoveOptionsForPlayer(...) o []), nunca undefined — este default
+  // solo blinda el caso teórico sin cambiar el comportamiento normal.
+  moveOptions = [],
   onChooseMove,
-  onSendEmoji,
   onRoll,
   nidanaCoinSrc,
   nidanaCoinSide,
@@ -288,9 +272,8 @@ export function Board({
   const captureAudioBlack = useRef<HTMLAudioElement | null>(null);
   const moveAudio = useRef<HTMLAudioElement | null>(null);
 
-const [lastEmojiAt, setLastEmojiAt] = useState(0);
 const [explainOpen, setExplainOpen] = useState(false);
-const [explainPlayer, setExplainPlayer] = useState<PlayerId>("P1");
+const [explainPlayer] = useState<PlayerId>("P1");
 
 const [impactPos, setImpactPos] = useState<number | null>(null);
 const [flashCell, setFlashCell] = useState<number | null>(null);
@@ -320,25 +303,6 @@ const beatTimer = useRef<number | null>(null);
     
 }, []);
   const size = state.trackSize;
-const me = state.turn;
-const other = otherPlayer(me);
-const rolls = state.phase === "rolled" ? state.rollOptions : null;
-
-const activePiece = state.selectedPiece[me];
-
-const activeBasePiece = PIECE_KINDS.includes(activePiece as PieceKind)
-  ? (activePiece as PieceKind)
-  : null;
-
-const activeRealmPiece =
-  state.realmPieces?.[me]?.[
-    activePiece as keyof typeof state.realmPieces.P1
-  ];
-
-const activePos =
-  activeBasePiece
-    ? state.pieces?.[me]?.[activeBasePiece]?.pos
-    : activeRealmPiece?.pos ?? null;
 
   const [bigHeadSchoolBy, setBigHeadSchoolBy] =
   useState<"white" | "black" | null>(null);
@@ -646,11 +610,11 @@ top: stackedPosition.top,
     </div>
 
     <div className="nidanaLivingTitle">
-      {NIDANA_EFFECT_LINES[cajaMagica.current]?.title}
+      {cajaMagica.current != null ? NIDANA_EFFECT_LINES[cajaMagica.current]?.title : null}
     </div>
 
     <div className="nidanaLivingBody">
-      {NIDANA_EFFECT_LINES[cajaMagica.current]?.body}
+      {cajaMagica.current != null ? NIDANA_EFFECT_LINES[cajaMagica.current]?.body : null}
     </div>
 
   </div>
@@ -945,11 +909,15 @@ animation: "nidanaReveal 2.6s cubic-bezier(.16,1.25,.32,1) both",
 
 ] as const;
 
-const seen = new Set<number>();
-
+// 2026-08-22: el .filter() ya descartaba undefined/inLimbo/no-unlocked
+// en runtime, pero sin un type predicate TS no reduce el tipo del
+// array resultante — seguía viendo (RealmPieceState | undefined)[] mas
+// abajo. Mismo filtrado, tipo correcto.
 const realmList = realmOrder
   .map((key) => state.realmPieces[player]?.[key])
-  .filter((piece) => piece && !piece.inLimbo && piece.unlocked);
+  .filter((piece): piece is RealmPieceState =>
+    Boolean(piece) && !piece!.inLimbo && piece!.unlocked
+  );
   const realmStackCountByPos = new Map<number, number>();
 
 for (const piece of realmList) {
@@ -959,7 +927,6 @@ for (const piece of realmList) {
   );
 }
 
-const realmStackIndexByPos = new Map<number, number>();
   return realmList.map((piece) => {
     if (!piece || piece.inLimbo || !piece.unlocked) {
       return null;

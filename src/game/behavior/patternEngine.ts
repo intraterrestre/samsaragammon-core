@@ -1,5 +1,17 @@
 // src/game/behavior/patternEngine.ts
-import type { PlayerId, Realm } from "../types";
+import type { PlayerId } from "../types";
+// 2026-08-22: este archivo SIEMPRE trabajó con el vocabulario interno
+// de las 6 franjas del mural (NARAKA/PRETA/ANIMAL/HUMAN/ASURA/DEVA —
+// ver src/UI/realm.ts v48), no con el Realm canónico de game/types.ts
+// (HUNGRY_GHOST/HELL/ANIMALS/HUMANS/ASURA/DEVA/NIRVANA). Antes de esta
+// fecha importaba el `Realm` canónico por error de nombre — type-checkeaba
+// contra el vocabulario equivocado, y reducer.ts tapaba el desajuste con
+// un "as any" en las dos llamadas a recordMove() para que compilara. En
+// tiempo de ejecución nunca hubo bug (ambos lados ya coincidían en los
+// valores reales de MuralZoneId), pero el tipo no protegía nada. Se
+// importa el tipo correcto — MuralZoneId — sin tocar ninguna lógica ni
+// valor de este archivo.
+import type { MuralZoneId } from "../../UI/realm";
 
 export type Choice = "A" | "B" | "AB" | "ECO";
 
@@ -37,14 +49,14 @@ export type PatternSnapshot = {
   captureChosenWhenAlt: { chosen: number; total: number };
 
   // realms
-  realmVisits: Record<Realm, number>;
+  realmVisits: Record<MuralZoneId, number>;
   realmTransitions: Record<string, number>;
   narakaReturns: number;
 
   // stability/volatility
   stabilityStreak: number;
   volatilityScore: number;
-  lastRealm?: Realm;
+  lastRealm?: MuralZoneId;
 
   // last event memory
   lastEvents: PatternEvent[];
@@ -62,8 +74,8 @@ export type RecordMoveInput = {
 
   fromPos: number;
   toPos: number;
-  fromRealm: Realm;
-  toRealm: Realm;
+  fromRealm: MuralZoneId;
+  toRealm: MuralZoneId;
 
   // v37 (12 agosto 2026) — true solo cuando esta jugada capturó
   // específicamente un Avatar (no un Veneno) y lo mandó a Mara. Evento

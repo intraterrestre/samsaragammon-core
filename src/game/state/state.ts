@@ -2,6 +2,13 @@
 
 import { createBehaviorState } from "../behavior/behavior";
 import { createPatternEngine } from "../behavior/patternEngine";
+// 2026-08-22: GameState/DecisionSignature se usaban como anotación de tipo
+// en este archivo sin importarlos nunca — TS no podia resolver el nombre
+// (TS2304) y por lo tanto NO estaba comprobando que initialState/
+// makeInitialState calzaran de verdad con la forma real de GameState.
+// Cualquier desajuste de forma quedaba invisible hasta que reventara en
+// runtime. Se importan del unico lugar donde se declaran.
+import type { GameState, DecisionSignature } from "../types";
 
 const initialDecisionSignature = (): DecisionSignature => ({
   pigTrace: 0,

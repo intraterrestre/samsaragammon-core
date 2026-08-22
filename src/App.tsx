@@ -2,7 +2,6 @@
 import React, {
   useCallback,
   useEffect,
-  useMemo,
   useReducer,
   useRef,
   useState,
@@ -15,7 +14,6 @@ import { NIDANA_LIST } from "./game/nidanas";
 import { reducer } from "./game/state/reducer";
 import { initialState } from "./game/state/state";
 
-import { masterOracleLine } from "./game/master/masterEngine";
 import { supabase } from "./lib/supabaseClient";
 import { KarmaEngine } from "./game/engine/KarmaEngine";
 
@@ -30,7 +28,6 @@ import {
   subscribeToGame,
   type Game,
 } from "./lib/gameService";
-import { getMasterLine } from "./game/master/masterVoices";
 import diceRollSound from "./assets/sounds/dice_roll.mp3";
 // 2026-08-05: sonido distinto por dado, a pedido del usuario — blanco
 // (P1) sigue con dice_roll.mp3, negro (P2) usa este nuevo archivo.
@@ -48,7 +45,6 @@ const oriolIntro = new URL("./assets/cinematics/realms/oriol_animal_intro.mp4", 
 const marinoIntro = new URL("./assets/cinematics/realms/marino_human_intro.mp4", import.meta.url).href;
 const rufusIntro = new URL("./assets/cinematics/realms/rufus_titan_intro.mp4", import.meta.url).href;
 const whitmanIntro = new URL("./assets/cinematics/realms/whitman_deva_intro.mp4", import.meta.url).href;
-import { SamsaraStage } from "./samsara/SamsaraStage";
 
 const nidanaImages = import.meta.glob("./assets/nidanas/*.jpg", {
   eager: true,
@@ -239,7 +235,10 @@ const [genesisResetSeq, setGenesisResetSeq] = useState(0);
 const [realmIntroMuted, setRealmIntroMuted] = useState(true);
 const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
   const karmaRef = useRef<KarmaEngine | null>(null);
-  const [karmaSnap, setKarmaSnap] = useState<any>(null);
+  // 2026-08-22: karmaSnap (el valor) solo se pasaba a GameShell, que
+  // nunca lo declaró en Props ni lo leyó — se deja de leer ese slot;
+  // setKarmaSnap sigue en uso real (ROLL, sincronización de Karma).
+  const [, setKarmaSnap] = useState<any>(null);
 
   useEffect(() => {
     if (!karmaRef.current) {
@@ -334,7 +333,7 @@ const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
     Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"]
   >(null);
 
-  const [profile, setProfile] = useState<any>(null);
+  const [, setProfile] = useState<any>(null);
   const [runId, setRunId] = useState<string | null>(null);
 
   /** =========================
@@ -602,19 +601,22 @@ useEffect(() => {
     });
   }, [state.lastMove, state.captures, pushExportEvent, selectedPos]);
 
-  const debugPrintRunExport = useCallback(() => {
-    const run = ensureRunExport();
-    run.finishedAt = Date.now();
-    console.log("=== RUN EXPORT (LOCAL) ===");
-    console.log(JSON.stringify(run, null, 2));
-    alert("RunExport JSON impreso en consola ✅ (DevTools > Console)");
-  }, [ensureRunExport]);
+  // 2026-08-22: debugPrintRunExport se borra — era una herramienta de
+  // debug (imprime el RunExport en consola) que solo se invocaba vía
+  // onExportRun={debugPrintRunExport} pasado a GameShell.tsx, pero
+  // GameShell nunca declaró onExportRun en su Props ni la llamó desde
+  // ningún botón — cero call sites reales, confirmado por grep, tanto
+  // antes como después de este cleanup. ensureRunExport (la función
+  // que sí se usa de verdad, línea ~443) queda intacta.
 
   /** =========================
    *  Vestigium
    *  ========================= */
   const [showVestigium, setShowVestigium] = useState(false);
-  const [rollsCount, setRollsCount] = useState(0);
+  // 2026-08-22: mismo caso — rollsCount (el valor) solo se pasaba a
+  // GameShell, que nunca lo declaró en Props ni lo leyó; setRollsCount
+  // sigue en uso real más abajo.
+  const [, setRollsCount] = useState(0);
   const prevPhaseRef = useRef<string>(state.phase);
 
   const [activeNidanaId, setActiveNidanaId] = useState<number | null>(null);
@@ -833,32 +835,23 @@ useEffect(() => {
     selectedPos,
   ]);
     const {
-    hasRolled,
+    // 2026-08-22: hasRolled, "sum" (a + b), realmDataP1, realmDataP2,
+    // cyclesDone, cyclesNeeded y transitions se desestructuraban acá y
+    // se pasaban a <GameShell>, pero GameShell.tsx nunca las declaró en
+    // su Props ni las usó en ningún lado (confirmado por grep) —
+    // cableado muerto de punta a punta. Se dejan de desestructurar
+    // aquí; getGameDerivedState() sigue calculándolas por si algún
+    // consumidor futuro las necesita.
     a,
     b,
-    sum,
-    realmDataP1,
-    realmDataP2,
     activeRealmData,
     activeEra,
-    cyclesDone,
-    cyclesNeeded,
-    transitions,
     oracleText,
     mirrorData,
   } = getGameDerivedState({
     state,
     selectedPos,
   });
-  const masterDisplayText = state.lastMove
-  ? getMasterLine({
-      didCapture: state.lastMove.didCapture,
-      patternScore: state.lastKarma?.pattern ?? 0,
-      realm: state.lastMove.toRealm,
-      fromPos: state.lastMove.fromPos,
-      toPos: state.lastMove.toPos,
-    })
-  : "The wheel waits.";
   /** =========================
    *  Dispatch wrapper
    *  ========================= */
@@ -1063,16 +1056,18 @@ useEffect(() => {
       state={state}
       a={a}
       b={b}
-      sum={sum}
-      hasRolled={hasRolled}
-      rollsCount={rollsCount}
+      // 2026-08-22: hasta acá llegaban también hasRolled, rollsCount,
+      // karmaSnap, cyclesDone, cyclesNeeded y transitions — cableado
+      // muerto confirmado por grep: GameShell.tsx nunca las declaró en
+      // su Props ni las desestructuró (TS no lo comprobaba porque
+      // Props tampoco las tenía, así que no había excess-property
+      // error hasta llegar a "sum", el primero de la lista). Ninguna
+      // se usa en ningún otro lado de App.tsx tampoco. Se retira el
+      // paso de esas 6 props; los estados/cálculos de origen se dejan
+      // intactos por si algún consumidor futuro los necesita.
       avatarVideoPlaying={activeRealmIntro !== null}
-      karmaSnap={karmaSnap}
       activeRealmData={activeRealmData}
       activeEra={activeEra}
-      cyclesDone={cyclesDone}
-      cyclesNeeded={cyclesNeeded}
-      transitions={transitions ?? 0}
       oracleText={oracleText}
       mirrorData={mirrorData}
       showVestigium={showVestigium}
@@ -1096,13 +1091,19 @@ nidanaCoinSide={nidanaSide}
       onDevSkipToRufus={() => dispatch({ type: "DEV_SKIP_TO_RUFUS" })}
       onVestigiumDone={() => setShowVestigium(false)}
       onCloseLedger={() => dispatch({ type: "CLOSE_LEDGER" })}
-      onIntroDone={() => dispatch({ type: "INTRO_DONE" })}
+      // 2026-08-22: onIntroDone (dispatch INTRO_DONE → state.introSeen =
+      // true) y onExportRun (debugPrintRunExport) también se pasaban
+      // acá, pero GameShell.tsx nunca las declaró en Props ni las llamó
+      // — nada las invocaba nunca. Además state.introSeen resultó no
+      // leerse en ningún otro lado del código (grep), así que ni
+      // siquiera dejaba de cumplir una función silenciosa. Se retiran
+      // ambas; INTRO_DONE sigue existiendo en el reducer y
+      // debugPrintRunExport sigue definida por si se recablean después.
       onLogout={async () => {
         await supabase.auth.signOut();
         setRunId(null);
         setProfile(null);
       }}
-  onExportRun={debugPrintRunExport}
 onRoll={() => {
   // En multiplayer, solo puede tirar el jugador activo
   if (gameMode === "multiplayer" && myRole !== state.turn) return;
@@ -1173,8 +1174,10 @@ onSendEmoji={(emoji: string) =>
   dispatch({ type: "EMOJI", emoji, player: state.turn })
 }
 
-realmDataP1={realmDataP1}
-realmDataP2={realmDataP2}
+// 2026-08-22: realmDataP1/realmDataP2 (de getGameDerivedState) también
+// se pasaban acá — mismo patrón, GameShell.tsx nunca las declaró en
+// Props ni las usó. Se retiran; getGameDerivedState sigue
+// calculándolas.
 />
 
 

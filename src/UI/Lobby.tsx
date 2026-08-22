@@ -12,7 +12,6 @@ type Props = {
 };
 
 export function Lobby({
-  userId,
   onCreateGame,
   onJoinGame,
   onPlayLocal,

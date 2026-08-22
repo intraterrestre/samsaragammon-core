@@ -29,6 +29,8 @@ function phase2State(overrides: Partial<GameState> = {}): GameState {
         currentLoopProgress: 0,
         realmTransitions: 0,
         stageStartedAtRoll: 0,
+        capturesInStage: 0,
+        movesInStage: 0,
       },
       P2: {
         currentRealmStep: 3,
@@ -36,6 +38,8 @@ function phase2State(overrides: Partial<GameState> = {}): GameState {
         currentLoopProgress: 0,
         realmTransitions: 0,
         stageStartedAtRoll: 0,
+        capturesInStage: 0,
+        movesInStage: 0,
       },
     },
     rollOptions: [3, 5],

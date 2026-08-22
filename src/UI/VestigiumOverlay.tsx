@@ -1,5 +1,5 @@
 // src/UI/VestigiumOverlay.tsx
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 
 type Props = {
   show: boolean;

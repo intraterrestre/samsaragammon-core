@@ -5,7 +5,6 @@
 // de victoria sin que el juego se lo dijera nunca. Esta pantalla es
 // puramente de interfaz: no toca la regla de victoria, el reducer, ni
 // checkNirvana — solo reacciona a un valor que ya existía.
-import React from "react";
 import type { PlayerId } from "../game/types";
 
 type Props = {

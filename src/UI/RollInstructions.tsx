@@ -10,7 +10,6 @@ type RollInstructionsProps = {
 export function RollInstructions({
   hasRolled,
   level,
-  sum,
   moveA,
   moveB,
   moveAB,

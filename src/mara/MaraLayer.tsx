@@ -98,7 +98,6 @@ export function MaraLayer({
   dharmaBig = false,
   dharmaFading = false,
   realmStep = 1,
-  lastRealmKey = null,
   globalRollCount = 0,
   genesisComplete = false,
   boardPainted,

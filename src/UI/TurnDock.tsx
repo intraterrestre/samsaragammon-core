@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PlayerId } from "../game/types";
 import { Die } from "./Die";
 
@@ -50,8 +50,6 @@ export function TurnDock({
     rollA === null || rollB === null
       ? ""
       : "Pig · Snake · Rooster — choose your path";
-
-  const diceColor = turn === "P1" ? "white" : "black";
 
   return (
     <div className="turnDock">

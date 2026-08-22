@@ -7,9 +7,12 @@
 // sin cambiar ningún comportamiento, para poder probarla directamente.
 import { CELL } from "../UI/geometry";
 import { getUnlockedBasePieces } from "./era";
-import type { BasePieceKind, GameState, PieceKind, PlayerId } from "./types";
+import type { BasePieceKind, GameState, PlayerId } from "./types";
 
-const ACTIVE_PIECE_KINDS: PieceKind[] = getUnlockedBasePieces(
+// 2026-08-22: tipado como PieceKind[] aunque getUnlockedBasePieces()
+// solo devuelve BasePieceKind[] — mismos valores en runtime, tipo
+// correcto (ver Board.tsx, mismo ajuste).
+const ACTIVE_PIECE_KINDS: BasePieceKind[] = getUnlockedBasePieces(
   ["pig", "snake", "rooster"] as BasePieceKind[]
 );
 

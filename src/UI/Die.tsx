@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Dot positions for each face (as [col, row] on a 3x3 grid, 0-indexed)
 const PIPS: Record<number, [number, number][]> = {

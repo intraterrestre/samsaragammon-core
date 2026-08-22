@@ -1,7 +1,6 @@
 import { REALM_CANON } from "./realm/realmCanon";
 import { karmaOracle } from "./Karma/KarmaOracle";
 import { masterOracleLine } from "./master/masterEngine";
-import { karmaMirror } from "./Karma/KarmaMirror";
 import { getMirrorPatternReading } from "./Karma/getMirrorPatternReading";
 import { getMasterMessage } from "./Karma/getMasterMessage";
 import type { GameState, PlayerId } from "./types";

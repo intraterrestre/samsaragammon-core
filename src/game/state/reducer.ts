@@ -193,7 +193,11 @@ function applyCollapseIfNeeded(
     },
   };
 
-  const allAtSamePos: Record<number, { player: PlayerId; kind: PieceKind }[]> =
+  // 2026-08-22: tipado como PieceKind (union con hungry_ghost/hell/...)
+  // aunque solo BASE_PIECES (pig/snake/rooster) alimenta esta lista mas
+  // abajo — mismos valores en runtime, tipo correcto (mismo ajuste que
+  // Board.tsx/stacking.ts).
+  const allAtSamePos: Record<number, { player: PlayerId; kind: BasePieceKind }[]> =
     {};
 
   for (const player of ["P1", "P2"] as PlayerId[]) {
@@ -494,10 +498,16 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
       // jugadores a la vez (un acontecimiento, dos manifestaciones — P-001).
       const brunoJustRevealed = !state.brunoRevealed && nextBrunoRevealed;
 
+      // 2026-08-22: actors es Partial<Record<ActorId, ActorPieceState>>
+      // (bruno PODRÍA no existir, por tipo), pero initialState.actors.bruno
+      // siempre lo crea completo desde el arranque (ver state.ts) — nunca
+      // se borra, solo cambia `unlocked`. El "!" documenta esa garantía
+      // real sin inventar un valor default falso; TS ya no puede
+      // comprobarlo solo por el tipo Partial.
       const nextActorsOnRoll = brunoJustRevealed
         ? {
             ...state.actors,
-            bruno: { ...state.actors.bruno, unlocked: true },
+            bruno: { ...state.actors.bruno!, unlocked: true },
           }
         : state.actors;
 
@@ -1286,9 +1296,12 @@ if (!didCapture) {
         captureWasAvoidable,
         fromPos,
         toPos,
-        // v47 (13 agosto 2026) — cast documentado, sin cambio de comportamiento: el import de src/UI/realm.ts se arreglo hoy (ver ese archivo), y ahora su tipo Realm (NARAKA/PRETA/ANIMAL/HUMAN/ASURA/DEVA, vocabulario espacial) type-checkea de verdad contra si mismo, en vez de colar como 'any' por el import roto de antes. El Pattern Engine (patternEngine.ts) declara su PROPIO tipo Realm (game/types.ts: HUNGRY_GHOST/HELL/ANIMALS/HUMANS/ASURA/DEVA/NIRVANA) y esa es zona 'no tocar' — no se toca su logica ni su tipo. Este 'as any' preserva EXACTAMENTE el mismo valor en tiempo de ejecucion que siempre recibio (antes colaba silenciosamente; ahora se declara explicitamente), solo para no dejar un error de compilacion nuevo por arreglar el otro archivo.
-        fromRealm: realmFromPos(fromPos) as any,
-        toRealm: realmFromPos(finalToPos) as any,
+        // 2026-08-22: patternEngine.ts ahora importa el tipo correcto
+        // (MuralZoneId de src/UI/realm.ts) en vez del Realm canonico de
+        // game/types.ts, asi que este valor ya type-checkea de verdad
+        // sin necesitar "as any" — mismo valor en runtime que siempre.
+        fromRealm: realmFromPos(fromPos),
+        toRealm: realmFromPos(finalToPos),
         capturedAvatarThisMove: didCapture && capturedWasAvatar,
       });
 
@@ -1382,7 +1395,10 @@ if (shouldCollapse) {
       const brunoJustRevealedInMove = !state.brunoRevealed && nextBrunoRevealed;
 
       if (brunoJustRevealedInMove) {
-        nextActors.bruno = { ...nextActors.bruno, unlocked: true };
+        // 2026-08-22: mismo caso que en "ROLL" más arriba en este
+        // archivo — bruno siempre existe desde initialState, el tipo
+        // Partial solo permite que TS no lo garantice.
+        nextActors.bruno = { ...nextActors.bruno!, unlocked: true };
 
         const searchBaseForBruno: GameState = {
           ...state,
@@ -1535,9 +1551,17 @@ realmAscension: nextRealmAscensionForBrunoInMove ?? (didAscendRealm && unlockedR
           toPos: finalToPos,
           didCapture,
           capturedPieceKind,
-          // v47 (13 agosto 2026) — cast documentado, sin cambio de comportamiento: el import de src/UI/realm.ts se arreglo hoy (ver ese archivo), y ahora su tipo Realm (NARAKA/PRETA/ANIMAL/HUMAN/ASURA/DEVA, vocabulario espacial) type-checkea de verdad contra si mismo, en vez de colar como 'any' por el import roto de antes. El Pattern Engine (patternEngine.ts) declara su PROPIO tipo Realm (game/types.ts: HUNGRY_GHOST/HELL/ANIMALS/HUMANS/ASURA/DEVA/NIRVANA) y esa es zona 'no tocar' — no se toca su logica ni su tipo. Este 'as any' preserva EXACTAMENTE el mismo valor en tiempo de ejecucion que siempre recibio (antes colaba silenciosamente; ahora se declara explicitamente), solo para no dejar un error de compilacion nuevo por arreglar el otro archivo.
-          fromRealm: realmFromPos(fromPos) as any,
-          toRealm: realmFromPos(finalToPos) as any,
+          // 2026-08-22: lastMove.fromRealm/toRealm declaran el Realm
+          // CANONICO (game/types.ts), no el vocabulario interno del mural
+          // (MuralZoneId). Antes esto guardaba realmFromPos() (NARAKA/
+          // PRETA/...) tapado con "as any" — nada rama sobre ese valor
+          // hoy (KarmaEngine.ingest lo trata como string opaco, y
+          // pushExportEvent solo lo exporta), asi que no cambiaba el
+          // comportamiento del juego, pero sí dejaba el log/export con
+          // el nombre interno en vez del nombre real del reino. Se usa
+          // el puente correcto para que ambos coincidan con la verdad.
+          fromRealm: canonicalRealmFromPos(fromPos),
+          toRealm: canonicalRealmFromPos(finalToPos),
           turnIndex: nextTurnIndex,
           cycleIndex: nextCycleIndex,
           level: state.level,

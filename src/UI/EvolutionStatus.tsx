@@ -15,7 +15,6 @@ export function EvolutionStatus({
   player,
   realmLabel,
   realmHex,
-  era,
   cyclesDone,
   cyclesNeeded,
   isActive

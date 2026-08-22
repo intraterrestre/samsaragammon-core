@@ -89,7 +89,11 @@ export type PlayerRealmPiecesState = Partial<
   Record<RealmPieceKind, RealmPieceState>
 >;
 
-export type SelectedPieceState = Record<PlayerId, string>;
+// 2026-08-22: era Record<PlayerId, string> (demasiado ancho); tanto la
+// acción SELECT_PIECE (piece: PieceKind) como el reset tras un
+// movimiento ("pig", literal) siempre guardan un PieceKind real acá —
+// se ajusta al tipo que de verdad tiene.
+export type SelectedPieceState = Record<PlayerId, PieceKind>;
 // v27 (11 agosto 2026) — decisión de diseño cerrada con Federico/Chat:
 // en Fase 2 (desde Oriol), la selección de movimiento es un par
 // AVATAR + VENENO acumulado en dos clics, no un valor único que se
@@ -163,8 +167,17 @@ export type LastMove = {
   didCapture: boolean;
   capturedPieceKind: PieceKind | null;
 
-  fromRealm: Realm;
-  toRealm: Realm;
+  // 2026-08-22: este campo declaraba el tipo "Realm" (mayúsculas —
+  // HUNGRY_GHOST/HELL/ANIMALS/HUMANS/ASURA/DEVA/NIRVANA), pero es el
+  // ÚNICO lugar en todo el código real que usa ese vocabulario — nada
+  // lo produce de verdad (reducer.ts guardaba aquí el valor de
+  // realmFromPos(), que es MuralZoneId — NARAKA/PRETA/... — tapado con
+  // "as any"). El vocabulario que sí existe y se calcula de verdad en
+  // cada posición es CanonicalRealmId (= RealmPieceKind, el mismo que
+  // usa realmPieces[player][kind] en todo el resto del juego), vía
+  // canonicalRealmFromPos(). Se retipa a ese, el real.
+  fromRealm: CanonicalRealmId;
+  toRealm: CanonicalRealmId;
 
   turnIndex: number;
   cycleIndex: number;

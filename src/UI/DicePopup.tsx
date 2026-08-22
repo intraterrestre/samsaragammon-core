@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import type { DiceSkin } from "../game/dice/eraDiceSkins";
 import { getActiveDiceSkin } from "../game/dice/eraDiceSkins";
 import { STONE_GRADIENT, STONE_RING, STONE_SHADOW } from "../game/dice/stoneDiceStyle";

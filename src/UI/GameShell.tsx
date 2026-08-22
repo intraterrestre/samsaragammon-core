@@ -1,11 +1,7 @@
 import React from "react";
 
-import { TopBar } from "./TopBar";
-import { EvolutionStatus } from "./EvolutionStatus";
 import { DicePopup } from "./DicePopup";
 
-import { MasterPanel } from "./MasterPanel";
-import { MirrorPanel } from "./MirrorPanel";
 import { VestigiumOverlay } from "./VestigiumOverlay";
 import { LedgerModal } from "./LedgerModal";
 
@@ -86,6 +82,10 @@ type Props = {
   oracleText: string;
   mirrorData: MirrorData;
   currentNidana: string | null;
+  // 2026-08-22: se desestructuraba y se usaba (pasado a <Board>, línea
+  // ~1135) pero nunca estuvo declarado en Props — TS no lo comprobaba.
+  // Mismo tipo que Board.tsx espera para esta prop.
+  nidanaCoinSrc?: string | null;
   nidanaCoinId: number | null;
 nidanaCoinSide: "front" | "back";
   showVestigium: boolean;
@@ -123,8 +123,6 @@ export function GameShell({
   state,
   a,
   b,
-  activeRealmData,
-  activeEra,
   oracleText,
   mirrorData,
   currentNidana,
@@ -133,7 +131,6 @@ export function GameShell({
   nidanaCoinSide,
   showVestigium,
   onVestigiumDone,
-  onLogout,
   onRoll,
   onReset,
   onDevSkipToRufus,
@@ -211,8 +208,8 @@ const triggerWatcher = (forcedLine?: string) => {
   setShowWatcher(true);
   window.setTimeout(() => setShowWatcher(false), 1800);
 };
-const [showNidanaSpinner, setShowNidanaSpinner] = React.useState(false);
-const [visibleNidana, setVisibleNidana] = React.useState<string | null>(null);
+const [, setShowNidanaSpinner] = React.useState(false);
+const [, setVisibleNidana] = React.useState<string | null>(null);
 const nidanaTimerRef = React.useRef<number | null>(null);
 const prevNidanaRef = React.useRef<string | null>(null);
 const clarityAudio = React.useRef<HTMLAudioElement | null>(null);
@@ -223,7 +220,7 @@ const fireworksAudio = React.useRef<HTMLAudioElement | null>(null);
 const scratchAudio = React.useRef<HTMLAudioElement | null>(null);
 const fanfarriaAudio = React.useRef<HTMLAudioElement | null>(null);
 const campanaFinalAudio = React.useRef<HTMLAudioElement | null>(null);
-const [showNidanaTitle, setShowNidanaTitle] = React.useState(false);
+const [, setShowNidanaTitle] = React.useState(false);
 // v53 (17 agosto 2026) — ver import de campanaFinalSound: se pone en
 // true cuando termina la fanfarria del 6to Avatar, y hace que el mural
 // de fondo (SamsaraStage/MaraLayer) muestre "7 nirvana dj.webp" (luna
@@ -777,36 +774,6 @@ window.setTimeout(() => {
   };
 }, [currentNidana]);
 
-const activeEffect = state.activeNidanaEffect as
-  | "CLARITY"
-  | "DISTORTION"
-  | "TENSION"
-  | null;
-
-const getNidanaEffectText = () => {
-  if (activeEffect === "CLARITY") {
-    return {
-      title: "🔔 CLARITY ACTIVE",
-      body: "PROGRESS gets a bonus.",
-    };
-  }
-
-  if (activeEffect === "DISTORTION") {
-    return {
-      title: "🎚️ DISTORTION ACTIVE",
-      body: "RISK may punish you.",
-    };
-  }
-
-  if (activeEffect === "TENSION") {
-    return {
-      title: "⚔️ TENSION ACTIVE",
-      body: "IMPACT is rewarded. Everything else costs.",
-    };
-  }
-
-  return null;
-};
 const realmCoinMap = {
   hungry_ghost: {
     front: "/assets/coin_hungry_ghost_front.webp",

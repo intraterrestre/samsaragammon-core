@@ -1,4 +1,3 @@
-import React from "react";
 import { LEDGER } from "../game/ledgerEntries";
 
 type Props = {
