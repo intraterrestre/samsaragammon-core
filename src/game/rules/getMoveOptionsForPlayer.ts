@@ -309,13 +309,19 @@ function pushOptionsFromOrigin(params: {
   }
 }
 
-export function getMoveOptionsForPlayer(
+// 2026-08-23 — extraído de getMoveOptionsForPlayer (mismo cuerpo, sin
+// cambios de comportamiento) para que getPigForcedAvatar (más abajo)
+// pueda calcular las mismas opciones "en bruto" (antes del filtro final
+// por Avatar+Veneno seleccionados) sin duplicar esta lógica. Reportado
+// por Federico: eligió un Avatar y probó los 3 Venenos sin obtener
+// ninguna opción — resultó ser la regla PIG (ver venomImpulse.ts)
+// forzando en silencio a OTRO Avatar (uno que volvió de Mara hace
+// turnos y nunca fue elegido), sin ningún indicio visual de cuál era.
+function buildRawOptions(
   state: GameState,
   player: PlayerId
-): MoveOption[] {
-  if (!state.rollOptions) return [];
-
-  const [a, b] = state.rollOptions;
+): { options: MoveOption[]; phase2: boolean } {
+  const [a, b] = state.rollOptions!;
   const isDouble = a === b;
   const opp = otherPlayer(player);
 
@@ -404,6 +410,41 @@ export function getMoveOptionsForPlayer(
       });
     }
   }
+
+  return { options, phase2 };
+}
+
+// 2026-08-23 — ver comentario de buildRawOptions arriba. Devuelve qué
+// Avatar (si alguno) está forzado por la regla PIG este turno, para que
+// la UI pueda avisarlo — sin esto, elegir cualquier OTRO Avatar y probar
+// los 3 Venenos no da nunca ninguna opción, sin ninguna pista de por qué.
+// Null si no hay tirada, si todavía no es Fase 2 (PIG no aplica antes de
+// Oriol) o si no hay ningún Avatar forzado en este turno.
+export function getPigForcedAvatar(
+  state: GameState,
+  player: PlayerId
+): RealmPieceKind | null {
+  if (!state.rollOptions) return null;
+
+  const { options, phase2 } = buildRawOptions(state, player);
+  if (!phase2) return null;
+
+  return (
+    REALM_PIECE_ORDER.find(
+      (kind) =>
+        mustMoveDueToPig(state, player, kind) &&
+        options.some((o) => o.pieceKind === kind)
+    ) ?? null
+  );
+}
+
+export function getMoveOptionsForPlayer(
+  state: GameState,
+  player: PlayerId
+): MoveOption[] {
+  if (!state.rollOptions) return [];
+
+  const { options, phase2 } = buildRawOptions(state, player);
 
   if (!phase2) return options;
 

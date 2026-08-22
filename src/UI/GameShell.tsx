@@ -6,7 +6,10 @@ import { VestigiumOverlay } from "./VestigiumOverlay";
 import { LedgerModal } from "./LedgerModal";
 
 import { Board } from "../game/Board";
-import { getMoveOptionsForPlayer } from "../game/rules/getMoveOptionsForPlayer";
+import {
+  getMoveOptionsForPlayer,
+  getPigForcedAvatar,
+} from "../game/rules/getMoveOptionsForPlayer";
 
 import { FandangoKarma } from "../fandango/FandangoKarma";
 import { MaraPanel } from "./MaraPanel";
@@ -14,7 +17,9 @@ import { SamsaraStage } from "../samsara/SamsaraStage";
 
 import watcherVideo from "../assets/video/jesus_watch.mp4";
 import type { MoveOption, PieceKind, PlayerId } from "../game/types";
+import { REALM_PIECE_ORDER } from "../game/types";
 import { AVATAR_ORDER } from "../game/historicalClock";
+import { ACTOR_PROFILES } from "../game/actors/actorProfiles";
 
 import cheeringSound from "../assets/sounds/cheering.mp3";
 import fireworksSound from "../assets/sounds/fireworks.wav";
@@ -419,6 +424,27 @@ React.useEffect(() => {
     state.phase === "rolled"
       ? getMoveOptionsForPlayer(state, state.turn)
       : [];
+
+  // 2026-08-23 — reportado por Federico: elegía un Avatar, probaba los
+  // 3 Venenos y no aparecía ninguna opción de movimiento. Causa: la
+  // regla PIG (venomImpulse.ts) obliga en silencio a elegir OTRO
+  // Avatar (uno que volvió de Mara y todavía no se movió desde
+  // entonces) — sin este aviso, cualquier otro Avatar elegido da
+  // siempre cero opciones, sin ninguna pista de por qué. Null cuando
+  // no hay ningún Avatar forzado este turno (el caso normal).
+  const pigForcedAvatarKind =
+    state.phase === "rolled"
+      ? getPigForcedAvatar(state, state.turn)
+      : null;
+
+  const pigForcedAvatarName = pigForcedAvatarKind
+    ? ACTOR_PROFILES[AVATAR_ORDER[REALM_PIECE_ORDER.indexOf(pigForcedAvatarKind)]]
+        ?.name ?? pigForcedAvatarKind
+    : null;
+
+  const showPigForcedHint =
+    pigForcedAvatarKind !== null &&
+    state.selectedPiece[state.turn] !== pigForcedAvatarKind;
 // 2026-08-05: brunoAwakened vivía como estado local disparado apenas
 // CUALQUIER pieza de cada tipo (pig/snake/rooster) se movía una vez —
 // alcanzaba con ~3 movidas de UN jugador, así que "THE FIRST EYE OPENS"
@@ -1019,6 +1045,39 @@ return (
         kind={venomBanner?.kind ?? null}
         fading={venomBanner?.fading ?? false}
       />
+
+      {/* 2026-08-23 — reportado por Federico: elegía un Avatar, probaba
+          los 3 Venenos, y no aparecía ninguna opción de movimiento. La
+          regla PIG estaba obligando en silencio a OTRO Avatar (uno que
+          volvió de Mara y todavía no se movió) — sin ningún aviso en
+          pantalla de cuál. Este cartel avisa cuál Avatar hay que elegir
+          este turno; se oculta apenas ese sea el Avatar seleccionado. */}
+      {showPigForcedHint && (
+        <div
+          style={{
+            position: "fixed",
+            left: "50%",
+            top: 96,
+            transform: "translateX(-50%)",
+            zIndex: 9500,
+            background: "rgba(20, 10, 0, 0.88)",
+            border: "1px solid rgba(255, 200, 80, 0.6)",
+            borderRadius: 12,
+            padding: "8px 16px",
+            color: "#ffe9a8",
+            fontFamily: "Georgia, 'Times New Roman', serif",
+            fontSize: 13,
+            fontWeight: 700,
+            letterSpacing: "0.02em",
+            textAlign: "center",
+            whiteSpace: "nowrap",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+            pointerEvents: "none",
+          }}
+        >
+          {pigForcedAvatarName} just returned from Mara — must move this turn
+        </div>
+      )}
 
       <SamsaraStage
         dharmaMessage={buddhaMessage}
