@@ -15,6 +15,15 @@
 
 import React, { useEffect, useState } from "react";
 
+// 2026-08-22: "1000mm of human history" — el reverso de la moneda del
+// Reino Humano (primer avatar, Bruno) ya trae grabado "In the last 4mm
+// of human history" (ver src/assets/coin_human_back.webp). Federico
+// pidió una regla de un metro bajo el cuadro de Genesis que muestre esa
+// misma desproporción brutal (996mm Paleolítico+Neolítico vs 4mm Edad
+// de los Metales a hoy) — usamos ese mismo asset existente en vez de
+// crear un token nuevo, para no duplicar el mensaje con arte distinto.
+import coinHumanBack from "../assets/coin_human_back.webp";
+
 // 2026-08-03: el usuario retocó estas 24 fotos y las volvió a soltar en
 // src/assets/intro/ (carpeta nueva) en vez de src/assets/genesis/ donde
 // vivían antes — las viejas quedaron borradas de assets/genesis/. Apuntamos
@@ -202,6 +211,88 @@ export function GenesisReveal({
         >
           {isMuted ? "🔇" : "🔊"}
         </button>
+
+        {/* "1000mm of human history" — regla proporcional 996mm/4mm.
+            Vive solo aquí, dentro del video de Genesis, junto al botón
+            SKIP INTRO ya existente: se ve una vez por partida y quien ya
+            conoce la idea la salta con el resto del intro. */}
+        <style>{`
+          @keyframes genesisRulerGlow {
+            0%, 100% { box-shadow: 0 0 6px 1px rgba(255, 43, 43, 0.55); }
+            50% { box-shadow: 0 0 14px 4px rgba(255, 43, 43, 0.9); }
+          }
+        `}</style>
+        <div style={{
+          position: "absolute", left: 0, right: 0, bottom: 112,
+          padding: "14px 28px 0",
+          fontFamily: "'Cinzel', Georgia, serif",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+              <img
+                src={coinHumanBack}
+                alt=""
+                style={{ width: 32, height: 32, objectFit: "contain", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.6))" }}
+              />
+              <span style={{ color: "rgba(255,255,255,0.55)", fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase" }}>
+                One Meter of Time
+              </span>
+            </div>
+            <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 9.5, letterSpacing: "0.16em", textTransform: "uppercase" }}>
+              1000mm of human history
+            </span>
+          </div>
+
+          <div style={{ position: "relative" }}>
+            {/* Zoom callout: ancla al borde derecho de la barra, donde
+                vive el segmento rojo — nunca a un offset arbitrario. */}
+            <div style={{
+              position: "absolute", right: 0, bottom: "calc(100% + 12px)", width: 214,
+              background: "rgba(12,10,14,0.95)", border: "1px solid rgba(255,43,43,0.5)",
+              borderRadius: 3, padding: "9px 11px", boxShadow: "0 10px 22px rgba(0,0,0,0.55)",
+            }}>
+              <div style={{ color: "#ff2b2b", fontSize: 9.5, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 3 }}>
+                4mm, magnified
+              </div>
+              <div style={{ color: "rgba(255,255,255,0.85)", fontSize: 12.5, fontStyle: "italic", fontFamily: "Georgia, serif", lineHeight: 1.35 }}>
+                Metal Age to now — empires, borders, screens, this exact turn.
+              </div>
+              <div style={{
+                position: "absolute", right: 12, bottom: -8, width: 14, height: 14,
+                background: "rgba(12,10,14,0.95)",
+                borderRight: "1px solid rgba(255,43,43,0.5)", borderBottom: "1px solid rgba(255,43,43,0.5)",
+                transform: "rotate(45deg)",
+              }} />
+            </div>
+
+            {/* La barra: proporción real 996:4 vía flex-grow, no ancho fijo. */}
+            <div style={{ display: "flex", width: "100%", height: 30, borderRadius: 2, overflow: "hidden", border: "1px solid rgba(255,255,255,0.16)" }}>
+              <div style={{ flex: "996 0 0", position: "relative", background: "linear-gradient(180deg,#302f33,#201f23)", overflow: "hidden" }}>
+                <div style={{
+                  position: "absolute", inset: 0,
+                  backgroundImage: "repeating-linear-gradient(90deg, rgba(255,255,255,0.09) 0, rgba(255,255,255,0.09) 1px, transparent 1px, transparent 22px)",
+                }} />
+                <span style={{
+                  position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)",
+                  color: "rgba(255,255,255,0.7)", fontSize: 12, fontStyle: "italic",
+                  fontFamily: "Georgia, serif", whiteSpace: "nowrap",
+                }}>
+                  Palaeolithic + Neolithic — same brain, same instinct
+                </span>
+              </div>
+              <div style={{ flex: "4 0 0", minWidth: 5, background: "#ff2b2b", animation: "genesisRulerGlow 2.2s ease-in-out infinite" }} />
+            </div>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+            <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 9.5, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+              0mm — walking upright
+            </span>
+            <span style={{ color: "#ff2b2b", fontSize: 9.5, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+              996 → 1000mm — metal age to today
+            </span>
+          </div>
+        </div>
       </div>
     );
   }
