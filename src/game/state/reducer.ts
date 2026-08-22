@@ -372,6 +372,15 @@ export function reducer(state: GameState, action: Action): GameState {
     // liberar fichas por maraLevel (Venenos + Avatares)
 let anyMaraReturnThisRoll = false;
 
+// v49 — Rooster/Snake/Pig v0: qué Avatar (RealmPieceKind) de cada jugador
+// acaba de regresar de Mara en ESTE lance, para encender su marca PIG
+// (ver types.ts: justReturnedFromMara). Solo Avatares — los Venenos no
+// participan de la selección de Avatar en Fase 2 (ver getMoveOptionsForPlayer).
+const justReturnedThisRoll: Record<PlayerId, Partial<Record<RealmPieceKind, boolean>>> = {
+  P1: {},
+  P2: {},
+};
+
 const releasedPiecesRealm: Record<PlayerId, PlayerRealmPiecesState> = {
   P1: { ...state.realmPieces.P1 },
   P2: { ...state.realmPieces.P2 },
@@ -438,6 +447,7 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
           maraLevel: null,
         };
         anyMaraReturnThisRoll = true;
+        justReturnedThisRoll[player][kind] = true;
       }
     } else {
       releasedPiecesRealm[player][kind] = { ...piece, maraLevel: nextLevel };
@@ -461,6 +471,12 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
         phase: "rolled",
         rollOptions: [rollDie(), rollDie()],
         genesisNovelty: nextGenesisNovelty,
+        // v49 — se acumula (nunca se limpia acá): una marca PIG dura hasta
+        // que ese Avatar se mueva de verdad, no solo hasta el próximo lance.
+        justReturnedFromMara: {
+          P1: { ...state.justReturnedFromMara.P1, ...justReturnedThisRoll.P1 },
+          P2: { ...state.justReturnedFromMara.P2, ...justReturnedThisRoll.P2 },
+        },
       };
 
       const nextVenomTrio = detectVenomTrio(nextState.pieces);
@@ -746,6 +762,13 @@ const finalToPos = toPos;
 };
 const nextActors = {
   ...state.actors,
+};
+
+// v49 — Rooster/Snake/Pig v0: copia mutable para apagar la marca PIG del
+// Avatar que efectivamente se mueva este turno (ver más abajo).
+const nextJustReturnedFromMara: GameState["justReturnedFromMara"] = {
+  P1: { ...state.justReturnedFromMara.P1 },
+  P2: { ...state.justReturnedFromMara.P2 },
 };
       // ===== progreso de reino por globalRollCount =====
       // Sistema híbrido: mínimo de lances globales + condiciones objetivas
@@ -1055,6 +1078,16 @@ if (isBasePiece) {
     maraLevel: null,
     unlocked: true,
   };
+
+  // v49 — Rooster/Snake/Pig v0: este Avatar se movió de verdad, así que
+  // su "susto" de PIG (si tenía) se apaga aquí, sin importar si el
+  // movimiento fue una elección libre o una obligada por la propia regla.
+  if (nextJustReturnedFromMara[me]?.[activeRealmPiece]) {
+    nextJustReturnedFromMara[me] = {
+      ...nextJustReturnedFromMara[me],
+      [activeRealmPiece]: false,
+    };
+  }
 
   // v3 — Actualización Crítica (D-001/D-014): el Veneno que originó este
   // destino viaja junto con el Avatar. Los otros dos Venenos y los demás
@@ -1418,6 +1451,7 @@ if (shouldCollapse) {
         cosmicClock: nextCosmicClockForBrunoInMove,
         genesisNovelty: nextGenesisNovelty,
         brunoRevealed: nextBrunoRevealed,
+        justReturnedFromMara: nextJustReturnedFromMara,
         // v27 — regla E del diseño cerrado: al resolver un movimiento,
         // se limpia la selección para el siguiente turno (Avatar vuelve
         // al valor por defecto, Veneno elegido se borra). Sin efecto

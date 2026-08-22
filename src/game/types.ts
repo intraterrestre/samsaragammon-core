@@ -375,4 +375,16 @@ export type GameState = {
   // de reino ni Mara visual, aunque el sistema ya los soporte por dentro.
   brunoRevealed: boolean;
   genesisUIComplete: boolean; // true cuando el Genesis visual terminó (clic 8)
+
+  // v49 — Venenos como impulsos (Rooster/Snake/Pig v0, RFC "physics not
+  // powers" cerrado con Federico/Gemini/Chat). Marca transitoria: este
+  // Avatar acaba de regresar de Mara y todavía no se ha movido desde
+  // entonces. Mientras esté en true:
+  //   - PIG: si tiene algún movimiento legal, el jugador está obligado a
+  //     elegir ESE Avatar (ver getMoveOptionsForPlayer).
+  // Se enciende en el reducer (case "ROLL", liberación de Avatares de
+  // Mara) y se apaga en CONSCIOUS_MOVE en cuanto ese Avatar se mueve de
+  // verdad (se haya movido por elección propia o porque Pig lo forzó —
+  // el "susto" dura un solo Avatar-turno, no una vuelta completa).
+  justReturnedFromMara: Record<PlayerId, Partial<Record<RealmPieceKind, boolean>>>;
 };

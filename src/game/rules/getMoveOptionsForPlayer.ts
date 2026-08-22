@@ -15,6 +15,11 @@ import { REALM_PIECE_ORDER } from "../types";
 import { previewMove } from "./preview";
 import { applyRealmEffect } from "../realm/realmEffects";
 import { getUnlockedBasePieces } from "../era";
+import {
+  getPositionalImpulse,
+  mustMoveDueToPig,
+  wouldEndStacked,
+} from "./venomImpulse";
 
 const BASE_PIECES: BasePieceKind[] = ["pig", "snake", "rooster"];
 
@@ -158,6 +163,36 @@ function pushMoveIfLegal(params: {
     params.toPos
   );
 
+  const meaning = inferMeaning(
+    params.toPos,
+    enemyCount,
+    params.enemyPositions,
+    params.isSame ?? false
+  );
+
+  // v49 — Rooster/Snake v0 ("physics not powers"): solo aplica a Avatares
+  // (RealmPieceKind) moviéndose en Fase 2. Antes de Oriol los Venenos son
+  // piezas físicas normales y no hay Avatar seleccionado al que aplicarle
+  // un impulso posicional — ver venomImpulse.ts.
+  if (!isBasePiece(params.pieceKind)) {
+    const avatarKind = params.pieceKind as RealmPieceKind;
+    const impulse = getPositionalImpulse(params.state, params.player, avatarKind);
+
+    if (
+      impulse === "ROOSTER" &&
+      wouldEndStacked(params.state, params.player, avatarKind, params.toPos)
+    ) {
+      // ROOSTER v0: estaba apilado — si se mueve, no puede terminar
+      // apilado de nuevo con otro Avatar propio.
+      return;
+    }
+
+    if (impulse === "SNAKE" && meaning === "IMPACT") {
+      // SNAKE v0: estaba solo — no puede capturar.
+      return;
+    }
+  }
+
   params.options.push({
     pieceKind: params.pieceKind,
     choice: params.choice,
@@ -165,12 +200,7 @@ function pushMoveIfLegal(params: {
     fromPos: params.fromPos,
     toPos: params.toPos,
     venomId: params.venomId,
-    meaning: inferMeaning(
-      params.toPos,
-      enemyCount,
-      params.enemyPositions,
-      params.isSame ?? false
-    ),
+    meaning,
   });
 }
 
@@ -393,6 +423,22 @@ export function getMoveOptionsForPlayer(
     );
 
   if (!isValidAvatarSelected) return [];
+
+  // v49 — PIG v0 ("physics not powers"): si algún Avatar propio recién
+  // vuelto de Mara tiene al menos una opción legal en este turno, el
+  // jugador está obligado a elegir ESE Avatar — cualquier otra selección
+  // no produce opciones, como si no hubiera movimiento legal para ella.
+  // Lo que ese Avatar pueda hacer una vez elegido (capturar, apilarse...)
+  // lo deciden Rooster/Snake normalmente si aplican (ver venomImpulse.ts:
+  // son capas distintas, selección vs. resultado, no una cadena de
+  // prioridad).
+  const pigForcedAvatar = REALM_PIECE_ORDER.find(
+    (kind) =>
+      mustMoveDueToPig(state, player, kind) &&
+      options.some((o) => o.pieceKind === kind)
+  );
+
+  if (pigForcedAvatar && selectedAvatar !== pigForcedAvatar) return [];
 
   const selectedVenom = state.selectedVenom[player];
   if (!selectedVenom) return [];

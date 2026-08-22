@@ -175,6 +175,12 @@ realmAscension: null,
   },
   brunoRevealed: false,
   genesisUIComplete: false,
+
+  // v49 — Rooster/Snake/Pig v0. Ver types.ts para la explicación completa.
+  justReturnedFromMara: {
+    P1: {},
+    P2: {},
+  },
 };
 
 /**
@@ -279,6 +285,19 @@ export function makeInitialState(
     coinBank: {
       ...initialState.coinBank,
       ...(overrides.coinBank ?? {}),
+    },
+
+    justReturnedFromMara: {
+      ...initialState.justReturnedFromMara,
+      ...(overrides.justReturnedFromMara ?? {}),
+      P1: {
+        ...initialState.justReturnedFromMara.P1,
+        ...(overrides.justReturnedFromMara?.P1 ?? {}),
+      },
+      P2: {
+        ...initialState.justReturnedFromMara.P2,
+        ...(overrides.justReturnedFromMara?.P2 ?? {}),
+      },
     },
   };
 }
