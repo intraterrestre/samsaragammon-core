@@ -81,6 +81,17 @@ export function GenesisReveal({
   // El botón de sonido permite al usuario activarlo con un tap explícito.
   const [isMuted, setIsMuted] = useState(true);
 
+  // 2026-08-23: pedido de Federico — en el teléfono el flujo anterior era
+  // "rotas -> arranca el video muted solo -> tenés que buscar el botón de
+  // sonido aparte" (dos gestos, uno de ellos invisible: el autoplay). Ahora
+  // el video NO arranca solo (se le quita `autoPlay`): apenas termina de
+  // rotar, se ve una corneta grande de "toca para empezar" cubriendo la
+  // pantalla, y ese ÚNICO tap dispara video + sonido a la vez (mismo gesto
+  // de usuario, requisito de los navegadores para permitir audio). El botón
+  // chico de mute que ya existía sigue disponible DESPUÉS de arrancar, por
+  // si alguien quiere silenciarlo a mitad de la reproducción.
+  const [hasStarted, setHasStarted] = useState(false);
+
   // 2026-08-05: en Mac el audio nunca se escuchaba aunque se tocara el
   // botón. Causa: solo se actualizaba el prop `muted` de React — React no
   // siempre sincroniza eso con la propiedad real `.muted` del elemento
@@ -103,6 +114,17 @@ export function GenesisReveal({
       }
       return next;
     });
+  };
+
+  // El único gesto: arranca el video Y el sonido a la vez. Se llama desde
+  // el botón-corneta grande que cubre la pantalla antes de empezar.
+  const handleStartWithSound = () => {
+    setIsMuted(false);
+    setHasStarted(true);
+    if (videoRef.current) {
+      videoRef.current.muted = false;
+      videoRef.current.play().catch(() => {});
+    }
   };
 
   useEffect(() => {
@@ -155,7 +177,6 @@ export function GenesisReveal({
         <video
           ref={videoRef}
           src={VIDEO_SRC}
-          autoPlay
           muted={isMuted}
           playsInline
           onEnded={handleVideoEnd}
@@ -178,39 +199,97 @@ export function GenesisReveal({
             letterSpacing: 1,
             cursor: "pointer",
             backdropFilter: "blur(2px)",
+            zIndex: 3,
           }}
         >
           SKIP INTRO →
         </button>
-        <button
-          type="button"
-          onClick={toggleMute}
-          aria-label={isMuted ? "Activar sonido" : "Silenciar"}
-          title={isMuted ? "Activar sonido" : "Silenciar"}
-          style={{
-            position: "absolute",
-            right: 20,
-            bottom: 20,
-            width: 72,
-            height: 72,
-            borderRadius: "50%",
-            border: "2px solid rgba(255,255,255,0.7)",
-            background: "rgba(0,0,0,0.55)",
-            color: "#fff",
-            fontSize: 36,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            backdropFilter: "blur(2px)",
-            boxShadow: isMuted
-              ? "0 0 0 4px rgba(255,255,255,0.15), 0 4px 16px rgba(0,0,0,0.6)"
-              : "0 4px 16px rgba(0,0,0,0.6)",
-            animation: isMuted ? "muteHintPulse 1.6s ease-in-out infinite" : "none",
-          }}
-        >
-          {isMuted ? "🔇" : "🔊"}
-        </button>
+        {hasStarted && (
+          <button
+            type="button"
+            onClick={toggleMute}
+            aria-label={isMuted ? "Activar sonido" : "Silenciar"}
+            title={isMuted ? "Activar sonido" : "Silenciar"}
+            style={{
+              position: "absolute",
+              right: 20,
+              bottom: 20,
+              width: 72,
+              height: 72,
+              borderRadius: "50%",
+              border: "2px solid rgba(255,255,255,0.7)",
+              background: "rgba(0,0,0,0.55)",
+              color: "#fff",
+              fontSize: 36,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              backdropFilter: "blur(2px)",
+              boxShadow: isMuted
+                ? "0 0 0 4px rgba(255,255,255,0.15), 0 4px 16px rgba(0,0,0,0.6)"
+                : "0 4px 16px rgba(0,0,0,0.6)",
+              animation: isMuted ? "muteHintPulse 1.6s ease-in-out infinite" : "none",
+              zIndex: 3,
+            }}
+          >
+            {isMuted ? "🔇" : "🔊"}
+          </button>
+        )}
+
+        {!hasStarted && (
+          <button
+            type="button"
+            onClick={handleStartWithSound}
+            aria-label="Toca para comenzar, con sonido"
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 20,
+              background: "rgba(0,0,0,0.92)",
+              border: "none",
+              cursor: "pointer",
+              zIndex: 2,
+              padding: 0,
+            }}
+          >
+            <span
+              style={{
+                width: 128,
+                height: 128,
+                borderRadius: "50%",
+                border: "3px solid rgba(255,255,255,0.85)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 68,
+                boxShadow: "0 0 0 8px rgba(255,255,255,0.12), 0 4px 24px rgba(0,0,0,0.6)",
+                animation: "muteHintPulse 1.6s ease-in-out infinite",
+              }}
+            >
+              🔊
+            </span>
+            <span
+              style={{
+                color: "#fff",
+                fontFamily: "'Cinzel', Georgia, serif",
+                fontSize: 16,
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                textAlign: "center",
+                padding: "0 28px",
+              }}
+            >
+              Tap to begin — sound & video
+            </span>
+          </button>
+        )}
 
         {/* "1000mm of human history" — regla proporcional 996mm/4mm.
             Vive solo aquí, dentro del video de Genesis, junto al botón
