@@ -116,15 +116,41 @@ export function GenesisReveal({
     });
   };
 
-  // El único gesto: arranca el video Y el sonido a la vez. Se llama desde
-  // el botón-corneta grande que cubre la pantalla antes de empezar.
+  // 2026-08-23 (v3): Federico seguía reportando que había que "golpear
+  // la pantalla" para que el botón de PLAY reaccionara, incluso después
+  // de sacar el listener de 'touchstart' que competía en GameShell. Dos
+  // refuerzos más, independientes de esa causa, por si había MÁS de un
+  // factor en juego:
+  //   1. startedRef evita que el gesto se procese dos veces (por si
+  //      onPointerDown Y onClick llegan a dispararse los dos para el
+  //      mismo toque) sin que eso cause ningún efecto secundario raro.
+  //   2. El pedido de fullscreen + orientación horizontal, que antes
+  //      vivía en un listener aparte de GameShell (document-level,
+  //      'click' global, disparado por CUALQUIER primer click de toda
+  //      la app), ahora se pide ACÁ TAMBIÉN, en el mismo gesto exacto
+  //      que arranca el video — así este botón queda autocontenido y no
+  //      depende de que ese otro listener coincida con este toque en
+  //      particular.
+  const startedRef = React.useRef(false);
   const handleStartWithSound = () => {
+    if (startedRef.current) return;
+    startedRef.current = true;
     setIsMuted(false);
     setHasStarted(true);
     if (videoRef.current) {
       videoRef.current.muted = false;
       videoRef.current.play().catch(() => {});
     }
+    (async () => {
+      try {
+        const el = document.documentElement;
+        if (el.requestFullscreen) await el.requestFullscreen();
+        else if ((el as any).webkitRequestFullscreen) await (el as any).webkitRequestFullscreen();
+        if ((screen.orientation as any)?.lock) {
+          await (screen.orientation as any).lock("landscape").catch(() => {});
+        }
+      } catch {}
+    })();
   };
 
   useEffect(() => {
@@ -249,6 +275,7 @@ export function GenesisReveal({
           <button
             type="button"
             onClick={handleStartWithSound}
+            onPointerDown={handleStartWithSound}
             aria-label="Tap to start"
             style={{
               position: "absolute",

@@ -281,14 +281,19 @@ const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
   // silencia sin avisar. Fix: pool de varios Audio en rotación, patrón
   // estándar para SFX cortos y repetidos.
   // Desbloquear contexto de audio en iOS/móvil en el primer toque
+  //
+  // 2026-08-23: mismo ajuste que en GameShell (ver ese comentario) — se
+  // saca 'touchstart' y se deja solo 'click', por higiene: cualquier
+  // listener global en 'touchstart' es candidato a competir con el click
+  // real del usuario en algunos navegadores. No es la causa confirmada
+  // del botón "TAP TO START" que no respondía, pero es el mismo patrón
+  // de riesgo y no cuesta nada sacarlo también.
   React.useEffect(() => {
     const unlockAudio = () => {
       const silence = new Audio();
       silence.play().catch(() => {});
-      document.removeEventListener("touchstart", unlockAudio);
       document.removeEventListener("click", unlockAudio);
     };
-    document.addEventListener("touchstart", unlockAudio, { once: true });
     document.addEventListener("click", unlockAudio, { once: true });
   }, []);
 
