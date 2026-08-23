@@ -116,34 +116,33 @@ export function GenesisReveal({
     });
   };
 
-  // 2026-08-23 (v3): Federico seguía reportando que había que "golpear
-  // la pantalla" para que el botón de PLAY reaccionara, incluso después
-  // de sacar el listener de 'touchstart' que competía en GameShell. Dos
-  // refuerzos más, independientes de esa causa, por si había MÁS de un
-  // factor en juego:
-  //   1. startedRef evita que el gesto se procese dos veces (por si
-  //      onPointerDown Y onClick llegan a dispararse los dos para el
-  //      mismo toque) sin que eso cause ningún efecto secundario raro.
-  //   2. El pedido de fullscreen + orientación horizontal, que antes
-  //      vivía en un listener aparte de GameShell (document-level,
-  //      'click' global, disparado por CUALQUIER primer click de toda
-  //      la app), ahora se pide ACÁ TAMBIÉN, en el mismo gesto exacto
-  //      que arranca el video — así este botón queda autocontenido y no
-  //      depende de que ese otro listener coincida con este toque en
-  //      particular.
+  // 2026-08-23 (v4): Federico confirmó iPhone 12 (Safari). Encontrada la
+  // causa real, distinta de las dos anteriores: hacíamos
+  // `setHasStarted(true)` de INMEDIATO, sin esperar a que
+  // `videoRef.current.play()` realmente tuviera éxito. En Safari/iOS el
+  // video puede no tener todavía suficiente data buffereada en el primer
+  // toque (no había `preload`) y `play()` puede rechazar la promesa en
+  // ese primer intento aunque el gesto del usuario sea válido — pero como
+  // igual ocultábamos el botón, el video quedaba pausado/negro Y sin
+  // ningún botón grande para reintentar (solo quedaban SKIP y el mute
+  // chico de la esquina). De ahí la sensación de "hay que golpear la
+  // pantalla": el usuario termina tocando al azar hasta acertarle al
+  // botón de mute (72x72, esquina) que sí usa un 'click' normal.
+  // Fix: el botón de PLAY se oculta SOLO cuando play() confirma éxito;
+  // si falla, se resetea startedRef y el botón sigue ahí para reintentar
+  // con un toque normal. Se agrega preload="auto" al <video> para que
+  // llegue con más buffer ya cargado. Se saca onPointerDown — 'click'
+  // es el gesto que Safari reconoce de forma confiable para autoplay con
+  // sonido; pointerdown no lo garantiza y podía disparar un intento con
+  // gesto inválido que además consumía startedRef.
   const startedRef = React.useRef(false);
   const handleStartWithSound = () => {
     if (startedRef.current) return;
     startedRef.current = true;
-    setIsMuted(false);
-    setHasStarted(true);
-    if (videoRef.current) {
-      videoRef.current.muted = false;
-      videoRef.current.play().catch(() => {});
-    }
+
+    const el = document.documentElement;
     (async () => {
       try {
-        const el = document.documentElement;
         if (el.requestFullscreen) await el.requestFullscreen();
         else if ((el as any).webkitRequestFullscreen) await (el as any).webkitRequestFullscreen();
         if ((screen.orientation as any)?.lock) {
@@ -151,6 +150,31 @@ export function GenesisReveal({
         }
       } catch {}
     })();
+
+    const video = videoRef.current;
+    if (!video) {
+      setIsMuted(false);
+      setHasStarted(true);
+      return;
+    }
+    video.muted = false;
+    const playResult = video.play();
+    if (playResult && typeof playResult.then === "function") {
+      playResult
+        .then(() => {
+          setIsMuted(false);
+          setHasStarted(true);
+        })
+        .catch(() => {
+          // No se pudo reproducir con sonido en este intento (típico en
+          // Safari/iOS si el video todavía no tenía suficiente buffer).
+          // Dejamos el botón visible para que el próximo toque reintente.
+          startedRef.current = false;
+        });
+    } else {
+      setIsMuted(false);
+      setHasStarted(true);
+    }
   };
 
   useEffect(() => {
@@ -205,6 +229,7 @@ export function GenesisReveal({
           src={VIDEO_SRC}
           muted={isMuted}
           playsInline
+          preload="auto"
           onEnded={handleVideoEnd}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
@@ -275,7 +300,6 @@ export function GenesisReveal({
           <button
             type="button"
             onClick={handleStartWithSound}
-            onPointerDown={handleStartWithSound}
             aria-label="Tap to start"
             style={{
               position: "absolute",
