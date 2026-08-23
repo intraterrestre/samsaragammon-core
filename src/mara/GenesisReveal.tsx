@@ -238,10 +238,18 @@ export function GenesisReveal({
         )}
 
         {!hasStarted && (
+          // 2026-08-23 (v2): Federico — la corneta sola no se entendía como
+          // "toca para arrancar" ("debes ser demasiado intuitivo, no se
+          // explica y es raro"). Se cambia el ícono central a un botón de
+          // PLAY ▶ clásico (el símbolo que cualquier jugador reconoce de
+          // inmediato) y se agranda/pone en mayúsculas bien grande el
+          // texto "TAP TO START". La corneta 🔊 sigue abajo a la derecha
+          // (aparece apenas arranca) para silenciar si se quiere — ese
+          // botón chico nunca fue el que dispara el inicio.
           <button
             type="button"
             onClick={handleStartWithSound}
-            aria-label="Toca para comenzar, con sonido"
+            aria-label="Tap to start"
             style={{
               position: "absolute",
               inset: 0,
@@ -251,42 +259,58 @@ export function GenesisReveal({
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              gap: 20,
+              gap: 24,
               background: "rgba(0,0,0,0.92)",
               border: "none",
               cursor: "pointer",
               zIndex: 2,
               padding: 0,
+              touchAction: "manipulation",
+              WebkitTapHighlightColor: "transparent",
             }}
           >
             <span
               style={{
-                width: 128,
-                height: 128,
+                width: 140,
+                height: 140,
                 borderRadius: "50%",
-                border: "3px solid rgba(255,255,255,0.85)",
+                border: "3px solid rgba(255,255,255,0.9)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 68,
-                boxShadow: "0 0 0 8px rgba(255,255,255,0.12), 0 4px 24px rgba(0,0,0,0.6)",
-                animation: "muteHintPulse 1.6s ease-in-out infinite",
+                boxShadow: "0 0 0 10px rgba(255,255,255,0.14), 0 4px 28px rgba(0,0,0,0.7)",
+                animation: "muteHintPulse 1.4s ease-in-out infinite",
+                background: "rgba(255,255,255,0.06)",
               }}
             >
-              🔊
+              {/* Triángulo de PLAY dibujado en CSS puro — universalmente
+                  reconocido, sin depender de que el emoji ▶️ se renderice
+                  igual en todos los teléfonos. */}
+              <span
+                style={{
+                  width: 0,
+                  height: 0,
+                  marginLeft: 10,
+                  borderTop: "26px solid transparent",
+                  borderBottom: "26px solid transparent",
+                  borderLeft: "42px solid #fff",
+                  filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.5))",
+                }}
+              />
             </span>
             <span
               style={{
                 color: "#fff",
                 fontFamily: "'Cinzel', Georgia, serif",
-                fontSize: 16,
-                letterSpacing: "0.14em",
+                fontWeight: 800,
+                fontSize: 30,
+                letterSpacing: "0.16em",
                 textTransform: "uppercase",
                 textAlign: "center",
-                padding: "0 28px",
+                textShadow: "0 2px 10px rgba(0,0,0,0.85)",
               }}
             >
-              Tap to begin — sound & video
+              Tap to start
             </span>
           </button>
         )}

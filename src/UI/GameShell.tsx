@@ -259,6 +259,21 @@ React.useEffect(() => {
 }, []);
 
 // Fullscreen + orientation lock al primer toque en móvil
+//
+// 2026-08-23: Federico reportó que la corneta "TAP TO START" del intro de
+// Genesis no arrancaba con un solo toque — "hay que practicamente golpear
+// la pantalla". Causa real: este listener escuchaba TANTO 'click' como
+// 'touchstart', y pedir fullscreen/orientation-lock DENTRO de 'touchstart'
+// (a mitad del gesto, antes de que termine touchend) hace que algunos
+// navegadores (Chrome/Android en particular) CANCELEN esa secuencia de
+// touch — el 'click' correspondiente nunca llega a dispararse. Resultado:
+// el primer toque de toda la partida (que además suele caer justo sobre
+// el botón de la corneta) se lo "come" este pedido de fullscreen, y hace
+// falta un segundo toque para que el juego reaccione. Se saca el listener
+// de 'touchstart' y se deja solo 'click' — en mobile 'click' se dispara
+// recién DESPUÉS de que el touch terminó normalmente (touchstart ->
+// touchend -> click), así que pedir fullscreen ahí ya no compite con el
+// gesto del jugador.
 React.useEffect(() => {
   const requestFullscreen = async () => {
     try {
@@ -270,13 +285,10 @@ React.useEffect(() => {
       }
     } catch {}
     document.removeEventListener('click', requestFullscreen);
-    document.removeEventListener('touchstart', requestFullscreen);
   };
   document.addEventListener('click', requestFullscreen, { once: true });
-  document.addEventListener('touchstart', requestFullscreen, { once: true });
   return () => {
     document.removeEventListener('click', requestFullscreen);
-    document.removeEventListener('touchstart', requestFullscreen);
   };
 }, []);
 
