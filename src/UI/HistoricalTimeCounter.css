@@ -1,7 +1,14 @@
+/* 2026-08-24 — a pedido de Federico: el widget quedaba tapando el
+   picture-in-picture de la cinta métrica que ahora viene insertado en
+   el propio video de Genesis (regrabado por él, ver GenesisReveal.tsx).
+   Se sube el contador para que quede sobre los dos bastidores grises
+   que cubren la luna, en la parte de arriba del cuadro — zona libre en
+   el nuevo video. Ajuste hecho a ojo desde una captura; si no calza
+   perfecto, es cuestión de retocar `top` (y `left` si hace falta). */
 .htc-wrap {
   position: absolute;
   left: 772px;
-  top: 310px;
+  top: 95px;
   transform: translate(-50%, -50%);
   z-index: 9000;
   pointer-events: auto;

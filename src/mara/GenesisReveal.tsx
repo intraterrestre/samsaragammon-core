@@ -256,6 +256,13 @@ export function GenesisReveal({
           SKIP INTRO →
         </button>
         {hasStarted && (
+          // 2026-08-24 — Federico (en Mac, con mouse) encontró que la zona
+          // de click quedaba corrida hacia la IZQUIERDA del ícono visible
+          // ("no sobre la corneta"). Se mueve todo el botón (ícono +
+          // hitbox son el mismo elemento, así que viajan juntos) ~20px
+          // hacia el centro/la rueda, para que quede más lejos del borde
+          // — si sigue sin calzar, es cuestión de seguir ajustando este
+          // `right`.
           <button
             type="button"
             onClick={toggleMute}
@@ -263,7 +270,7 @@ export function GenesisReveal({
             title={isMuted ? "Activar sonido" : "Silenciar"}
             style={{
               position: "absolute",
-              right: 20,
+              right: 40,
               bottom: 20,
               width: 72,
               height: 72,
