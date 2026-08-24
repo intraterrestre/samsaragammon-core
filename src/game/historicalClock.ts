@@ -54,19 +54,20 @@ export const PRESENT_LABEL = "THE PRESENT";
 
 // A partir de qué avatar (índice en AVATAR_ORDER) se activa el
 // tratamiento visual intensificado (glow de color de era + cambios de
-// color en cada checkpoint) — pedido explícito de Federico: "desde
-// Oriol". Bruno/Margot quedan en el tratamiento sobrio (rojo LED
-// clásico) que pidió para esa primera parte del recorrido.
-export const INTENSIFIED_FROM_AVATAR: AvatarId = "oriol";
+// color en cada checkpoint). Originalmente arrancaba en Oriol —pedido
+// explícito de Federico de dejar Bruno/Margot en el rojo LED clásico—
+// pero el 24 de agosto pidió lo contrario: que TODOS los avatares
+// tengan su color (incluidos Bruno en negro y Margot en morado, los
+// mismos de REALM_CANON), "eso también ayuda en la comunicación de la
+// idea". Se arranca desde Bruno (índice 0) — ya no hay tramo "sobrio".
+export const INTENSIFIED_FROM_AVATAR: AvatarId = "bruno";
 export const INTENSIFIED_FROM_INDEX = AVATAR_ORDER.indexOf(
   INTENSIFIED_FROM_AVATAR
 );
 
-// Color base "sobrio" del display antes de que arranque el
-// tratamiento intensificado (Bruno/Margot) — no viene de REALM_CANON
-// porque Federico pidió explícitamente NO tocar el rojo clásico del
-// contador en esa primera parte ("no cambiaría el rojo base... haría
-// que el propio display evolucione con las eras" a partir de Oriol).
+// Color LED antes del primer lance (todavía no hay ningún avatar
+// activo) — ya no se usa para Bruno/Margot (ver arriba), solo como
+// valor inicial de React.useState en HistoricalTimeCounter.tsx.
 export const BASE_LED_COLOR = "#ff2b2b";
 
 export type HistoricalCheckpointEntry = {
