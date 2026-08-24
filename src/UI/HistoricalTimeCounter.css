@@ -13,12 +13,19 @@
    no calza perfecto, seguir ajustando `left`.
    2026-08-24 (v3) — quedó tapado por los dados de la esquina ("un pelo
    ahora a la derecha para que no lo tapen los dados"). Nudge chico de
-   `left` hacia la derecha, sin volver a meterse en la rueda. */
+   `left` hacia la derecha, sin volver a meterse en la rueda.
+   2026-08-24 (v4) — "me refería a los dados redondos arriba": seguía
+   pisando los dados WHITE/BLACK de la esquina. El hueco real entre esos
+   dados y el borde de la rueda es angosto (~150px en el espacio de
+   1100x620) — más angosto que el ancho del widget a tamaño completo, así
+   que no alcanza con solo mover `left`. Se achica todo el widget un 30%
+   (scale) para que entre limpio en ese hueco sin tocar ni los dados ni
+   la rueda. */
 .htc-wrap {
   position: absolute;
-  left: 470px;
-  top: 95px;
-  transform: translate(-50%, -50%);
+  left: 480px;
+  top: 90px;
+  transform: translate(-50%, -50%) scale(0.7);
   z-index: 9000;
   pointer-events: auto;
   cursor: default;
