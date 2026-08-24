@@ -14,6 +14,7 @@
 // Flujo: VIDEO reproduce -> onEnded -> CASILLAS (6 lances) -> COMPLETE.
 
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 // 2026-08-22: se había agregado acá una regla proporcional "1000mm of
 // human history" (996mm Paleolítico+Neolítico vs 4mm Edad de los
@@ -212,16 +213,35 @@ export function GenesisReveal({
   };
 
   if (phase === "VIDEO" && VIDEO_SRC) {
-    return (
+    // 2026-08-24 — causa real de "la zona de activación está a la
+    // izquierda de la corneta / hay que golpear la pantalla varias
+    // veces": este overlay vivía DENTRO de .maraLayer, que a su vez
+    // está dentro de .samsaraScene (1100x620, escalado con
+    // `transform: scale(...)` para entrar en cada pantalla —
+    // ver src/styles/layout.css). Con `position:absolute;inset:0` el
+    // botón "TAP TO START" solo cubría esa caja de 1100x620 escalada,
+    // NO la ventana real. .samsaraStage (el contenedor de afuera) tiene
+    // fondo negro también, así que las franjas de letterbox (cuando la
+    // ventana/pantalla no tiene la proporción 1100:620) se ven igual de
+    // negras que este overlay — Federico las veía como parte de la
+    // pantalla de "Tap to start", pero un click ahí no llegaba a caer
+    // dentro del botón, solo funcionaba cerca del ícono central (que
+    // por estar centrado en la caja escalada, coincide más o menos con
+    // el centro de la ventana real). Fix: portal a document.body +
+    // `position:fixed`, así este overlay entero (video + botones) queda
+    // anclado a la ventana real, sin depender del escalado del
+    // tablero — mismo patrón que ya se usó para MoveOptionsPanel, pero
+    // acá SÍ conviene fixed+body (a diferencia de ese caso) porque no
+    // hay arte del tablero con el que alinearse: es una pantalla negra
+    // de intro, y ahora cubre la pantalla real de punta a punta.
+    const overlay = (
       <div style={{
-        position: "absolute", inset: 0, zIndex: 9999,
+        position: "fixed", inset: 0, zIndex: 9999,
         background: "#000", display: "flex",
         alignItems: "center", justifyContent: "center",
-        // 2026-08-05: .maraLayer (contenedor padre) tiene
-        // pointer-events: none en CSS, y esa propiedad se hereda — sin
-        // este override el botón de mute nunca recibía clics ni hover
-        // (icono "muerto" aunque se viera bien). Reactivamos eventos
-        // de puntero explícitamente para este overlay.
+        // .maraLayer ya no es el padre real en el DOM (ver portal más
+        // abajo), pero se deja el override explícito por las dudas /
+        // claridad de intención.
         pointerEvents: "auto",
       }}>
         <video
@@ -375,6 +395,9 @@ export function GenesisReveal({
 
       </div>
     );
+    return typeof document !== "undefined"
+      ? createPortal(overlay, document.body)
+      : overlay;
   }
 
   if (phase === "CASILLAS" && CASILLAS_FRAMES.length > 0) {
