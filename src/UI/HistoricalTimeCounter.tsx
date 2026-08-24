@@ -129,6 +129,19 @@ export function HistoricalTimeCounter({
       hasRolledOnceRef.current = true;
       const bruno = HISTORICAL_TIMELINE[0];
       setLabel({ text: bruno.eraName.toUpperCase(), color: bruno.color });
+      // 2026-08-24 — BUG reportado por Federico: arranca partida nueva
+      // y el "0000.0mm" queda en rojo en vez de negro (color de Bruno)
+      // apenas se cierra el flash de "PALAEOLITHIC". Causa: este atajo
+      // de "primer lance" (dispara ANTES de que state.cosmicClock.era
+      // llegue realmente a "bruno" via el Orchestrator — currentAvatarIndex
+      // sigue en -1 en ese momento) solo actualizaba `label.color` (el
+      // texto del flash), nunca `activeColor` (el color que usa la
+      // vista de dígitos una vez el flash se apaga). Antes de que Bruno
+      // tuviera color propio esto no se notaba porque activeColor
+      // siempre se quedaba en el rojo base de todos modos. Ahora que
+      // Bruno es negro, hay que setear activeColor acá también, no solo
+      // esperar al efecto que depende de currentAvatarIndex.
+      if (bruno.intensified) setActiveColor(bruno.color);
       return;
     }
 
