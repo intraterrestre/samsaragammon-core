@@ -35,16 +35,27 @@
 }
 
 /* 2026-08-22 — a pedido de Federico: los números/letras del contador se
-   perdían contra fondos claros del mural. Reborde blanco (stroke) en
-   todo el texto del widget, además del glow de color que ya tenía.
-   -webkit-text-stroke funciona en Chrome/Edge/Safari y también en
-   Firefox moderno (sin prefijo "webkit" no es todavía estándar, pero
-   el prefijado tiene soporte amplio); paint-order deja el relleno de
-   color por ENCIMA del trazo para que el glow no quede tapado. */
+   perdían contra fondos claros del mural. Reborde en todo el texto del
+   widget, además del glow de color que ya tenía. -webkit-text-stroke
+   funciona en Chrome/Edge/Safari y también en Firefox moderno (sin
+   prefijo "webkit" no es todavía estándar, pero el prefijado tiene
+   soporte amplio); paint-order deja el relleno de color por ENCIMA del
+   trazo para que el glow no quede tapado.
+   2026-08-24 (v2) — BUG real, no solo estético: el reborde era BLANCO.
+   Eso funciona para texto de color (rojo/azul/dorado/morado) sobre los
+   bastidores grises claros, pero Whitman pinta el número en BLANCO
+   (#f3f4f6) — blanco sobre blanco, reborde incluido, es invisible. Es
+   justo lo que reportó Federico ("desde q salió la campana de whitman
+   nunca lo vi"). Reborde ahora NEGRO: contrasta contra el fondo claro
+   de los bastidores para cualquier color de número (incluido blanco),
+   y para Bruno (negro, #1a1a1a) el número igual se lee porque el fondo
+   detrás sigue siendo claro — no depende del reborde. También se
+   engrosa un poco (1px -> 1.6px) para que el contraste sea más notorio
+   ("PONLE REBORDE QUE CONTRASTEN LOS NUMEROS Y LETRAS"). */
 .htc-display,
 .htc-unit,
 .htc-sub-banner {
-  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.95);
+  -webkit-text-stroke: 1.6px rgba(0, 0, 0, 0.9);
   paint-order: stroke fill;
 }
 
