@@ -297,9 +297,20 @@ const beatTimer = useRef<number | null>(null);
     // prácticamente inaudible junto al resto de efectos. Subido a un
     // nivel audible pero discreto (suena en cada movimiento, más
     // seguido que una captura).
-    if (moveAudio.current) moveAudio.current.volume = 0.18;
-    if (captureAudioWhite.current) captureAudioWhite.current.volume = 0.35;
-    if (captureAudioBlack.current) captureAudioBlack.current.volume = 0.35;
+    // 2026-08-24 — Federico volvió a reportar "las capturas no suenan
+    // y cuando se mueven las fichas no suena el arrastre" jugando una
+    // partida real de punta a punta. Medimos los archivos con ffmpeg
+    // (volumedetect): move.mp3 estaba realmente flojo de fábrica
+    // (mean ≈ -35.7dB, pico ≈ -20.8dB — MUY por debajo del resto de
+    // los efectos), así que el 0.18 de la vez pasada terminaba
+    // sonando casi nada al lado de la música/otros SFX. Se
+    // renormalizó el archivo en sí (+18dB de ganancia, pico ahora
+    // ≈ -3.3dB, ver src/assets/sounds/move.mp3) Y se sube el volumen
+    // JS de los tres acá — no alcanza con tocar una sola de las dos
+    // capas cuando el archivo de origen está tan por debajo del resto.
+    if (moveAudio.current) moveAudio.current.volume = 0.35;
+    if (captureAudioWhite.current) captureAudioWhite.current.volume = 0.55;
+    if (captureAudioBlack.current) captureAudioBlack.current.volume = 0.55;
     
 }, []);
   const size = state.trackSize;

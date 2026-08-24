@@ -301,11 +301,21 @@ const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
   const diceAudioPoolWhiteRef = useRef<HTMLAudioElement[]>([]);
   const diceAudioPoolBlackRef = useRef<HTMLAudioElement[]>([]);
   const diceAudioPoolIndexRef = useRef(0);
+  // 2026-08-24 — Federico reportó "el sonido de los dados blancos no
+  // suena" jugando una partida real. Medido con ffmpeg (volumedetect):
+  // dice_roll.mp3 (blanco/P1) tenía un pico real de apenas -7.0dB
+  // contra -4.5dB de blackdice-rolling.mp3 (negro/P2) — no estaba
+  // silencioso (no es el mismo caso que capture_white.mp3 v22), pero
+  // sí bastante más flojo que el negro al lado del cual se compara
+  // todo el rato. Se renormalizaron ambos archivos en el propio
+  // asset (+6dB blanco, +3.5dB negro — mismo pico final ≈ -1.4dB los
+  // dos, ver src/assets/sounds/) y se sube el volumen JS a 1.0 (tope)
+  // para aprovechar ese margen.
   useEffect(() => {
     const makePool = (src: string) =>
       Array.from({ length: DICE_AUDIO_POOL_SIZE }, () => {
         const a = new Audio(src);
-        a.volume = 0.8;
+        a.volume = 1.0;
         return a;
       });
     diceAudioPoolWhiteRef.current = makePool(diceRollSound);
