@@ -10,10 +10,13 @@
    pintada de la derecha ("corre todavia hacia mara el cartel para
    sacarle de la rueda"). Se corre `left` hacia la izquierda, sobre los
    bastidores grises, lejos del borde de la rueda. También a ojo — si
-   no calza perfecto, seguir ajustando `left`. */
+   no calza perfecto, seguir ajustando `left`.
+   2026-08-24 (v3) — quedó tapado por los dados de la esquina ("un pelo
+   ahora a la derecha para que no lo tapen los dados"). Nudge chico de
+   `left` hacia la derecha, sin volver a meterse en la rueda. */
 .htc-wrap {
   position: absolute;
-  left: 420px;
+  left: 470px;
   top: 95px;
   transform: translate(-50%, -50%);
   z-index: 9000;
