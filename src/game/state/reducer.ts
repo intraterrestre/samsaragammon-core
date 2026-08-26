@@ -963,6 +963,21 @@ let capturedWasAvatar = false;
 // oponente que haya quedado ahi (ver bloque despues de "movimiento
 // final").
 let capturedAvatarVacatedPos: number | null = null;
+// Paso 2 (26 agosto 2026) — escudo Nidana, a pedido de Federico tras
+// jugar una partida completa ("cual fue el beneficio de tener un
+// escudo nidana? no entendi" — antes cargar una no cambiaba nada al
+// ser capturado). Diseño confirmado con el explicitamente: si el
+// Avatar capturado llevaba una Nidana, sobrevive (no va a Mara,
+// rebota a la casilla libre mas cercana) y el atacante se la roba. Si
+// el atacante no puede portarla (es un Veneno) o ya porta la suya,
+// la robada "queda suelta en el tablero" (decision explicita de
+// Federico) en vez de perderse. shieldedNidana/shieldedAvatarKind se
+// completan en el bloque de captura de abajo; la reubicacion real y
+// el robo se resuelven MAS ABAJO, despues de "movimiento final",
+// junto al bloque que ya reubica Venenos tras una captura — recien
+// ahi nextPieces/nextPiecesRealm reflejan donde termino el atacante.
+let shieldedNidana: NidanaId | null = null;
+let shieldedAvatarKind: RealmPieceKind | null = null;
 
 type EnemyRef =
   | { system: "base"; kind: BasePieceKind }
@@ -1077,13 +1092,29 @@ if (enemyRefsAtTarget.length >= 1) {
       maraLevel: 1,
     };
   } else {
-    const capturedRealmPiece = nextPiecesRealm[opp][enemyRef.kind]!;
-    nextPiecesRealm[opp][enemyRef.kind] = {
-      ...capturedRealmPiece,
-      pos: -1,
-      inLimbo: true,
-      maraLevel: 1,
-    };
+    const carriedByVictim = nextAvatarNidana[opp][enemyRef.kind];
+
+    if (carriedByVictim) {
+      // Escudo: el Avatar NO se toca todavia (sigue en su pos actual)
+      // — se reubica mas abajo, despues de "movimiento final". Solo
+      // se le quita la Nidana aca; a quien le llega se resuelve
+      // tambien mas abajo (depende de si el atacante puede portarla).
+      shieldedNidana = carriedByVictim;
+      shieldedAvatarKind = enemyRef.kind;
+      nextAvatarNidana = {
+        ...nextAvatarNidana,
+        [opp]: { ...nextAvatarNidana[opp] },
+      };
+      delete nextAvatarNidana[opp][enemyRef.kind];
+    } else {
+      const capturedRealmPiece = nextPiecesRealm[opp][enemyRef.kind]!;
+      nextPiecesRealm[opp][enemyRef.kind] = {
+        ...capturedRealmPiece,
+        pos: -1,
+        inLimbo: true,
+        maraLevel: 1,
+      };
+    }
   }
 
   nextCurvature[me] = clampCurvature((nextCurvature[me] ?? 0) + 6);
@@ -1203,6 +1234,58 @@ if (capturedAvatarVacatedPos !== null) {
           pos: relocatedPos,
         };
       }
+    }
+  }
+
+  // Paso 2 — escudo Nidana: se reubica el Avatar sobreviviente ACA (no
+  // en el bloque de captura de arriba) porque recien aca
+  // nextPieces/nextPiecesRealm ya reflejan donde termino el atacante
+  // (finalToPos) — mismo motivo que la reubicacion de Venenos de
+  // arriba, para no hacerlo rebotar encima del propio atacante.
+  if (shieldedNidana !== null && shieldedAvatarKind !== null) {
+    const survivorKind = shieldedAvatarKind;
+    const survivor = nextPiecesRealm[opp][survivorKind]!;
+    const survivorPos = findEmptySpawnPos(
+      {
+        pieces: nextPieces,
+        realmPieces: nextPiecesRealm,
+        trackSize: state.trackSize,
+      } as GameState,
+      vacatedPos
+    );
+    nextPiecesRealm[opp][survivorKind] = {
+      ...survivor,
+      pos: survivorPos,
+      inLimbo: false,
+      maraLevel: null,
+    };
+
+    // Robo: si el atacante es un Avatar (puede portar Nidanas) y
+    // todavia no carga ninguna, se queda con la robada. Si es un
+    // Veneno (no puede portar, ver types.ts) o ya porta la suya,
+    // decision explicita de Federico: la robada queda suelta en el
+    // tablero en vez de perderse — mismo criterio que ya usa el Paso 1
+    // para "ya porta una, la nueva se queda sin recoger".
+    const attackerIsRealmPiece = !BASE_PIECES.includes(
+      activePiece as BasePieceKind
+    );
+    const attackerAlreadyCarries =
+      attackerIsRealmPiece &&
+      Boolean(nextAvatarNidana[me][activePiece as RealmPieceKind]);
+
+    if (attackerIsRealmPiece && !attackerAlreadyCarries) {
+      nextAvatarNidana = {
+        ...nextAvatarNidana,
+        [me]: {
+          ...nextAvatarNidana[me],
+          [activePiece as RealmPieceKind]: shieldedNidana,
+        },
+      };
+    } else {
+      nextBoardNidanas = {
+        ...nextBoardNidanas,
+        [finalToPos]: shieldedNidana,
+      };
     }
   }
 }
@@ -1363,7 +1446,12 @@ if (!didCapture) {
         // sin necesitar "as any" — mismo valor en runtime que siempre.
         fromRealm: realmFromPos(fromPos),
         toRealm: realmFromPos(finalToPos),
-        capturedAvatarThisMove: didCapture && capturedWasAvatar,
+        // Paso 2 — con escudo, el Avatar capturado NO fue a Mara de
+        // verdad (sobrevivio, ver bloque de reubicacion mas arriba) —
+        // avatar_sent_to_mara seria un evento falso si se disparara
+        // igual, y ademas encadenaria otro nacimiento de Nidana fisica
+        // (ver mas abajo, nidanaSpawnTrigger) por algo que no paso.
+        capturedAvatarThisMove: didCapture && capturedWasAvatar && shieldedNidana === null,
       });
 
       // v36 (12 agosto 2026) — decisión de diseño cerrada con
