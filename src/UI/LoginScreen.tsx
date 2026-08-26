@@ -72,8 +72,13 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
         }}
       />
 
-      <div style={{ marginTop: 8, opacity: 0.85, fontSize: 20, maxWidth: 500 }}>
-        Nobody Escapes The Wheel
+      <div style={{ marginTop: 8, maxWidth: 500 }}>
+        <div style={{ opacity: 0.95, fontSize: 22, fontWeight: 700, letterSpacing: 0.5 }}>
+          WANT OUT OF THE SAMSARA WHEEL?
+        </div>
+        <div style={{ marginTop: 8, opacity: 0.75, fontSize: 16, letterSpacing: 1 }}>
+          LEARN WHY. BREAK THE BOX.
+        </div>
       </div>
 
       <div
