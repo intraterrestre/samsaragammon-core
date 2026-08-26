@@ -10,6 +10,7 @@ import budaKarmaER from "../assets/tokens/buda-karma-er.webp";
 import BigHeadSchoolOverlay from "../UI/BigHeadSchoolOverlay";
 import { getUnlockedBasePieces } from "./era";
 import { NIDANA_FRONT_IMAGE } from "./nidanaAssets";
+import { NIDANAS } from "./nidanas";
 import { STONE_GRADIENT, STONE_RING, STONE_SHADOW } from "./dice/stoneDiceStyle";
 
 // 🔥 FICHAS
@@ -160,59 +161,6 @@ const ERA_ORDER_FOR_PIG_SIZE = [
   "rufus",
   "whitman",
 ] as const;
-const NIDANA_EFFECT_LINES: Record<number, {
-  title: string;
-  body: string;
-}> = {
-  1: {
-    title: "🌑 IGNORANCE ACTIVE",
-    body: "You mistake the shadow for the thing itself.",
-  },
-  2: {
-    title: "🔄 FORMATIONS ACTIVE",
-    body: "Old patterns begin moving before you choose.",
-  },
-  3: {
-    title: " CONSCIOUSNESS ACTIVE",
-    body: "A witness appears, but still believes the dream.",
-  },
-  4: {
-    title: "🧍 NAME & FORM ACTIVE",
-    body: "Identity hardens around what should keep flowing.",
-  },
-  5: {
-    title: "🪟 SIX SENSES ACTIVE",
-    body: "The gates open. The world rushes in.",
-  },
-  6: {
-    title: "🤝 CONTACT ACTIVE",
-    body: "Touch becomes trigger. The chain tightens.",
-  },
-  7: {
-    title: "💢 FEELING ACTIVE",
-    body: "Pleasure and pain begin choosing for you.",
-  },
-  8: {
-    title: "🔥 CRAVING ACTIVE",
-    body: "The hand reaches before wisdom arrives.",
-  },
-  9: {
-    title: "🪢 CLINGING ACTIVE",
-    body: "What you hold begins holding you.",
-  },
-  10: {
-    title: "♻️ BECOMING ACTIVE",
-    body: "A new self is being assembled.",
-  },
-  11: {
-    title: "🌱 BIRTH ACTIVE",
-    body: "A fresh form enters the wheel.",
-  },
-  12: {
-    title: "💀 DEATH ACTIVE",
-    body: "The ending prepares the next beginning.",
-  },
-};
 const pieceShort = (k: PieceKind) => {
   if (k === "pig") return "P";
   if (k === "snake") return "S";
@@ -260,7 +208,12 @@ export function Board({
   onRoll,
   nidanaCoinSrc,
   nidanaCoinSide,
-  nidanaCoinId,
+  // nidanaCoinId?: number | null — sigue en el tipo Props (el padre
+  // puede seguir mandandolo, App.tsx lo usa para calcular
+  // nidanaCoinSrc), pero Board.tsx ya no lo necesita: el cartelito
+  // title+body que lo usaba (NIDANA_EFFECT_LINES via cajaMagica) se
+  // elimino en el Paso 1.2. No se desestructura para no dejar una
+  // variable sin usar.
   genesisComplete = false,
   genesisVideoDone = false,
   genesisClickCount = 0,
@@ -386,21 +339,35 @@ const wheelCenter = {
   x: RING_SIZE / 2,
   y: RING_SIZE / 2,
 };
- const cajaMagica = useRef<number | null>(null);
-const [showNidanaBanner, setShowNidanaBanner] = useState(false);
+ // Paso 1.2 (26 agosto 2026) — a pedido de Federico: el cartelito con
+  // titulo+descripcion que aparecia solo, 5.6s despues de la moneda
+  // grande, "salia y no volvia" — para cuando aparecia, ya habia dejado
+  // de mirar la pantalla. Se reemplaza por un gesto bajo demanda:
+  // mantener presionada la monedita (suelta en el tablero, o la que
+  // porta un Avatar) muestra su nombre mientras dure la presion, sin
+  // depender de ningun timer. pressedNidanaKey identifica CUAL moneda
+  // esta siendo presionada ("board-<pos>" o "avatar-<player>-<kind>"),
+  // nunca mas de una a la vez.
+  const [pressedNidanaKey, setPressedNidanaKey] = useState<string | null>(null);
+  const nidanaPressTimerRef = useRef<number | null>(null);
+  const NIDANA_PRESS_HOLD_MS = 350;
 
-useEffect(() => {
-  if (nidanaCoinId && nidanaCoinSide === "front") {
-    cajaMagica.current = nidanaCoinId;
-    setShowNidanaBanner(false);
+  const startNidanaPress = (key: string) => {
+    if (nidanaPressTimerRef.current !== null) {
+      window.clearTimeout(nidanaPressTimerRef.current);
+    }
+    nidanaPressTimerRef.current = window.setTimeout(() => {
+      setPressedNidanaKey(key);
+    }, NIDANA_PRESS_HOLD_MS);
+  };
 
-    const t = window.setTimeout(() => {
-      setShowNidanaBanner(true);
-    }, 5600);
-
-    return () => window.clearTimeout(t);
-  }
-}, [nidanaCoinId, nidanaCoinSide]);
+  const cancelNidanaPress = () => {
+    if (nidanaPressTimerRef.current !== null) {
+      window.clearTimeout(nidanaPressTimerRef.current);
+      nidanaPressTimerRef.current = null;
+    }
+    setPressedNidanaKey(null);
+  };
 
   const piecesByPos: Record<number, { player: PlayerId; kind: PieceKind }[]> =
     {};
@@ -433,24 +400,60 @@ useEffect(() => {
       if (!nidanaId) return null;
       const pos = Number(posKey);
       const base = piecePosition(pos, size);
+      const pressKey = `board-${pos}`;
 
       return (
-        <img
+        <div
           key={`nidana-board-${pos}`}
-          src={NIDANA_FRONT_IMAGE[nidanaId]}
-          alt=""
           style={{
             position: "absolute",
             left: base.left,
             top: base.top,
             width: 30,
             height: 30,
-            objectFit: "contain",
-            pointerEvents: "none",
             zIndex: 700,
-            filter: "drop-shadow(0 0 4px rgba(255,255,255,0.35))",
           }}
-        />
+        >
+          <img
+            src={NIDANA_FRONT_IMAGE[nidanaId]}
+            alt=""
+            onPointerDown={() => startNidanaPress(pressKey)}
+            onPointerUp={cancelNidanaPress}
+            onPointerLeave={cancelNidanaPress}
+            onPointerCancel={cancelNidanaPress}
+            style={{
+              width: 30,
+              height: 30,
+              objectFit: "contain",
+              pointerEvents: "auto",
+              cursor: "pointer",
+              filter: "drop-shadow(0 0 4px rgba(255,255,255,0.35))",
+            }}
+          />
+          {pressedNidanaKey === pressKey && (
+            <div
+              style={{
+                position: "absolute",
+                bottom: "100%",
+                left: "50%",
+                transform: "translateX(-50%)",
+                marginBottom: 4,
+                padding: "2px 6px",
+                borderRadius: 4,
+                background: "rgba(0,0,0,0.85)",
+                color: "#fff",
+                fontSize: 11,
+                fontFamily: "Georgia, 'Times New Roman', serif",
+                fontStyle: "italic",
+                whiteSpace: "nowrap",
+                pointerEvents: "none",
+                zIndex: 9700,
+              }}
+            >
+              {NIDANAS[nidanaId].label}
+            </div>
+          )}
+        </div>
       );
     }
   );
@@ -554,7 +557,6 @@ const stackedPosition = getStackedTokenPosition({
           key={`${player}-${kind}`}
           onClick={() => {
             if (player === state.turn && !pieceState.inLimbo) {
-              setShowNidanaBanner(false);
               onSelectPiece?.(kind);
             }
           }}
@@ -644,26 +646,11 @@ top: stackedPosition.top,
   </div>
 ) : null}
 
-{/* 2026-08-05: showNidanaBanner existía (con su delay de 5.6s tras un
-    Nidana real) pero nunca se usaba acá — el ojo se veía apenas
-    genesisComplete, sin esperar a que pasara nada real. */}
-{genesisComplete && showNidanaBanner && (
-  <div className="nidanaLivingBanner">
-
-    <div className="nidanaLivingIcon">
-      👁️
-    </div>
-
-    <div className="nidanaLivingTitle">
-      {cajaMagica.current != null ? NIDANA_EFFECT_LINES[cajaMagica.current]?.title : null}
-    </div>
-
-    <div className="nidanaLivingBody">
-      {cajaMagica.current != null ? NIDANA_EFFECT_LINES[cajaMagica.current]?.body : null}
-    </div>
-
-  </div>
-)}
+{/* Paso 1.2 (26 agosto 2026) — cartelito con titulo+descripcion
+    eliminado (aparecia solo, 5.6s tarde, "salia y no volvia" segun
+    Federico). Reemplazado por el nombre bajo presion larga en cada
+    monedita — ver pressedNidanaKey mas arriba y su render junto a
+    cada token de Nidana (suelta y portada). */}
 
       {/* ===== Ring ===== */}
 <div
@@ -1019,7 +1006,6 @@ const carriedNidana = state.avatarNidana[player][piece.kind];
         key={piece.id}
         onClick={() => {
           if (player === state.turn) {
-              setShowNidanaBanner(false);
             onSelectPiece?.(piece.kind);
           }
         }}
@@ -1067,22 +1053,62 @@ style={{
   }}
 />
       {carriedNidana && (
-        <img
-          src={NIDANA_FRONT_IMAGE[carriedNidana]}
-          alt=""
+        <div
           style={{
             position: "absolute",
             top: -6,
             right: -6,
             width: 18,
             height: 18,
-            objectFit: "contain",
-            pointerEvents: "none",
-            borderRadius: "50%",
-            boxShadow: "0 0 0 1px rgba(0,0,0,0.4)",
             zIndex: 9600,
           }}
-        />
+        >
+          <img
+            src={NIDANA_FRONT_IMAGE[carriedNidana]}
+            alt=""
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              startNidanaPress(`avatar-${player}-${piece.kind}`);
+            }}
+            onPointerUp={cancelNidanaPress}
+            onPointerLeave={cancelNidanaPress}
+            onPointerCancel={cancelNidanaPress}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 18,
+              height: 18,
+              objectFit: "contain",
+              pointerEvents: "auto",
+              cursor: "pointer",
+              borderRadius: "50%",
+              boxShadow: "0 0 0 1px rgba(0,0,0,0.4)",
+              display: "block",
+            }}
+          />
+          {pressedNidanaKey === `avatar-${player}-${piece.kind}` && (
+            <div
+              style={{
+                position: "absolute",
+                right: "100%",
+                top: "50%",
+                transform: "translateY(-50%)",
+                marginRight: 4,
+                padding: "2px 6px",
+                borderRadius: 4,
+                background: "rgba(0,0,0,0.85)",
+                color: "#fff",
+                fontSize: 11,
+                fontFamily: "Georgia, 'Times New Roman', serif",
+                fontStyle: "italic",
+                whiteSpace: "nowrap",
+                pointerEvents: "none",
+                zIndex: 9700,
+              }}
+            >
+              {NIDANAS[carriedNidana].label}
+            </div>
+          )}
+        </div>
       )}
       </div>
     );
