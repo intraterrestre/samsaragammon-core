@@ -18,6 +18,7 @@ import { realmFromPos, canonicalRealmFromPos } from "../../UI/realm";
 import { updateDecisionSignature } from "../Karma/updateDecisionSignature";
 import { computeKarmaTurn } from "../engine/computeKarmaTurn";
 import { NIDANA_BY_PATTERN_EVENT } from "../behavior/nidanaMapping";
+import { NIDANA_LIST } from "../nidanas";
 import type { NidanaId } from "../nidanas";
 import { isBasePieceUnlocked } from "../era";
 import { evaluateOrchestrator, evaluateGenesisToBruno } from "../orchestrator/Orchestrator";
@@ -774,6 +775,18 @@ const nextActors = {
   ...state.actors,
 };
 
+// Paso 1 (26 agosto 2026) — Nidanas fisicas: aparicion y recoleccion.
+// Copias mutables declaradas aca (junto con las otras copias "next*"
+// de este turno) porque se leen/escriben en dos puntos distintos de
+// este mismo case: la recoleccion ocurre donde el Avatar aterriza (mas
+// abajo, "movimiento final"), la aparicion ocurre despues de calcular
+// los eventos del Pattern Engine de esta jugada (tambien mas abajo).
+let nextBoardNidanas: GameState["boardNidanas"] = { ...state.boardNidanas };
+let nextAvatarNidana: GameState["avatarNidana"] = {
+  P1: { ...state.avatarNidana.P1 },
+  P2: { ...state.avatarNidana.P2 },
+};
+
 // v49 — Rooster/Snake/Pig v0: copia mutable para apagar la marca PIG del
 // Avatar que efectivamente se mueva este turno (ver más abajo).
 const nextJustReturnedFromMara: GameState["justReturnedFromMara"] = {
@@ -1089,6 +1102,24 @@ if (isBasePiece) {
     unlocked: true,
   };
 
+  // Paso 1 — recoleccion: el Avatar recoge la Nidana de esta casilla
+  // solo si aterriza EXACTO en ella (finalToPos, no "pasar por" —
+  // mismo criterio que la captura, que tambien solo mira la posicion
+  // final) y solo si todavia no porta ninguna (regla 3: una por
+  // Avatar). Si ya porta una, la Nidana de la casilla se queda ahi sin
+  // recogerse — a proposito, no es un bug.
+  const nidanaOnLandingCell = nextBoardNidanas[finalToPos];
+  if (nidanaOnLandingCell && !nextAvatarNidana[me][activeRealmPiece]) {
+    nextAvatarNidana = {
+      ...nextAvatarNidana,
+      [me]: {
+        ...nextAvatarNidana[me],
+        [activeRealmPiece]: nidanaOnLandingCell,
+      },
+    };
+    delete nextBoardNidanas[finalToPos];
+  }
+
   // v49 — Rooster/Snake/Pig v0: este Avatar se movió de verdad, así que
   // su "susto" de PIG (si tenía) se apaga aquí, sin importar si el
   // movimiento fue una elección libre o una obligada por la propia regla.
@@ -1338,6 +1369,47 @@ if (!didCapture) {
         ? state.turnIndex
         : state.lastNidanaAtTurn;
 
+      // Paso 1 — aparicion fisica: cuando esta jugada genero
+      // exactamente uno de los dos eventos reales marcados como
+      // disparador (avatar_sent_to_mara o realm_stuck — ver
+      // newEventsThisTurn arriba, mismo filtro "ocurrio en esta
+      // jugada exacta" que ya usa el popup narrativo), nace una
+      // Nidana fisica en la casilla donde ocurrio el evento. Tipo
+      // elegido al azar entre las 12 por ahora (regla 1 del paso 1 —
+      // el diseño de CUAL Nidana nace segun el evento es un paso
+      // futuro, no este). Si esa casilla ya tiene una ficha (Veneno o
+      // Avatar, incluida la propia pieza que se acaba de mover ahi),
+      // rebota a la mas cercana libre — reutiliza findEmptySpawnPos,
+      // el mismo helper que ya usa el regreso de fichas desde Mara,
+      // en vez de inventar una busqueda nueva.
+      //
+      // Nota/limite conocido, no resuelto por criterio propio:
+      // findEmptySpawnPos no sabe de nextBoardNidanas — solo evita
+      // pisar Venenos/Avatares. En el caso limite de que la casilla
+      // libre encontrada ya tuviera otra Nidana sin recoger todavia,
+      // esta la reemplaza. No cubierto por el diseño del paso 1;
+      // reportado en el resumen final en vez de decidido aca.
+      const nidanaSpawnTrigger = newEventsThisTurn.find(
+        (ev) => ev.type === "avatar_sent_to_mara" || ev.type === "realm_stuck"
+      );
+
+      if (nidanaSpawnTrigger) {
+        const randomNidana =
+          NIDANA_LIST[Math.floor(Math.random() * NIDANA_LIST.length)];
+        const nidanaSpawnPos = findEmptySpawnPos(
+          {
+            pieces: nextPieces,
+            realmPieces: nextPiecesRealm,
+            trackSize: state.trackSize,
+          } as GameState,
+          finalToPos
+        );
+        nextBoardNidanas = {
+          ...nextBoardNidanas,
+          [nidanaSpawnPos]: randomNidana,
+        };
+      }
+
       const nextTurn = didWin ? me : opp;
       const nextTurnIndex = state.turnIndex + 1;
       const nextCycleIndex =
@@ -1503,6 +1575,8 @@ realmAscension: nextRealmAscensionForBrunoInMove ?? (didAscendRealm && unlockedR
         pattern: patternNext,
         currentNidana: nextCurrentNidana,
         lastNidanaAtTurn: nextLastNidanaAtTurn,
+        boardNidanas: nextBoardNidanas,
+        avatarNidana: nextAvatarNidana,
         decisionSignature: nextDecisionSignature,
         lastKarma: karma,
         karmaTotal: {

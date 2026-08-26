@@ -130,6 +130,12 @@ actors: {
   lastNidanaAtTurn: -999,
   activeNidanaEffect: null,
 
+  boardNidanas: {},
+  avatarNidana: {
+    P1: {},
+    P2: {},
+  },
+
   lastMove: null,
   lastKarma: null,
 
@@ -304,6 +310,23 @@ export function makeInitialState(
       P2: {
         ...initialState.justReturnedFromMara.P2,
         ...(overrides.justReturnedFromMara?.P2 ?? {}),
+      },
+    },
+
+    boardNidanas: {
+      ...initialState.boardNidanas,
+      ...(overrides.boardNidanas ?? {}),
+    },
+    avatarNidana: {
+      ...initialState.avatarNidana,
+      ...(overrides.avatarNidana ?? {}),
+      P1: {
+        ...initialState.avatarNidana.P1,
+        ...(overrides.avatarNidana?.P1 ?? {}),
+      },
+      P2: {
+        ...initialState.avatarNidana.P2,
+        ...(overrides.avatarNidana?.P2 ?? {}),
       },
     },
   };

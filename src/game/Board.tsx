@@ -9,6 +9,7 @@ import { MoveOptionsPanel } from "../UI/MoveOptionsPanel";
 import budaKarmaER from "../assets/tokens/buda-karma-er.webp";
 import BigHeadSchoolOverlay from "../UI/BigHeadSchoolOverlay";
 import { getUnlockedBasePieces } from "./era";
+import { NIDANA_FRONT_IMAGE } from "./nidanaAssets";
 import { STONE_GRADIENT, STONE_RING, STONE_SHADOW } from "./dice/stoneDiceStyle";
 
 // 🔥 FICHAS
@@ -420,6 +421,39 @@ useEffect(() => {
       (a, b) => pieceSortKey(a.player, a.kind) - pieceSortKey(b.player, b.kind)
     );
   });
+
+  // Paso 1 (26 agosto 2026) — Nidanas fisicas sueltas en el tablero
+  // (todavia no recogidas). Se dibujan sin apilamiento (no reutiliza
+  // getStackedTokenPosition/buildUnifiedStackMap) porque el diseño del
+  // paso 1 no dice nada sobre varias Nidanas en la misma casilla — solo
+  // el caso normal, una Nidana visible en su casilla hasta que un
+  // Avatar la recoja.
+  const boardNidanaTokens = Object.entries(state.boardNidanas).map(
+    ([posKey, nidanaId]) => {
+      if (!nidanaId) return null;
+      const pos = Number(posKey);
+      const base = piecePosition(pos, size);
+
+      return (
+        <img
+          key={`nidana-board-${pos}`}
+          src={NIDANA_FRONT_IMAGE[nidanaId]}
+          alt=""
+          style={{
+            position: "absolute",
+            left: base.left,
+            top: base.top,
+            width: 30,
+            height: 30,
+            objectFit: "contain",
+            pointerEvents: "none",
+            zIndex: 700,
+            filter: "drop-shadow(0 0 4px rgba(255,255,255,0.35))",
+          }}
+        />
+      );
+    }
+  );
 
   const renderedPieces = (["P1", "P2"] as PlayerId[]).flatMap((player) => {
     // 2026-08-05: revelado escalonado — el blanco entra en el 1er clic
@@ -976,6 +1010,10 @@ const stackedPosition = getStackedTokenPosition({
 const isAvatarSelected =
   player === state.turn && state.selectedPiece[player] === piece.kind;
 
+// Paso 1 — Nidana que este Avatar porta ahora mismo, si alguna (ver
+// reducer.ts CONSCIOUS_MOVE, bloque de recoleccion).
+const carriedNidana = state.avatarNidana[player][piece.kind];
+
     return (
       <div
         key={piece.id}
@@ -1028,11 +1066,30 @@ style={{
       : "none",
   }}
 />
+      {carriedNidana && (
+        <img
+          src={NIDANA_FRONT_IMAGE[carriedNidana]}
+          alt=""
+          style={{
+            position: "absolute",
+            top: -6,
+            right: -6,
+            width: 18,
+            height: 18,
+            objectFit: "contain",
+            pointerEvents: "none",
+            borderRadius: "50%",
+            boxShadow: "0 0 0 1px rgba(0,0,0,0.4)",
+            zIndex: 9600,
+          }}
+        />
+      )}
       </div>
     );
   });
 })}
         {(p1VenomsRevealed || p2VenomsRevealed) && renderedPieces}
+        {genesisComplete && boardNidanaTokens}
 
   
       </div>

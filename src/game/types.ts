@@ -308,6 +308,17 @@ export type GameState = {
   lastNidanaAtTurn: number;
   activeNidanaEffect: "CLARITY" | "DISTORTION" | "TENSION" | null;
 
+  // Paso 1 (26 agosto 2026) — Nidanas fisicas: aparicion y recoleccion
+  // (separado del currentNidana/lastNidanaAtTurn narrativo de arriba,
+  // que sigue funcionando igual, sin tocar). boardNidanas: por
+  // posicion de casilla (0..trackSize-1), que Nidana esta ahi
+  // esperando ser recogida, si alguna. avatarNidana: por jugador y
+  // por Avatar (RealmPieceKind), que Nidana porta ese Avatar ahora
+  // mismo, si alguna — un Avatar solo puede portar una a la vez
+  // (regla 3 del paso 1).
+  boardNidanas: Partial<Record<number, NidanaId>>;
+  avatarNidana: Record<PlayerId, Partial<Record<RealmPieceKind, NidanaId>>>;
+
   lastMove: LastMove | null;
 
   lastKarma: {
