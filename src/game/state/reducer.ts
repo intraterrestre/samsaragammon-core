@@ -460,6 +460,35 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
   }
 }
 
+      // Paso 1.1 (26 agosto 2026) — a pedido de Federico, tras jugar una
+      // partida completa: el disparador realm_stuck (6 jugadas seguidas
+      // sin cambiar de mural-zone) resulto "practicamente imposible" en
+      // juego real, asi que las Nidanas fisicas casi nunca nacian por esa
+      // via ("el azar lo define todo" pero ni siquiera eso pasaba
+      // seguido). Se agrega un disparador nuevo e independiente de
+      // cualquier jugada concreta: cada 3 lances de dados (mismo
+      // globalRollCount que ya usa el regreso de Mara), nace una Nidana
+      // fisica mas, en una casilla al azar del tablero — rebota a la mas
+      // cercana libre con el mismo findEmptySpawnPos de siempre si esa
+      // casilla ya tiene una ficha. No reemplaza avatar_sent_to_mara ni
+      // realm_stuck (Federico no los objeto, solo dijo que el segundo es
+      // demasiado raro) — se suma para que, en sus palabras, "vayan
+      // lloviendo mas rapido".
+      const nextBoardNidanasOnRoll: GameState["boardNidanas"] =
+        nextRollCount % 3 === 0
+          ? {
+              ...state.boardNidanas,
+              [findEmptySpawnPos(
+                {
+                  pieces: releasedPieces,
+                  realmPieces: releasedPiecesRealm,
+                  trackSize: state.trackSize,
+                } as GameState,
+                Math.floor(Math.random() * state.trackSize)
+              )]: NIDANA_LIST[Math.floor(Math.random() * NIDANA_LIST.length)],
+            }
+          : state.boardNidanas;
+
       // v5 — Acto 0: eventos de novedad (ver types.ts / Orchestrator.ts).
       // Cada flag se enciende una sola vez, la primera vez que ocurre.
       const nextGenesisNovelty = {
@@ -476,6 +505,7 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
         phase: "rolled",
         rollOptions: [rollDie(), rollDie()],
         genesisNovelty: nextGenesisNovelty,
+        boardNidanas: nextBoardNidanasOnRoll,
         // v49 — se acumula (nunca se limpia acá): una marca PIG dura hasta
         // que ese Avatar se mueva de verdad, no solo hasta el próximo lance.
         justReturnedFromMara: {
