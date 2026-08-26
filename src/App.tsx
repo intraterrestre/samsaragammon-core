@@ -10,6 +10,7 @@ import "./App.css";
 
 import { getGameDerivedState } from "./game/getGameDerivedState";
 import type { PieceKind } from "./game/types";
+import { findNewlySpawnedNidana, findNewlyCarriedNidana } from "./game/nidanaDiff";
 import { NIDANA_LIST } from "./game/nidanas";
 import { reducer } from "./game/state/reducer";
 import { initialState } from "./game/state/state";
@@ -76,8 +77,21 @@ const REALM_INTRO_MAP = {
 function getNidanaImage(id: number, side: "front" | "back") {
   const num = String(id).padStart(2, "0");
   const name = NIDANAS[id - 1];
-  return nidanaImages[`./assets/nidanas/nidana_${num}_${name}_${side}.jpg`];
+  // v (26 agosto 2026) — bug real encontrado investigando la aparicion
+  // fisica de Nidanas: el archivo real en disco para la cara frontal
+  // de IGNORANCE tiene un espacio antes de ".jpg"
+  // ("nidana_01_ignorance_front .jpg"), asi que el patron generico de
+  // abajo nunca la encontraba (imagen rota, src undefined). No se
+  // habia notado porque IGNORANCE nunca dispara el sistema narrativo
+  // (queda sin mapear a proposito en NIDANA_BY_PATTERN_EVENT) — pero
+  // la aparicion fisica nueva SI puede elegirla al azar entre las 12.
+  const filename =
+    id === 1 && side === "front"
+      ? "nidana_01_ignorance_front .jpg"
+      : `nidana_${num}_${name}_${side}.jpg`;
+  return nidanaImages[`./assets/nidanas/${filename}`];
 }
+
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { error: Error | null }
@@ -731,6 +745,53 @@ useEffect(() => {
 
   triggerNidanaCoin(id);
 }, [oriolEnteredForNidana, state.currentNidana, state.lastNidanaAtTurn]);
+
+// ===========================================================
+// Paso 1 (26 agosto 2026) — Nidanas fisicas: reutiliza la MISMA
+// moneda grande (triggerNidanaCoin, arriba) para anunciar la
+// aparicion/recoleccion fisica en el tablero (state.boardNidanas /
+// state.avatarNidana), pero como sistema separado del narrativo de
+// arriba — decision explicita de Federico (26 agosto 2026): pueden
+// coincidir en el mismo turno y mostrar Nidanas distintas, no se
+// unifican. Sin gate de Oriol (oriolEnteredForNidana) a proposito:
+// la aparicion fisica ya tiene su propio gate real en el reducer
+// (los dos eventos que la disparan, avatar_sent_to_mara y
+// realm_stuck, solo existen una vez que hay Avatares en juego).
+//
+// Los refs se inicializan con el valor ACTUAL de state (no con {})
+// para que el primer render (o una partida multiplayer que carga con
+// Nidanas fisicas ya en curso) no dispare la moneda por "aparecer" lo
+// que en realidad ya estaba ahi desde antes.
+const prevBoardNidanasRef = useRef(state.boardNidanas);
+const prevAvatarNidanaRef = useRef(state.avatarNidana);
+
+useEffect(() => {
+  const prev = prevBoardNidanasRef.current;
+  const current = state.boardNidanas;
+
+  const spawnedNidana = findNewlySpawnedNidana(prev, current);
+
+  prevBoardNidanasRef.current = current;
+  if (!spawnedNidana) return;
+
+  const numericId = NIDANA_LIST.indexOf(spawnedNidana) + 1;
+  if (numericId < 1) return;
+  triggerNidanaCoin(numericId);
+}, [state.boardNidanas]);
+
+useEffect(() => {
+  const pickedUp = findNewlyCarriedNidana(
+    prevAvatarNidanaRef.current,
+    state.avatarNidana
+  );
+
+  prevAvatarNidanaRef.current = state.avatarNidana;
+  if (!pickedUp) return;
+
+  const numericId = NIDANA_LIST.indexOf(pickedUp) + 1;
+  if (numericId < 1) return;
+  triggerNidanaCoin(numericId);
+}, [state.avatarNidana]);
 
   useEffect(() => {
     const prev = prevPhaseRef.current;
