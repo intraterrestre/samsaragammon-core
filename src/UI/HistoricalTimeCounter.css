@@ -59,10 +59,16 @@
   paint-order: stroke fill;
 }
 
+/* 2026-08-26 (v5) — a pedido de Federico: no lograba leer los
+   numeros/letras del contador (amarillo=años, rojo=mm) en el
+   telefono. Se agrandan ambos font-size (años y mm, desktop y
+   mobile @480px) sin tocar el `scale(0.7)` general del widget ni
+   su `left`/`top` — mismo hueco angosto entre los dados y la rueda
+   que motivo aquel scale, para no reabrir ese problema. */
 .htc-display {
   font-family: "Courier New", "Consolas", monospace;
   font-weight: 700;
-  font-size: 32px;
+  font-size: 38px;
   letter-spacing: 3px;
   white-space: nowrap;
   color: var(--htc-color, #ff2b2b);
@@ -118,7 +124,7 @@
 }
 
 .htc-display-mm {
-  font-size: 22px;
+  font-size: 26px;
   letter-spacing: 2px;
   color: #ff2b2b;
   text-shadow:
@@ -181,7 +187,7 @@
 
 @media (max-width: 480px) {
   .htc-display {
-    font-size: 26px;
+    font-size: 30px;
     letter-spacing: 2px;
   }
   .htc-era-flash {
@@ -194,7 +200,7 @@
     font-size: 11px;
   }
   .htc-display-mm {
-    font-size: 18px;
+    font-size: 22px;
   }
   .htc-sub-banner {
     font-size: 11px;
