@@ -5,6 +5,20 @@
 // de victoria sin que el juego se lo dijera nunca. Esta pantalla es
 // puramente de interfaz: no toca la regla de victoria, el reducer, ni
 // checkNirvana — solo reacciona a un valor que ya existía.
+// v68 (27 agosto 2026) — pedido de Federico: quitado el cartel negro
+// ("Nirvana reached" / "X has completed the cycle") — en su lugar se
+// reproduce el video de cierre que produjo (champion.mp4, contrapunto
+// de genesis_dados.mp4: "ya pusimos el genesis... este es el
+// apocalipsis"). Reutiliza el mismo patrón visual y de mute/unmute que
+// ya usan los videos de entrada de Avatar (.realmIntroOverlay/
+// .realmIntroVideo, ver overlays.css y activeRealmIntro en App.tsx) en
+// vez de inventar uno nuevo. `winner` queda en Props sin usarse
+// todavía — Federico va a pasar el siguiente cartel (con las ofertas
+// para los jugadores) para mostrar cuando el video termina; por ahora
+// ese momento es solo un botón mínimo de "Play again", placeholder
+// hasta que llegue ese cartel.
+import { useRef, useState } from "react";
+import championVideo from "../assets/video/champion.mp4";
 import type { PlayerId } from "../game/types";
 
 type Props = {
@@ -12,81 +26,87 @@ type Props = {
   onPlayAgain: () => void;
 };
 
-export function VictoryScreen({ winner, onPlayAgain }: Props) {
-  const label = winner === "P1" ? "White" : "Black";
+export function VictoryScreen(props: Props) {
+  const [videoEnded, setVideoEnded] = useState(false);
+  const [muted, setMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 999999,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 22,
-        background: "rgba(4, 4, 8, 0.92)",
-        backdropFilter: "blur(3px)",
-        textAlign: "center",
-        padding: 24,
-      }}
-    >
-      <div
-        style={{
-          fontSize: 15,
-          letterSpacing: 3,
-          textTransform: "uppercase",
-          color: "rgba(255,255,255,0.55)",
-          fontWeight: 700,
-        }}
-      >
-        Nirvana reached
-      </div>
+    <div className="realmIntroOverlay" style={{ pointerEvents: "auto" }}>
+      <video
+        ref={videoRef}
+        className="realmIntroVideo"
+        src={championVideo}
+        autoPlay
+        playsInline
+        muted={muted}
+        onEnded={() => setVideoEnded(true)}
+      />
 
-      <div
-        style={{
-          fontSize: 40,
-          fontWeight: 900,
-          color: "white",
-          textShadow: "0 0 24px rgba(255,220,140,0.6), 0 2px 6px rgba(0,0,0,0.8)",
-          maxWidth: 520,
-          lineHeight: 1.15,
-        }}
-      >
-        {label} has completed the cycle
-      </div>
+      {!videoEnded && (
+        <button
+          type="button"
+          onClick={() => {
+            setMuted((prev) => {
+              const next = !prev;
+              if (videoRef.current) {
+                videoRef.current.muted = next;
+                if (!next) videoRef.current.play().catch(() => {});
+              }
+              return next;
+            });
+          }}
+          aria-label={muted ? "Activar sonido" : "Silenciar"}
+          title={muted ? "Activar sonido" : "Silenciar"}
+          style={{
+            position: "absolute",
+            right: 20,
+            bottom: 20,
+            width: 72,
+            height: 72,
+            borderRadius: "50%",
+            border: "2px solid rgba(255,255,255,0.7)",
+            background: "rgba(0,0,0,0.55)",
+            color: "#fff",
+            fontSize: 36,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            backdropFilter: "blur(2px)",
+            zIndex: 1000000,
+            pointerEvents: "auto",
+          }}
+        >
+          {muted ? "🔇" : "🔊"}
+        </button>
+      )}
 
-      <div
-        style={{
-          fontSize: 15,
-          color: "rgba(255,255,255,0.75)",
-          maxWidth: 460,
-          lineHeight: 1.5,
-        }}
-      >
-        All six Avatars arrived together in Humans. The wheel stops
-        for {label.toLowerCase()}.
-      </div>
-
-      <button
-        type="button"
-        onClick={onPlayAgain}
-        style={{
-          marginTop: 12,
-          padding: "12px 28px",
-          borderRadius: 12,
-          border: "2px solid rgba(255,220,140,0.7)",
-          background: "rgba(255,220,140,0.12)",
-          color: "white",
-          fontSize: 16,
-          fontWeight: 800,
-          cursor: "pointer",
-          boxShadow: "0 0 16px rgba(255,220,140,0.35)",
-        }}
-      >
-        Play again
-      </button>
+      {/* v68 — placeholder: acá va el cartel con las ofertas para los
+          jugadores que Federico todavía tiene que pasar. Mientras
+          tanto, solo un botón mínimo para volver a jugar — sin caja
+          negra ni texto de "Nirvana reached". */}
+      {videoEnded && (
+        <button
+          type="button"
+          onClick={props.onPlayAgain}
+          style={{
+            position: "absolute",
+            padding: "12px 28px",
+            borderRadius: 12,
+            border: "2px solid rgba(255,220,140,0.7)",
+            background: "rgba(255,220,140,0.12)",
+            color: "white",
+            fontSize: 16,
+            fontWeight: 800,
+            cursor: "pointer",
+            boxShadow: "0 0 16px rgba(255,220,140,0.35)",
+            zIndex: 1000000,
+          }}
+        >
+          Play again
+        </button>
+      )}
     </div>
   );
 }
