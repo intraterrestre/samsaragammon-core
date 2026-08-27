@@ -53,7 +53,8 @@ type Action =
   | { type: "EMOJI"; emoji: string; player: PlayerId }
   | { type: "SET_MULTIPLAYER_STATE"; state: GameState }
   | { type: "SET_GENESIS_UI_COMPLETE" }
-  | { type: "DEV_SKIP_TO_RUFUS" };
+  | { type: "DEV_SKIP_TO_RUFUS" }
+  | { type: "DEV_SKIP_TO_5_HUMANS" };
 
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 const rollDie = () => 1 + Math.floor(Math.random() * 6);
@@ -351,6 +352,104 @@ export function reducer(state: GameState, action: Action): GameState {
           P2: {
             ...state.realmProgress.P2,
             currentRealmStep: 5,
+            stageStartedAtRoll: state.globalRollCount,
+            capturesInStage: 0,
+            movesInStage: 0,
+          },
+        },
+      };
+    }
+
+    // DEV ONLY (27 agosto 2026) — pedido de Federico: atajo para llegar a
+    // "5 de 6 en Humans" (el estado que dispara "ONE MORE TO GET OUT" +
+    // Buda DJ + mural revelado, ver GameShell.tsx p1At5/p2At5) sin jugar
+    // toda la partida. Mismo criterio que DEV_SKIP_TO_RUFUS arriba:
+    // replica el ESTADO FINAL que el juego real produciría, sin tocar
+    // ninguna condición ni lógica de victoria — solo escribe los campos
+    // que esas condiciones ya leen.
+    //
+    // A propósito deja al jugador en 5/6, no en 6/6: el sexto Avatar
+    // (deva/Whitman) queda desbloqueado y en el tablero pero AFUERA de
+    // Humans (posiciones 21,22,23,0 — ver nirvana.ts), para que Federico
+    // juegue a mano el movimiento final que completa la formación y
+    // dispare la victoria real (mural nirvana, champion.mp4, WHAT NOW?)
+    // desde una jugada genuina — mismo espíritu que el atajo de Rufus.
+    //
+    // Aplica solo al jugador activo (state.turn); el otro jugador no se
+    // toca. cosmicClock.era pasa a "whitman" porque whitmanEntered (ver
+    // GameShell.tsx, v56) es lo que gatea el aviso "ONE MORE" — sin eso,
+    // 5/6 en Humans no dispara nada.
+    case "DEV_SKIP_TO_5_HUMANS": {
+      const player = state.turn;
+      const humansPositions = [21, 22, 23, 0];
+      const piecesInHumans = REALM_PIECE_ORDER.filter(
+        (kind) => kind !== "deva"
+      );
+
+      let working: GameState = {
+        ...state,
+        realmPieces: {
+          ...state.realmPieces,
+          [player]: { ...state.realmPieces[player] },
+        },
+      };
+
+      piecesInHumans.forEach((kind, idx) => {
+        working = {
+          ...working,
+          realmPieces: {
+            ...working.realmPieces,
+            [player]: {
+              ...working.realmPieces[player],
+              [kind]: {
+                id: `${player}-${kind}`,
+                kind,
+                pos: humansPositions[idx % humansPositions.length],
+                inLimbo: false,
+                maraLevel: null,
+                unlocked: true,
+              },
+            },
+          },
+        };
+      });
+
+      // El sexto (deva/Whitman): desbloqueado y en el tablero, pero
+      // buscado a propósito lejos de Humans (seed en Asura/Deva, el lado
+      // opuesto del track de 24) — misma búsqueda de casilla libre que ya
+      // usa findEmptySpawnPos en Genesis/Mara/DEV_SKIP_TO_RUFUS.
+      const devaSeed = player === "P1" ? 10 : 6;
+      const devaPos = findEmptySpawnPos(working, devaSeed);
+      working = {
+        ...working,
+        realmPieces: {
+          ...working.realmPieces,
+          [player]: {
+            ...working.realmPieces[player],
+            deva: {
+              id: `${player}-deva`,
+              kind: "deva",
+              pos: devaPos,
+              inLimbo: false,
+              maraLevel: null,
+              unlocked: true,
+            },
+          },
+        },
+      };
+
+      return {
+        ...working,
+        cosmicClock: {
+          era: "whitman",
+          progress: 0,
+          transitionSequence: state.cosmicClock.transitionSequence + 1,
+        },
+        realmProgress: {
+          ...working.realmProgress,
+          [player]: {
+            ...working.realmProgress[player],
+            currentRealmStep: 6,
             stageStartedAtRoll: state.globalRollCount,
             capturesInStage: 0,
             movesInStage: 0,

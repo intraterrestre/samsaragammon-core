@@ -130,6 +130,12 @@ nidanaCoinSide: "front" | "back";
   // entrada real de Whitman se siga jugando a mano). Opcional para no
   // romper otros usos de GameShell que no la pasen.
   onDevSkipToRufus?: () => void;
+  // DEV ONLY (27 agosto 2026) — atajo pedido por Federico, ver reducer.ts
+  // case "DEV_SKIP_TO_5_HUMANS": deja al jugador activo en 5/6 fichas en
+  // Humans con Whitman ya desbloqueado (dispara "ONE MORE TO GET OUT" +
+  // Buda DJ + mural), sin completar el 6to a propósito — el movimiento
+  // final que gana la partida se sigue jugando a mano.
+  onDevSkipTo5Humans?: () => void;
 
   avatarVideoPlaying?: boolean;
 };
@@ -149,6 +155,7 @@ export function GameShell({
   onRoll,
   onReset,
   onDevSkipToRufus,
+  onDevSkipTo5Humans,
   playDiceSound,
   onConsciousMove,
   onGenesisUIComplete,
@@ -1063,6 +1070,33 @@ return (
           }}
         >
           DEV: → Rufus
+        </button>
+      )}
+
+      {/* DEV ONLY (27 agosto 2026) — atajo a pedido de Federico para
+          probar el aviso "ONE MORE TO GET OUT" + Buda DJ + mural
+          revelado sin jugar toda la partida. Deja al jugador ACTIVO
+          (state.turn) en 5/6 fichas en Humans a propósito, no en 6/6 —
+          el movimiento final que gana la partida se sigue jugando a
+          mano (ver reducer.ts, case "DEV_SKIP_TO_5_HUMANS"). */}
+      {genesisComplete && onDevSkipTo5Humans && (
+        <button
+          onClick={onDevSkipTo5Humans}
+          style={{
+            position: "absolute",
+            right: 8,
+            top: 34,
+            zIndex: 20000,
+            fontSize: 11,
+            padding: "4px 8px",
+            borderRadius: 6,
+            background: "rgba(0,0,0,0.55)",
+            color: "#f5d76e",
+            border: "1px solid rgba(245,215,110,0.4)",
+            cursor: "pointer",
+          }}
+        >
+          DEV: → 5/6 Humans
         </button>
       )}
 

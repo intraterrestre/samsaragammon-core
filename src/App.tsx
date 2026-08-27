@@ -1151,6 +1151,11 @@ nidanaCoinSide={nidanaSide}
       // DEV_SKIP_TO_RUFUS y se detiene un Avatar antes (ver reducer.ts)
       // para que Federico pueda jugar el último tramo a mano.
       onDevSkipToRufus={() => dispatch({ type: "DEV_SKIP_TO_RUFUS" })}
+      // v69 (27 agosto 2026) — atajo pedido por Federico: deja al
+      // jugador activo en 5/6 fichas en Humans (ver reducer.ts, case
+      // "DEV_SKIP_TO_5_HUMANS") para probar el aviso "ONE MORE TO GET
+      // OUT" sin jugar toda la partida.
+      onDevSkipTo5Humans={() => dispatch({ type: "DEV_SKIP_TO_5_HUMANS" })}
       onVestigiumDone={() => setShowVestigium(false)}
       onCloseLedger={() => dispatch({ type: "CLOSE_LEDGER" })}
       // 2026-08-22: onIntroDone (dispatch INTRO_DONE → state.introSeen =
