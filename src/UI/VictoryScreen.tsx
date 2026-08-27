@@ -20,7 +20,28 @@
 // gatillo de montaje ({state.winner && <VictoryScreen winner={...} />})
 // — el resultado a MOSTRAR ya viene resuelto adentro de
 // `finalVestigium` (buildFinalVestigium ya sabe cuál jugador ganó).
+// v69 (27 agosto 2026) — BUG real reportado por Federico: el video de
+// cierre salía "extremadamente grande, fuera de pantalla" y el menú
+// WHAT NOW? "no se ve enmarcado en pantalla". Causa: <VictoryScreen>
+// se monta desde GameShell.tsx, ADENTRO de <div className="samsaraScene">
+// (ver GameShell.tsx ~línea 1039) — esa clase tiene su propio
+// transform: scale(...) (ver layout.css) para escalar el "tablero
+// virtual" de 1100x620 al viewport real. Cualquier ancestro con
+// transform se vuelve el "containing block" de sus descendientes
+// position:fixed (spec CSS) — por eso .realmIntroOverlay (inset:0,
+// 100vw/100dvh) dejaba de anclarse a la pantalla real y quedaba
+// recortado por el overflow:hidden de .samsaraScene, encogido/
+// desplazado adentro de esa caja de 1100x620 en vez de cubrir toda la
+// ventana. Los OTROS videos de entrada de Avatar (activeRealmIntro,
+// App.tsx ~línea 1003) usan las mismas clases pero se montan fuera de
+// .samsaraScene (directo bajo <ErrorBoundary> en App.tsx) — por eso a
+// esos nunca les pasó esto. Fix: createPortal saca el DOM de
+// VictoryScreen (video + WhatNowScreen) fuera del árbol de
+// .samsaraScene, montándolo directo en document.body — mismo criterio
+// que ya usan esos otros videos, sin tener que tocar la estructura
+// gigante de GameShell.tsx.
 import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import championVideo from "../assets/video/champion.mp4";
 import type { PlayerId } from "../game/types";
 import type { FinalVestigium } from "../game/Vestigium";
@@ -37,7 +58,7 @@ export function VictoryScreen(props: Props) {
   const [muted, setMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  return (
+  return createPortal(
     <div className="realmIntroOverlay" style={{ pointerEvents: "auto" }}>
       <video
         ref={videoRef}
@@ -94,7 +115,8 @@ export function VictoryScreen(props: Props) {
           onPlayAgain={props.onPlayAgain}
         />
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
 
