@@ -19,14 +19,25 @@
 
 /* Uthingo es solo arte de personaje — la imagen no tiene zonas
    clicables ni texto horneado adentro. El menú de al lado se construye
-   por completo en código (ver .whatNowContent y sus botones). */
+   por completo en código (ver .whatNowContent y sus botones).
+   v70 (27 agosto 2026) — pedido de Federico: el buda se veía chico. El
+   archivo original (2210x1200) tenía mucho cielo estrellado vacío a la
+   derecha del personaje; con object-fit:contain adentro de una columna
+   angosta y alta, ese aspecto tan panorámico dejaba al buda como una
+   franja horizontal delgada, con mucho espacio negro arriba/abajo.
+   Recortado el archivo (mismo path) a 1400x1200 — solo se saca el
+   cielo vacío, la cara/brazo/dedo quedan intactos con margen — y
+   ensanchada la columna de 38% a 46%: junto, esto casi duplica el
+   tamaño visible del personaje sin overlayearlo sobre el menú (la otra
+   opción que propuso Federico), que hubiera complicado la legibilidad
+   del texto sobre una foto con tanto detalle. */
 .whatNowCharacter {
-  flex: 0 0 38%;
-  max-width: 38%;
+  flex: 0 0 46%;
+  max-width: 46%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 18px;
   box-sizing: border-box;
   background: radial-gradient(ellipse at 35% 40%, #0c1730 0%, #05070d 75%);
 }
