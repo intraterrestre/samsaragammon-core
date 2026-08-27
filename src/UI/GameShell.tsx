@@ -1161,13 +1161,20 @@ return (
           usa MoveOptionsPanel.
 
           v50 (14 agosto 2026) — a pedido de Federico: 80% mas grande
-          (220px -> 396px) y espejada horizontalmente para que la luna
-          del poster caiga del mismo lado que la luna pintada en el
-          mural del tablero. El slide/fade (clases djBuddhaPoster/
-          djBuddhaPosterFading, ver overlays.css) sigue animando el
-          DIV contenedor sin tocar transform ahi; el espejo
-          (scaleX(-1)) va aparte, solo en el <img> interno, para no
-          pelear con esas animaciones de transform. */}
+          (220px -> 396px) y espejada horizontalmente (scaleX(-1)) para
+          que la luna del poster VIEJO cayera del mismo lado que la
+          luna pintada en el mural del tablero — ese poster tenía su
+          propia luna pintada adentro.
+          v69 (27 agosto 2026) — quitado el espejo: Federico reemplazó
+          el poster por uno nuevo (v66, colores de los Avatares, SIN
+          luna propia — la razón de mirar el poster ya no aplica) con
+          la mano levantada señalando hacia su derecha. Con
+          scaleX(-1) esa mano quedaba espejada hacia la izquierda,
+          apuntando lejos del mural en vez de hacia él ("volteaste la
+          foto... salió con el dedo del otro lado", Federico). El
+          popup sigue anclado en left:0 (entra por la izquierda), así
+          que sin espejo la mano ya apunta bien: hacia la derecha,
+          hacia adentro del mural/luna. */}
       {showDjBuddha && (
         <div
           className={`djBuddhaPoster${
@@ -1188,7 +1195,6 @@ return (
             style={{
               display: "block",
               width: "100%",
-              transform: "scaleX(-1)",
               filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.6))",
             }}
           />
