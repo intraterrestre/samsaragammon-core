@@ -298,6 +298,27 @@ export type GameState = {
 
   captures: Record<PlayerId, number>;
 
+  // v68 (27 agosto 2026) — contadores para FinalVestigium (ver
+  // src/game/Vestigium.ts): cuántas veces una ficha propia (Veneno o
+  // Avatar) fue enviada a Mara, y cuántas veces el Pattern Engine le
+  // activó una Nidana real a ese jugador (mismo criterio que ya usa
+  // currentNidana: solo cuenta cuando shouldShowNewNidana es true, no
+  // cada Nidana física recogida). No reemplaza currentNidana ni
+  // boardNidanas/avatarNidana — es solo el conteo acumulado para el
+  // resumen de fin de partida.
+  maraVisits: Record<PlayerId, number>;
+  nidanasActivated: Record<PlayerId, number>;
+
+  // v68 — timestamp real de inicio de ESTA partida. Se reescribe en
+  // RESET (reducer.ts) con Date.now() — no puede vivir con un valor
+  // real en initialState porque ese objeto es estático y se evalúa
+  // una sola vez al cargar el módulo, no en cada partida nueva.
+  gameStartedAt: number;
+  // v68 — id de ESTA partida (ver makeGameId en game/Vestigium.ts),
+  // mismo criterio que gameStartedAt: se genera de nuevo en cada
+  // RESET, no puede venir fijo en initialState.
+  gameId: string;
+
   realmProgress: Record<PlayerId, RealmProgress>;
 
   level: number;

@@ -104,6 +104,23 @@ actors: {
     P2: 0,
   },
 
+  maraVisits: {
+    P1: 0,
+    P2: 0,
+  },
+  nidanasActivated: {
+    P1: 0,
+    P2: 0,
+  },
+  // v68 — placeholder: RESET lo pisa con Date.now() real (ver
+  // reducer.ts case "RESET"). initialState es estático, se evalúa una
+  // sola vez al cargar el módulo, así que un timestamp real acá
+  // quedaría pegado al momento de carga de la página, no al de cada
+  // partida nueva.
+  gameStartedAt: 0,
+  // v68 — placeholder, mismo criterio que gameStartedAt.
+  gameId: "",
+
   realmProgress: {
     P1: {
       currentRealmStep: 1,

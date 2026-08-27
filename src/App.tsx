@@ -14,6 +14,7 @@ import { findNewlySpawnedNidana, findNewlyCarriedNidana } from "./game/nidanaDif
 import { NIDANA_LIST } from "./game/nidanas";
 import { reducer } from "./game/state/reducer";
 import { initialState } from "./game/state/state";
+import { saveVestigium, makeGameId } from "./game/Vestigium";
 
 import { supabase } from "./lib/supabaseClient";
 import { KarmaEngine } from "./game/engine/KarmaEngine";
@@ -134,36 +135,12 @@ class ErrorBoundary extends React.Component<
   }
 }
 
-/** =========================
- *  Vestigium (v0) — LocalStorage
- *  ========================= */
-type VestigiumSnapshot = {
-  at: number;
-  rolls: number;
-  level: number;
-  turn: "P1" | "P2";
-  pos: { P1: number; P2: number };
-  captures: { P1: number; P2: number };
-};
-
-const VESTIGIA_KEY = "samsara_vestigia_v0";
-
-function loadVestigia(): VestigiumSnapshot[] {
-  try {
-    const raw = localStorage.getItem(VESTIGIA_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveVestigium(snapshot: VestigiumSnapshot) {
-  const all = loadVestigia();
-  all.push(snapshot);
-  localStorage.setItem(VESTIGIA_KEY, JSON.stringify(all.slice(-12)));
-}
+// v68 (27 agosto 2026) — Vestigium (v0, stamps cada 30 tiradas) y
+// FinalVestigium (resumen de fin de partida) viven en un único lugar
+// ahora: src/game/Vestigium.ts. Esto estaba duplicado a mano acá
+// (mismo tipo/funciones, redefinidos) mientras el módulo quedaba sin
+// importar — dead code. saveVestigium importado arriba (loadVestigia
+// también está exportado ahí si en algún momento hace falta acá).
 
 /** =========================
  *  RunExport (LOCAL)
@@ -224,7 +201,16 @@ type RunExport = {
 
 export default function App() {
   const { handleLogin } = useGameController();
-  const [state, dispatchBase] = useReducer(reducer, initialState);
+  // v68 (27 agosto 2026) — inicializador perezoso: initialState es
+  // estático (se evalúa una sola vez al cargar el módulo), así que sin
+  // esto la PRIMERA partida de la sesión quedaría con gameStartedAt=0
+  // y gameId="". Las partidas siguientes ya los pisan bien en el
+  // reducer (case "RESET"); esto solo cubre el primer render.
+  const [state, dispatchBase] = useReducer(
+    reducer,
+    initialState,
+    (init) => ({ ...init, gameStartedAt: Date.now(), gameId: makeGameId() })
+  );
 const [activeRealmIntro, setActiveRealmIntro] = useState<string | null>(null);
 const playedRealmIntrosRef = useRef<Record<string, boolean>>({});
 // v13 (10 agosto 2026) — reinicio real de Genesis. GameShell guarda su

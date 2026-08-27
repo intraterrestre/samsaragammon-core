@@ -11,6 +11,7 @@ import type {
 import { REALM_PIECE_ORDER } from "../types";
 import { checkNirvana, isVictoryEnabled, checkNirvanaFormation, countNirvanaFormationProgress, getNirvanaReadiness } from "../victory/nirvana";
 import { initialState } from "./state";
+import { makeGameId } from "../Vestigium";
 
 import { behaviorAfterMove } from "../behavior/behavior";
 import { recordMove } from "../behavior/patternEngine";
@@ -178,9 +179,12 @@ function detectVenomTrio(
   return null;
 }
 
+// v68 (27 agosto 2026) — devuelve también collapsedCounts (cuántas
+// fichas de cada jugador se mandaron a Mara por sobrecarga) para que
+// el llamador pueda sumarlo a maraVisits sin recalcular el colapso.
 function applyCollapseIfNeeded(
   pieces: GameState["pieces"]
-): GameState["pieces"] {
+): { pieces: GameState["pieces"]; collapsedCounts: Record<PlayerId, number> } {
   const nextPieces = {
     P1: {
       pig: { ...pieces.P1.pig },
@@ -211,6 +215,8 @@ function applyCollapseIfNeeded(
     }
   }
 
+  const collapsedCounts: Record<PlayerId, number> = { P1: 0, P2: 0 };
+
   for (const pos in allAtSamePos) {
     const stack = allAtSamePos[pos];
 
@@ -222,11 +228,12 @@ function applyCollapseIfNeeded(
           inLimbo: true,
           maraLevel: 1,
         };
+        collapsedCounts[player] += 1;
       }
     }
   }
 
-  return nextPieces;
+  return { pieces: nextPieces, collapsedCounts };
 }
 
 export function reducer(state: GameState, action: Action): GameState {
@@ -235,7 +242,10 @@ export function reducer(state: GameState, action: Action): GameState {
       return action.state;
 
     case "RESET":
-      return initialState;
+      // v68 (27 agosto 2026) — gameStartedAt/gameId no pueden venir
+      // del initialState estático (se evalúa una sola vez al cargar
+      // el módulo) — se pisan acá con valores reales de esta partida.
+      return { ...initialState, gameStartedAt: Date.now(), gameId: makeGameId() };
 
     // DEV ONLY (13 agosto 2026) — atajo pedido por Federico para no jugar
     // toda la progresion Bruno->Rufus cada vez que necesita probar
@@ -941,6 +951,18 @@ if (nextRealmKey) {
         P1: state.captures.P1,
         P2: state.captures.P2,
       };
+
+      // v68 (27 agosto 2026) — contadores de FinalVestigium. Se
+      // incrementan en los mismos puntos donde ya se decide mandar una
+      // ficha a Mara / activar una Nidana real, no se recalculan aparte.
+      const nextMaraVisits = {
+        P1: state.maraVisits.P1,
+        P2: state.maraVisits.P2,
+      };
+      const nextNidanasActivated = {
+        P1: state.nidanasActivated.P1,
+        P2: state.nidanasActivated.P2,
+      };
 // ===== captura sobre posición final real (Venenos + Avatares, D-014) =====
 // v6 — Avatar-vs-Avatar: la misma regla 0/1/2+ que ya regía solo para
 // Venenos ahora se evalúa sobre el conjunto combinado de piezas del
@@ -1091,6 +1113,7 @@ if (enemyRefsAtTarget.length >= 1) {
       inLimbo: true,
       maraLevel: 1,
     };
+    nextMaraVisits[opp] += 1;
   } else {
     const carriedByVictim = nextAvatarNidana[opp][enemyRef.kind];
 
@@ -1114,6 +1137,7 @@ if (enemyRefsAtTarget.length >= 1) {
         inLimbo: true,
         maraLevel: 1,
       };
+      nextMaraVisits[opp] += 1;
     }
   }
 
@@ -1479,6 +1503,10 @@ if (!didCapture) {
 
       const shouldShowNewNidana = Boolean(mappedNidana) && cooldownElapsed;
 
+      if (shouldShowNewNidana) {
+        nextNidanasActivated[me] += 1;
+      }
+
       const nextCurrentNidana = shouldShowNewNidana
         ? mappedNidana!
         : state.currentNidana;
@@ -1554,7 +1582,10 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
 const shouldCollapse = Object.values(countByPos).some((c) => c >= 5);
 
 if (shouldCollapse) {
-  nextPiecesAfterCollapse = applyCollapseIfNeeded(nextPieces);
+  const collapseResult = applyCollapseIfNeeded(nextPieces);
+  nextPiecesAfterCollapse = collapseResult.pieces;
+  nextMaraVisits.P1 += collapseResult.collapsedCounts.P1;
+  nextMaraVisits.P2 += collapseResult.collapsedCounts.P2;
 }
       const nextVenomTrio = detectVenomTrio(nextPiecesAfterCollapse);
 
@@ -1651,6 +1682,8 @@ if (shouldCollapse) {
         pieces: nextPiecesAfterCollapse,
         realmPieces: nextPiecesRealm,
         captures: nextCaptures,
+        maraVisits: nextMaraVisits,
+        nidanasActivated: nextNidanasActivated,
         actors: nextActors,
         curvature: nextCurvature,
         realmProgress: nextRealmProgress,
