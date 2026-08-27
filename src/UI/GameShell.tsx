@@ -33,7 +33,10 @@ import tensionSound from "../assets/sounds/tension.mp3";
 // esta imagen desde la izquierda tapando a Mara un momento, con un
 // scratch de DJ. Mismo evento efimero de hoy (fireDharmaEvent), no un
 // sistema nuevo — ver mas abajo, withDjBuddha.
-import djBuddhaPoster from "../assets/intro/buda_dj_poster.png";
+// v66 (27 agosto 2026) — Federico reemplazó el Buda DJ viejo por uno
+// nuevo (colores de los Avatares, sin luna en el fondo) y borró el
+// .png original; el archivo nuevo quedó como buda_dj_poster.webp.
+import djBuddhaPoster from "../assets/intro/buda_dj_poster.webp";
 // v52 (17 agosto 2026) — pedido de Federico: agregar "7 A one more.webp"
 // como segundo frame del poster de Buda DJ, cross-fadeado adentro del
 // mismo popup.
@@ -234,16 +237,14 @@ const [, setShowNidanaTitle] = React.useState(false);
 // (App.tsx le pasa key={genesisResetSeq}), así que este estado vuelve
 // solo a false en la partida siguiente.
 const [nirvanaMuralRevealed, setNirvanaMuralRevealed] = React.useState(false);
-// v55 (17 agosto 2026) — pedido de Federico: mural intermedio entre
-// "6 entra whitman" y "7 nirvana dj". Se pone en true junto con el
-// cartel "ONLY ONE MORE" (5/6 en Humans, ver p1NearWin/p2NearWin más
-// abajo) y hace que el mural de fondo muestre "7 A one more.webp"
-// (destapa el turbante, todavía NO la luna) en vez de "6 entra
-// whitman.webp". nirvanaMuralRevealed (arriba) tiene prioridad sobre
-// este cuando ambos son true (formación completa ya pasó por los 5/6
-// en camino a los 6/6). Mismo criterio de no-reset-a-mano que
-// nirvanaMuralRevealed: GameShell se remonta entero en cada reset.
-const [oneMoreMuralRevealed, setOneMoreMuralRevealed] = React.useState(false);
+// v66 (27 agosto 2026) — pedido de Federico: eliminado el mural
+// intermedio "7 A one more.webp" (y el archivo en sí) — el Buda DJ
+// nuevo ya no tiene luna que "destapar" en dos pasos, así que el
+// cartel "ONLY ONE MORE" (5/6 en Humans) ahora dispara directo
+// nirvanaMuralRevealed: el tablero queda totalmente destapado
+// ("7 nirvana dj.webp") apenas entra el Buda DJ, no recién en el 6/6.
+// Antes esto era un segundo estado (oneMoreMuralRevealed) con su
+// propia etapa "one_more" en MaraLayer — quitado junto con el archivo.
 
 // Escala dinámica del scene para llenar el viewport
 React.useEffect(() => {
@@ -703,21 +704,18 @@ React.useEffect(() => {
 // el momento real en que Bruno nace, no "margot". Mantener el "-1" aquí
 // ahora mostraría el mural del Avatar ANTERIOR al que realmente está
 // activo. Se quita — cosmicClock.era ya es la fuente de verdad directa.
-// v55 (17 agosto 2026) — nirvanaMuralRevealed/oneMoreMuralRevealed (ver
-// más arriba) pisan a state.cosmicClock.era: ese campo real del juego
-// nunca llega a valer "nirvana" ni "one_more" (llega hasta "whitman" y
-// se queda ahí hasta la victoria real), así que sin este override el
-// mural se quedaría en "6 entra whitman.webp" para siempre. Orden:
-// nirvana (6/6, luna destapada) gana sobre one_more (5/6, turbante
-// destapado) — para cuando llega la formación completa, los 5/6 ya
-// pasaron.
+// v55 (17 agosto 2026) — nirvanaMuralRevealed (ver más arriba) pisa a
+// state.cosmicClock.era: ese campo real del juego nunca llega a valer
+// "nirvana" (llega hasta "whitman" y se queda ahí hasta la victoria
+// real), así que sin este override el mural se quedaría en "6 entra
+// whitman.webp" para siempre.
+// v66 (27 agosto 2026) — quitada la rama "one_more" (ver
+// nirvanaMuralRevealed más arriba): ya no hay etapa intermedia.
 const muralEra = nirvanaMuralRevealed
   ? "nirvana"
-  : oneMoreMuralRevealed
-    ? "one_more"
-    : state.cosmicClock.transitionSequence === 0
-      ? "none"
-      : state.cosmicClock.era;
+  : state.cosmicClock.transitionSequence === 0
+    ? "none"
+    : state.cosmicClock.era;
 
 const [genesisPhase, setGenesisPhase] = React.useState<string>("VIDEO");
 
@@ -911,13 +909,14 @@ React.useEffect(() => {
   const p2At5 = whitmanEntered && p2NearWin === 5;
 
   if (p1At5 && !prevNearWinRef.current.P1) {
-    fireDharmaEvent("WHITE: ONLY ONE MORE.", true, true);
-    // v55 (17 agosto 2026) — mismo flanco de "ONLY ONE MORE": el mural
-    // de fondo pasa a "7 A one more.webp" (turbante destapado).
-    setOneMoreMuralRevealed(true);
+    fireDharmaEvent("WHITE: ONE MORE TO GET OUT.", true, true);
+    // v66 (27 agosto 2026) — mismo flanco de "ONLY ONE MORE": el mural
+    // de fondo pasa directo a "7 nirvana dj.webp" (tablero ya
+    // totalmente destapado, ver nirvanaMuralRevealed más arriba).
+    setNirvanaMuralRevealed(true);
   } else if (p2At5 && !prevNearWinRef.current.P2) {
-    fireDharmaEvent("BLACK: ONLY ONE MORE.", true, true);
-    setOneMoreMuralRevealed(true);
+    fireDharmaEvent("BLACK: ONE MORE TO GET OUT.", true, true);
+    setNirvanaMuralRevealed(true);
   }
 
   prevNearWinRef.current = { P1: p1At5, P2: p2At5 };

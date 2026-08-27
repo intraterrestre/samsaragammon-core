@@ -16,18 +16,13 @@ const nirvanaMuralModules = import.meta.glob(
   { eager: true, query: "?url", import: "default" }
 ) as Record<string, string>;
 
-// v55 (17 agosto 2026) — pedido de Federico, coreografía correcta del
-// cierre (la vuelta pasada la había entendido mal): NO son 7 etapas,
-// son 8. Entre "6 entra whitman" (Whitman ya jugable) y "7 nirvana dj"
-// (formación completa, 6/6 en Humans, luna destapada) hay una etapa
-// intermedia — "7 A one more.webp" — que se muestra apenas un jugador
-// llega a 5/6 en Humans (mismo evento que ya dispara el cartel "ONLY
-// ONE MORE" + Buda DJ + scratch, ver GameShell). Destapa el turbante
-// pero todavía NO la luna — esa queda exclusiva para "7 nirvana dj".
-const oneMoreMuralModules = import.meta.glob(
-  "../assets/intro/*one more*.webp",
-  { eager: true, query: "?url", import: "default" }
-) as Record<string, string>;
+// v66 (27 agosto 2026) — pedido de Federico: quitada la etapa
+// intermedia "7 A one more.webp" (archivo borrado del repo) — el Buda
+// DJ nuevo (colores de los Avatares, sin luna en el fondo) ya no
+// necesita un paso de "destapar el turbante" antes de destapar la
+// luna. Vuelve a ser 7 etapas: Bruno→Margot→Oriol→Marino→Rufus→
+// Whitman→Nirvana. GameShell dispara nirvanaMuralRevealed directo
+// apenas entra el Buda DJ (evento "ONLY ONE MORE", 5/6 en Humans).
 
 // v65 (20 agosto 2026) — entre que se revelan los Venenos y que
 // Bruno aparece de verdad, el tablero debe verse "totalmente
@@ -41,16 +36,12 @@ import boardBaseMural from "../assets/genesis/genesis_cv24.webp";
 const fallbackMural = boardBaseMural;
 
 const ERA_KEYS = ["bruno", "margot", "oriol", "marino", "rufus", "whitman"] as const;
-type EraKey = (typeof ERA_KEYS)[number] | "nirvana" | "one_more" | "none";
+type EraKey = (typeof ERA_KEYS)[number] | "nirvana" | "none";
 
 function findMuralFor(era: string): string {
   if (era === "nirvana") {
     const key = Object.keys(nirvanaMuralModules)[0];
     return key ? nirvanaMuralModules[key] : fallbackMural;
-  }
-  if (era === "one_more") {
-    const key = Object.keys(oneMoreMuralModules)[0];
-    return key ? oneMoreMuralModules[key] : fallbackMural;
   }
   const key = Object.keys(eraMuralModules).find((k) =>
     k.toLowerCase().includes(era.toLowerCase())
@@ -65,7 +56,6 @@ const ERA_MURALS: Record<EraKey, string> = {
   marino: findMuralFor("marino"),
   rufus: findMuralFor("rufus"),
   whitman: findMuralFor("whitman"),
-  one_more: findMuralFor("one_more"),
   nirvana: findMuralFor("nirvana"),
   none: boardBaseMural,
 };

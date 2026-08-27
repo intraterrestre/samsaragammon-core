@@ -52,12 +52,19 @@
 /* v35 (12 agosto 2026) — 3x el tamaño normal, para el aviso de "a un
    Avatar del final" (5 de 6 en Humans). Mismo globo, mismo estilo,
    solo más grande y con un poco más de contraste para que se lea de
-   lejos en pantallas chicas. */
+   lejos en pantallas chicas.
+   v67 (27 agosto 2026) — pedido de Federico: para "ONE MORE TO GET
+   OUT." (texto nuevo, antes "ONLY ONE MORE.") quitado el look de
+   videojuego (glow blanco + contorno negro grueso) por algo que lea
+   como una sentencia/cartel cinematográfico — Cinzel SemiBold, ivory
+   cálido en vez de blanco puro, sombra oscura sutil única, sin glow
+   ni outline. */
 .dharma-bubble-text-big {
+  font-family: "Cinzel", "Trajan Pro", "Times New Roman", serif;
+  font-weight: 600;
   font-size: 60px;
-  -webkit-text-stroke: 1.6px rgba(0,0,0,.9);
-  text-shadow:
-    0 0 14px rgba(255,255,255,.9),
-    0 0 30px rgba(255,255,255,.5),
-    0 6px 18px rgba(0,0,0,.95);
+  letter-spacing: 0.08em;
+  color: #f2e8d4;
+  -webkit-text-stroke: 0 transparent;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.55);
 }
