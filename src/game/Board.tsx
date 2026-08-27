@@ -10,7 +10,9 @@ import budaKarmaER from "../assets/tokens/buda-karma-er.webp";
 import BigHeadSchoolOverlay from "../UI/BigHeadSchoolOverlay";
 import { getUnlockedBasePieces } from "./era";
 import { NIDANA_FRONT_IMAGE } from "./nidanaAssets";
+import { NIDANA_NUMBER_IMAGE, NIDANA_NUMBER } from "./nidanaNumberAssets";
 import { NIDANAS } from "./nidanas";
+import type { NidanaId } from "./nidanas";
 import { STONE_GRADIENT, STONE_RING, STONE_SHADOW } from "./dice/stoneDiceStyle";
 
 // 🔥 FICHAS
@@ -342,32 +344,19 @@ const wheelCenter = {
  // Paso 1.2 (26 agosto 2026) — a pedido de Federico: el cartelito con
   // titulo+descripcion que aparecia solo, 5.6s despues de la moneda
   // grande, "salia y no volvia" — para cuando aparecia, ya habia dejado
-  // de mirar la pantalla. Se reemplaza por un gesto bajo demanda:
-  // mantener presionada la monedita (suelta en el tablero, o la que
-  // porta un Avatar) muestra su nombre mientras dure la presion, sin
-  // depender de ningun timer. pressedNidanaKey identifica CUAL moneda
-  // esta siendo presionada ("board-<pos>" o "avatar-<player>-<kind>"),
-  // nunca mas de una a la vez.
-  const [pressedNidanaKey, setPressedNidanaKey] = useState<string | null>(null);
-  const nidanaPressTimerRef = useRef<number | null>(null);
-  const NIDANA_PRESS_HOLD_MS = 350;
-
-  const startNidanaPress = (key: string) => {
-    if (nidanaPressTimerRef.current !== null) {
-      window.clearTimeout(nidanaPressTimerRef.current);
-    }
-    nidanaPressTimerRef.current = window.setTimeout(() => {
-      setPressedNidanaKey(key);
-    }, NIDANA_PRESS_HOLD_MS);
-  };
-
-  const cancelNidanaPress = () => {
-    if (nidanaPressTimerRef.current !== null) {
-      window.clearTimeout(nidanaPressTimerRef.current);
-      nidanaPressTimerRef.current = null;
-    }
-    setPressedNidanaKey(null);
-  };
+  // de mirar la pantalla. Se reemplazo por mantener presionada la
+  // monedita para ver su nombre.
+  //
+  // v71 (27 agosto 2026) — reemplazado de nuevo, a pedido de Federico:
+  // el arte real de cada Nidana es indistinguible a 30x30/18x18px
+  // ("desde pantallas chicas no se ven las diferencias"). Las monedas
+  // sueltas y las cargadas por un Avatar ahora muestran un NUMERO
+  // grande y legible (NIDANA_NUMBER_IMAGE) en vez del icono detallado.
+  // El gesto de mantener presionado se reemplaza por un click simple
+  // que abre el arte real en grande (enlargedNidana, ver el modal mas
+  // abajo junto a ExplainModal) — mas facil de descubrir que un press
+  // largo, y ahora sí muestra la moneda de verdad, no solo el nombre.
+  const [enlargedNidana, setEnlargedNidana] = useState<NidanaId | null>(null);
 
   const piecesByPos: Record<number, { player: PlayerId; kind: PieceKind }[]> =
     {};
@@ -400,7 +389,6 @@ const wheelCenter = {
       if (!nidanaId) return null;
       const pos = Number(posKey);
       const base = piecePosition(pos, size);
-      const pressKey = `board-${pos}`;
 
       return (
         <div
@@ -415,12 +403,9 @@ const wheelCenter = {
           }}
         >
           <img
-            src={NIDANA_FRONT_IMAGE[nidanaId]}
-            alt=""
-            onPointerDown={() => startNidanaPress(pressKey)}
-            onPointerUp={cancelNidanaPress}
-            onPointerLeave={cancelNidanaPress}
-            onPointerCancel={cancelNidanaPress}
+            src={NIDANA_NUMBER_IMAGE[nidanaId]}
+            alt={NIDANAS[nidanaId].label}
+            onClick={() => setEnlargedNidana(nidanaId)}
             style={{
               width: 30,
               height: 30,
@@ -430,29 +415,6 @@ const wheelCenter = {
               filter: "drop-shadow(0 0 4px rgba(255,255,255,0.35))",
             }}
           />
-          {pressedNidanaKey === pressKey && (
-            <div
-              style={{
-                position: "absolute",
-                bottom: "100%",
-                left: "50%",
-                transform: "translateX(-50%)",
-                marginBottom: 4,
-                padding: "2px 6px",
-                borderRadius: 4,
-                background: "rgba(0,0,0,0.85)",
-                color: "#fff",
-                fontSize: 11,
-                fontFamily: "Georgia, 'Times New Roman', serif",
-                fontStyle: "italic",
-                whiteSpace: "nowrap",
-                pointerEvents: "none",
-                zIndex: 9700,
-              }}
-            >
-              {NIDANAS[nidanaId].label}
-            </div>
-          )}
         </div>
       );
     }
@@ -648,9 +610,10 @@ top: stackedPosition.top,
 
 {/* Paso 1.2 (26 agosto 2026) — cartelito con titulo+descripcion
     eliminado (aparecia solo, 5.6s tarde, "salia y no volvia" segun
-    Federico). Reemplazado por el nombre bajo presion larga en cada
-    monedita — ver pressedNidanaKey mas arriba y su render junto a
-    cada token de Nidana (suelta y portada). */}
+    Federico). v71 (27 agosto 2026) — ahora cada monedita (suelta o
+    portada) muestra su numero y un click abre el arte real en grande
+    — ver enlargedNidana mas arriba y su modal junto a ExplainModal,
+    al final de este componente. */}
 
       {/* ===== Ring ===== */}
 <div
@@ -1064,16 +1027,12 @@ style={{
           }}
         >
           <img
-            src={NIDANA_FRONT_IMAGE[carriedNidana]}
-            alt=""
-            onPointerDown={(e) => {
+            src={NIDANA_NUMBER_IMAGE[carriedNidana]}
+            alt={NIDANAS[carriedNidana].label}
+            onClick={(e) => {
               e.stopPropagation();
-              startNidanaPress(`avatar-${player}-${piece.kind}`);
+              setEnlargedNidana(carriedNidana);
             }}
-            onPointerUp={cancelNidanaPress}
-            onPointerLeave={cancelNidanaPress}
-            onPointerCancel={cancelNidanaPress}
-            onClick={(e) => e.stopPropagation()}
             style={{
               width: 18,
               height: 18,
@@ -1085,29 +1044,6 @@ style={{
               display: "block",
             }}
           />
-          {pressedNidanaKey === `avatar-${player}-${piece.kind}` && (
-            <div
-              style={{
-                position: "absolute",
-                right: "100%",
-                top: "50%",
-                transform: "translateY(-50%)",
-                marginRight: 4,
-                padding: "2px 6px",
-                borderRadius: 4,
-                background: "rgba(0,0,0,0.85)",
-                color: "#fff",
-                fontSize: 11,
-                fontFamily: "Georgia, 'Times New Roman', serif",
-                fontStyle: "italic",
-                whiteSpace: "nowrap",
-                pointerEvents: "none",
-                zIndex: 9700,
-              }}
-            >
-              {NIDANAS[carriedNidana].label}
-            </div>
-          )}
         </div>
       )}
       </div>
@@ -1117,7 +1053,81 @@ style={{
         {(p1VenomsRevealed || p2VenomsRevealed) && renderedPieces}
         {genesisComplete && boardNidanaTokens}
 
-  
+        {/* v71 (27 agosto 2026) — click en cualquier monedita numerada
+            (suelta o portada por un Avatar) abre esto: el arte real de
+            esa Nidana en grande, su nombre y su linea poetica. Absolute
+            adentro de .ringWrap (no fixed) a proposito — .ringWrap ya
+            vive dentro de .samsaraScene, que tiene su propio
+            transform:scale(...) para escalar el tablero al viewport
+            real (ver VictoryScreen.tsx mas arriba en el repo para la
+            explicacion completa de por que position:fixed se rompe
+            ahi). Absolute simplemente se centra en .ringWrap y escala
+            junto con el tablero, sin ese problema. */}
+        {enlargedNidana && (
+          <div
+            onClick={() => setEnlargedNidana(null)}
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 9800,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgba(5,7,13,0.82)",
+              cursor: "pointer",
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 10,
+                padding: "20px 28px",
+                cursor: "default",
+              }}
+            >
+              <img
+                src={NIDANA_FRONT_IMAGE[enlargedNidana]}
+                alt={NIDANAS[enlargedNidana].label}
+                style={{
+                  width: 160,
+                  height: 160,
+                  objectFit: "contain",
+                  filter: "drop-shadow(0 6px 20px rgba(0,0,0,0.6))",
+                }}
+              />
+              <div
+                style={{
+                  fontFamily: "'Cinzel', 'Trajan Pro', 'Times New Roman', serif",
+                  fontWeight: 600,
+                  fontSize: 22,
+                  letterSpacing: "0.06em",
+                  color: "#f2e8d4",
+                  textShadow: "0 2px 5px rgba(0,0,0,0.55)",
+                  textTransform: "uppercase",
+                  textAlign: "center",
+                }}
+              >
+                {NIDANA_NUMBER[enlargedNidana]}. {NIDANAS[enlargedNidana].label}
+              </div>
+              <div
+                style={{
+                  fontFamily: "Georgia, 'Times New Roman', serif",
+                  fontStyle: "italic",
+                  fontSize: 14,
+                  color: "rgba(242,232,212,0.75)",
+                  textAlign: "center",
+                  maxWidth: 220,
+                }}
+              >
+                {NIDANAS[enlargedNidana].short}
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
 
       <ExplainModal
