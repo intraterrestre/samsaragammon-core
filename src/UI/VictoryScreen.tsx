@@ -12,17 +12,23 @@
 // apocalipsis"). Reutiliza el mismo patrón visual y de mute/unmute que
 // ya usan los videos de entrada de Avatar (.realmIntroOverlay/
 // .realmIntroVideo, ver overlays.css y activeRealmIntro en App.tsx) en
-// vez de inventar uno nuevo. `winner` queda en Props sin usarse
-// todavía — Federico va a pasar el siguiente cartel (con las ofertas
-// para los jugadores) para mostrar cuando el video termina; por ahora
-// ese momento es solo un botón mínimo de "Play again", placeholder
-// hasta que llegue ese cartel.
+// vez de inventar uno nuevo.
+// v68b (27 agosto 2026) — llegó el "cartel" real: cuando el video
+// termina ya no se muestra un botón placeholder, se muestra el menú
+// "WHAT NOW?" (ver WhatNowScreen.tsx) con Uthingo señalando las
+// opciones. `winner` sigue en Props porque GameShell lo usa como
+// gatillo de montaje ({state.winner && <VictoryScreen winner={...} />})
+// — el resultado a MOSTRAR ya viene resuelto adentro de
+// `finalVestigium` (buildFinalVestigium ya sabe cuál jugador ganó).
 import { useRef, useState } from "react";
 import championVideo from "../assets/video/champion.mp4";
 import type { PlayerId } from "../game/types";
+import type { FinalVestigium } from "../game/Vestigium";
+import { WhatNowScreen } from "./WhatNowScreen";
 
 type Props = {
   winner: PlayerId;
+  finalVestigium: FinalVestigium;
   onPlayAgain: () => void;
 };
 
@@ -82,30 +88,11 @@ export function VictoryScreen(props: Props) {
         </button>
       )}
 
-      {/* v68 — placeholder: acá va el cartel con las ofertas para los
-          jugadores que Federico todavía tiene que pasar. Mientras
-          tanto, solo un botón mínimo para volver a jugar — sin caja
-          negra ni texto de "Nirvana reached". */}
       {videoEnded && (
-        <button
-          type="button"
-          onClick={props.onPlayAgain}
-          style={{
-            position: "absolute",
-            padding: "12px 28px",
-            borderRadius: 12,
-            border: "2px solid rgba(255,220,140,0.7)",
-            background: "rgba(255,220,140,0.12)",
-            color: "white",
-            fontSize: 16,
-            fontWeight: 800,
-            cursor: "pointer",
-            boxShadow: "0 0 16px rgba(255,220,140,0.35)",
-            zIndex: 1000000,
-          }}
-        >
-          Play again
-        </button>
+        <WhatNowScreen
+          finalVestigium={props.finalVestigium}
+          onPlayAgain={props.onPlayAgain}
+        />
       )}
     </div>
   );

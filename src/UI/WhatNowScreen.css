@@ -1,0 +1,222 @@
+/* src/UI/WhatNowScreen.css
+   v68 (27 agosto 2026) — pantalla "WHAT NOW?" de cierre (después de
+   champion.mp4). Mismo lenguaje visual "cinematográfico" ya establecido
+   en el resto del juego (Cinzel, ivory tibio, sombra sutil, SIN
+   glow/outline — ver DharmaBubble.css) en vez de un estilo genérico de
+   videojuego. */
+
+.whatNowOverlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  z-index: 1000001;
+  display: flex;
+  flex-direction: row;
+  background: #05070d;
+  overflow: hidden;
+}
+
+/* Uthingo es solo arte de personaje — la imagen no tiene zonas
+   clicables ni texto horneado adentro. El menú de al lado se construye
+   por completo en código (ver .whatNowContent y sus botones). */
+.whatNowCharacter {
+  flex: 0 0 38%;
+  max-width: 38%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  background: radial-gradient(ellipse at 35% 40%, #0c1730 0%, #05070d 75%);
+}
+
+.whatNowCharacterImg {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.whatNowContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 48px 56px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.whatNowHeader {
+  font-family: "Cinzel", "Trajan Pro", "Times New Roman", serif;
+  font-weight: 600;
+  font-size: 42px;
+  letter-spacing: 0.08em;
+  color: #f2e8d4;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.55);
+  margin-bottom: 36px;
+}
+
+.whatNowOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 480px;
+}
+
+.whatNowOption {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 16px 20px;
+  border-radius: 10px;
+  border: 1px solid rgba(242, 232, 212, 0.25);
+  background: rgba(242, 232, 212, 0.04);
+  cursor: pointer;
+  text-align: left;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.whatNowOption:hover {
+  background: rgba(242, 232, 212, 0.09);
+  border-color: rgba(242, 232, 212, 0.45);
+}
+
+/* SEE YOUR TRACE — visualmente el más prominente a propósito: el dedo
+   de Uthingo lo señala (pedido explícito de Federico). */
+.whatNowOptionPrimary {
+  border-color: rgba(200, 168, 75, 0.55);
+  background: rgba(200, 168, 75, 0.08);
+}
+
+.whatNowOptionPrimary:hover {
+  background: rgba(200, 168, 75, 0.14);
+  border-color: rgba(200, 168, 75, 0.8);
+}
+
+.whatNowOptionTitle {
+  font-family: "Cinzel", "Trajan Pro", "Times New Roman", serif;
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: 0.06em;
+  color: #f2e8d4;
+}
+
+.whatNowOptionSubtitle {
+  font-family: system-ui, sans-serif;
+  font-size: 13px;
+  color: rgba(242, 232, 212, 0.6);
+  letter-spacing: 0.02em;
+}
+
+/* Footer separado del menú principal — "YOU GOT OUT. WHO'S NEXT?" +
+   INVITE A PLAYER, con su propia línea divisoria arriba. */
+.whatNowFooter {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(242, 232, 212, 0.15);
+  max-width: 480px;
+}
+
+.whatNowFooterLine {
+  font-family: "Cinzel", "Trajan Pro", "Times New Roman", serif;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  color: rgba(242, 232, 212, 0.75);
+  margin-bottom: 12px;
+}
+
+.whatNowInviteButton {
+  font-family: system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #f2e8d4;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid rgba(242, 232, 212, 0.3);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.whatNowInviteButton:hover {
+  background: rgba(242, 232, 212, 0.08);
+  border-color: rgba(242, 232, 212, 0.5);
+}
+
+/* --- vista "SEE YOUR TRACE" (FinalVestigium) --- */
+
+.whatNowTrace {
+  max-width: 480px;
+}
+
+.whatNowTraceGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+
+.whatNowTraceRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: rgba(242, 232, 212, 0.04);
+  border: 1px solid rgba(242, 232, 212, 0.12);
+}
+
+.whatNowTraceLabel {
+  font-family: system-ui, sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: rgba(242, 232, 212, 0.6);
+}
+
+.whatNowTraceValue {
+  font-family: "Cinzel", "Trajan Pro", "Times New Roman", serif;
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  color: #f2e8d4;
+}
+
+.whatNowBackButton {
+  font-family: system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(242, 232, 212, 0.75);
+  padding: 10px 22px;
+  border-radius: 8px;
+  border: 1px solid rgba(242, 232, 212, 0.25);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.whatNowBackButton:hover {
+  background: rgba(242, 232, 212, 0.08);
+  border-color: rgba(242, 232, 212, 0.5);
+}
+
+@media (max-width: 720px) {
+  .whatNowOverlay {
+    flex-direction: column;
+  }
+  .whatNowCharacter {
+    flex: 0 0 auto;
+    max-width: 100%;
+    height: 32vh;
+    padding: 12px;
+  }
+  .whatNowContent {
+    padding: 24px 28px;
+  }
+}

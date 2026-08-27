@@ -71,6 +71,13 @@ import fanfarriaSound from "../assets/sounds/fanfarria 5to Avatar.mp3";
 import campanaFinalSound from "../assets/sounds/campana final.mp3";
 import { SacredProgress } from "./SacredProgress";
 import { countNirvanaFormationProgress } from "../game/victory/nirvana";
+// v68 (27 agosto 2026) — pedido de Federico: el "cartel" WHAT NOW?
+// necesita el FinalVestigium del jugador que ganó para la vista "SEE
+// YOUR TRACE". Se construye una sola vez por partida (ver useMemo/
+// useEffect más abajo, gatillados por state.winner) y no toca el
+// reducer ni ninguna regla — solo lee game/Vestigium.ts, que ya es la
+// única fuente de verdad para esto (ver ese archivo).
+import { buildFinalVestigium, saveFinalVestigium } from "../game/Vestigium";
 import { VictoryScreen } from "./VictoryScreen";
 import { VenomBanner } from "./VenomBanner";
 import { HistoricalTimeCounter } from "./HistoricalTimeCounter";
@@ -150,6 +157,25 @@ export function GameShell({
   onCloseLedger,
   avatarVideoPlaying = false,
 }: Props) {
+// v68 (27 agosto 2026) — FinalVestigium del jugador que ganó, para el
+// menú WHAT NOW? (ver VictoryScreen.tsx/WhatNowScreen.tsx). Se recalcula
+// solo cuando cambia state.winner (useMemo — no en cada tirada), y se
+// persiste en localStorage una única vez por partida (useEffect + ref
+// con el gameId ya guardado, para no duplicar el guardado en cada
+// re-render mientras la pantalla de victoria queda montada).
+const finalVestigium = React.useMemo(() => {
+  if (!state.winner) return null;
+  return buildFinalVestigium(state, state.winner);
+}, [state.winner]);
+
+const savedFinalVestigiumGameIdRef = React.useRef<string | null>(null);
+React.useEffect(() => {
+  if (!finalVestigium) return;
+  if (savedFinalVestigiumGameIdRef.current === finalVestigium.gameId) return;
+  saveFinalVestigium(finalVestigium);
+  savedFinalVestigiumGameIdRef.current = finalVestigium.gameId;
+}, [finalVestigium]);
+
 const [hoveredOption, setHoveredOption] = React.useState<MoveOption | null>(null);
 const [dicePopupVisible, setDicePopupVisible] = React.useState(false);
 const [diceRolling, setDiceRolling] = React.useState(false);
@@ -1171,8 +1197,12 @@ return (
 
       {/* v34 (12 agosto 2026) — state.winner ya se calculaba bien, nada
           en la interfaz lo mostraba. Encima de todo lo demás. */}
-      {state.winner && (
-        <VictoryScreen winner={state.winner} onPlayAgain={onReset} />
+      {state.winner && finalVestigium && (
+        <VictoryScreen
+          winner={state.winner}
+          finalVestigium={finalVestigium}
+          onPlayAgain={onReset}
+        />
       )}
 
      {oriolEntered && <FandangoKarma />}
