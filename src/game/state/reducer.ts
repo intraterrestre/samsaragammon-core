@@ -76,6 +76,45 @@ type Action =
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 const rollDie = () => 1 + Math.floor(Math.random() * 6);
 
+// v77 (28 agosto 2026) — pedido de Federico tras verlo en partida real:
+// "salen cada tres lances pero son únicas" — las dos fuentes de Nidanas
+// físicas (cada 3 lances, y avatar_sent_to_mara/realm_stuck) elegían el
+// tipo con Math.random() puro, sin fijarse si ese tipo ya estaba en
+// juego — con las 12 posibles y varias decenas de tiradas por partida,
+// las repeticiones eran cuestión de tiempo (Federico vio dos "7" a la
+// vez). El disparador (cada 3 lances) NO cambia, solo la elección del
+// tipo: ahora se calcula "en juego" en vivo a partir del estado real
+// (boardNidanas sueltas + avatarNidana de ambos jugadores) en el
+// momento exacto del spawn — sin un contador/pool aparte que pueda
+// desincronizarse — y se sortea solo entre las que faltan. Si las 12
+// ya están en juego, ese disparador simplemente no genera ninguna esa
+// vez (nunca hay más de 12 en el mundo a la vez).
+function nidanasInPlay(
+  boardNidanas: GameState["boardNidanas"],
+  avatarNidana: GameState["avatarNidana"],
+): Set<NidanaId> {
+  const inPlay = new Set<NidanaId>();
+  for (const id of Object.values(boardNidanas)) {
+    if (id) inPlay.add(id);
+  }
+  for (const player of ["P1", "P2"] as PlayerId[]) {
+    for (const id of Object.values(avatarNidana[player])) {
+      if (id) inPlay.add(id);
+    }
+  }
+  return inPlay;
+}
+
+function pickUnusedNidana(
+  boardNidanas: GameState["boardNidanas"],
+  avatarNidana: GameState["avatarNidana"],
+): NidanaId | null {
+  const inPlay = nidanasInPlay(boardNidanas, avatarNidana);
+  const available = NIDANA_LIST.filter((id) => !inPlay.has(id));
+  if (available.length === 0) return null;
+  return available[Math.floor(Math.random() * available.length)];
+}
+
 // Las 3 fichas base / venenos.
 const BASE_PIECES: BasePieceKind[] = ["pig", "snake", "rooster"];
 
@@ -634,8 +673,16 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
       // realm_stuck (Federico no los objeto, solo dijo que el segundo es
       // demasiado raro) — se suma para que, en sus palabras, "vayan
       // lloviendo mas rapido".
-      const nextBoardNidanasOnRoll: GameState["boardNidanas"] =
+      // v77 — ver nota junto a pickUnusedNidana: mismo disparador (cada 3
+      // lances), pero el tipo ahora sale solo de las que faltan por
+      // aparecer, nunca repite una que ya esté en juego.
+      const nidanaToSpawnOnRoll =
         nextRollCount % 3 === 0
+          ? pickUnusedNidana(state.boardNidanas, state.avatarNidana)
+          : null;
+
+      const nextBoardNidanasOnRoll: GameState["boardNidanas"] =
+        nidanaToSpawnOnRoll
           ? {
               ...state.boardNidanas,
               [findEmptySpawnPos(
@@ -645,7 +692,7 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
                   trackSize: state.trackSize,
                 } as GameState,
                 Math.floor(Math.random() * state.trackSize)
-              )]: NIDANA_LIST[Math.floor(Math.random() * NIDANA_LIST.length)],
+              )]: nidanaToSpawnOnRoll,
             }
           : state.boardNidanas;
 
@@ -1690,20 +1737,25 @@ if (!didCapture) {
       );
 
       if (nidanaSpawnTrigger) {
-        const randomNidana =
-          NIDANA_LIST[Math.floor(Math.random() * NIDANA_LIST.length)];
-        const nidanaSpawnPos = findEmptySpawnPos(
-          {
-            pieces: nextPieces,
-            realmPieces: nextPiecesRealm,
-            trackSize: state.trackSize,
-          } as GameState,
-          finalToPos
-        );
-        nextBoardNidanas = {
-          ...nextBoardNidanas,
-          [nidanaSpawnPos]: randomNidana,
-        };
+        // v77 — mismo fix que el spawn de cada 3 lances: usa
+        // nextBoardNidanas/nextAvatarNidana (el estado YA actualizado por
+        // esta jugada, no el de antes de moverse) para no repetir un tipo
+        // que ya está en juego.
+        const randomNidana = pickUnusedNidana(nextBoardNidanas, nextAvatarNidana);
+        if (randomNidana) {
+          const nidanaSpawnPos = findEmptySpawnPos(
+            {
+              pieces: nextPieces,
+              realmPieces: nextPiecesRealm,
+              trackSize: state.trackSize,
+            } as GameState,
+            finalToPos
+          );
+          nextBoardNidanas = {
+            ...nextBoardNidanas,
+            [nidanaSpawnPos]: randomNidana,
+          };
+        }
       }
 
       const nextTurn = didWin ? me : opp;

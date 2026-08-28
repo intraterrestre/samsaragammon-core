@@ -62,3 +62,64 @@
   line-height: 1.55;
   opacity: 0.88;
 }
+
+/* v74 (28 agosto 2026) — pedido de Federico: "cuando aparezca un link
+   propio o una Nidana rival que necesitas, el logo hace un pequeño
+   pulso [...] no abriría Fandango automáticamente" — solo un aviso
+   visual sobre el ícono, nunca abre la ventana sola (ver
+   FandangoKarma.tsx, hasNotification). */
+.fandangoPulseDot {
+  position: absolute;
+  top: 6px;
+  right: 22px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #e8b06a;
+  box-shadow: 0 0 6px rgba(232, 176, 106, 0.9);
+  animation: fandangoPulse 1.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes fandangoPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(232, 176, 106, 0.65);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(232, 176, 106, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(232, 176, 106, 0);
+  }
+}
+
+/* v75 (28 agosto 2026) — pedido de Federico: el punto solo no era
+   suficiente aviso — "ponle un efecto de vibración o pulsación o de
+   latido [...] para llamar la atención". Doble golpe (thump-thump),
+   como un latido real, en bucle mientras hasNotification siga activo
+   (ver FandangoKarma.tsx). Convive con el hover (:hover ya anima
+   transform vía transition; mientras esta animación corre, cada
+   fotograma del latido pisa ese transform, lo cual es aceptable acá:
+   el aviso importa más que el hover mientras hay algo que mirar). */
+.fandangoImagePulsing {
+  animation: fandangoHeartbeat 1.8s ease-in-out infinite;
+}
+
+@keyframes fandangoHeartbeat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  10% {
+    transform: scale(1.1);
+  }
+  20% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.1);
+  }
+  40% {
+    transform: scale(1);
+  }
+}

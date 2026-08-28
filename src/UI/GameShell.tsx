@@ -13,6 +13,11 @@ import {
 
 import { FandangoKarma } from "../fandango/FandangoKarma";
 import { FandangoWindow } from "../fandango/FandangoWindow";
+import {
+  listCarriedNidanas,
+  computeOwnLinks,
+  computeRivalOpportunities,
+} from "../fandango/nidanaLinks";
 import { DevNidanaTool } from "../dev/DevNidanaTool";
 import type { NidanaId } from "../game/nidanas";
 import { MaraPanel } from "./MaraPanel";
@@ -72,6 +77,14 @@ import fanfarriaSound from "../assets/sounds/fanfarria 5to Avatar.mp3";
 // destapada — antes tapada por nubes en "6 entra whitman.webp"). Ver
 // nirvanaMuralRevealed más abajo.
 import campanaFinalSound from "../assets/sounds/campana final.mp3";
+// v75 (28 agosto 2026) — pedido de Federico: sonido que llame la
+// atención cuando aparece una oportunidad de negocio en Fandango (un
+// link propio o una Nidana rival que necesitas — mismo booleano
+// fandangoHasNotification que ya gatilla el punto pulsante del ícono,
+// ver más abajo). Suena una sola vez en el flanco false→true, mismo
+// patrón que el resto de audios de este archivo (prevFullFormationRef
+// etc.), no en cada render mientras la oportunidad sigue abierta.
+import fandangoSpraySound from "../assets/sounds/spray.mp3";
 import { SacredProgress } from "./SacredProgress";
 import { countNirvanaFormationProgress } from "../game/victory/nirvana";
 // v68 (27 agosto 2026) — pedido de Federico: el "cartel" WHAT NOW?
@@ -207,6 +220,50 @@ const [dicePopupVisible, setDicePopupVisible] = React.useState(false);
 // ../fandango/FandangoWindow.tsx), disparado por un click en
 // FandangoKarma más abajo.
 const [fandangoOpen, setFandangoOpen] = React.useState(false);
+
+// v74 (28 agosto 2026) — pedido de Federico: el ícono de Fandango
+// pulsa cuando hay algo que vale la pena mirar (un LINK AVAILABLE
+// propio, o el rival tiene lo que te falta), en vez de abrirse solo.
+// Mismas funciones que ya usa FandangoWindow para calcular esas dos
+// categorías — una sola fuente de verdad, no un chequeo aparte.
+const fandangoHasNotification = React.useMemo(() => {
+  const rivalPlayer = state.turn === "P1" ? "P2" : "P1";
+  const myIds = listCarriedNidanas(state.avatarNidana[state.turn]).map(
+    (e) => e.nidana,
+  );
+  const rivalIds = listCarriedNidanas(state.avatarNidana[rivalPlayer]).map(
+    (e) => e.nidana,
+  );
+  return (
+    computeOwnLinks(myIds).length > 0 ||
+    computeRivalOpportunities(myIds, rivalIds).length > 0
+  );
+}, [state.avatarNidana, state.turn]);
+
+// v75 (28 agosto 2026) — pedido de Federico: mismo patrón de flanco
+// (edge false→true) que prevFullFormationRef más abajo — spray.mp3
+// suena una sola vez cuando la oportunidad ACABA de aparecer, no en
+// cada re-render mientras fandangoHasNotification sigue en true.
+const prevFandangoNotificationRef = React.useRef(false);
+React.useEffect(() => {
+  if (fandangoHasNotification && !prevFandangoNotificationRef.current) {
+    const audio = fandangoSprayAudio.current;
+    if (audio) {
+      audio.currentTime = 0;
+      audio.play().catch(() => {
+        console.warn("[fandango] spray falló al reproducir, reintentando...");
+        window.setTimeout(() => {
+          audio.currentTime = 0;
+          audio.play().catch(() => {
+            console.warn("[fandango] spray falló también en el reintento.");
+          });
+        }, 120);
+      });
+    }
+  }
+  prevFandangoNotificationRef.current = fandangoHasNotification;
+}, [fandangoHasNotification]);
+
 const [diceRolling, setDiceRolling] = React.useState(false);
 
 // Clicks del dado *durante* Genesis (fases VIDEO/CASILLAS) — puramente
@@ -283,6 +340,7 @@ const fireworksAudio = React.useRef<HTMLAudioElement | null>(null);
 const scratchAudio = React.useRef<HTMLAudioElement | null>(null);
 const fanfarriaAudio = React.useRef<HTMLAudioElement | null>(null);
 const campanaFinalAudio = React.useRef<HTMLAudioElement | null>(null);
+const fandangoSprayAudio = React.useRef<HTMLAudioElement | null>(null);
 const [, setShowNidanaTitle] = React.useState(false);
 // v53 (17 agosto 2026) — ver import de campanaFinalSound: se pone en
 // true cuando termina la fanfarria del 6to Avatar, y hace que el mural
@@ -358,6 +416,7 @@ React.useEffect(() => {
   scratchAudio.current = new Audio(scratchSound);
   fanfarriaAudio.current = new Audio(fanfarriaSound);
   campanaFinalAudio.current = new Audio(campanaFinalSound);
+  fandangoSprayAudio.current = new Audio(fandangoSpraySound);
 
   if (cheeringAudio.current) cheeringAudio.current.volume = 0.18;
   if (fireworksAudio.current) fireworksAudio.current.volume = 0.12;
@@ -372,6 +431,7 @@ React.useEffect(() => {
   if (scratchAudio.current) scratchAudio.current.volume = 1.0;
   if (fanfarriaAudio.current) fanfarriaAudio.current.volume = 0.5;
   if (campanaFinalAudio.current) campanaFinalAudio.current.volume = 0.5;
+  if (fandangoSprayAudio.current) fandangoSprayAudio.current.volume = 0.5;
 
   // v55 (17 agosto 2026) — pedido de Federico, coreografía correcta
   // (corrige v53): la fanfarria NO suena cuando termina el video de
@@ -1275,7 +1335,10 @@ return (
       )}
 
      {oriolEntered && (
-       <FandangoKarma onOpen={() => setFandangoOpen(true)} />
+       <FandangoKarma
+         onOpen={() => setFandangoOpen(true)}
+         hasNotification={fandangoHasNotification}
+       />
      )}
 
       {/* Dados ocultos durante video intro del Genesis */}

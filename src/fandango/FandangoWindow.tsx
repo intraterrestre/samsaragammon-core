@@ -5,19 +5,24 @@
 // AVAILABLE LINKS. Sin trades, sin Vestigium nuevo y sin Big Head
 // School todavía." Se abre con un click en el ícono de FandangoKarma.
 //
-// v73 (28 agosto 2026) — corrección semántica de Federico/Chaty tras
-// ver el reporte de v72: LINK AVAILABLE y RIVAL HAS WHAT YOU NEED NO
-// son la misma categoría y no deben mezclarse bajo un solo título
-// compartido. LINK AVAILABLE = ambas Nidanas de la secuencia ya están
-// en tus Avatares (computeOwnLinks — esto ya estaba bien en la
-// lógica). RIVAL HAS WHAT YOU NEED = una es tuya, la consecutiva es
-// del rival — todavía NO es un link, es una oportunidad de trade
-// (computeRivalOpportunities — esto también ya estaba bien en la
-// lógica, el problema era solo de presentación). El fix acá es de
-// layout: LINK AVAILABLE va pegado a YOUR NIDANAS, RIVAL HAS WHAT YOU
-// NEED va pegado a RIVAL NIDANAS — ya no hay un título "Available
-// Links" que las agrupe como si fueran lo mismo. Sigue sin haber
-// botón de trade ("No implementes todavía el trade" — Federico).
+// v73 (28 agosto 2026) — corrección semántica: LINK AVAILABLE y RIVAL
+// HAS WHAT YOU NEED NO son la misma categoría. LINK AVAILABLE = ambas
+// mitades ya están en tus Avatares. RIVAL HAS WHAT YOU NEED = una es
+// tuya, la otra es del rival — todavía NO es un link, es una
+// oportunidad de trade. Separadas en el layout, sin título compartido.
+//
+// v74 (28 agosto 2026) — pedido de Federico tras verlo en el tablero
+// real: "ahora Fandango dice 'aquí está el estado de tu base de
+// datos'" — la jerarquía de información se queda igual (no toca la
+// lógica, no toca el tagline), pero el look administrativo (una barra
+// rectangular oscura por Nidana) se cambia por monedas horizontales —
+// las mismas NIDANA_NUMBER_IMAGE que ya se usan en el tablero, ahora
+// de protagonistas en vez de ir metidas adentro de una fila de texto.
+// LINK AVAILABLE y RIVAL HAS WHAT YOU NEED pasan a mostrarse como
+// pares de monedas chicas conectadas, no como oraciones largas — así
+// no revienta el ancho cuando haya 3-4 Nidanas a la vez (motivo
+// explícito de Federico para el cambio). Sigue sin haber botón de
+// trade/FORM LINK/DEAL — eso queda para cuando dé permiso explícito.
 //
 // Montado FUERA de .samsaraScene (mismo nivel que LedgerModal en
 // GameShell.tsx) a propósito — es un position:fixed de pantalla
@@ -30,12 +35,13 @@ import type { ReactNode } from "react";
 import type { NidanaId } from "../game/nidanas";
 import { NIDANAS } from "../game/nidanas";
 import type { RealmPieceKind } from "../game/types";
-import { NIDANA_NUMBER_IMAGE, NIDANA_NUMBER } from "../game/nidanaNumberAssets";
+import { NIDANA_NUMBER_IMAGE } from "../game/nidanaNumberAssets";
 import { REALM_AVATAR_NAME } from "../game/realmAvatarNames";
 import {
   listCarriedNidanas,
   computeOwnLinks,
   computeRivalOpportunities,
+  type CarriedNidana,
   type OwnLink,
   type RivalOpportunity,
 } from "./nidanaLinks";
@@ -58,7 +64,8 @@ function SectionTitle({ children }: { children: ReactNode }) {
         letterSpacing: "0.08em",
         textTransform: "uppercase",
         color: "#d8c48a",
-        marginBottom: 8,
+        textAlign: "center",
+        marginBottom: 10,
       }}
     >
       {children}
@@ -66,53 +73,82 @@ function SectionTitle({ children }: { children: ReactNode }) {
   );
 }
 
-function NidanaRow({ realm, nidana }: { realm: RealmPieceKind; nidana: NidanaId }) {
+function EmptyNote({ children }: { children: ReactNode }) {
   return (
     <div
       style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        padding: "6px 8px",
-        borderRadius: 8,
-        background: "rgba(255,255,255,0.04)",
+        fontSize: 13,
+        opacity: 0.5,
+        fontStyle: "italic",
+        textAlign: "center",
       }}
     >
-      <img
-        src={NIDANA_NUMBER_IMAGE[nidana]}
-        alt={NIDANAS[nidana].label}
-        style={{ width: 30, height: 30, objectFit: "contain", flexShrink: 0 }}
-      />
-      <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.25 }}>
-        <span style={{ fontWeight: 700, color: "#f2e8d4" }}>
-          {NIDANA_NUMBER[nidana]}. {NIDANAS[nidana].label}
-        </span>
-        <span style={{ fontSize: 12, opacity: 0.6 }}>
-          carried by {REALM_AVATAR_NAME[realm]}
-        </span>
-      </div>
+      {children}
     </div>
   );
 }
 
-function NidanaList({
-  entries,
-}: {
-  entries: { realm: RealmPieceKind; nidana: NidanaId }[];
-}) {
+// Una moneda grande (protagonista) con el Avatar que la porta debajo —
+// reemplaza la fila-de-texto vieja. La imagen ya trae el número
+// pintado (NIDANA_NUMBER_IMAGE), no hace falta repetirlo en texto.
+function Coin({ entry }: { entry: CarriedNidana }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 5,
+      }}
+    >
+      <img
+        src={NIDANA_NUMBER_IMAGE[entry.nidana]}
+        alt={NIDANAS[entry.nidana].label}
+        title={NIDANAS[entry.nidana].label}
+        style={{
+          width: 48,
+          height: 48,
+          objectFit: "contain",
+          filter: "drop-shadow(0 3px 8px rgba(0,0,0,0.55))",
+        }}
+      />
+      <span style={{ fontSize: 11, opacity: 0.65, letterSpacing: "0.02em" }}>
+        {REALM_AVATAR_NAME[entry.realm]}
+      </span>
+    </div>
+  );
+}
+
+function CoinRow({ entries }: { entries: CarriedNidana[] }) {
   if (entries.length === 0) {
-    return (
-      <div style={{ fontSize: 13, opacity: 0.55, fontStyle: "italic" }}>
-        No Nidanas carried yet.
-      </div>
-    );
+    return <EmptyNote>No Nidanas carried yet.</EmptyNote>;
   }
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        justifyContent: "center",
+        gap: 22,
+      }}
+    >
       {entries.map((e) => (
-        <NidanaRow key={e.realm} realm={e.realm} nidana={e.nidana} />
+        <Coin key={e.realm} entry={e} />
       ))}
     </div>
+  );
+}
+
+// Moneda chica, sin caption de Avatar — para las líneas compactas de
+// LINK AVAILABLE / RIVAL HAS WHAT YOU NEED.
+function MiniCoin({ nidana }: { nidana: NidanaId }) {
+  return (
+    <img
+      src={NIDANA_NUMBER_IMAGE[nidana]}
+      alt={NIDANAS[nidana].label}
+      title={NIDANAS[nidana].label}
+      style={{ width: 28, height: 28, objectFit: "contain", verticalAlign: "middle" }}
+    />
   );
 }
 
@@ -120,22 +156,37 @@ function NidanaList({
 // tus propios Avatares. Nada que negociar, el link ya existe.
 function LinkAvailableBlock({ links }: { links: OwnLink[] }) {
   return (
-    <div style={{ marginTop: 10 }}>
-      <div style={{ fontSize: 12, letterSpacing: "0.04em", color: "#9fd88a", marginBottom: 6 }}>
+    <div style={{ marginTop: 14 }}>
+      <div
+        style={{
+          fontSize: 12,
+          letterSpacing: "0.06em",
+          color: "#9fd88a",
+          textAlign: "center",
+          marginBottom: 8,
+        }}
+      >
         LINK AVAILABLE
       </div>
       {links.length === 0 ? (
-        <div style={{ fontSize: 13, opacity: 0.5, fontStyle: "italic" }}>
-          None yet.
-        </div>
+        <EmptyNote>None yet.</EmptyNote>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            gap: 18,
+          }}
+        >
           {links.map((link) => (
-            <div key={`${link.numA}-${link.numB}`} style={{ fontSize: 14, color: "#c9f0b8" }}>
-              {link.numA} → {link.numB} &nbsp;
-              <span style={{ opacity: 0.7 }}>
-                ({NIDANAS[link.a].label} + {NIDANAS[link.b].label})
-              </span>
+            <div
+              key={`${link.numA}-${link.numB}`}
+              style={{ display: "flex", alignItems: "center", gap: 6 }}
+            >
+              <MiniCoin nidana={link.a} />
+              <span style={{ opacity: 0.45, fontSize: 13 }}>──</span>
+              <MiniCoin nidana={link.b} />
             </div>
           ))}
         </div>
@@ -153,24 +204,40 @@ function RivalHasWhatYouNeedBlock({
   opportunities: RivalOpportunity[];
 }) {
   return (
-    <div style={{ marginTop: 10 }}>
-      <div style={{ fontSize: 12, letterSpacing: "0.04em", color: "#e8b06a", marginBottom: 6 }}>
+    <div style={{ marginTop: 14 }}>
+      <div
+        style={{
+          fontSize: 12,
+          letterSpacing: "0.06em",
+          color: "#e8b06a",
+          textAlign: "center",
+          marginBottom: 8,
+        }}
+      >
         RIVAL HAS WHAT YOU NEED
       </div>
       {opportunities.length === 0 ? (
-        <div style={{ fontSize: 13, opacity: 0.5, fontStyle: "italic" }}>
-          None yet.
-        </div>
+        <EmptyNote>None yet.</EmptyNote>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
           {opportunities.map((op) => {
             const lo = Math.min(op.haveNum, op.needNum);
             const hi = Math.max(op.haveNum, op.needNum);
             return (
-              <div key={`${op.haveNum}-${op.needNum}`} style={{ fontSize: 14, color: "#f2d19a" }}>
-                [{op.needNum}] completes {lo} → {hi} &nbsp;
-                <span style={{ opacity: 0.7 }}>
-                  ({NIDANAS[op.need].label})
+              <div
+                key={`${op.haveNum}-${op.needNum}`}
+                style={{ display: "flex", alignItems: "center", gap: 8 }}
+              >
+                <MiniCoin nidana={op.need} />
+                <span style={{ fontSize: 13, color: "#f2d19a", opacity: 0.9 }}>
+                  completes {lo} – {hi}
                 </span>
               </div>
             );
@@ -216,7 +283,7 @@ export function FandangoWindow({
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: "min(640px, 92vw)",
+          width: "min(560px, 92vw)",
           maxHeight: "82vh",
           overflowY: "auto",
           padding: "24px 26px",
@@ -226,6 +293,7 @@ export function FandangoWindow({
           boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
           color: "#f2e8d4",
           cursor: "default",
+          textAlign: "center",
         }}
       >
         <div
@@ -239,29 +307,29 @@ export function FandangoWindow({
         >
           CHAT FANDANGO™
         </div>
-        <div style={{ fontSize: 13, opacity: 0.6, marginBottom: 20 }}>
+        <div style={{ fontSize: 13, opacity: 0.6, marginBottom: 22 }}>
           Messages, suspicious offers, and karmic arrangements.
         </div>
 
         <SectionTitle>{myLabel}</SectionTitle>
-        <NidanaList entries={mine} />
+        <CoinRow entries={mine} />
         <LinkAvailableBlock links={ownLinks} />
 
         <div
           style={{
             borderTop: "1px solid rgba(216,196,138,0.2)",
-            margin: "20px 0",
+            margin: "22px 0",
           }}
         />
 
         <SectionTitle>{rivalLabel}</SectionTitle>
-        <NidanaList entries={rival} />
+        <CoinRow entries={rival} />
         <RivalHasWhatYouNeedBlock opportunities={rivalOpportunities} />
 
         <button
           onClick={onClose}
           style={{
-            marginTop: 24,
+            marginTop: 26,
             height: 38,
             padding: "0 16px",
             borderRadius: 10,
