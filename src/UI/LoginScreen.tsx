@@ -13,19 +13,39 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // v75 (28 agosto 2026) — bug reportado por Federico: el botón se
+  // quedaba trabado en "Sending…" para siempre, sin mostrar error. Acá
+  // no había try/catch: si supabase.auth.signInWithOtp lanzaba una
+  // excepción real (no un {error} normal, sino algo tipo URL de
+  // Supabase inválida o fetch fallido antes de que la librería llegue
+  // a devolver su propio objeto de error), el await nunca terminaba de
+  // resolver del lado de este componente y setLoading(false) —que
+  // vivía en la línea siguiente— nunca se ejecutaba. Ahora cualquier
+  // excepción se atrapa, se apaga el loading, y se muestra un mensaje
+  // real en vez de quedarse colgado en silencio. Mismo fix aplicado a
+  // handleVerifyCode por consistencia (mismo patrón, mismo riesgo).
   const handleSendCode = async () => {
     if (!email.trim()) return;
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: { shouldCreateUser: true },
-    });
-    setLoading(false);
-    if (error) {
-      setError(error.message);
-    } else {
-      setStep("code");
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: { shouldCreateUser: true },
+      });
+      if (error) {
+        setError(error.message);
+      } else {
+        setStep("code");
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? `Could not send: ${err.message}`
+          : "Could not send the code. Check your connection and try again.",
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -33,16 +53,25 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
     if (!code.trim()) return;
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.verifyOtp({
-      email: email.trim(),
-      token: code.trim(),
-      type: "email",
-    });
-    setLoading(false);
-    if (error) {
-      setError("Invalid code. Try again.");
-    } else {
-      onLogin();
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email: email.trim(),
+        token: code.trim(),
+        type: "email",
+      });
+      if (error) {
+        setError("Invalid code. Try again.");
+      } else {
+        onLogin();
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? `Could not verify: ${err.message}`
+          : "Could not verify the code. Check your connection and try again.",
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
