@@ -12,6 +12,7 @@ import {
 } from "../game/rules/getMoveOptionsForPlayer";
 
 import { FandangoKarma } from "../fandango/FandangoKarma";
+import { FandangoWindow } from "../fandango/FandangoWindow";
 import { MaraPanel } from "./MaraPanel";
 import { SamsaraStage } from "../samsara/SamsaraStage";
 
@@ -185,6 +186,10 @@ React.useEffect(() => {
 
 const [hoveredOption, setHoveredOption] = React.useState<MoveOption | null>(null);
 const [dicePopupVisible, setDicePopupVisible] = React.useState(false);
+// v72 (28 agosto 2026) — abre/cierra FandangoWindow (ver
+// ../fandango/FandangoWindow.tsx), disparado por un click en
+// FandangoKarma más abajo.
+const [fandangoOpen, setFandangoOpen] = React.useState(false);
 const [diceRolling, setDiceRolling] = React.useState(false);
 
 // Clicks del dado *durante* Genesis (fases VIDEO/CASILLAS) — puramente
@@ -1245,7 +1250,9 @@ return (
         />
       )}
 
-     {oriolEntered && <FandangoKarma />}
+     {oriolEntered && (
+       <FandangoKarma onOpen={() => setFandangoOpen(true)} />
+     )}
 
       {/* Dados ocultos durante video intro del Genesis */}
       {(genesisComplete || genesisPhase !== "VIDEO") && (
@@ -1295,6 +1302,25 @@ return (
   open={state.ledgerOpen}
   entryId={state.ledgerEntry}
   onClose={onCloseLedger}
+/>
+
+{/* v72 (28 agosto 2026) — Fandango real, fase 1 (solo lectura).
+    Montada acá, junto a LedgerModal — fuera de .samsaraScene, no
+    dentro de boardLayer — por la misma razón: es position:fixed de
+    pantalla completa, y .samsaraScene (transform: scale) recortaría
+    cualquier descendiente fixed adentro suyo. "YOU"/"RIVAL" siguen a
+    state.turn: el juego es hotseat (misma pantalla, sin jugador
+    "local" fijo), así que quien tiene el turno ve sus propias Nidanas
+    a la izquierda. */}
+<FandangoWindow
+  open={fandangoOpen}
+  onClose={() => setFandangoOpen(false)}
+  myNidanas={state.avatarNidana[state.turn]}
+  rivalNidanas={
+    state.avatarNidana[state.turn === "P1" ? "P2" : "P1"]
+  }
+  myLabel={`YOUR NIDANAS (${state.turn})`}
+  rivalLabel={`RIVAL NIDANAS (${state.turn === "P1" ? "P2" : "P1"})`}
 />
 
 </>
