@@ -5,6 +5,20 @@
 // AVAILABLE LINKS. Sin trades, sin Vestigium nuevo y sin Big Head
 // School todavía." Se abre con un click en el ícono de FandangoKarma.
 //
+// v73 (28 agosto 2026) — corrección semántica de Federico/Chaty tras
+// ver el reporte de v72: LINK AVAILABLE y RIVAL HAS WHAT YOU NEED NO
+// son la misma categoría y no deben mezclarse bajo un solo título
+// compartido. LINK AVAILABLE = ambas Nidanas de la secuencia ya están
+// en tus Avatares (computeOwnLinks — esto ya estaba bien en la
+// lógica). RIVAL HAS WHAT YOU NEED = una es tuya, la consecutiva es
+// del rival — todavía NO es un link, es una oportunidad de trade
+// (computeRivalOpportunities — esto también ya estaba bien en la
+// lógica, el problema era solo de presentación). El fix acá es de
+// layout: LINK AVAILABLE va pegado a YOUR NIDANAS, RIVAL HAS WHAT YOU
+// NEED va pegado a RIVAL NIDANAS — ya no hay un título "Available
+// Links" que las agrupe como si fueran lo mismo. Sigue sin haber
+// botón de trade ("No implementes todavía el trade" — Federico).
+//
 // Montado FUERA de .samsaraScene (mismo nivel que LedgerModal en
 // GameShell.tsx) a propósito — es un position:fixed de pantalla
 // completa, y un ancestro con transform (.samsaraScene) se vuelve el
@@ -12,6 +26,7 @@
 // su overflow:hidden. Mismo bug que ya se arregló en VictoryScreen.tsx
 // (ver ese archivo) — acá se evita de raíz montando en el lugar
 // correcto en vez de portal.
+import type { ReactNode } from "react";
 import type { NidanaId } from "../game/nidanas";
 import { NIDANAS } from "../game/nidanas";
 import type { RealmPieceKind } from "../game/types";
@@ -20,6 +35,8 @@ import {
   listCarriedNidanas,
   computeOwnLinks,
   computeRivalOpportunities,
+  type OwnLink,
+  type RivalOpportunity,
 } from "./nidanaLinks";
 
 const REALM_AVATAR_NAME: Record<RealmPieceKind, string> = {
@@ -39,6 +56,23 @@ type Props = {
   myLabel: string;
   rivalLabel: string;
 };
+
+function SectionTitle({ children }: { children: ReactNode }) {
+  return (
+    <div
+      style={{
+        fontFamily: "'Cinzel', 'Trajan Pro', 'Times New Roman', serif",
+        fontSize: 14,
+        letterSpacing: "0.08em",
+        textTransform: "uppercase",
+        color: "#d8c48a",
+        marginBottom: 8,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
 function NidanaRow({ realm, nidana }: { realm: RealmPieceKind; nidana: NidanaId }) {
   return (
@@ -69,36 +103,86 @@ function NidanaRow({ realm, nidana }: { realm: RealmPieceKind; nidana: NidanaId 
   );
 }
 
-function NidanaColumn({
-  label,
+function NidanaList({
   entries,
 }: {
-  label: string;
   entries: { realm: RealmPieceKind; nidana: NidanaId }[];
 }) {
-  return (
-    <div style={{ flex: 1, minWidth: 0 }}>
-      <div
-        style={{
-          fontFamily: "'Cinzel', 'Trajan Pro', 'Times New Roman', serif",
-          fontSize: 14,
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
-          color: "#d8c48a",
-          marginBottom: 8,
-        }}
-      >
-        {label}
+  if (entries.length === 0) {
+    return (
+      <div style={{ fontSize: 13, opacity: 0.55, fontStyle: "italic" }}>
+        No Nidanas carried yet.
       </div>
-      {entries.length === 0 ? (
-        <div style={{ fontSize: 13, opacity: 0.55, fontStyle: "italic" }}>
-          No Nidanas carried yet.
+    );
+  }
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {entries.map((e) => (
+        <NidanaRow key={e.realm} realm={e.realm} nidana={e.nidana} />
+      ))}
+    </div>
+  );
+}
+
+// LINK AVAILABLE — ambas Nidanas de la pareja consecutiva ya están en
+// tus propios Avatares. Nada que negociar, el link ya existe.
+function LinkAvailableBlock({ links }: { links: OwnLink[] }) {
+  return (
+    <div style={{ marginTop: 10 }}>
+      <div style={{ fontSize: 12, letterSpacing: "0.04em", color: "#9fd88a", marginBottom: 6 }}>
+        LINK AVAILABLE
+      </div>
+      {links.length === 0 ? (
+        <div style={{ fontSize: 13, opacity: 0.5, fontStyle: "italic" }}>
+          None yet.
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {entries.map((e) => (
-            <NidanaRow key={e.realm} realm={e.realm} nidana={e.nidana} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {links.map((link) => (
+            <div key={`${link.numA}-${link.numB}`} style={{ fontSize: 14, color: "#c9f0b8" }}>
+              {link.numA} → {link.numB} &nbsp;
+              <span style={{ opacity: 0.7 }}>
+                ({NIDANAS[link.a].label} + {NIDANAS[link.b].label})
+              </span>
+            </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// RIVAL HAS WHAT YOU NEED — una mitad es tuya, la otra todavía es del
+// rival. Esto NO es un link, es una oportunidad de trade — se muestra
+// separado a propósito para no confundir las dos categorías.
+function RivalHasWhatYouNeedBlock({
+  opportunities,
+}: {
+  opportunities: RivalOpportunity[];
+}) {
+  return (
+    <div style={{ marginTop: 10 }}>
+      <div style={{ fontSize: 12, letterSpacing: "0.04em", color: "#e8b06a", marginBottom: 6 }}>
+        RIVAL HAS WHAT YOU NEED
+      </div>
+      {opportunities.length === 0 ? (
+        <div style={{ fontSize: 13, opacity: 0.5, fontStyle: "italic" }}>
+          None yet.
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {opportunities.map((op) => {
+            const lo = Math.min(op.haveNum, op.needNum);
+            const hi = Math.max(op.haveNum, op.needNum);
+            return (
+              <div key={`${op.haveNum}-${op.needNum}`} style={{ fontSize: 14, color: "#f2d19a" }}>
+                [{op.needNum}] completes {lo} → {hi} &nbsp;
+                <span style={{ opacity: 0.7 }}>
+                  ({NIDANAS[op.need].label})
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -167,65 +251,20 @@ export function FandangoWindow({
           Messages, suspicious offers, and karmic arrangements.
         </div>
 
-        <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>
-          <NidanaColumn label={myLabel} entries={mine} />
-          <NidanaColumn label={rivalLabel} entries={rival} />
-        </div>
+        <SectionTitle>{myLabel}</SectionTitle>
+        <NidanaList entries={mine} />
+        <LinkAvailableBlock links={ownLinks} />
 
         <div
           style={{
-            fontFamily: "'Cinzel', 'Trajan Pro', 'Times New Roman', serif",
-            fontSize: 14,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: "#d8c48a",
-            marginBottom: 8,
             borderTop: "1px solid rgba(216,196,138,0.2)",
-            paddingTop: 16,
+            margin: "20px 0",
           }}
-        >
-          Available Links
-        </div>
+        />
 
-        {ownLinks.length === 0 && rivalOpportunities.length === 0 ? (
-          <div style={{ fontSize: 13, opacity: 0.55, fontStyle: "italic" }}>
-            No sequential Nidanas in play yet.
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {ownLinks.length > 0 && (
-              <div>
-                <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 6 }}>
-                  You already hold a sequence:
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  {ownLinks.map((link) => (
-                    <div key={`${link.numA}-${link.numB}`} style={{ fontSize: 14 }}>
-                      {link.numA}. {NIDANAS[link.a].label} + {link.numB}.{" "}
-                      {NIDANAS[link.b].label}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {rivalOpportunities.length > 0 && (
-              <div>
-                <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 6 }}>
-                  Rival has what you need:
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  {rivalOpportunities.map((op) => (
-                    <div key={`${op.haveNum}-${op.needNum}`} style={{ fontSize: 14 }}>
-                      You hold {op.haveNum}. {NIDANAS[op.have].label} — rival holds{" "}
-                      {op.needNum}. {NIDANAS[op.need].label}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        <SectionTitle>{rivalLabel}</SectionTitle>
+        <NidanaList entries={rival} />
+        <RivalHasWhatYouNeedBlock opportunities={rivalOpportunities} />
 
         <button
           onClick={onClose}
