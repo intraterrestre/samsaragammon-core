@@ -13,11 +13,13 @@ import {
 
 import { FandangoKarma } from "../fandango/FandangoKarma";
 import { FandangoWindow } from "../fandango/FandangoWindow";
+import { DevNidanaTool } from "../dev/DevNidanaTool";
+import type { NidanaId } from "../game/nidanas";
 import { MaraPanel } from "./MaraPanel";
 import { SamsaraStage } from "../samsara/SamsaraStage";
 
 import watcherVideo from "../assets/video/jesus_watch.mp4";
-import type { MoveOption, PieceKind, PlayerId } from "../game/types";
+import type { MoveOption, PieceKind, PlayerId, RealmPieceKind } from "../game/types";
 import { REALM_PIECE_ORDER } from "../game/types";
 import { AVATAR_ORDER } from "../game/historicalClock";
 import { ACTOR_PROFILES } from "../game/actors/actorProfiles";
@@ -137,6 +139,19 @@ nidanaCoinSide: "front" | "back";
   // Buda DJ + mural), sin completar el 6to a propósito — el movimiento
   // final que gana la partida se sigue jugando a mano.
   onDevSkipTo5Humans?: () => void;
+  // v74 (28 agosto 2026) — DEV — FANDANGO / NIDANA TEST TOOL, pedido de
+  // Federico/Chaty (ver DevNidanaTool.tsx). Opcionales por el mismo
+  // motivo que los otros DEV_*: no romper otros usos de GameShell que
+  // no los pasen. Solo se monta el panel si además import.meta.env.DEV
+  // (ver más abajo) — no debe aparecer en producción.
+  onDevSetAvatarNidana?: (
+    player: PlayerId,
+    realm: RealmPieceKind,
+    nidana: NidanaId | null,
+  ) => void;
+  onDevSetAllAvatarNidanas?: (
+    avatarNidana: Record<PlayerId, Partial<Record<RealmPieceKind, NidanaId>>>,
+  ) => void;
 
   avatarVideoPlaying?: boolean;
 };
@@ -157,6 +172,8 @@ export function GameShell({
   onReset,
   onDevSkipToRufus,
   onDevSkipTo5Humans,
+  onDevSetAvatarNidana,
+  onDevSetAllAvatarNidanas,
   playDiceSound,
   onConsciousMove,
   onGenesisUIComplete,
@@ -1057,7 +1074,14 @@ return (
           Whitman (6to): Federico quiere jugar a mano el último tramo y
           ver la entrada real de Whitman (video/fanfarria/campana/foto
           de la luna) en su momento real, no adelantada por el atajo. */}
-      {genesisComplete && onDevSkipToRufus && (
+      {/* v74 (28 agosto 2026) — import.meta.env.DEV agregado: estos
+          botones DEV se estaban montando también en producción (nadie
+          lo había gateado hasta ahora). Al construir el nuevo dev-tool
+          de Nidanas con el requisito explícito de "no debe aparecer en
+          producción", se corrigió acá también para no dejar dos
+          botones DEV expuestos en el sitio real mientras el tercero
+          queda oculto. */}
+      {import.meta.env.DEV && genesisComplete && onDevSkipToRufus && (
         <button
           onClick={onDevSkipToRufus}
           style={{
@@ -1084,7 +1108,7 @@ return (
           (state.turn) en 5/6 fichas en Humans a propósito, no en 6/6 —
           el movimiento final que gana la partida se sigue jugando a
           mano (ver reducer.ts, case "DEV_SKIP_TO_5_HUMANS"). */}
-      {genesisComplete && onDevSkipTo5Humans && (
+      {import.meta.env.DEV && genesisComplete && onDevSkipTo5Humans && (
         <button
           onClick={onDevSkipTo5Humans}
           style={{
@@ -1322,6 +1346,21 @@ return (
   myLabel={`YOUR NIDANAS (${state.turn})`}
   rivalLabel={`RIVAL NIDANAS (${state.turn === "P1" ? "P2" : "P1"})`}
 />
+
+{/* v74 (28 agosto 2026) — DEV — FANDANGO / NIDANA TEST TOOL. Montado
+    acá (fuera de .samsaraScene, junto a LedgerModal/FandangoWindow) por
+    la misma razón de siempre: usa position:fixed adentro, y
+    .samsaraScene lo recortaría si estuviera anidado más arriba.
+    import.meta.env.DEV — nunca se monta en producción, ni siquiera si
+    App.tsx pasara los callbacks (defensa en profundidad, ver también
+    el gate espejo adentro del reducer). */}
+{import.meta.env.DEV && onDevSetAvatarNidana && onDevSetAllAvatarNidanas && (
+  <DevNidanaTool
+    avatarNidana={state.avatarNidana}
+    onSetAvatarNidana={onDevSetAvatarNidana}
+    onSetAll={onDevSetAllAvatarNidanas}
+  />
+)}
 
 </>
 );

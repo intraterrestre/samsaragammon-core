@@ -31,6 +31,7 @@ import type { NidanaId } from "../game/nidanas";
 import { NIDANAS } from "../game/nidanas";
 import type { RealmPieceKind } from "../game/types";
 import { NIDANA_NUMBER_IMAGE, NIDANA_NUMBER } from "../game/nidanaNumberAssets";
+import { REALM_AVATAR_NAME } from "../game/realmAvatarNames";
 import {
   listCarriedNidanas,
   computeOwnLinks,
@@ -38,15 +39,6 @@ import {
   type OwnLink,
   type RivalOpportunity,
 } from "./nidanaLinks";
-
-const REALM_AVATAR_NAME: Record<RealmPieceKind, string> = {
-  hungry_ghost: "Bruno",
-  hell: "Margot",
-  animals: "Oriol",
-  humans: "Marino",
-  asura: "Rufus",
-  deva: "Whitman",
-};
 
 type Props = {
   open: boolean;

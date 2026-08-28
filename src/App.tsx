@@ -1156,6 +1156,18 @@ nidanaCoinSide={nidanaSide}
       // "DEV_SKIP_TO_5_HUMANS") para probar el aviso "ONE MORE TO GET
       // OUT" sin jugar toda la partida.
       onDevSkipTo5Humans={() => dispatch({ type: "DEV_SKIP_TO_5_HUMANS" })}
+      // v74 (28 agosto 2026) — DEV — FANDANGO / NIDANA TEST TOOL, pedido
+      // de Federico/Chaty: forzar Nidanas en Avatares de P1/P2 sin
+      // depender del azar, para probar Fandango de forma repetible.
+      // GameShell solo monta el panel si import.meta.env.DEV además de
+      // recibir estos callbacks (ver GameShell.tsx) — acá se pasan
+      // siempre, el gate real vive ahí y espejado dentro del reducer.
+      onDevSetAvatarNidana={(player, realm, nidana) =>
+        dispatch({ type: "DEV_SET_AVATAR_NIDANA", player, realm, nidana })
+      }
+      onDevSetAllAvatarNidanas={(avatarNidana) =>
+        dispatch({ type: "DEV_SET_ALL_AVATAR_NIDANAS", avatarNidana })
+      }
       onVestigiumDone={() => setShowVestigium(false)}
       onCloseLedger={() => dispatch({ type: "CLOSE_LEDGER" })}
       // 2026-08-22: onIntroDone (dispatch INTRO_DONE → state.introSeen =

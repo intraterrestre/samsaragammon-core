@@ -54,7 +54,24 @@ type Action =
   | { type: "SET_MULTIPLAYER_STATE"; state: GameState }
   | { type: "SET_GENESIS_UI_COMPLETE" }
   | { type: "DEV_SKIP_TO_RUFUS" }
-  | { type: "DEV_SKIP_TO_5_HUMANS" };
+  | { type: "DEV_SKIP_TO_5_HUMANS" }
+  // v74 (28 agosto 2026) — dev-tool de Federico/Chaty para probar
+  // Fandango/Nidanas sin depender del azar (ver DevNidanaTool.tsx).
+  // Escriben directo sobre avatarNidana, el MISMO estado real que lee
+  // Fandango — nada de un estado ficticio paralelo. Gateadas en el
+  // reducer con import.meta.env.DEV además de en la UI (ver más abajo,
+  // defensa en profundidad: aunque alguien despache la acción a mano
+  // en producción, no hace nada).
+  | {
+      type: "DEV_SET_AVATAR_NIDANA";
+      player: PlayerId;
+      realm: RealmPieceKind;
+      nidana: NidanaId | null;
+    }
+  | {
+      type: "DEV_SET_ALL_AVATAR_NIDANAS";
+      avatarNidana: Record<PlayerId, Partial<Record<RealmPieceKind, NidanaId>>>;
+    };
 
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 const rollDie = () => 1 + Math.floor(Math.random() * 6);
@@ -455,6 +472,40 @@ export function reducer(state: GameState, action: Action): GameState {
             movesInStage: 0,
           },
         },
+      };
+    }
+
+    // v74 (28 agosto 2026) — asigna/sustituye/quita la Nidana de UN
+    // Avatar (nidana === null quita). No toca boardNidanas, pieces,
+    // turn, ni ninguna otra regla — solo el mapa que Fandango lee.
+    // "máximo una Nidana por Avatar" ya es estructural: es un slot
+    // único por realm, sobreescribirlo YA es "sustituir".
+    case "DEV_SET_AVATAR_NIDANA": {
+      if (!import.meta.env.DEV) return state;
+      const { player, realm, nidana } = action;
+      const nextForPlayer = { ...state.avatarNidana[player] };
+      if (nidana === null) {
+        delete nextForPlayer[realm];
+      } else {
+        nextForPlayer[realm] = nidana;
+      }
+      return {
+        ...state,
+        avatarNidana: {
+          ...state.avatarNidana,
+          [player]: nextForPlayer,
+        },
+      };
+    }
+
+    // v74 (28 agosto 2026) — reemplaza avatarNidana completo de un
+    // saque: usado por los presets (A/B/C) y por "Clear All" (pasando
+    // { P1: {}, P2: {} }) del dev-tool.
+    case "DEV_SET_ALL_AVATAR_NIDANAS": {
+      if (!import.meta.env.DEV) return state;
+      return {
+        ...state,
+        avatarNidana: action.avatarNidana,
       };
     }
 
