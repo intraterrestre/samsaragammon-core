@@ -13,15 +13,26 @@
 // `session`, ni `profile`, ni `oracleText`, ni ningún otro campo).
 // Se borra todo lo muerto y lo duplicado; solo queda handleLogin, que
 // es lo único que <App> de verdad usa (LoginScreen onLogin={handleLogin}).
-import { supabase } from "../../lib/supabaseClient";
-
+//
+// v76 (28 agosto 2026) — bug reportado por Federico: metía el código
+// de 6 dígitos bien y "no termina de abrir el juego". Causa:
+// handleLogin todavía era el login VIEJO de antes de que
+// LoginScreen.tsx tuviera su propio flujo completo (email → código →
+// verifyOtp) — hacía prompt("Email:") + su propio signInWithOtp +
+// alert(...), un segundo login por completo, desconectado del que
+// Federico recién terminó. App.tsx ya tiene su propio
+// onAuthStateChange (líneas ~393) que actualiza `session` solo apenas
+// verifyOtp tiene éxito — no necesita ayuda de onLogin para eso. El
+// daño real: prompt()/alert() son BLOQUEANTES, congelan la página
+// entera hasta que alguien los cierra. Aunque `session` ya se hubiera
+// actualizado por debajo, la pantalla no se repinta hasta cerrar ese
+// diálogo — que además no tiene nada que ver con el login que
+// Federico acababa de completar, así que es fácil no verlo o no
+// entender qué pide. Ahora es un no-op: LoginScreen ya hizo todo el
+// trabajo antes de llamar onLogin().
 export function useGameController() {
-  const handleLogin = async () => {
-    const email = prompt("Email:");
-    if (!email) return;
-    const { error } = await supabase.auth.signInWithOtp({ email });
-    if (error) alert(error.message);
-    else alert("Check your email for the login link.");
+  const handleLogin = () => {
+    // Deliberadamente vacío — ver nota arriba.
   };
 
   return { handleLogin };
