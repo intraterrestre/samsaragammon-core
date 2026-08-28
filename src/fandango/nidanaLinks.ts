@@ -64,6 +64,26 @@ export function computeOwnLinks(myIds: NidanaId[]): OwnLink[] {
   return links;
 }
 
+// v76 (28 agosto 2026) — pedido de Federico: FORM LINK. El estado del
+// juego (ver GameState.formedLinks, reducer.ts) guarda los links ya
+// formados como número "bajo" nada más (6 significa el link 6-7) para
+// no acoplar game/state al NidanaId concreto — acá, del lado de
+// Fandango, se necesita el NidanaId de vuelta nada más que para poder
+// dibujar la MiniCoin de "YOUR LINKS". NIDANA_NUMBER (arriba) ya es la
+// biyección id→número fija (no depende de la partida); esto es
+// simplemente su inversa, calculada una sola vez.
+const NIDANA_ID_BY_NUMBER: NidanaId[] = (() => {
+  const arr: NidanaId[] = [];
+  for (const id of Object.keys(NIDANA_NUMBER) as NidanaId[]) {
+    arr[NIDANA_NUMBER[id] - 1] = id;
+  }
+  return arr;
+})();
+
+export function nidanaIdForNumber(n: number): NidanaId {
+  return NIDANA_ID_BY_NUMBER[n - 1];
+}
+
 export type RivalOpportunity = {
   have: NidanaId;
   haveNum: number;

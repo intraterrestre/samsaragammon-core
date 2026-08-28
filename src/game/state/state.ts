@@ -152,6 +152,10 @@ actors: {
     P1: {},
     P2: {},
   },
+  formedLinks: {
+    P1: [],
+    P2: [],
+  },
 
   lastMove: null,
   lastKarma: null,
@@ -345,6 +349,12 @@ export function makeInitialState(
         ...initialState.avatarNidana.P2,
         ...(overrides.avatarNidana?.P2 ?? {}),
       },
+    },
+    formedLinks: {
+      ...initialState.formedLinks,
+      ...(overrides.formedLinks ?? {}),
+      P1: overrides.formedLinks?.P1 ?? initialState.formedLinks.P1,
+      P2: overrides.formedLinks?.P2 ?? initialState.formedLinks.P2,
     },
   };
 }

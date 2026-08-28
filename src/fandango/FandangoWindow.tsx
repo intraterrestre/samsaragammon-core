@@ -31,7 +31,7 @@
 // su overflow:hidden. Mismo bug que ya se arregló en VictoryScreen.tsx
 // (ver ese archivo) — acá se evita de raíz montando en el lugar
 // correcto en vez de portal.
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { NidanaId } from "../game/nidanas";
 import { NIDANAS } from "../game/nidanas";
 import type { RealmPieceKind } from "../game/types";
@@ -41,11 +41,20 @@ import {
   listCarriedNidanas,
   computeOwnLinks,
   computeRivalOpportunities,
+  nidanaIdForNumber,
   type CarriedNidana,
   type OwnLink,
   type RivalOpportunity,
 } from "./nidanaLinks";
 
+// v76 (28 agosto 2026) — FORM LINK, pedido de Federico tras destripar
+// el Preset A en el tablero real ("ya podemos pasar a FORM LINK. Pero
+// no implementaría todavía el intercambio. Primero probaría el gesto
+// más elemental"). myFormedLinks: los links que YO (state.turn) ya
+// formé (ver GameState.formedLinks, reducer.ts case "FORM_LINK") —
+// números bajos del par ("6" = link 6-7). onFormLink: pide formar el
+// link con ese número bajo; GameShell.tsx arma el player real y
+// también dispara el sonido de confirmación antes de despachar.
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -53,6 +62,8 @@ type Props = {
   rivalNidanas: Partial<Record<RealmPieceKind, NidanaId>>;
   myLabel: string;
   rivalLabel: string;
+  myFormedLinks: number[];
+  onFormLink: (low: number) => void;
 };
 
 function SectionTitle({ children }: { children: ReactNode }) {
@@ -154,7 +165,19 @@ function MiniCoin({ nidana }: { nidana: NidanaId }) {
 
 // LINK AVAILABLE — ambas Nidanas de la pareja consecutiva ya están en
 // tus propios Avatares. Nada que negociar, el link ya existe.
-function LinkAvailableBlock({ links }: { links: OwnLink[] }) {
+//
+// v76 (28 agosto 2026) — se agrega el botón FORM LINK por pedido de
+// Federico: "pulsas. Pequeño evento visual/sonoro satisfactorio: LINK
+// FORMED 6 → 7." "links" acá ya viene filtrada (ver FandangoWindow más
+// abajo) para no repetir un link que YA está formado — ese pasa a
+// mostrarse bajo YourLinksBlock en su lugar.
+function LinkAvailableBlock({
+  links,
+  onFormLink,
+}: {
+  links: OwnLink[];
+  onFormLink: (link: OwnLink) => void;
+}) {
   return (
     <div style={{ marginTop: 14 }}>
       <div
@@ -176,21 +199,104 @@ function LinkAvailableBlock({ links }: { links: OwnLink[] }) {
             display: "flex",
             flexWrap: "wrap",
             justifyContent: "center",
-            gap: 18,
+            gap: 14,
           }}
         >
           {links.map((link) => (
             <div
               key={`${link.numA}-${link.numB}`}
-              style={{ display: "flex", alignItems: "center", gap: 6 }}
+              style={{ display: "flex", alignItems: "center", gap: 8 }}
             >
               <MiniCoin nidana={link.a} />
               <span style={{ opacity: 0.45, fontSize: 13 }}>──</span>
               <MiniCoin nidana={link.b} />
+              <button
+                onClick={() => onFormLink(link)}
+                style={{
+                  marginLeft: 4,
+                  height: 26,
+                  padding: "0 10px",
+                  borderRadius: 7,
+                  border: "1px solid rgba(159,216,138,0.45)",
+                  background: "rgba(159,216,138,0.12)",
+                  color: "#c8ecb8",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.04em",
+                  cursor: "pointer",
+                }}
+              >
+                FORM LINK
+              </button>
             </div>
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// YOUR LINKS — links ya formados (ver GameState.formedLinks). Se
+// muestra "discretamente" (pedido de Federico): sin sección visible
+// cuando todavía no hay ninguno, para no repetir el "None yet." de
+// arriba con algo que todavía no aplica la primera vez que se abre
+// Fandango.
+function YourLinksBlock({ links }: { links: OwnLink[] }) {
+  if (links.length === 0) return null;
+  return (
+    <div style={{ marginTop: 14 }}>
+      <div
+        style={{
+          fontSize: 11,
+          letterSpacing: "0.06em",
+          color: "#9fd88a",
+          opacity: 0.75,
+          textAlign: "center",
+          marginBottom: 8,
+        }}
+      >
+        YOUR LINKS
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          gap: 14,
+        }}
+      >
+        {links.map((link) => (
+          <div
+            key={`${link.numA}-${link.numB}`}
+            style={{ display: "flex", alignItems: "center", gap: 6, opacity: 0.85 }}
+          >
+            <MiniCoin nidana={link.a} />
+            <span style={{ opacity: 0.45, fontSize: 13 }}>→</span>
+            <MiniCoin nidana={link.b} />
+            <span style={{ color: "#9fd88a", fontSize: 13 }}>✓</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// LINK FORMED — flash transitorio, puramente local a esta ventana (no
+// necesita estado de partida). Pedido de Federico: "pequeño evento
+// visual/sonoro satisfactorio."
+function LinkFormedFlash({ link }: { link: { numA: number; numB: number } }) {
+  return (
+    <div
+      style={{
+        marginTop: 10,
+        fontSize: 13,
+        fontWeight: 700,
+        letterSpacing: "0.06em",
+        color: "#c8ecb8",
+        textAlign: "center",
+      }}
+    >
+      LINK FORMED {link.numA} → {link.numB}
     </div>
   );
 }
@@ -255,16 +361,46 @@ export function FandangoWindow({
   rivalNidanas,
   myLabel,
   rivalLabel,
+  myFormedLinks,
+  onFormLink,
 }: Props) {
+  // v76 (28 agosto 2026) — flash local "LINK FORMED X → Y", ver
+  // LinkFormedFlash arriba. Vive en este componente (no en GameShell)
+  // porque es puramente decorativo, sin efecto en el estado de
+  // partida.
+  const [justFormed, setJustFormed] = useState<{ numA: number; numB: number } | null>(
+    null,
+  );
+
   if (!open) return null;
 
   const mine = listCarriedNidanas(myNidanas);
   const rival = listCarriedNidanas(rivalNidanas);
-  const ownLinks = computeOwnLinks(mine.map((e) => e.nidana));
+  const allOwnLinks = computeOwnLinks(mine.map((e) => e.nidana));
   const rivalOpportunities = computeRivalOpportunities(
     mine.map((e) => e.nidana),
     rival.map((e) => e.nidana),
   );
+
+  // Ya formados (YOUR LINKS) vs. todavía no (LINK AVAILABLE) — un
+  // mismo link nunca aparece en las dos listas a la vez.
+  const formedSet = new Set(myFormedLinks);
+  const unformedLinks = allOwnLinks.filter((l) => !formedSet.has(l.numA));
+  const formedLinksDisplay: OwnLink[] = myFormedLinks
+    .slice()
+    .sort((a, b) => a - b)
+    .map((low) => ({
+      a: nidanaIdForNumber(low),
+      b: nidanaIdForNumber(low + 1),
+      numA: low,
+      numB: low + 1,
+    }));
+
+  const handleFormLinkClick = (link: OwnLink) => {
+    onFormLink(link.numA);
+    setJustFormed({ numA: link.numA, numB: link.numB });
+    window.setTimeout(() => setJustFormed(null), 1600);
+  };
 
   return (
     <div
@@ -313,7 +449,9 @@ export function FandangoWindow({
 
         <SectionTitle>{myLabel}</SectionTitle>
         <CoinRow entries={mine} />
-        <LinkAvailableBlock links={ownLinks} />
+        <LinkAvailableBlock links={unformedLinks} onFormLink={handleFormLinkClick} />
+        {justFormed && <LinkFormedFlash link={justFormed} />}
+        <YourLinksBlock links={formedLinksDisplay} />
 
         <div
           style={{

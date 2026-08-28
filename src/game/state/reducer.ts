@@ -71,7 +71,17 @@ type Action =
   | {
       type: "DEV_SET_ALL_AVATAR_NIDANAS";
       avatarNidana: Record<PlayerId, Partial<Record<RealmPieceKind, NidanaId>>>;
-    };
+    }
+  // v76 (28 agosto 2026) — FORM LINK, pedido de Federico: primer gesto
+  // real de Fandango (ver types.ts, GameState.formedLinks). NO es
+  // dev-only — a diferencia de las acciones DEV_* de arriba, esta la
+  // dispara cualquier jugador desde la ventana real. "low" es el número
+  // bajo del par consecutivo (6 → el link 6-7). El reducer vuelve a
+  // validar que el jugador de verdad porte ambas mitades ahora mismo
+  // (defensa en profundidad: el botón en FandangoWindow.tsx ya solo
+  // aparece para links realmente disponibles, pero no hay que confiar
+  // solo en la UI).
+  | { type: "FORM_LINK"; player: PlayerId; low: number };
 
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 const rollDie = () => 1 + Math.floor(Math.random() * 6);
@@ -545,6 +555,37 @@ export function reducer(state: GameState, action: Action): GameState {
       return {
         ...state,
         avatarNidana: action.avatarNidana,
+      };
+    }
+
+    case "FORM_LINK": {
+      const { player, low } = action;
+      // Solo el jugador con el turno forma sus propios links — mismo
+      // criterio que ya usa FandangoWindow para decidir qué lado es
+      // "YOUR NIDANAS" (ver GameShell.tsx, state.turn).
+      if (player !== state.turn) return state;
+      if (low < 1 || low > 11) return state;
+      if (state.formedLinks[player].includes(low)) return state;
+
+      // Vuelve a comprobar acá, no solo confía en que el botón de la UI
+      // ya filtró — mismo par bajo/alto que computeOwnLinks (
+      // nidanaLinks.ts), recalculado con NIDANA_LIST (índice 0 = número
+      // 1) para no importar nada de src/fandango desde game/state.
+      const carriedNumbers = new Set(
+        Object.values(state.avatarNidana[player])
+          .filter((id): id is NidanaId => !!id)
+          .map((id) => NIDANA_LIST.indexOf(id) + 1),
+      );
+      if (!carriedNumbers.has(low) || !carriedNumbers.has(low + 1)) {
+        return state;
+      }
+
+      return {
+        ...state,
+        formedLinks: {
+          ...state.formedLinks,
+          [player]: [...state.formedLinks[player], low],
+        },
       };
     }
 

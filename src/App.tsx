@@ -1168,6 +1168,13 @@ nidanaCoinSide={nidanaSide}
       onDevSetAllAvatarNidanas={(avatarNidana) =>
         dispatch({ type: "DEV_SET_ALL_AVATAR_NIDANAS", avatarNidana })
       }
+      // v76 (28 agosto 2026) — FORM LINK, pedido de Federico: primer
+      // gesto real de Fandango, ya no dev-only (ver reducer.ts, case
+      // "FORM_LINK"). GameShell arma "player" con state.turn antes de
+      // llamar acá (ver GameShell.tsx, handleFormLink).
+      onFormLink={(player, low) =>
+        dispatch({ type: "FORM_LINK", player, low })
+      }
       onVestigiumDone={() => setShowVestigium(false)}
       onCloseLedger={() => dispatch({ type: "CLOSE_LEDGER" })}
       // 2026-08-22: onIntroDone (dispatch INTRO_DONE → state.introSeen =

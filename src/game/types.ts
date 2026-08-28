@@ -340,6 +340,21 @@ export type GameState = {
   boardNidanas: Partial<Record<number, NidanaId>>;
   avatarNidana: Record<PlayerId, Partial<Record<RealmPieceKind, NidanaId>>>;
 
+  // v76 (28 agosto 2026) — FORM LINK (Fandango), pedido de Federico tras
+  // ver LINK AVAILABLE/RIVAL HAS WHAT YOU NEED en el tablero real: el
+  // primer gesto de mercado, sin trade todavía. Por jugador, la lista de
+  // links propios ya "formados" — cada entrada es el número BAJO del
+  // par consecutivo (6 significa el link 6-7 formado). Se guarda el
+  // número, no el NidanaId: el número es la biyección fija de la
+  // partida (ver NIDANA_NUMBER, nidanaNumberAssets.ts), así este estado
+  // no depende de qué Avatar porta cada cual. Formar un link es
+  // puramente declarativo — no mueve ni quita ninguna Nidana de su
+  // Avatar (siguen "vivas": pueden perderse, negociarse, etc. más
+  // adelante); solo registra el evento para que Fandango lo muestre
+  // aparte ("YOUR LINKS", ver FandangoWindow.tsx) en vez de bajo LINK
+  // AVAILABLE. Ver reducer.ts, case "FORM_LINK".
+  formedLinks: Record<PlayerId, number[]>;
+
   lastMove: LastMove | null;
 
   lastKarma: {

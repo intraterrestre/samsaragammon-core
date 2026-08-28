@@ -85,6 +85,12 @@ import campanaFinalSound from "../assets/sounds/campana final.mp3";
 // patrón que el resto de audios de este archivo (prevFullFormationRef
 // etc.), no en cada render mientras la oportunidad sigue abierta.
 import fandangoSpraySound from "../assets/sounds/spray.mp3";
+// v76 (28 agosto 2026) — confirmación corta al pulsar FORM LINK (ver
+// handleFormLink más abajo). Reusa capture_black.mp3, el mismo "click"
+// que ya usa Board.tsx para las capturas — no hay un sonido dedicado
+// para esto todavía, es un import de una línea para cambiarlo si no
+// encaja.
+import linkFormedSound from "../assets/sounds/capture_black.mp3";
 import { SacredProgress } from "./SacredProgress";
 import { countNirvanaFormationProgress } from "../game/victory/nirvana";
 // v68 (27 agosto 2026) — pedido de Federico: el "cartel" WHAT NOW?
@@ -166,6 +172,12 @@ nidanaCoinSide: "front" | "back";
     avatarNidana: Record<PlayerId, Partial<Record<RealmPieceKind, NidanaId>>>,
   ) => void;
 
+  // v76 (28 agosto 2026) — FORM LINK, pedido de Federico. A diferencia
+  // de los onDev* de arriba, esta NO es opcional-por-DEV: es la
+  // funcionalidad real de Fandango, siempre pasada desde App.tsx. Ver
+  // reducer.ts case "FORM_LINK" y FandangoWindow.tsx.
+  onFormLink: (player: PlayerId, low: number) => void;
+
   avatarVideoPlaying?: boolean;
 };
 
@@ -187,6 +199,7 @@ export function GameShell({
   onDevSkipTo5Humans,
   onDevSetAvatarNidana,
   onDevSetAllAvatarNidanas,
+  onFormLink,
   playDiceSound,
   onConsciousMove,
   onGenesisUIComplete,
@@ -239,6 +252,31 @@ const fandangoHasNotification = React.useMemo(() => {
     computeRivalOpportunities(myIds, rivalIds).length > 0
   );
 }, [state.avatarNidana, state.turn]);
+
+// v76 (28 agosto 2026) — FORM LINK: los links que el jugador con el
+// turno YA formó (ver reducer.ts case "FORM_LINK"), para que
+// FandangoWindow los muestre aparte (YOUR LINKS) en vez de bajo LINK
+// AVAILABLE. state.formedLinks es por jugador, no por "yo/rival" —
+// mismo criterio que avatarNidana, se resuelve acá con state.turn.
+const myFormedLinks = React.useMemo(
+  () => state.formedLinks[state.turn],
+  [state.formedLinks, state.turn],
+);
+
+// v76 (28 agosto 2026) — pedido de Federico: "pequeño evento
+// visual/sonoro satisfactorio" al pulsar FORM LINK. El flash de texto
+// "LINK FORMED" vive dentro de FandangoWindow.tsx (puramente local a
+// ese componente, no necesita estado de partida) — acá solo el sonido,
+// mismo ref set up en el useEffect de audios de más abajo.
+const linkFormedAudio = React.useRef<HTMLAudioElement | null>(null);
+const handleFormLink = (low: number) => {
+  onFormLink(state.turn, low);
+  const audio = linkFormedAudio.current;
+  if (audio) {
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  }
+};
 
 // v75 (28 agosto 2026) — pedido de Federico: mismo patrón de flanco
 // (edge false→true) que prevFullFormationRef más abajo — spray.mp3
@@ -417,6 +455,7 @@ React.useEffect(() => {
   fanfarriaAudio.current = new Audio(fanfarriaSound);
   campanaFinalAudio.current = new Audio(campanaFinalSound);
   fandangoSprayAudio.current = new Audio(fandangoSpraySound);
+  linkFormedAudio.current = new Audio(linkFormedSound);
 
   if (cheeringAudio.current) cheeringAudio.current.volume = 0.18;
   if (fireworksAudio.current) fireworksAudio.current.volume = 0.12;
@@ -432,6 +471,7 @@ React.useEffect(() => {
   if (fanfarriaAudio.current) fanfarriaAudio.current.volume = 0.5;
   if (campanaFinalAudio.current) campanaFinalAudio.current.volume = 0.5;
   if (fandangoSprayAudio.current) fandangoSprayAudio.current.volume = 0.5;
+  if (linkFormedAudio.current) linkFormedAudio.current.volume = 0.6;
 
   // v55 (17 agosto 2026) — pedido de Federico, coreografía correcta
   // (corrige v53): la fanfarria NO suena cuando termina el video de
@@ -1408,6 +1448,8 @@ return (
   }
   myLabel={`YOUR NIDANAS (${state.turn})`}
   rivalLabel={`RIVAL NIDANAS (${state.turn === "P1" ? "P2" : "P1"})`}
+  myFormedLinks={myFormedLinks}
+  onFormLink={handleFormLink}
 />
 
 {/* v74 (28 agosto 2026) — DEV — FANDANGO / NIDANA TEST TOOL. Montado
