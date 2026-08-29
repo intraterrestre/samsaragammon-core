@@ -3,6 +3,7 @@ import type {
   BasePieceKind,
   GameState,
   MoveOption,
+  PendingTrade,
   PieceKind,
   PlayerId,
   PlayerRealmPiecesState,
@@ -81,7 +82,17 @@ type Action =
   // (defensa en profundidad: el botón en FandangoWindow.tsx ya solo
   // aparece para links realmente disponibles, pero no hay que confiar
   // solo en la UI).
-  | { type: "FORM_LINK"; player: PlayerId; low: number };
+  | { type: "FORM_LINK"; player: PlayerId; low: number }
+  // v77 (28 agosto 2026) — Fandango: FORM DEAL, pedido de Federico tras
+  // corregir el diseño (ver PendingTrade en types.ts para el porqué de
+  // guardar NidanaId concretos): SEND_TRADE_OFFER la manda el jugador
+  // con el turno sobre CUALQUIER Nidana rival que le sirva (no exige
+  // necesidad mutua); ACCEPT/REFUSE solo los puede disparar quien
+  // recibió la oferta, y solo en su propio turno (mismo criterio que
+  // ya usa FandangoWindow para decidir de quién son "YOUR NIDANAS").
+  | { type: "SEND_TRADE_OFFER"; player: PlayerId; offer: NidanaId; want: NidanaId }
+  | { type: "ACCEPT_TRADE_OFFER" }
+  | { type: "REFUSE_TRADE_OFFER" };
 
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 const rollDie = () => 1 + Math.floor(Math.random() * 6);
@@ -587,6 +598,83 @@ export function reducer(state: GameState, action: Action): GameState {
           [player]: [...state.formedLinks[player], low],
         },
       };
+    }
+
+    case "SEND_TRADE_OFFER": {
+      const { player, offer, want } = action;
+      if (player !== state.turn) return state;
+      if (offer === want) return state;
+      // Una sola oferta pendiente a la vez — mientras no se resuelva
+      // (ACCEPT/REFUSE), no se puede mandar otra.
+      if (state.pendingTrade) return state;
+
+      const rival = otherPlayer(player);
+      const myCarried = new Set(
+        Object.values(state.avatarNidana[player]).filter(
+          (id): id is NidanaId => !!id,
+        ),
+      );
+      const rivalCarried = new Set(
+        Object.values(state.avatarNidana[rival]).filter(
+          (id): id is NidanaId => !!id,
+        ),
+      );
+      // "offer" tiene que ser algo que YO porte de verdad ahora mismo;
+      // "want" tiene que ser algo que el rival porte de verdad ahora
+      // mismo — mismo criterio de "defensa en profundidad" que
+      // FORM_LINK, no confía solo en que la UI ya filtró.
+      if (!myCarried.has(offer) || !rivalCarried.has(want)) return state;
+
+      const trade: PendingTrade = { fromPlayer: player, offer, want };
+      return { ...state, pendingTrade: trade };
+    }
+
+    case "ACCEPT_TRADE_OFFER": {
+      const trade = state.pendingTrade;
+      if (!trade) return state;
+      const toPlayer = otherPlayer(trade.fromPlayer);
+      // Solo quien RECIBIÓ la oferta puede aceptarla, y solo estando en
+      // su propio turno — mismo momento en el que FandangoWindow ya le
+      // muestra "YOUR NIDANAS" a él (ver GameShell.tsx, state.turn).
+      if (state.turn !== toPlayer) return state;
+
+      // Revalida que las dos Nidanas se sigan portando exactamente
+      // como cuando se mandó la oferta — pudo pasar tiempo (y turnos)
+      // entre SEND_TRADE_OFFER y este ACCEPT.
+      const fromAvatarNidana = state.avatarNidana[trade.fromPlayer];
+      const toAvatarNidana = state.avatarNidana[toPlayer];
+      const fromRealm = (Object.keys(fromAvatarNidana) as RealmPieceKind[]).find(
+        (r) => fromAvatarNidana[r] === trade.offer,
+      );
+      const toRealm = (Object.keys(toAvatarNidana) as RealmPieceKind[]).find(
+        (r) => toAvatarNidana[r] === trade.want,
+      );
+      if (!fromRealm || !toRealm) {
+        // Ya no es válida (alguna de las dos se movió o se perdió
+        // desde que se mandó) — se cae sola, sin romper nada.
+        return { ...state, pendingTrade: null };
+      }
+
+      // El intercambio real: cada Avatar se queda en su lugar, solo
+      // cambia qué Nidana porta cada uno — 1x1, ninguna se crea ni se
+      // destruye.
+      return {
+        ...state,
+        avatarNidana: {
+          ...state.avatarNidana,
+          [trade.fromPlayer]: { ...fromAvatarNidana, [fromRealm]: trade.want },
+          [toPlayer]: { ...toAvatarNidana, [toRealm]: trade.offer },
+        },
+        pendingTrade: null,
+      };
+    }
+
+    case "REFUSE_TRADE_OFFER": {
+      const trade = state.pendingTrade;
+      if (!trade) return state;
+      const toPlayer = otherPlayer(trade.fromPlayer);
+      if (state.turn !== toPlayer) return state;
+      return { ...state, pendingTrade: null };
     }
 
     case "ROLL": {

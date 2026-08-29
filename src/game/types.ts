@@ -135,6 +135,26 @@ export type MoveOption = {
   venomId?: BasePieceKind;
 };
 
+// v77 (28 agosto 2026) — Fandango: FORM DEAL, pedido de Federico
+// (relayando a Chaty) tras aclarar el diseño: "RIVAL HAS WHAT YOU
+// NEED" solo señala la OPORTUNIDAD (una mitad tuya, la otra del
+// rival) — no exige que el rival también necesite algo tuyo para
+// poder negociar. El jugador arma la oferta ("I WANT" la del rival,
+// "I OFFER" cualquiera propia transportada), y el rival decide
+// ACCEPT/REFUSE — el juego detecta, el jugador inventa el trato. Una
+// sola oferta pendiente a la vez (ver reducer.ts, "SEND_TRADE_OFFER"
+// no permite una segunda mientras haya una sin resolver). "want"/
+// "offer" son NidanaId concretos porque, a diferencia de formedLinks
+// (que registra un evento ya pasado, desacoplado de quién porta qué),
+// una oferta pendiente SÍ necesita saber exactamente cuáles dos
+// Nidanas están en juego para poder revalidarlas al aceptar (pueden
+// haberse movido entretanto).
+export type PendingTrade = {
+  fromPlayer: PlayerId;
+  offer: NidanaId;
+  want: NidanaId;
+};
+
 export type LastMove = {
   at: number;
 
@@ -354,6 +374,12 @@ export type GameState = {
   // aparte ("YOUR LINKS", ver FandangoWindow.tsx) en vez de bajo LINK
   // AVAILABLE. Ver reducer.ts, case "FORM_LINK".
   formedLinks: Record<PlayerId, number[]>;
+
+  // v77 (28 agosto 2026) — Fandango: FORM DEAL. La oferta de trade
+  // pendiente ahora mismo, si alguna — null cuando no hay ninguna en
+  // curso. Ver PendingTrade arriba y reducer.ts (SEND_TRADE_OFFER /
+  // ACCEPT_TRADE_OFFER / REFUSE_TRADE_OFFER).
+  pendingTrade: PendingTrade | null;
 
   lastMove: LastMove | null;
 

@@ -34,7 +34,7 @@
 import { useState, type ReactNode } from "react";
 import type { NidanaId } from "../game/nidanas";
 import { NIDANAS } from "../game/nidanas";
-import type { RealmPieceKind } from "../game/types";
+import type { PendingTrade, PlayerId, RealmPieceKind } from "../game/types";
 import { NIDANA_NUMBER_IMAGE } from "../game/nidanaNumberAssets";
 import { REALM_AVATAR_NAME } from "../game/realmAvatarNames";
 import {
@@ -64,6 +64,20 @@ type Props = {
   rivalLabel: string;
   myFormedLinks: number[];
   onFormLink: (low: number) => void;
+
+  // v77 (28 agosto 2026) — Fandango: FORM DEAL, pedido de Federico tras
+  // corregir el diseño: "RIVAL HAS WHAT YOU NEED" señala la oportunidad
+  // sin exigir necesidad mutua — el jugador arma la oferta a mano ("I
+  // WANT" la del rival, "I OFFER" cualquiera propia), el rival decide
+  // ACCEPT/REFUSE. myPlayer hace falta para saber, cuando hay una
+  // pendingTrade, si YO la mandé (espero respuesta) o si me la
+  // mandaron a mí (puedo aceptarla/rechazarla) — mismo dato que ya usa
+  // GameShell.tsx (state.turn) para decidir "YOUR NIDANAS".
+  myPlayer: PlayerId;
+  pendingTrade: PendingTrade | null;
+  onSendTradeOffer: (offer: NidanaId, want: NidanaId) => void;
+  onAcceptTrade: () => void;
+  onRefuseTrade: () => void;
 };
 
 function SectionTitle({ children }: { children: ReactNode }) {
@@ -304,10 +318,36 @@ function LinkFormedFlash({ link }: { link: { numA: number; numB: number } }) {
 // RIVAL HAS WHAT YOU NEED — una mitad es tuya, la otra todavía es del
 // rival. Esto NO es un link, es una oportunidad de trade — se muestra
 // separado a propósito para no confundir las dos categorías.
+//
+// v77 (28 agosto 2026) — se agrega DEAL, pedido de Federico tras
+// corregir el diseño con Chaty: "el juego detecta oportunidades. El
+// jugador decide qué está dispuesto a dar." DEAL aparece con solo que
+// exista la oportunidad de un lado (op.need) — NO exige que el rival
+// también necesite algo tuyo. Al pulsarlo se abre, debajo de esa fila,
+// el armador de oferta: "I WANT" (la del rival, ya fija) + "I OFFER"
+// (tus propias monedas transportadas, elegís una) → "SEND OFFER".
+// "disabled" es true mientras ya haya una pendingTrade en curso (de
+// cualquiera de los dos lados) — una sola oferta a la vez.
 function RivalHasWhatYouNeedBlock({
   opportunities,
+  mine,
+  disabled,
+  dealFor,
+  selectedOffer,
+  onOpenDeal,
+  onSelectOffer,
+  onSendOffer,
+  onCancelDeal,
 }: {
   opportunities: RivalOpportunity[];
+  mine: CarriedNidana[];
+  disabled: boolean;
+  dealFor: NidanaId | null;
+  selectedOffer: NidanaId | null;
+  onOpenDeal: (need: NidanaId) => void;
+  onSelectOffer: (offer: NidanaId) => void;
+  onSendOffer: () => void;
+  onCancelDeal: () => void;
 }) {
   return (
     <div style={{ marginTop: 14 }}>
@@ -336,18 +376,202 @@ function RivalHasWhatYouNeedBlock({
           {opportunities.map((op) => {
             const lo = Math.min(op.haveNum, op.needNum);
             const hi = Math.max(op.haveNum, op.needNum);
+            const dealOpen = dealFor === op.need;
             return (
               <div
                 key={`${op.haveNum}-${op.needNum}`}
-                style={{ display: "flex", alignItems: "center", gap: 8 }}
+                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}
               >
-                <MiniCoin nidana={op.need} />
-                <span style={{ fontSize: 13, color: "#f2d19a", opacity: 0.9 }}>
-                  completes {lo} – {hi}
-                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <MiniCoin nidana={op.need} />
+                  <span style={{ fontSize: 13, color: "#f2d19a", opacity: 0.9 }}>
+                    completes {lo} – {hi}
+                  </span>
+                  {!disabled && (
+                    <button
+                      onClick={() => (dealOpen ? onCancelDeal() : onOpenDeal(op.need))}
+                      style={{
+                        marginLeft: 4,
+                        height: 24,
+                        padding: "0 10px",
+                        borderRadius: 7,
+                        border: "1px solid rgba(232,176,106,0.45)",
+                        background: dealOpen
+                          ? "rgba(232,176,106,0.22)"
+                          : "rgba(232,176,106,0.12)",
+                        color: "#f2d19a",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        letterSpacing: "0.04em",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {dealOpen ? "CANCEL" : "DEAL"}
+                    </button>
+                  )}
+                </div>
+
+                {dealOpen && (
+                  <div
+                    style={{
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(232,176,106,0.25)",
+                      borderRadius: 10,
+                      padding: "10px 14px",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <div style={{ fontSize: 11, letterSpacing: "0.04em", opacity: 0.7 }}>
+                      I WANT: <MiniCoin nidana={op.need} />
+                    </div>
+                    <div style={{ fontSize: 11, letterSpacing: "0.04em", opacity: 0.7 }}>
+                      I OFFER:
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8 }}>
+                      {mine.map((e) => (
+                        <button
+                          key={e.realm}
+                          onClick={() => onSelectOffer(e.nidana)}
+                          style={{
+                            padding: 3,
+                            borderRadius: 8,
+                            border:
+                              selectedOffer === e.nidana
+                                ? "2px solid #e8b06a"
+                                : "1px solid rgba(255,255,255,0.15)",
+                            background: "transparent",
+                            cursor: "pointer",
+                            lineHeight: 0,
+                          }}
+                        >
+                          <MiniCoin nidana={e.nidana} />
+                        </button>
+                      ))}
+                    </div>
+                    {selectedOffer && (
+                      <>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
+                          <MiniCoin nidana={selectedOffer} />
+                          <span style={{ opacity: 0.6, fontSize: 13 }}>⇄</span>
+                          <MiniCoin nidana={op.need} />
+                        </div>
+                        <button
+                          onClick={onSendOffer}
+                          style={{
+                            height: 28,
+                            padding: "0 14px",
+                            borderRadius: 7,
+                            border: "1px solid rgba(232,176,106,0.6)",
+                            background: "rgba(232,176,106,0.28)",
+                            color: "#f2e8d4",
+                            fontSize: 12,
+                            fontWeight: 700,
+                            letterSpacing: "0.04em",
+                            cursor: "pointer",
+                          }}
+                        >
+                          SEND OFFER
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// v77 (28 agosto 2026) — banner de trade, pedido de Federico. Cuando
+// hay una pendingTrade, es lo primero que se ve al abrir Fandango (ver
+// FandangoWindow más abajo) — si te la mandaron a ti, podés
+// ACCEPT/REFUSE ahí mismo; si la mandaste vos, solo un aviso de que
+// está esperando respuesta (sin botones — ya jugaste tu parte).
+function TradeOfferPanel({
+  pendingTrade,
+  myPlayer,
+  onAccept,
+  onRefuse,
+}: {
+  pendingTrade: PendingTrade;
+  myPlayer: PlayerId;
+  onAccept: () => void;
+  onRefuse: () => void;
+}) {
+  const incoming = pendingTrade.fromPlayer !== myPlayer;
+  return (
+    <div
+      style={{
+        margin: "0 0 20px",
+        padding: "14px 16px",
+        borderRadius: 12,
+        background: incoming ? "rgba(232,176,106,0.1)" : "rgba(255,255,255,0.04)",
+        border: incoming
+          ? "1px solid rgba(232,176,106,0.4)"
+          : "1px solid rgba(255,255,255,0.14)",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 11,
+          letterSpacing: "0.06em",
+          color: incoming ? "#f2d19a" : "#c9bfa8",
+          marginBottom: 8,
+        }}
+      >
+        {incoming ? "TRADE OFFER" : "OFFER SENT"}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13 }}>
+        {incoming ? "They offer" : "Your"} <MiniCoin nidana={pendingTrade.offer} />
+        <span style={{ opacity: 0.6 }}>⇄</span>
+        {incoming ? "your" : "their"} <MiniCoin nidana={pendingTrade.want} />
+      </div>
+      {incoming ? (
+        <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 12 }}>
+          <button
+            onClick={onAccept}
+            style={{
+              height: 30,
+              padding: "0 16px",
+              borderRadius: 8,
+              border: "1px solid rgba(159,216,138,0.6)",
+              background: "rgba(159,216,138,0.22)",
+              color: "#c8ecb8",
+              fontWeight: 700,
+              fontSize: 12,
+              letterSpacing: "0.04em",
+              cursor: "pointer",
+            }}
+          >
+            ACCEPT
+          </button>
+          <button
+            onClick={onRefuse}
+            style={{
+              height: 30,
+              padding: "0 16px",
+              borderRadius: 8,
+              border: "1px solid rgba(255,255,255,0.2)",
+              background: "rgba(255,255,255,0.06)",
+              color: "#f2e8d4",
+              fontWeight: 700,
+              fontSize: 12,
+              letterSpacing: "0.04em",
+              cursor: "pointer",
+            }}
+          >
+            REFUSE
+          </button>
+        </div>
+      ) : (
+        <div style={{ marginTop: 8, fontSize: 12, opacity: 0.6, fontStyle: "italic" }}>
+          Waiting for reply.
         </div>
       )}
     </div>
@@ -363,6 +587,11 @@ export function FandangoWindow({
   rivalLabel,
   myFormedLinks,
   onFormLink,
+  myPlayer,
+  pendingTrade,
+  onSendTradeOffer,
+  onAcceptTrade,
+  onRefuseTrade,
 }: Props) {
   // v76 (28 agosto 2026) — flash local "LINK FORMED X → Y", ver
   // LinkFormedFlash arriba. Vive en este componente (no en GameShell)
@@ -371,6 +600,14 @@ export function FandangoWindow({
   const [justFormed, setJustFormed] = useState<{ numA: number; numB: number } | null>(
     null,
   );
+
+  // v77 (28 agosto 2026) — armador de oferta (DEAL), también local:
+  // "para cuál oportunidad estoy armando una oferta" y "cuál de mis
+  // propias monedas elegí ofrecer". Se limpia solo al mandar la oferta
+  // (ver handleSendOffer) — a partir de ahí ya hay una pendingTrade en
+  // GameShell/state, y RivalHasWhatYouNeedBlock deja de mostrar DEAL.
+  const [dealFor, setDealFor] = useState<NidanaId | null>(null);
+  const [selectedOffer, setSelectedOffer] = useState<NidanaId | null>(null);
 
   if (!open) return null;
 
@@ -400,6 +637,21 @@ export function FandangoWindow({
     onFormLink(link.numA);
     setJustFormed({ numA: link.numA, numB: link.numB });
     window.setTimeout(() => setJustFormed(null), 1600);
+  };
+
+  const handleOpenDeal = (need: NidanaId) => {
+    setDealFor(need);
+    setSelectedOffer(null);
+  };
+  const handleCancelDeal = () => {
+    setDealFor(null);
+    setSelectedOffer(null);
+  };
+  const handleSendOffer = () => {
+    if (!dealFor || !selectedOffer) return;
+    onSendTradeOffer(selectedOffer, dealFor);
+    setDealFor(null);
+    setSelectedOffer(null);
   };
 
   return (
@@ -447,6 +699,15 @@ export function FandangoWindow({
           Messages, suspicious offers, and karmic arrangements.
         </div>
 
+        {pendingTrade && (
+          <TradeOfferPanel
+            pendingTrade={pendingTrade}
+            myPlayer={myPlayer}
+            onAccept={onAcceptTrade}
+            onRefuse={onRefuseTrade}
+          />
+        )}
+
         <SectionTitle>{myLabel}</SectionTitle>
         <CoinRow entries={mine} />
         <LinkAvailableBlock links={unformedLinks} onFormLink={handleFormLinkClick} />
@@ -462,7 +723,17 @@ export function FandangoWindow({
 
         <SectionTitle>{rivalLabel}</SectionTitle>
         <CoinRow entries={rival} />
-        <RivalHasWhatYouNeedBlock opportunities={rivalOpportunities} />
+        <RivalHasWhatYouNeedBlock
+          opportunities={rivalOpportunities}
+          mine={mine}
+          disabled={!!pendingTrade}
+          dealFor={dealFor}
+          selectedOffer={selectedOffer}
+          onOpenDeal={handleOpenDeal}
+          onSelectOffer={setSelectedOffer}
+          onSendOffer={handleSendOffer}
+          onCancelDeal={handleCancelDeal}
+        />
 
         <button
           onClick={onClose}

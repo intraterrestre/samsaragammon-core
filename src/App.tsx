@@ -1175,6 +1175,14 @@ nidanaCoinSide={nidanaSide}
       onFormLink={(player, low) =>
         dispatch({ type: "FORM_LINK", player, low })
       }
+      // v77 (28 agosto 2026) — Fandango: FORM DEAL, pedido de Federico.
+      // Ver reducer.ts (SEND_TRADE_OFFER/ACCEPT_TRADE_OFFER/
+      // REFUSE_TRADE_OFFER) y FandangoWindow.tsx.
+      onSendTradeOffer={(player, offer, want) =>
+        dispatch({ type: "SEND_TRADE_OFFER", player, offer, want })
+      }
+      onAcceptTrade={() => dispatch({ type: "ACCEPT_TRADE_OFFER" })}
+      onRefuseTrade={() => dispatch({ type: "REFUSE_TRADE_OFFER" })}
       onVestigiumDone={() => setShowVestigium(false)}
       onCloseLedger={() => dispatch({ type: "CLOSE_LEDGER" })}
       // 2026-08-22: onIntroDone (dispatch INTRO_DONE → state.introSeen =

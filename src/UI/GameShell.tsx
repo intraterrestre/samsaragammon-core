@@ -178,6 +178,14 @@ nidanaCoinSide: "front" | "back";
   // reducer.ts case "FORM_LINK" y FandangoWindow.tsx.
   onFormLink: (player: PlayerId, low: number) => void;
 
+  // v77 (28 agosto 2026) — Fandango: FORM DEAL, pedido de Federico.
+  // Mismo criterio que onFormLink (siempre pasadas, no opcionales). Ver
+  // reducer.ts (SEND_TRADE_OFFER/ACCEPT_TRADE_OFFER/REFUSE_TRADE_OFFER)
+  // y FandangoWindow.tsx.
+  onSendTradeOffer: (player: PlayerId, offer: NidanaId, want: NidanaId) => void;
+  onAcceptTrade: () => void;
+  onRefuseTrade: () => void;
+
   avatarVideoPlaying?: boolean;
 };
 
@@ -200,6 +208,9 @@ export function GameShell({
   onDevSetAvatarNidana,
   onDevSetAllAvatarNidanas,
   onFormLink,
+  onSendTradeOffer,
+  onAcceptTrade,
+  onRefuseTrade,
   playDiceSound,
   onConsciousMove,
   onGenesisUIComplete,
@@ -247,11 +258,18 @@ const fandangoHasNotification = React.useMemo(() => {
   const rivalIds = listCarriedNidanas(state.avatarNidana[rivalPlayer]).map(
     (e) => e.nidana,
   );
+  // v77 (28 agosto 2026) — el pulso también avisa de una oferta de
+  // trade entrante (alguien te mandó un FORM DEAL y todavía no
+  // respondiste) — mismo espíritu que el resto: "tentación, no
+  // obligación", nunca abre Fandango solo.
+  const incomingTrade =
+    state.pendingTrade && state.pendingTrade.fromPlayer !== state.turn;
   return (
     computeOwnLinks(myIds).length > 0 ||
-    computeRivalOpportunities(myIds, rivalIds).length > 0
+    computeRivalOpportunities(myIds, rivalIds).length > 0 ||
+    !!incomingTrade
   );
-}, [state.avatarNidana, state.turn]);
+}, [state.avatarNidana, state.turn, state.pendingTrade]);
 
 // v76 (28 agosto 2026) — FORM LINK: los links que el jugador con el
 // turno YA formó (ver reducer.ts case "FORM_LINK"), para que
@@ -276,6 +294,13 @@ const handleFormLink = (low: number) => {
     audio.currentTime = 0;
     audio.play().catch(() => {});
   }
+};
+
+// v77 (28 agosto 2026) — Fandango: FORM DEAL. Arma "player" con
+// state.turn, mismo criterio que handleFormLink de arriba — quien
+// manda la oferta es siempre quien tiene el turno ahora mismo.
+const handleSendTradeOffer = (offer: NidanaId, want: NidanaId) => {
+  onSendTradeOffer(state.turn, offer, want);
 };
 
 // v75 (28 agosto 2026) — pedido de Federico: mismo patrón de flanco
@@ -1450,6 +1475,11 @@ return (
   rivalLabel={`RIVAL NIDANAS (${state.turn === "P1" ? "P2" : "P1"})`}
   myFormedLinks={myFormedLinks}
   onFormLink={handleFormLink}
+  myPlayer={state.turn}
+  pendingTrade={state.pendingTrade}
+  onSendTradeOffer={handleSendTradeOffer}
+  onAcceptTrade={onAcceptTrade}
+  onRefuseTrade={onRefuseTrade}
 />
 
 {/* v74 (28 agosto 2026) — DEV — FANDANGO / NIDANA TEST TOOL. Montado

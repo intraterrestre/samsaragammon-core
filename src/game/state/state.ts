@@ -156,6 +156,7 @@ actors: {
     P1: [],
     P2: [],
   },
+  pendingTrade: null,
 
   lastMove: null,
   lastKarma: null,
