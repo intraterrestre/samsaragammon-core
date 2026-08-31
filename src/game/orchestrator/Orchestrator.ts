@@ -133,6 +133,20 @@ export function evaluateOrchestrator(
 export const MIN_GENESIS_TURNS = 6;
 export const MIN_NOVELTY_EVENTS = 4;
 
+// v80 (31 agosto 2026) — pedido de Federico: llevaba "demasiado rato" con
+// las Nidanas casi todas activadas y Bruno seguía sin dispararse. Causa:
+// exigir los 4 eventos de novedad COMPLETOS (incluye hasCaptured y
+// hasMaraReturn, dos eventos que dependen de que las fichas realmente se
+// crucen en el tablero — no solo de tirar y mover) puede no cumplirse en
+// muchos lances si el tablero no acompaña, dejando la partida trabada sin
+// salida posible. Pity-timer: pasado este umbral de lances, con TODO lo
+// demás ya cumplido (Genesis UI terminado, ambos jugadores movieron los 3
+// Venenos, mínimo de turnos), Bruno se dispara igual aunque falte captura
+// o regreso de Mara — nadie queda atascado por mala suerte del tablero,
+// pero en una partida normal la experiencia completa de los 4 eventos
+// sigue siendo lo esperable (llega mucho antes de este umbral).
+export const PITY_GENESIS_TURNS = 30;
+
 export function evaluateGenesisToBruno(state: GameState): boolean {
   if (state.brunoRevealed) return false;
   // No disparar Bruno hasta que el Genesis visual haya terminado completamente
@@ -158,7 +172,10 @@ export function evaluateGenesisToBruno(state: GameState): boolean {
     novelty?.hasMaraReturn,
   ].filter(Boolean).length;
 
-  return noveltyCount >= MIN_NOVELTY_EVENTS;
+  if (noveltyCount >= MIN_NOVELTY_EVENTS) return true;
+
+  // Pity-timer — ver comentario arriba de PITY_GENESIS_TURNS.
+  return state.globalRollCount >= PITY_GENESIS_TURNS;
 }
 
 export function getAvatarNameForStep(step: number): string {
