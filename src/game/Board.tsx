@@ -1053,16 +1053,35 @@ style={{
         {(p1VenomsRevealed || p2VenomsRevealed) && renderedPieces}
         {genesisComplete && boardNidanaTokens}
 
+
+
+      </div>
+
         {/* v71 (27 agosto 2026) — click en cualquier monedita numerada
             (suelta o portada por un Avatar) abre esto: el arte real de
             esa Nidana en grande, su nombre y su linea poetica. Absolute
-            adentro de .ringWrap (no fixed) a proposito — .ringWrap ya
-            vive dentro de .samsaraScene, que tiene su propio
+            (no fixed) a proposito — .samsaraScene tiene su propio
             transform:scale(...) para escalar el tablero al viewport
             real (ver VictoryScreen.tsx mas arriba en el repo para la
             explicacion completa de por que position:fixed se rompe
-            ahi). Absolute simplemente se centra en .ringWrap y escala
-            junto con el tablero, sin ese problema. */}
+            ahi).
+
+            v79c (31 agosto 2026) — este bloque vivía ANTES adentro de
+            .ringWrap (el círculo del tablero, que ocupa solo la mitad
+            derecha de .samsaraScene — ver left:512 en su style más
+            arriba). Por eso el "inset:0" solo cubría/centraba dentro
+            de esa mitad derecha: Federico reportó las monedas
+            "puestas a la derecha" en vez de centradas, Y el juego
+            "se trancaba" al abrir una Nidana — el velo NO cubría la
+            mitad izquierda de la pantalla (zona de los dados), así
+            que un toque ahí durante el modal seguía llegando al
+            tablero de abajo y disparaba interacciones no deseadas
+            mientras el modal parecía estar "congelado" encima.
+            Movido acá, afuera de .ringWrap pero dentro de .board
+            (mismo padre posicionado real: .samsaraScene) — inset:0
+            ahora cubre y centra sobre la escena COMPLETA (1100x620),
+            tal cual pidió Federico ("full pantalla... el jugador que
+            está viendo eso no puede jugar en ese momento"). */}
         {enlargedNidana && (
           <div
             onClick={() => setEnlargedNidana(null)}
@@ -1211,8 +1230,6 @@ style={{
             </div>
           </div>
         )}
-
-      </div>
 
       <ExplainModal
         open={explainOpen}
