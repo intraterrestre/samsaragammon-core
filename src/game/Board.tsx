@@ -9,7 +9,7 @@ import { MoveOptionsPanel } from "../UI/MoveOptionsPanel";
 import budaKarmaER from "../assets/tokens/buda-karma-er.webp";
 import BigHeadSchoolOverlay from "../UI/BigHeadSchoolOverlay";
 import { getUnlockedBasePieces } from "./era";
-import { NIDANA_FRONT_IMAGE } from "./nidanaAssets";
+import { NIDANA_FRONT_IMAGE, NIDANA_BACK_IMAGE } from "./nidanaAssets";
 import { NIDANA_NUMBER_IMAGE, NIDANA_NUMBER } from "./nidanaNumberAssets";
 import { NIDANAS } from "./nidanas";
 import type { NidanaId } from "./nidanas";
@@ -1088,16 +1088,48 @@ style={{
                 cursor: "default",
               }}
             >
-              <img
-                src={NIDANA_FRONT_IMAGE[enlargedNidana]}
-                alt={NIDANAS[enlargedNidana].label}
+              {/* v78 (31 agosto 2026) — pedido de Federico: "un óvalo
+                  y las dos caras de las Nidanas... que muestre las dos
+                  caras en una misma apertura y listo" — antes solo se
+                  veía NIDANA_FRONT_IMAGE. Un solo plaquita ovalada
+                  (forma "cápsula": border-radius igual a la mitad de
+                  la altura) con el frente y el reverso lado a lado,
+                  sin recortar el arte de cada cara (siguen cuadradas,
+                  object-fit: contain) — nada de flip ni animación,
+                  las dos a la vista de una. */}
+              <div
                 style={{
-                  width: 160,
-                  height: 160,
-                  objectFit: "contain",
-                  filter: "drop-shadow(0 6px 20px rgba(0,0,0,0.6))",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 18,
+                  padding: "20px 30px",
+                  borderRadius: 999,
+                  background: "linear-gradient(180deg, #14100a 0%, #0a0805 100%)",
+                  border: "1px solid rgba(216,196,138,0.28)",
+                  boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
                 }}
-              />
+              >
+                <img
+                  src={NIDANA_FRONT_IMAGE[enlargedNidana]}
+                  alt={NIDANAS[enlargedNidana].label}
+                  style={{
+                    width: 130,
+                    height: 130,
+                    objectFit: "contain",
+                    filter: "drop-shadow(0 6px 16px rgba(0,0,0,0.6))",
+                  }}
+                />
+                <img
+                  src={NIDANA_BACK_IMAGE[enlargedNidana]}
+                  alt={`${NIDANAS[enlargedNidana].label} (reverse)`}
+                  style={{
+                    width: 130,
+                    height: 130,
+                    objectFit: "contain",
+                    filter: "drop-shadow(0 6px 16px rgba(0,0,0,0.6))",
+                  }}
+                />
+              </div>
               <div
                 style={{
                   fontFamily: "'Cinzel', 'Trajan Pro', 'Times New Roman', serif",
