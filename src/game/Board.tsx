@@ -1096,6 +1096,45 @@ style={{
               cursor: "pointer",
             }}
           >
+            {/* v79d (31 agosto 2026) — Federico: "una vez abierto no hay
+                manera de cerrarlo .. y se tranca el juego". El cierre
+                dependía SOLO de tocar el velo oscuro fuera de la
+                cápsula — pero la cápsula + su padding (20px/28px) más
+                el título y la línea poética debajo ocupan casi todo el
+                alto disponible en el teléfono, dejando muy poco margen
+                de velo "tocable" para cerrar, y el instinto natural es
+                tocar justo la moneda (que a propósito NO cierra, para
+                poder mirarla). Se agrega una X grande y fija arriba a
+                la derecha, siempre visible, como forma explícita e
+                inequívoca de cerrar — no reemplaza el toque-afuera,
+                lo complementa. */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setEnlargedNidana(null);
+              }}
+              aria-label="Cerrar"
+              style={{
+                position: "absolute",
+                top: 18,
+                right: 22,
+                width: 44,
+                height: 44,
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(216,196,138,0.45)",
+                color: "#f2e8d4",
+                fontSize: 22,
+                lineHeight: "44px",
+                textAlign: "center",
+                padding: 0,
+                cursor: "pointer",
+                zIndex: 9900,
+              }}
+            >
+              ✕
+            </button>
             <div
               onClick={(e) => e.stopPropagation()}
               style={{
