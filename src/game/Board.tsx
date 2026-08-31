@@ -1091,44 +1091,96 @@ style={{
               {/* v78 (31 agosto 2026) — pedido de Federico: "un óvalo
                   y las dos caras de las Nidanas... que muestre las dos
                   caras en una misma apertura y listo" — antes solo se
-                  veía NIDANA_FRONT_IMAGE. Un solo plaquita ovalada
-                  (forma "cápsula": border-radius igual a la mitad de
-                  la altura) con el frente y el reverso lado a lado,
-                  sin recortar el arte de cada cara (siguen cuadradas,
-                  object-fit: contain) — nada de flip ni animación,
-                  las dos a la vista de una. */}
+                  veía NIDANA_FRONT_IMAGE.
+                  v79 (31 agosto 2026) — pedido de Federico tras verlo
+                  en el tablero real: "el óvalo ponlo mucho más grande
+                  y quita el fondo negro [...] pon todo el fondo velado
+                  y el óvalo full pantalla — el jugador que está viendo
+                  eso no puede jugar en ese momento". La cápsula ya no
+                  lleva relleno oscuro propio (antes un gradiente casi
+                  negro) — ahora solo un borde dorado fino, apoyada
+                  sobre el mismo velo de pantalla completa que ya
+                  existía (el fondo rgba(5,7,13,0.82) del contenedor de
+                  afuera). Cada cara pasa de cuadrada a un medallón
+                  circular bien grande (280px, casi el doble que
+                  antes): el cuadrado negro que traía cada imagen de
+                  fondo (arte fuente, no algo agregado acá) se recorta
+                  con un círculo (overflow: hidden + borderRadius 50%)
+                  y la imagen se escala apenas un poco (104%) centrada
+                  adentro, así el medallón redondo de cada Nidana llena
+                  el círculo entero sin dejar ver esas esquinas negras
+                  — sin tocar el arte fuente en disco.
+
+                  v79b (31 agosto 2026) — Federico reportó que a 135%
+                  las monedas se veían "detrás de dos huecos pequeños,
+                  no completas". Medido en disco: el círculo del diseño
+                  de cada Nidana ya ocupa ~99.6% del cuadrado fuente (el
+                  arte casi toca los cuatro bordes; solo las esquinas,
+                  fuera del círculo inscrito, son negras). Por eso 135%
+                  de sobre-escala recortaba un anillo real del diseño
+                  (~24% del radio) en vez de solo esconder negro. Bajado
+                  a 104%, el margen mínimo que ya cubre esas esquinas. */}
               <div
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 18,
-                  padding: "20px 30px",
+                  gap: 50,
+                  padding: "40px 60px",
                   borderRadius: 999,
-                  background: "linear-gradient(180deg, #14100a 0%, #0a0805 100%)",
-                  border: "1px solid rgba(216,196,138,0.28)",
-                  boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(216,196,138,0.35)",
                 }}
               >
-                <img
-                  src={NIDANA_FRONT_IMAGE[enlargedNidana]}
-                  alt={NIDANAS[enlargedNidana].label}
+                <div
                   style={{
-                    width: 130,
-                    height: 130,
-                    objectFit: "contain",
-                    filter: "drop-shadow(0 6px 16px rgba(0,0,0,0.6))",
+                    position: "relative",
+                    width: 280,
+                    height: 280,
+                    borderRadius: "50%",
+                    overflow: "hidden",
+                    border: "2px solid rgba(216,196,138,0.4)",
+                    boxShadow: "0 14px 34px rgba(0,0,0,0.55)",
                   }}
-                />
-                <img
-                  src={NIDANA_BACK_IMAGE[enlargedNidana]}
-                  alt={`${NIDANAS[enlargedNidana].label} (reverse)`}
+                >
+                  <img
+                    src={NIDANA_FRONT_IMAGE[enlargedNidana]}
+                    alt={NIDANAS[enlargedNidana].label}
+                    style={{
+                      position: "absolute",
+                      top: "50%",
+                      left: "50%",
+                      width: "104%",
+                      height: "104%",
+                      objectFit: "cover",
+                      transform: "translate(-50%, -50%)",
+                    }}
+                  />
+                </div>
+                <div
                   style={{
-                    width: 130,
-                    height: 130,
-                    objectFit: "contain",
-                    filter: "drop-shadow(0 6px 16px rgba(0,0,0,0.6))",
+                    position: "relative",
+                    width: 280,
+                    height: 280,
+                    borderRadius: "50%",
+                    overflow: "hidden",
+                    border: "2px solid rgba(216,196,138,0.4)",
+                    boxShadow: "0 14px 34px rgba(0,0,0,0.55)",
                   }}
-                />
+                >
+                  <img
+                    src={NIDANA_BACK_IMAGE[enlargedNidana]}
+                    alt={`${NIDANAS[enlargedNidana].label} (reverse)`}
+                    style={{
+                      position: "absolute",
+                      top: "50%",
+                      left: "50%",
+                      width: "104%",
+                      height: "104%",
+                      objectFit: "cover",
+                      transform: "translate(-50%, -50%)",
+                    }}
+                  />
+                </div>
               </div>
               <div
                 style={{
