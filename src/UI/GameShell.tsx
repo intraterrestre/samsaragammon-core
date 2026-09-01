@@ -101,6 +101,7 @@ import { countNirvanaFormationProgress } from "../game/victory/nirvana";
 // única fuente de verdad para esto (ver ese archivo).
 import { buildFinalVestigium, saveFinalVestigium } from "../game/Vestigium";
 import { VictoryScreen } from "./VictoryScreen";
+import { EvolutionClockIndicator } from "./EvolutionClockIndicator";
 import { VenomBanner } from "./VenomBanner";
 import { HistoricalTimeCounter } from "./HistoricalTimeCounter";
 
@@ -1339,6 +1340,7 @@ return (
       )}
 
       {genesisComplete && <MaraPanel state={state} />}
+      {genesisComplete && <EvolutionClockIndicator state={state} />}
 
       {/* v43 (13 agosto 2026) — buda DJ: entra desde la izquierda
           tapando a Mara cuando se dispara "ONLY ONE MORE" (5 de 6 en
