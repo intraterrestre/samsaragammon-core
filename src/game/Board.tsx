@@ -448,10 +448,21 @@ const wheelCenter = {
       // Avatar). Se agranda con cualquiera de los dos, para que Fase 1
       // (donde solo existe selectedPiece) siga funcionando igual que
       // antes.
+      //
+      // v82 (1 septiembre 2026) — Snake Bet V0: mientras haya una
+      // apuesta activa, la Serpiente del apostador se agranda con el
+      // MISMO mecanismo (reutilizado, no un sistema visual aparte —
+      // pedido explícito). A diferencia de la selección normal, esto
+      // NO depende de state.turn — la apuesta dura varios turnos de
+      // ambos jugadores, no solo el turno actual.
+      const hasActiveSnakeBet =
+        kind === "snake" && state.snakeBet?.byPlayer === player;
+
       const isCurrentSelected =
-        player === state.turn &&
-        (state.selectedPiece[player] === kind ||
-          state.selectedVenom[player] === kind);
+        hasActiveSnakeBet ||
+        (player === state.turn &&
+          (state.selectedPiece[player] === kind ||
+            state.selectedVenom[player] === kind));
 
     const base = piecePosition(pos, size);
 

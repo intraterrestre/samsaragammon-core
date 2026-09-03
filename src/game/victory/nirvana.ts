@@ -90,6 +90,14 @@ export function countNirvanaFormationProgress(
   player: PlayerId
 ): number {
   const pieces = state.realmPieces[player];
+  // v82 (1 septiembre 2026) — Snake Bet V0, decisión de diseño cerrada:
+  // IN HUMANS (posición física) ya no basta por sí solo. Un Avatar
+  // cuenta hacia el 6/6 solo si además está CONSOLIDATED — condición
+  // aparte, hoy solo alcanzable ganando un Snake Bet (ver reducer.ts,
+  // case CONSCIOUS_MOVE). "consolidated" y no "liberated": todavía no
+  // está decidido que Snake Bet sea la única forma de consolidar un
+  // Avatar, el nombre no debe implicarlo.
+  const consolidated = state.consolidatedAvatars[player];
 
   return REALM_PIECE_ORDER.filter((kind) => {
     const piece = pieces[kind];
@@ -97,7 +105,8 @@ export function countNirvanaFormationProgress(
       !!piece &&
       piece.unlocked &&
       !piece.inLimbo &&
-      realmFromPos(piece.pos) === "HUMAN"
+      realmFromPos(piece.pos) === "HUMAN" &&
+      consolidated?.[kind] === true
     );
   }).length;
 }

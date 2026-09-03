@@ -17,6 +17,7 @@ import { makeGameId } from "../Vestigium";
 import { behaviorAfterMove } from "../behavior/behavior";
 import { recordMove } from "../behavior/patternEngine";
 import { realmFromPos, canonicalRealmFromPos } from "../../UI/realm";
+import { SNAKE_BET_ROUNDS, settleSnakeBetStake } from "../snakeBet";
 import { updateDecisionSignature } from "../Karma/updateDecisionSignature";
 import { computeKarmaTurn } from "../engine/computeKarmaTurn";
 import { NIDANA_BY_PATTERN_EVENT } from "../behavior/nidanaMapping";
@@ -83,6 +84,9 @@ type Action =
   // aparece para links realmente disponibles, pero no hay que confiar
   // solo en la UI).
   | { type: "FORM_LINK"; player: PlayerId; low: number }
+  | { type: "REQUEST_SNAKE_BET"; player: PlayerId; targetAvatar: RealmPieceKind }
+  | { type: "ACCEPT_SNAKE_BET" }
+  | { type: "REFUSE_SNAKE_BET" }
   // v77 (28 agosto 2026) — Fandango: FORM DEAL, pedido de Federico tras
   // corregir el diseño (ver PendingTrade en types.ts para el porqué de
   // guardar NidanaId concretos): SEND_TRADE_OFFER la manda el jugador
@@ -598,6 +602,88 @@ export function reducer(state: GameState, action: Action): GameState {
           [player]: [...state.formedLinks[player], low],
         },
       };
+    }
+
+    case "REQUEST_SNAKE_BET": {
+      const { player, targetAvatar } = action;
+      if (player !== state.turn) return state;
+      // Solo una solicitud/apuesta a la vez — mismo criterio que
+      // pendingTrade arriba.
+      if (state.pendingSnakeBet || state.snakeBet) return state;
+
+      // El Avatar objetivo tiene que estar de verdad en Humans, fuera
+      // de Mara, y todavía NO consolidado — si ya lo está, no hay nada
+      // que apostar.
+      const piece = state.realmPieces[player]?.[targetAvatar];
+      if (!piece || piece.inLimbo || !piece.unlocked) return state;
+      if (canonicalRealmFromPos(piece.pos) !== "humans") return state;
+      if (state.consolidatedAvatars[player]?.[targetAvatar]) return state;
+
+      // El apostador necesita al menos 2 Nidanas propias en juego
+      // ahora mismo — si no, no hay con qué apostar (V0: no se valida
+      // todavía cuáles 2 elige el jugador, se identifican recién al
+      // aceptar, ver ACCEPT_SNAKE_BET).
+      const carriedCount = Object.values(state.avatarNidana[player]).filter(
+        Boolean,
+      ).length;
+      if (carriedCount < 2) return state;
+
+      return {
+        ...state,
+        pendingSnakeBet: { byPlayer: player, targetAvatar },
+      };
+    }
+
+    case "ACCEPT_SNAKE_BET": {
+      const pending = state.pendingSnakeBet;
+      if (!pending) return state;
+      const rival = otherPlayer(pending.byPlayer);
+      // Solo el rival (a quien se le pidió la apuesta) puede aceptarla,
+      // y solo en su propio turno — mismo criterio que ACCEPT_TRADE_OFFER.
+      if (state.turn !== rival) return state;
+
+      // Revalida las mismas condiciones que REQUEST_SNAKE_BET — pudo
+      // pasar tiempo entre la solicitud y este ACCEPT.
+      const piece = state.realmPieces[pending.byPlayer]?.[pending.targetAvatar];
+      if (!piece || piece.inLimbo || !piece.unlocked) {
+        return { ...state, pendingSnakeBet: null };
+      }
+      if (canonicalRealmFromPos(piece.pos) !== "humans") {
+        return { ...state, pendingSnakeBet: null };
+      }
+      if (state.consolidatedAvatars[pending.byPlayer]?.[pending.targetAvatar]) {
+        return { ...state, pendingSnakeBet: null };
+      }
+
+      // Identifica las 2 Nidanas que quedan en juego — V0: las 2
+      // primeras que se encuentren, sin selección del jugador (ver
+      // nota en types.ts sobre settleSnakeBetStake, deliberadamente
+      // sin resolver el pago físico todavía).
+      const carried = Object.values(state.avatarNidana[pending.byPlayer]).filter(
+        (id): id is NidanaId => !!id,
+      );
+      if (carried.length < 2) {
+        return { ...state, pendingSnakeBet: null };
+      }
+      const stake: [NidanaId, NidanaId] = [carried[0], carried[1]];
+
+      return {
+        ...state,
+        pendingSnakeBet: null,
+        snakeBet: {
+          byPlayer: pending.byPlayer,
+          targetAvatar: pending.targetAvatar,
+          roundsLeft: SNAKE_BET_ROUNDS,
+          stake,
+        },
+      };
+    }
+
+    case "REFUSE_SNAKE_BET": {
+      if (!state.pendingSnakeBet) return state;
+      const rival = otherPlayer(state.pendingSnakeBet.byPlayer);
+      if (state.turn !== rival) return state;
+      return { ...state, pendingSnakeBet: null };
     }
 
     case "SEND_TRADE_OFFER": {
@@ -1519,8 +1605,23 @@ if (isBasePiece) {
   // final) y solo si todavia no porta ninguna (regla 3: una por
   // Avatar). Si ya porta una, la Nidana de la casilla se queda ahi sin
   // recogerse — a proposito, no es un bug.
+  //
+  // v82 (1 septiembre 2026) — Realm-gated pickup: además, solo el
+  // Avatar correspondiente al Reino donde está físicamente la Nidana
+  // puede recogerla (canonicalRealmFromPos ya existía y ya se usaba
+  // en el reducer para otra cosa — reutilizado tal cual, sin mapear
+  // NidanaId -> Realm, tal como se decidió). Cualquiera de las 12
+  // Nidanas puede aparecer en cualquier Reino; el Reino solo decide
+  // QUÉ TIPO de Avatar puede disputarla — P1 y P2 compiten con su
+  // propia versión de ese mismo Avatar.
   const nidanaOnLandingCell = nextBoardNidanas[finalToPos];
-  if (nidanaOnLandingCell && !nextAvatarNidana[me][activeRealmPiece]) {
+  const landingRealmMatchesAvatar =
+    canonicalRealmFromPos(finalToPos) === activeRealmPiece;
+  if (
+    nidanaOnLandingCell &&
+    landingRealmMatchesAvatar &&
+    !nextAvatarNidana[me][activeRealmPiece]
+  ) {
     nextAvatarNidana = {
       ...nextAvatarNidana,
       [me]: {
@@ -1745,10 +1846,61 @@ if (!didCapture) {
       // estado de piezas actualizado más abajo (nextPiecesRealm), así
       // que la formación se evalúa sobre ese estado ya movido, no
       // sobre el previo.
+      // v82 (1 septiembre 2026) — Snake Bet V0: resuelto ANTES de
+      // stateAfterThisMove/checkNirvana, para que si esta misma jugada
+      // consolida un Avatar Y completa el 6/6 a la vez, la victoria se
+      // detecte en el mismo turno (mismo motivo que Realm Ascension más
+      // arriba en este archivo).
+      let nextConsolidatedAvatars = state.consolidatedAvatars;
+      let nextSnakeBet = state.snakeBet;
+
+      if (state.snakeBet) {
+        const bet = state.snakeBet;
+        const isBettorMoving = me === bet.byPlayer;
+        const capturedByThisSnake =
+          didCapture &&
+          (option.venomId === "snake" || option.pieceKind === "snake");
+
+        if (isBettorMoving && capturedByThisSnake) {
+          // SNAKE BET WON — el Avatar objetivo queda consolidado.
+          console.log("SNAKE BET WON", {
+            byPlayer: bet.byPlayer,
+            targetAvatar: bet.targetAvatar,
+          });
+          nextConsolidatedAvatars = {
+            ...nextConsolidatedAvatars,
+            [bet.byPlayer]: {
+              ...nextConsolidatedAvatars[bet.byPlayer],
+              [bet.targetAvatar]: true,
+            },
+          };
+          nextSnakeBet = null;
+        } else if (!isBettorMoving) {
+          // Un ciclo P1+P2 completo termina cuando mueve quien NO
+          // apostó — nunca cuando mueve el propio apostador. No
+          // reutiliza ningún contador del Orquestador (tiene otra
+          // semántica, ver Orchestrator.ts) — cuenta ciclos reales de
+          // turno, el evento más seguro disponible.
+          const roundsLeft = bet.roundsLeft - 1;
+          if (roundsLeft <= 0) {
+            console.log("SNAKE BET LOST", {
+              byPlayer: bet.byPlayer,
+              targetAvatar: bet.targetAvatar,
+              stake: bet.stake,
+            });
+            settleSnakeBetStake({ byPlayer: bet.byPlayer, stake: bet.stake });
+            nextSnakeBet = null;
+          } else {
+            nextSnakeBet = { ...bet, roundsLeft };
+          }
+        }
+      }
+
       const stateAfterThisMove: GameState = {
         ...state,
         pieces: nextPieces,
         realmPieces: nextPiecesRealm,
+        consolidatedAvatars: nextConsolidatedAvatars,
         realmProgress: {
           ...state.realmProgress,
           [me]: { ...state.realmProgress[me], currentRealmStep: nextRealmStep },
@@ -2059,6 +2211,8 @@ realmAscension: nextRealmAscensionForBrunoInMove ?? (didAscendRealm && unlockedR
         lastNidanaAtTurn: nextLastNidanaAtTurn,
         boardNidanas: nextBoardNidanas,
         avatarNidana: nextAvatarNidana,
+        consolidatedAvatars: nextConsolidatedAvatars,
+        snakeBet: nextSnakeBet,
         decisionSignature: nextDecisionSignature,
         lastKarma: karma,
         karmaTotal: {

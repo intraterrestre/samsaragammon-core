@@ -360,6 +360,36 @@ export type GameState = {
   boardNidanas: Partial<Record<number, NidanaId>>;
   avatarNidana: Record<PlayerId, Partial<Record<RealmPieceKind, NidanaId>>>;
 
+  // v82 (1 septiembre 2026) — Snake Bet V0, decisión de diseño cerrada
+  // con Federico/Chat. IN HUMANS (posición física, ya lo calcula
+  // countNirvanaFormationProgress) es distinto de CONSOLIDATED (ese
+  // Avatar además cumplió la condición adicional de Snake Bet). Se
+  // llama "consolidated", no "liberated" — deliberado: todavía no está
+  // decidido que Snake Bet sea la ÚNICA forma de consolidar, así que el
+  // nombre no debe implicarlo. countNirvanaFormationProgress exige este
+  // flag además de lo que ya exigía (ver victory/nirvana.ts).
+  consolidatedAvatars: Record<PlayerId, Partial<Record<RealmPieceKind, boolean>>>;
+
+  // Oferta de Snake Bet pendiente de ACCEPT/REFUSE del rival — null
+  // cuando no hay ninguna en curso. Distinto de `snakeBet` (la apuesta ya
+  // activa, en curso de cacería).
+  pendingSnakeBet: { byPlayer: PlayerId; targetAvatar: RealmPieceKind } | null;
+
+  // La apuesta activa, si el rival ya aceptó. roundsLeft se decrementa
+  // exactamente una vez por ciclo P1+P2 completo (ver reducer.ts,
+  // CONSCIOUS_MOVE: se decrementa cuando mueve el jugador QUE NO
+  // apostó, nunca cuando mueve el propio apostador — así un ciclo
+  // completo real, no el contador del Orquestador, que tiene otra
+  // semántica). stake identifica cuáles 2 Nidanas del apostador quedan
+  // en juego — el PAGO físico si pierde queda deliberadamente sin
+  // resolver en V0 (ver settleSnakeBetStake en reducer.ts).
+  snakeBet: {
+    byPlayer: PlayerId;
+    targetAvatar: RealmPieceKind;
+    roundsLeft: number;
+    stake: [NidanaId, NidanaId];
+  } | null;
+
   // v76 (28 agosto 2026) — FORM LINK (Fandango), pedido de Federico tras
   // ver LINK AVAILABLE/RIVAL HAS WHAT YOU NEED en el tablero real: el
   // primer gesto de mercado, sin trade todavía. Por jugador, la lista de

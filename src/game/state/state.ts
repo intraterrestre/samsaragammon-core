@@ -152,6 +152,12 @@ actors: {
     P1: {},
     P2: {},
   },
+  consolidatedAvatars: {
+    P1: {},
+    P2: {},
+  },
+  pendingSnakeBet: null,
+  snakeBet: null,
   formedLinks: {
     P1: [],
     P2: [],
