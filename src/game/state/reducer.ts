@@ -18,6 +18,7 @@ import { behaviorAfterMove } from "../behavior/behavior";
 import { recordMove } from "../behavior/patternEngine";
 import { realmFromPos, canonicalRealmFromPos } from "../../UI/realm";
 import { SNAKE_BET_ROUNDS, settleSnakeBetStake } from "../snakeBet";
+import { getDharma777Opportunity, getDharma777EligibleTargets } from "../dharma777";
 import { updateDecisionSignature } from "../Karma/updateDecisionSignature";
 import { computeKarmaTurn } from "../engine/computeKarmaTurn";
 import { NIDANA_BY_PATTERN_EVENT } from "../behavior/nidanaMapping";
@@ -87,6 +88,13 @@ type Action =
   | { type: "REQUEST_SNAKE_BET"; player: PlayerId; targetAvatar: RealmPieceKind }
   | { type: "ACCEPT_SNAKE_BET" }
   | { type: "REFUSE_SNAKE_BET" }
+  | {
+      type: "DECLARE_DHARMA_777";
+      player: PlayerId;
+      option: MoveOption;
+      allOptions: MoveOption[];
+      targetAvatar: RealmPieceKind;
+    }
   // v77 (28 agosto 2026) — Fandango: FORM DEAL, pedido de Federico tras
   // corregir el diseño (ver PendingTrade en types.ts para el porqué de
   // guardar NidanaId concretos): SEND_TRADE_OFFER la manda el jugador
@@ -684,6 +692,71 @@ export function reducer(state: GameState, action: Action): GameState {
       const rival = otherPlayer(state.pendingSnakeBet.byPlayer);
       if (state.turn !== rival) return state;
       return { ...state, pendingSnakeBet: null };
+    }
+
+    // v83 (1 septiembre 2026) — "☸ ROUND DHARMA 777" (nombre visible al
+    // jugador, pedido de Federico para seguir el Curvismo — el
+    // identificador interno queda como DECLARE_DHARMA_777 hasta que se
+    // confirme si también hay que renombrarlo). Instantáneo, sin estado
+    // persistente — a diferencia de Snake Bet, no vive varios turnos.
+    // Revalida TODO desde cero, nunca confía en que la UI ya filtró
+    // (mismo criterio defensivo que ya usa CONSCIOUS_MOVE desde hoy
+    // temprano con opciones desactualizadas).
+    case "DECLARE_DHARMA_777": {
+      const { player, option, targetAvatar } = action;
+      if (state.phase !== "rolled" || player !== state.turn) return state;
+
+      // 1-2-3-4-5: la jugada sacrificada sigue siendo legal AHORA
+      // MISMO, y de verdad es la oportunidad de Dharma que dice ser.
+      const legalOptionsNow = getMoveOptionsForPlayer(state, player);
+      const isOptionStillLegal = legalOptionsNow.some(
+        (o) =>
+          o.pieceKind === option.pieceKind &&
+          o.venomId === option.venomId &&
+          o.toPos === option.toPos &&
+          o.choice === option.choice
+      );
+      if (!isOptionStillLegal) return state;
+
+      const spareableAvatar = getDharma777Opportunity(state, player, option);
+      if (!spareableAvatar) return state;
+
+      // 6-7: mi Avatar objetivo sigue siendo elegible ahora mismo.
+      const eligibleTargets = getDharma777EligibleTargets(state, player);
+      if (!eligibleTargets.includes(targetAvatar)) return state;
+
+      const nextConsolidatedAvatars = {
+        ...state.consolidatedAvatars,
+        [player]: {
+          ...state.consolidatedAvatars[player],
+          [targetAvatar]: true,
+        },
+      };
+
+      const stateAfterDharma: GameState = {
+        ...state,
+        consolidatedAvatars: nextConsolidatedAvatars,
+      };
+      const didWin = checkNirvana(stateAfterDharma, player);
+
+      const opp = otherPlayer(player);
+      const nextTurn = didWin ? player : opp;
+
+      console.log("DHARMA 777 DECLARED", {
+        player,
+        sparedRivalAvatar: spareableAvatar,
+        consolidatedOwnAvatar: targetAvatar,
+      });
+
+      return {
+        ...state,
+        consolidatedAvatars: nextConsolidatedAvatars,
+        winner: didWin ? player : state.winner,
+        turn: nextTurn,
+        turnIndex: state.turnIndex + 1,
+        phase: "idle",
+        rollOptions: null,
+      };
     }
 
     case "SEND_TRADE_OFFER": {
