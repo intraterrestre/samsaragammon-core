@@ -19,6 +19,8 @@ import {
   computeRivalOpportunities,
 } from "../fandango/nidanaLinks";
 import { DevNidanaTool } from "../dev/DevNidanaTool";
+import { getDharma777Opportunity, getDharma777EligibleTargets } from "../game/dharma777";
+import { REALM_AVATAR_NAME } from "../game/realmAvatarNames";
 import type { NidanaId } from "../game/nidanas";
 import { MaraPanel } from "./MaraPanel";
 import { SamsaraStage } from "../samsara/SamsaraStage";
@@ -187,6 +189,21 @@ nidanaCoinSide: "front" | "back";
   onAcceptTrade: () => void;
   onRefuseTrade: () => void;
 
+  // v84 (4 septiembre 2026) — interfaz real de Square Karma 666 (Snake
+  // Bet) y Round Dharma 777, pedido de Federico. Mismo criterio que
+  // onFormLink/onSendTradeOffer arriba: siempre pasadas, no opcionales.
+  // Ver reducer.ts (REQUEST_SNAKE_BET/ACCEPT_SNAKE_BET/REFUSE_SNAKE_BET/
+  // DECLARE_DHARMA_777).
+  onRequestSnakeBet: (player: PlayerId, targetAvatar: RealmPieceKind) => void;
+  onAcceptSnakeBet: () => void;
+  onRefuseSnakeBet: () => void;
+  onDeclareDharma777: (
+    player: PlayerId,
+    option: MoveOption,
+    allOptions: MoveOption[],
+    targetAvatar: RealmPieceKind
+  ) => void;
+
   avatarVideoPlaying?: boolean;
 };
 
@@ -212,6 +229,10 @@ export function GameShell({
   onSendTradeOffer,
   onAcceptTrade,
   onRefuseTrade,
+  onRequestSnakeBet,
+  onAcceptSnakeBet,
+  onRefuseSnakeBet,
+  onDeclareDharma777,
   playDiceSound,
   onConsciousMove,
   onGenesisUIComplete,
@@ -900,9 +921,53 @@ const muralEra = nirvanaMuralRevealed
 
 const [genesisPhase, setGenesisPhase] = React.useState<string>("VIDEO");
 
+// v84 (4 septiembre 2026) — Round Dharma 777: cuando handleMove
+// intercepta una oportunidad real (ver abajo), la jugada de captura
+// original queda "en pausa" aquí — SIN despachar CONSCIOUS_MOVE — hasta
+// que el jugador elija CAPTURE (se libera tal cual) o DHARMA (se
+// despacha DECLARE_DHARMA_777 en su lugar, la captura original nunca
+// llega al reducer).
+const [pendingDharmaChoice, setPendingDharmaChoice] = React.useState<{
+  option: MoveOption;
+  allOptions: MoveOption[];
+  eligibleTargets: RealmPieceKind[];
+} | null>(null);
+
 const handleMove = (opt: MoveOption, all: MoveOption[]) => {
+  const dharmaOpportunity = getDharma777Opportunity(state, state.turn, opt);
+  if (dharmaOpportunity) {
+    const eligibleTargets = getDharma777EligibleTargets(state, state.turn);
+    // Regla cerrada: si no tengo NINGÚN Avatar propio pendiente en
+    // Humans, Dharma 777 no se ofrece — sigue el flujo normal de
+    // captura, sin interrumpir nada.
+    if (eligibleTargets.length > 0) {
+      setHoveredOption(null);
+      setPendingDharmaChoice({ option: opt, allOptions: all, eligibleTargets });
+      return; // CONSCIOUS_MOVE NO se despacha todavía
+    }
+  }
   setHoveredOption(null);
   onConsciousMove(opt, all);
+};
+
+// Si el jugador elige CAPTURE (o cierra la elección): la jugada
+// original sigue su curso normal, tal cual estaba antes de interceptarla.
+const confirmDharmaCapture = () => {
+  if (!pendingDharmaChoice) return;
+  const { option, allOptions } = pendingDharmaChoice;
+  setPendingDharmaChoice(null);
+  onConsciousMove(option, allOptions);
+};
+
+// Si el jugador elige DHARMA con un único objetivo elegible: se
+// preselecciona solo, sin pedir un clic extra (regla cerrada). Con más
+// de uno, este mismo handler se usa después de que el jugador elija
+// cuál en el selector.
+const confirmDharmaSpare = (targetAvatar: RealmPieceKind) => {
+  if (!pendingDharmaChoice) return;
+  const { option, allOptions } = pendingDharmaChoice;
+  setPendingDharmaChoice(null);
+  onDeclareDharma777(state.turn, option, allOptions, targetAvatar);
 };
 React.useEffect(() => {
   if (state.phase !== "rolled") setHoveredOption(null);
@@ -1401,6 +1466,118 @@ return (
         />
       )}
 
+      {/* v84 (4 septiembre 2026) — Round Dharma 777: intercepta la
+          captura ANTES de que llegue a onConsciousMove (ver handleMove
+          arriba). Círculo (○) en vez del timón del dharma, pedido de
+          Federico — mismo criterio "Curvismo" que ya se usó en
+          FandangoWindow y el popup de Nidana ampliada (borderRadius
+          elíptico, no una caja rectangular). */}
+      {pendingDharmaChoice && (
+        <div
+          onClick={confirmDharmaCapture}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 999998,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(4,4,8,0.55)",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "min(420px, 90vw)",
+              padding: "34px 46px",
+              borderRadius: "50% / 14%",
+              background: "linear-gradient(180deg, #14100a 0%, #0a0805 100%)",
+              border: "1px solid rgba(216,196,138,0.28)",
+              boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+              color: "#f2e8d4",
+              textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 14,
+            }}
+          >
+            <div style={{ fontSize: 13, letterSpacing: 2, opacity: 0.65 }}>
+              A ese Avatar ya le duele Mara.
+            </div>
+            <div style={{ display: "flex", gap: 12 }}>
+              <button
+                type="button"
+                onClick={confirmDharmaCapture}
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: 10,
+                  border: "2px solid rgba(216,196,138,0.5)",
+                  background: "rgba(255,255,255,0.06)",
+                  color: "#f2e8d4",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                CAPTURE
+              </button>
+              {pendingDharmaChoice.eligibleTargets.length === 1 ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    confirmDharmaSpare(pendingDharmaChoice.eligibleTargets[0])
+                  }
+                  style={{
+                    padding: "10px 20px",
+                    borderRadius: 10,
+                    border: "2px solid rgba(150,200,255,0.6)",
+                    background: "rgba(150,200,255,0.08)",
+                    color: "#f2e8d4",
+                    fontWeight: 800,
+                    cursor: "pointer",
+                  }}
+                >
+                  ○ ROUND DHARMA 777
+                </button>
+              ) : (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                    alignItems: "center",
+                  }}
+                >
+                  <div style={{ fontSize: 12, opacity: 0.7 }}>
+                    ○ ROUND DHARMA 777 — ¿cuál consolidas?
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {pendingDharmaChoice.eligibleTargets.map((kind) => (
+                      <button
+                        key={kind}
+                        type="button"
+                        onClick={() => confirmDharmaSpare(kind)}
+                        style={{
+                          padding: "8px 14px",
+                          borderRadius: 10,
+                          border: "2px solid rgba(150,200,255,0.6)",
+                          background: "rgba(150,200,255,0.08)",
+                          color: "#f2e8d4",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {REALM_AVATAR_NAME[kind]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
      {oriolEntered && (
        <FandangoKarma
          onOpen={() => setFandangoOpen(true)}
@@ -1482,6 +1659,15 @@ return (
   onSendTradeOffer={handleSendTradeOffer}
   onAcceptTrade={onAcceptTrade}
   onRefuseTrade={onRefuseTrade}
+  mySnakeBetEligibleTargets={getDharma777EligibleTargets(state, state.turn)}
+  myCarriedNidanaCount={
+    Object.values(state.avatarNidana[state.turn]).filter(Boolean).length
+  }
+  pendingSnakeBet={state.pendingSnakeBet}
+  activeSnakeBet={state.snakeBet}
+  onRequestSnakeBet={(targetAvatar) => onRequestSnakeBet(state.turn, targetAvatar)}
+  onAcceptSnakeBet={onAcceptSnakeBet}
+  onRefuseSnakeBet={onRefuseSnakeBet}
 />
 
 {/* v74 (28 agosto 2026) — DEV — FANDANGO / NIDANA TEST TOOL. Montado

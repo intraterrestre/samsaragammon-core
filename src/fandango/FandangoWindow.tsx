@@ -31,7 +31,7 @@
 // su overflow:hidden. Mismo bug que ya se arregló en VictoryScreen.tsx
 // (ver ese archivo) — acá se evita de raíz montando en el lugar
 // correcto en vez de portal.
-import { useState, type ReactNode } from "react";
+import { useState, type ReactNode, type CSSProperties } from "react";
 import type { NidanaId } from "../game/nidanas";
 import { NIDANAS } from "../game/nidanas";
 import type { PendingTrade, PlayerId, RealmPieceKind } from "../game/types";
@@ -78,7 +78,134 @@ type Props = {
   onSendTradeOffer: (offer: NidanaId, want: NidanaId) => void;
   onAcceptTrade: () => void;
   onRefuseTrade: () => void;
+
+  // v84 (4 septiembre 2026) — Square Karma 666 (Snake Bet), pedido de
+  // Federico. Nombre interno del reducer sigue siendo "snake bet" —
+  // solo el texto visible cambió. eligibleTargets reutiliza el mismo
+  // criterio que ya usa Round Dharma 777 (Avatar propio, en Humans, no
+  // consolidated) — mismo dato, dos usos distintos.
+  mySnakeBetEligibleTargets: RealmPieceKind[];
+  myCarriedNidanaCount: number;
+  pendingSnakeBet: { byPlayer: PlayerId; targetAvatar: RealmPieceKind } | null;
+  activeSnakeBet: {
+    byPlayer: PlayerId;
+    targetAvatar: RealmPieceKind;
+    roundsLeft: number;
+  } | null;
+  onRequestSnakeBet: (targetAvatar: RealmPieceKind) => void;
+  onAcceptSnakeBet: () => void;
+  onRefuseSnakeBet: () => void;
 };
+
+// v84 (4 septiembre 2026) — Square Karma 666 (Snake Bet), pedido de
+// Federico. Tres estados posibles, mutuamente excluyentes: apuesta
+// activa (muestra rondas restantes), solicitud pendiente (yo espero
+// respuesta, o el rival me la mandó y puedo aceptar/rechazar), o sin
+// nada — ofrece pedir una nueva si tengo Avatares elegibles y al
+// menos 2 Nidanas propias (mismo requisito que ya revalida el
+// reducer, ver reducer.ts case REQUEST_SNAKE_BET).
+function SquareKarma666Block({
+  myPlayer,
+  eligibleTargets,
+  carriedNidanaCount,
+  pendingSnakeBet,
+  activeSnakeBet,
+  onRequest,
+  onAccept,
+  onRefuse,
+}: {
+  myPlayer: PlayerId;
+  eligibleTargets: RealmPieceKind[];
+  carriedNidanaCount: number;
+  pendingSnakeBet: { byPlayer: PlayerId; targetAvatar: RealmPieceKind } | null;
+  activeSnakeBet: {
+    byPlayer: PlayerId;
+    targetAvatar: RealmPieceKind;
+    roundsLeft: number;
+  } | null;
+  onRequest: (targetAvatar: RealmPieceKind) => void;
+  onAccept: () => void;
+  onRefuse: () => void;
+}) {
+  const boxStyle: CSSProperties = {
+    marginTop: 20,
+    padding: "14px 16px",
+    borderRadius: 14,
+    border: "1px solid rgba(255,170,120,0.3)",
+    background: "rgba(255,170,120,0.06)",
+  };
+  const buttonStyle: CSSProperties = {
+    height: 34,
+    padding: "0 14px",
+    borderRadius: 8,
+    border: "1px solid rgba(216,196,138,0.28)",
+    background: "rgba(255,255,255,0.06)",
+    color: "#f2e8d4",
+    cursor: "pointer",
+    fontWeight: 700,
+    fontSize: 12,
+  };
+
+  if (activeSnakeBet) {
+    const isMine = activeSnakeBet.byPlayer === myPlayer;
+    return (
+      <div style={boxStyle}>
+        🐍 SQUARE KARMA 666 {isMine ? "— tuya" : "— del rival"} sobre{" "}
+        {REALM_AVATAR_NAME[activeSnakeBet.targetAvatar]} —{" "}
+        {activeSnakeBet.roundsLeft} ROUND{activeSnakeBet.roundsLeft === 1 ? "" : "S"} LEFT
+      </div>
+    );
+  }
+
+  if (pendingSnakeBet) {
+    const isMine = pendingSnakeBet.byPlayer === myPlayer;
+    if (isMine) {
+      return (
+        <div style={boxStyle}>
+          🐍 SQUARE KARMA 666 propuesta sobre{" "}
+          {REALM_AVATAR_NAME[pendingSnakeBet.targetAvatar]} — esperando respuesta
+          del rival.
+        </div>
+      );
+    }
+    return (
+      <div style={boxStyle}>
+        <div style={{ marginBottom: 8 }}>
+          🐍 El rival propone SQUARE KARMA 666 sobre tu{" "}
+          {REALM_AVATAR_NAME[pendingSnakeBet.targetAvatar]}.
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button type="button" onClick={onAccept} style={buttonStyle}>
+            ACCEPT
+          </button>
+          <button type="button" onClick={onRefuse} style={buttonStyle}>
+            REFUSE
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (eligibleTargets.length === 0 || carriedNidanaCount < 2) return null;
+
+  return (
+    <div style={boxStyle}>
+      <div style={{ marginBottom: 8 }}>🐍 SQUARE KARMA 666 — proponer apuesta:</div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {eligibleTargets.map((kind) => (
+          <button
+            key={kind}
+            type="button"
+            onClick={() => onRequest(kind)}
+            style={buttonStyle}
+          >
+            {REALM_AVATAR_NAME[kind]}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function SectionTitle({ children }: { children: ReactNode }) {
   return (
@@ -592,6 +719,13 @@ export function FandangoWindow({
   onSendTradeOffer,
   onAcceptTrade,
   onRefuseTrade,
+  mySnakeBetEligibleTargets,
+  myCarriedNidanaCount,
+  pendingSnakeBet,
+  activeSnakeBet,
+  onRequestSnakeBet,
+  onAcceptSnakeBet,
+  onRefuseSnakeBet,
 }: Props) {
   // v76 (28 agosto 2026) — flash local "LINK FORMED X → Y", ver
   // LinkFormedFlash arriba. Vive en este componente (no en GameShell)
@@ -733,6 +867,17 @@ export function FandangoWindow({
           onSelectOffer={setSelectedOffer}
           onSendOffer={handleSendOffer}
           onCancelDeal={handleCancelDeal}
+        />
+
+        <SquareKarma666Block
+          myPlayer={myPlayer}
+          eligibleTargets={mySnakeBetEligibleTargets}
+          carriedNidanaCount={myCarriedNidanaCount}
+          pendingSnakeBet={pendingSnakeBet}
+          activeSnakeBet={activeSnakeBet}
+          onRequest={onRequestSnakeBet}
+          onAccept={onAcceptSnakeBet}
+          onRefuse={onRefuseSnakeBet}
         />
 
         <button

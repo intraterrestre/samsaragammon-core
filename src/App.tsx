@@ -1183,6 +1183,24 @@ nidanaCoinSide={nidanaSide}
       }
       onAcceptTrade={() => dispatch({ type: "ACCEPT_TRADE_OFFER" })}
       onRefuseTrade={() => dispatch({ type: "REFUSE_TRADE_OFFER" })}
+      // v84 (4 septiembre 2026) — Square Karma 666 (Snake Bet) y Round
+      // Dharma 777, pedido de Federico. Ver reducer.ts
+      // (REQUEST_SNAKE_BET/ACCEPT_SNAKE_BET/REFUSE_SNAKE_BET/
+      // DECLARE_DHARMA_777).
+      onRequestSnakeBet={(player, targetAvatar) =>
+        dispatch({ type: "REQUEST_SNAKE_BET", player, targetAvatar })
+      }
+      onAcceptSnakeBet={() => dispatch({ type: "ACCEPT_SNAKE_BET" })}
+      onRefuseSnakeBet={() => dispatch({ type: "REFUSE_SNAKE_BET" })}
+      onDeclareDharma777={(player, option, allOptions, targetAvatar) =>
+        dispatch({
+          type: "DECLARE_DHARMA_777",
+          player,
+          option,
+          allOptions,
+          targetAvatar,
+        })
+      }
       onVestigiumDone={() => setShowVestigium(false)}
       onCloseLedger={() => dispatch({ type: "CLOSE_LEDGER" })}
       // 2026-08-22: onIntroDone (dispatch INTRO_DONE → state.introSeen =
