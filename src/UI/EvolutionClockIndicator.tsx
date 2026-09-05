@@ -47,23 +47,31 @@ export function EvolutionClockIndicator({ state }: Props) {
   return (
     <div
       style={{
+        // v85 (5 septiembre 2026) — pedido de Federico: "casi no se
+        // aprecia" (arriba, centrado, letra chica y semitransparente).
+        // Reubicado a la esquina superior derecha, a la altura de las
+        // casillas 13-14 pero fuera del borde de la rueda (no pegado),
+        // y apilado P1 encima de P2 en vez de lado a lado. Primer
+        // ajuste sin poder verlo en vivo — puede necesitar retoque de
+        // posición exacta una vez confirmado jugando.
         position: "absolute",
-        top: 10,
-        left: "50%",
-        transform: "translateX(-50%)",
+        top: 30,
+        right: 20,
         zIndex: 30,
         display: "flex",
-        gap: 14,
+        flexDirection: "column",
+        alignItems: "flex-end",
+        gap: 4,
         pointerEvents: "none",
-        fontSize: 12,
-        fontWeight: 700,
+        fontSize: 20,
+        fontWeight: 900,
         letterSpacing: 1,
-        color: "rgba(255,255,255,0.55)",
-        textShadow: "0 1px 3px rgba(0,0,0,0.9)",
+        color: "rgba(255,255,255,0.92)",
+        textShadow:
+          "0 0 6px rgba(0,0,0,0.95), 0 0 12px rgba(0,0,0,0.8), 0 2px 3px rgba(0,0,0,1)",
       }}
     >
       {p1 && <span>{p1}</span>}
-      {p1 && p2 && <span style={{ opacity: 0.3 }}>|</span>}
       {p2 && <span>{p2}</span>}
     </div>
   );
