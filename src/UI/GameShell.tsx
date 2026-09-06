@@ -93,6 +93,7 @@ import fandangoSpraySound from "../assets/sounds/spray.mp3";
 // para esto todavía, es un import de una línea para cambiarlo si no
 // encaja.
 import linkFormedSound from "../assets/sounds/capture_black.mp3";
+import cascabelSound from "../assets/sounds/cascabel.mp3";
 import { SacredProgress } from "./SacredProgress";
 import { countNirvanaFormationProgress } from "../game/victory/nirvana";
 // v68 (27 agosto 2026) — pedido de Federico: el "cartel" WHAT NOW?
@@ -308,6 +309,43 @@ const myFormedLinks = React.useMemo(
 // ese componente, no necesita estado de partida) — acá solo el sonido,
 // mismo ref set up en el useEffect de audios de más abajo.
 const linkFormedAudio = React.useRef<HTMLAudioElement | null>(null);
+// v85 (6 septiembre 2026) — pedido de Federico: sonido de cascabel
+// para SQUARE KARMA 666 (Snake Bet). Suena al proponer la apuesta, al
+// aceptarla, y en cada lance del apostador mientras la apuesta sigue
+// activa (ver useEffect de globalRollCount más abajo) — mismo patron
+// de ref que el resto de los sonidos de este archivo.
+const cascabelAudio = React.useRef<HTMLAudioElement | null>(null);
+const playCascabel = () => {
+  const audio = cascabelAudio.current;
+  if (audio) {
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  }
+};
+
+// v85 (6 septiembre 2026) — "cada vez que le toque lanzar" (pedido de
+// Federico): mientras SQUARE KARMA 666 sigue activa (state.snakeBet),
+// el cascabel suena en cada lance del propio apostador, no solo al
+// proponer/aceptar. globalRollCount sube exactamente una vez por ROLL
+// real (ver reducer.ts) y state.turn todavia identifica a quien acaba
+// de tirar — el turno solo cambia despues de resolver el movimiento,
+// no al tirar — asi que el flanco de este contador + snakeBet.byPlayer
+// === state.turn aisla "el apostador acaba de lanzar" sin depender de
+// ningun evento nuevo. Mismo patron de flanco que
+// prevFandangoNotificationRef, mas abajo en este archivo.
+const prevGlobalRollCountRef = React.useRef(state.globalRollCount);
+React.useEffect(() => {
+  const rolledNow = state.globalRollCount !== prevGlobalRollCountRef.current;
+  prevGlobalRollCountRef.current = state.globalRollCount;
+  if (
+    rolledNow &&
+    state.snakeBet &&
+    state.snakeBet.byPlayer === state.turn
+  ) {
+    playCascabel();
+  }
+}, [state.globalRollCount, state.snakeBet, state.turn]);
+
 const handleFormLink = (low: number) => {
   onFormLink(state.turn, low);
   const audio = linkFormedAudio.current;
@@ -502,6 +540,7 @@ React.useEffect(() => {
   campanaFinalAudio.current = new Audio(campanaFinalSound);
   fandangoSprayAudio.current = new Audio(fandangoSpraySound);
   linkFormedAudio.current = new Audio(linkFormedSound);
+  cascabelAudio.current = new Audio(cascabelSound);
 
   if (cheeringAudio.current) cheeringAudio.current.volume = 0.18;
   if (fireworksAudio.current) fireworksAudio.current.volume = 0.12;
@@ -518,6 +557,7 @@ React.useEffect(() => {
   if (campanaFinalAudio.current) campanaFinalAudio.current.volume = 0.5;
   if (fandangoSprayAudio.current) fandangoSprayAudio.current.volume = 0.5;
   if (linkFormedAudio.current) linkFormedAudio.current.volume = 0.6;
+  if (cascabelAudio.current) cascabelAudio.current.volume = 0.7;
 
   // v55 (17 agosto 2026) — pedido de Federico, coreografía correcta
   // (corrige v53): la fanfarria NO suena cuando termina el video de
@@ -1657,8 +1697,14 @@ return (
   }
   pendingSnakeBet={state.pendingSnakeBet}
   activeSnakeBet={state.snakeBet}
-  onRequestSnakeBet={(targetAvatar) => onRequestSnakeBet(state.turn, targetAvatar)}
-  onAcceptSnakeBet={onAcceptSnakeBet}
+  onRequestSnakeBet={(targetAvatar) => {
+    playCascabel();
+    onRequestSnakeBet(state.turn, targetAvatar);
+  }}
+  onAcceptSnakeBet={() => {
+    playCascabel();
+    onAcceptSnakeBet();
+  }}
   onRefuseSnakeBet={onRefuseSnakeBet}
 />
 

@@ -561,10 +561,25 @@ top: stackedPosition.top,
     height: visualSize,
     objectFit: "contain",
     pointerEvents: "none",
-    transform: isCurrentSelected
+    // v86 (6 septiembre 2026) — pedido de Federico: antes,
+    // hasActiveSnakeBet reusaba exactamente el mismo scale(1.08) que
+    // la selección normal de pieza (ver comentario v82 más arriba) —
+    // si el rival, en su propio turno, elegía mover con SU Snake por
+    // una razón totalmente aparte de la apuesta, las dos serpientes
+    // quedaban agrandadas IGUAL y con el mismo brillo blanco, sin
+    // forma de distinguir "esta es la que reta" de "esta se movió
+    // nomas". Ahora hasActiveSnakeBet tiene su propio tratamiento, más
+    // grande que la selección normal y con brillo dorado propio, para
+    // que la serpiente de la apuesta se note sola sin importar qué
+    // haga el rival con la suya.
+    transform: hasActiveSnakeBet
+      ? "scale(1.45) translateY(-7px)"
+      : isCurrentSelected
       ? "scale(1.08) translateY(-4px)"
       : "translateY(-1px)",
-    filter: isCurrentSelected
+    filter: hasActiveSnakeBet
+      ? "drop-shadow(0 0 12px rgba(255,200,90,0.85))"
+      : isCurrentSelected
       ? "drop-shadow(0 0 8px rgba(255,255,255,0.4))"
       : "none",
   }}
