@@ -150,7 +150,7 @@ function SquareKarma666Block({
     const isMine = activeSnakeBet.byPlayer === myPlayer;
     return (
       <div style={boxStyle}>
-        🐍 SQUARE KARMA 666 {isMine ? "— tuya" : "— del rival"} sobre{" "}
+        🐍 SQUARE KARMA 666 {isMine ? "— yours" : "— rival's"} on{" "}
         {REALM_AVATAR_NAME[activeSnakeBet.targetAvatar]} —{" "}
         {activeSnakeBet.roundsLeft} ROUND{activeSnakeBet.roundsLeft === 1 ? "" : "S"} LEFT
       </div>
@@ -162,16 +162,16 @@ function SquareKarma666Block({
     if (isMine) {
       return (
         <div style={boxStyle}>
-          🐍 SQUARE KARMA 666 propuesta sobre{" "}
-          {REALM_AVATAR_NAME[pendingSnakeBet.targetAvatar]} — esperando respuesta
-          del rival.
+          🐍 SQUARE KARMA 666 proposed on{" "}
+          {REALM_AVATAR_NAME[pendingSnakeBet.targetAvatar]} — waiting for rival's
+          response.
         </div>
       );
     }
     return (
       <div style={boxStyle}>
         <div style={{ marginBottom: 8 }}>
-          🐍 El rival propone SQUARE KARMA 666 sobre tu{" "}
+          🐍 Rival proposes SQUARE KARMA 666 on your{" "}
           {REALM_AVATAR_NAME[pendingSnakeBet.targetAvatar]}.
         </div>
         <div style={{ display: "flex", gap: 8 }}>
@@ -190,7 +190,7 @@ function SquareKarma666Block({
 
   return (
     <div style={boxStyle}>
-      <div style={{ marginBottom: 8 }}>🐍 SQUARE KARMA 666 — proponer apuesta:</div>
+      <div style={{ marginBottom: 8 }}>🐍 SQUARE KARMA 666 — propose bet:</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {eligibleTargets.map((kind) => (
           <button
