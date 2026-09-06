@@ -94,6 +94,7 @@ import fandangoSpraySound from "../assets/sounds/spray.mp3";
 // encaja.
 import linkFormedSound from "../assets/sounds/capture_black.mp3";
 import cascabelSound from "../assets/sounds/cascabel.mp3";
+import round777Sound from "../assets/sounds/round777.mp3";
 import { SacredProgress } from "./SacredProgress";
 import { countNirvanaFormationProgress } from "../game/victory/nirvana";
 // v68 (27 agosto 2026) — pedido de Federico: el "cartel" WHAT NOW?
@@ -315,6 +316,12 @@ const linkFormedAudio = React.useRef<HTMLAudioElement | null>(null);
 // activa (ver useEffect de globalRollCount más abajo) — mismo patron
 // de ref que el resto de los sonidos de este archivo.
 const cascabelAudio = React.useRef<HTMLAudioElement | null>(null);
+// v87 (6 septiembre 2026) — pedido de Federico: audio celestial propio
+// para ROUND DHARMA 777, mismo patron que cascabelAudio arriba — se
+// dispara en confirmDharmaSpare, mas abajo, el momento exacto en que
+// el jugador confirma que va a perdonar la captura y consolidar en su
+// lugar.
+const round777Audio = React.useRef<HTMLAudioElement | null>(null);
 const playCascabel = () => {
   const audio = cascabelAudio.current;
   if (audio) {
@@ -541,6 +548,7 @@ React.useEffect(() => {
   fandangoSprayAudio.current = new Audio(fandangoSpraySound);
   linkFormedAudio.current = new Audio(linkFormedSound);
   cascabelAudio.current = new Audio(cascabelSound);
+  round777Audio.current = new Audio(round777Sound);
 
   if (cheeringAudio.current) cheeringAudio.current.volume = 0.18;
   if (fireworksAudio.current) fireworksAudio.current.volume = 0.12;
@@ -558,6 +566,7 @@ React.useEffect(() => {
   if (fandangoSprayAudio.current) fandangoSprayAudio.current.volume = 0.5;
   if (linkFormedAudio.current) linkFormedAudio.current.volume = 0.6;
   if (cascabelAudio.current) cascabelAudio.current.volume = 0.7;
+  if (round777Audio.current) round777Audio.current.volume = 0.6;
 
   // v55 (17 agosto 2026) — pedido de Federico, coreografía correcta
   // (corrige v53): la fanfarria NO suena cuando termina el video de
@@ -1006,6 +1015,11 @@ const confirmDharmaSpare = (targetAvatar: RealmPieceKind) => {
   if (!pendingDharmaChoice) return;
   const { option, allOptions } = pendingDharmaChoice;
   setPendingDharmaChoice(null);
+  const audio = round777Audio.current;
+  if (audio) {
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  }
   onDeclareDharma777(state.turn, option, allOptions, targetAvatar);
 };
 React.useEffect(() => {
