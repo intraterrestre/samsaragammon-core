@@ -105,7 +105,6 @@ import { buildFinalVestigium, saveFinalVestigium } from "../game/Vestigium";
 import { VictoryScreen } from "./VictoryScreen";
 import { EvolutionClockIndicator } from "./EvolutionClockIndicator";
 import { VenomBanner } from "./VenomBanner";
-import { HistoricalTimeCounter } from "./HistoricalTimeCounter";
 
 type MirrorData = {
   title: string;
@@ -1324,13 +1323,6 @@ return (
           quitada a pedido de Federico: ya quedó claro en pantalla cuál
           color/rango es cada reino, no hace falta el cartelito
           permanente abajo a la derecha. */}
-
-      <HistoricalTimeCounter
-        currentAvatarIndex={currentAvatarIndex}
-        frozen={diceFrozen}
-        moveSignal={state.lastMove?.at ?? 0}
-        avatarVideoPlaying={avatarVideoPlaying}
-      />
 
       <VenomBanner
         kind={venomBanner?.kind ?? null}
