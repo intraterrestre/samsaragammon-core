@@ -1621,6 +1621,10 @@ if (enemyRefsAtTarget.length >= 1) {
         pos: -1,
         inLimbo: true,
         maraLevel: 1,
+        // v84 (6 septiembre 2026) — ver types.ts: esta captura real
+        // cierra el camino normal de consolidación para este Avatar;
+        // de acá en más necesita Snake Bet/Dharma 777 para consolidar.
+        everCaptured: true,
       };
       nextMaraVisits[opp] += 1;
     }
@@ -1631,6 +1635,11 @@ if (enemyRefsAtTarget.length >= 1) {
 }
 
 // ===== movimiento final =====
+
+// v84 (6 septiembre 2026) — ver types.ts/RealmPieceState.everCaptured.
+// Se rellena mas abajo, solo si esta jugada es de un Avatar de reino
+// (no Veneno) que aterriza en Humans sin haber sido capturado nunca.
+let autoConsolidatedThisMove: RealmPieceKind | null = null;
 
 const isBasePiece =
   BASE_PIECES.includes(activePiece as BasePieceKind);
@@ -1671,6 +1680,25 @@ if (isBasePiece) {
     maraLevel: null,
     unlocked: true,
   };
+
+  // v84 (6 septiembre 2026) — camino normal de consolidacion: si este
+  // Avatar aterriza en Humans y NUNCA fue capturado en toda la partida
+  // (realmPiece.everCaptured, leido ANTES del spread de arriba), queda
+  // marcado para consolidar mas abajo (ver bloque de Snake Bet, donde
+  // se junta con nextConsolidatedAvatars). Antes de este cambio, la
+  // UNICA via a consolidated=true era ganar un SQUARE KARMA 666 o un
+  // ROUND DHARMA 777 — Federico jugo la V0 de campo (ver checkNirvana
+  // en nirvana.ts) y reporto que asi la partida nunca cerraba, ni con
+  // 5/6 ni con 6/6 fichas fisicas en Humans. Un Avatar que SI fue
+  // capturado alguna vez sigue necesitando Snake Bet/Dharma 777 para
+  // consolidar — conserva la tension de esas dos mecanicas como
+  // "camino de revancha" en vez de volverlas irrelevantes.
+  if (
+    canonicalRealmFromPos(finalToPos) === "humans" &&
+    !realmPiece.everCaptured
+  ) {
+    autoConsolidatedThisMove = activeRealmPiece;
+  }
 
   // Paso 1 — recoleccion: el Avatar recoge la Nidana de esta casilla
   // solo si aterriza EXACTO en ella (finalToPos, no "pasar por" —
@@ -1926,6 +1954,21 @@ if (!didCapture) {
       // arriba en este archivo).
       let nextConsolidatedAvatars = state.consolidatedAvatars;
       let nextSnakeBet = state.snakeBet;
+
+      // v84 (6 septiembre 2026) — aplica el auto-consolidado detectado
+      // mas arriba (llegada limpia a Humans, ver autoConsolidatedThisMove).
+      // Antes del bloque de Snake Bet a proposito: si esta jugada gana
+      // ademas un Snake Bet sobre OTRO Avatar, las dos consolidaciones
+      // deben verse juntas cuando se evalue checkNirvana mas abajo.
+      if (autoConsolidatedThisMove && !nextConsolidatedAvatars[me]?.[autoConsolidatedThisMove]) {
+        nextConsolidatedAvatars = {
+          ...nextConsolidatedAvatars,
+          [me]: {
+            ...nextConsolidatedAvatars[me],
+            [autoConsolidatedThisMove]: true,
+          },
+        };
+      }
 
       if (state.snakeBet) {
         const bet = state.snakeBet;

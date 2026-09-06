@@ -71,6 +71,13 @@ export type RealmPieceState = SinglePieceState & {
   id: string;
   kind: RealmPieceKind;
   unlocked: boolean;
+  // v84 (6 septiembre 2026) — historial, no estado transitorio como
+  // maraLevel (que se limpia a null apenas el Avatar vuelve). Marca si
+  // este Avatar fue capturado AL MENOS UNA VEZ en toda la partida, para
+  // el camino normal de consolidación en reducer.ts (ver ese archivo,
+  // case CONSCIOUS_MOVE). Opcional a propósito: los sitios de creación
+  // existentes no necesitan tocarse, undefined se trata como false.
+  everCaptured?: boolean;
 };
 
 export type VenomTrioState = {
