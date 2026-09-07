@@ -150,6 +150,12 @@ nidanaCoinSide: "front" | "back";
 
   onCloseLedger: () => void;
 
+  // Fase 1 — Buda Azul (6 septiembre 2026), pedido de Federico: consumir
+  // una consulta del Buda. GameShell valida contra state.consultationsRemaining
+  // (que ya llega dentro de `state`, sin prop aparte) y despacha esto;
+  // Board.tsx solo comunica el click (ver onConsultBuda en Board Props).
+  onUseBudaConsultation: (player: PlayerId) => void;
+
   // DEV ONLY (13 agosto 2026) — atajo pedido por Federico, ver reducer.ts
   // case "DEV_SKIP_TO_RUFUS" (v54, 17 agosto 2026: renombrado — el atajo
   // se detiene en Rufus/5to Avatar, ya no en Whitman/6to, para que la
@@ -981,6 +987,31 @@ const [pendingDharmaChoice, setPendingDharmaChoice] = React.useState<{
   eligibleTargets: RealmPieceKind[];
 } | null>(null);
 
+// Fase 1 — Buda Azul (6 septiembre 2026): estado puramente cosmético
+// (qué overlay se ve ahora mismo), NO sincronizado — a diferencia de
+// state.consultationsRemaining (el contador real, en GameState). Mismo
+// criterio que ya separa pendingDharmaChoice (arriba) de los campos que
+// sí viajan por dispatch. openedBy espeja el tipo que ya usa
+// BigHeadSchoolOverlay ("white"/"black"), no PlayerId, porque Board.tsx
+// sigue renderizando ese overlay tal cual estaba — ver handleConsultBuda.
+const [budaConsultationOpenBy, setBudaConsultationOpenBy] =
+  React.useState<"white" | "black" | null>(null);
+
+// GameShell es quien valida y despacha (Board.tsx ya no decide reglas —
+// ver Board Props onConsultBuda). El overlay sigue viviendo físicamente
+// dentro de Board/ringWrap sin moverse: .bighead-overlay (overlays.css)
+// es position:absolute centrado respecto a .ringWrap, así que sacarlo de
+// ahí lo descentraría. El setTimeout de 5s reproduce el mismo
+// comportamiento visual que ya existía en Board.tsx — NO es la
+// arquitectura definitiva de la consulta (fases siguientes: BigHeadSchool
+// pasa a ser una intro, luego ORACLE → MIRROR → OFFER_OTHER).
+const handleConsultBuda = (player: PlayerId) => {
+  if ((state.consultationsRemaining?.[player] ?? 0) <= 0) return;
+  onUseBudaConsultation(player);
+  setBudaConsultationOpenBy(player === "P1" ? "white" : "black");
+  setTimeout(() => setBudaConsultationOpenBy(null), 5000);
+};
+
 const handleMove = (opt: MoveOption, all: MoveOption[]) => {
   const dharmaOpportunity = getDharma777Opportunity(state, state.turn, opt);
   if (dharmaOpportunity) {
@@ -1669,6 +1700,8 @@ return (
           p1VenomsRevealed={p1VenomsRevealed}
           p2VenomsRevealed={p2VenomsRevealed}
           oriolEntered={oriolEntered}
+          budaConsultationOpenBy={budaConsultationOpenBy}
+          onConsultBuda={() => handleConsultBuda(state.turn)}
         />
       </div>
     </div>

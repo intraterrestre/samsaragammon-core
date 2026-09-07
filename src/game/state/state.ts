@@ -104,6 +104,12 @@ actors: {
     P2: 0,
   },
 
+  // Fase 1 — Buda Azul (6 septiembre 2026): 4 consultas por jugador.
+  consultationsRemaining: {
+    P1: 4,
+    P2: 4,
+  },
+
   maraVisits: {
     P1: 0,
     P2: 0,
@@ -166,6 +172,17 @@ actors: {
 
   lastMove: null,
   lastKarma: null,
+
+  // Fase 2A — Buda Azul (7 septiembre 2026): memoria personal del
+  // Oracle, independiente del par global lastMove/lastKarma de arriba.
+  lastMoveByPlayer: {
+    P1: null,
+    P2: null,
+  },
+  lastKarmaByPlayer: {
+    P1: null,
+    P2: null,
+  },
 
   karmaTotal: {
     P1: 0,
@@ -298,6 +315,20 @@ export function makeInitialState(
     captures: {
       ...initialState.captures,
       ...(overrides.captures ?? {}),
+    },
+
+    consultationsRemaining: {
+      ...initialState.consultationsRemaining,
+      ...(overrides.consultationsRemaining ?? {}),
+    },
+
+    lastMoveByPlayer: {
+      ...initialState.lastMoveByPlayer,
+      ...(overrides.lastMoveByPlayer ?? {}),
+    },
+    lastKarmaByPlayer: {
+      ...initialState.lastKarmaByPlayer,
+      ...(overrides.lastKarmaByPlayer ?? {}),
     },
 
     realmProgress: {

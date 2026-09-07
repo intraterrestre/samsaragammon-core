@@ -1201,6 +1201,12 @@ nidanaCoinSide={nidanaSide}
           targetAvatar,
         })
       }
+      // Fase 1 — Buda Azul (6 septiembre 2026), pedido de Federico. Ver
+      // reducer.ts case "USE_BUDA_CONSULTATION" y GameShell.tsx
+      // handleConsultBuda.
+      onUseBudaConsultation={(player) =>
+        dispatch({ type: "USE_BUDA_CONSULTATION", player })
+      }
       onVestigiumDone={() => setShowVestigium(false)}
       onCloseLedger={() => dispatch({ type: "CLOSE_LEDGER" })}
       // 2026-08-22: onIntroDone (dispatch INTRO_DONE → state.introSeen =

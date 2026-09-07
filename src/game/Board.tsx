@@ -123,6 +123,12 @@ type Props = {
   // 2026-08-05: el buda azul (Dharma Emergencies) ya no aparece con
   // genesisComplete — recién con la entrada real de Oriol. Ver GameShell.tsx.
   oriolEntered?: boolean;
+  // Fase 1 — Buda Azul (6 septiembre 2026), pedido de Federico: Board ya
+  // NO decide si la consulta se abre ni descuenta nada — eso lo valida y
+  // despacha GameShell (ver handleConsultBuda). Board solo muestra el
+  // overlay que GameShell le indica y comunica el click hacia arriba.
+  budaConsultationOpenBy?: "white" | "black" | null;
+  onConsultBuda?: () => void;
 };
 // Era 1 (Ignorance) gate: only unlocked base pieces render on the board or
 // can be clicked/selected. Snake and Rooster stay fully coded (imports,
@@ -222,6 +228,8 @@ export function Board({
   p1VenomsRevealed = false,
   p2VenomsRevealed = false,
   oriolEntered = false,
+  budaConsultationOpenBy = null,
+  onConsultBuda,
 }: Props){
 
   const captureAudioWhite = useRef<HTMLAudioElement | null>(null);
@@ -271,11 +279,14 @@ const beatTimer = useRef<number | null>(null);
 }, []);
   const size = state.trackSize;
 
-  const [bigHeadSchoolBy, setBigHeadSchoolBy] =
-  useState<"white" | "black" | null>(null);
-
-  const [dharmaEmergencyFor, setDharmaEmergencyFor] =
-  useState<PlayerId | null>(null);
+  // Fase 1 — Buda Azul (6 septiembre 2026): bigHeadSchoolBy/
+  // dharmaEmergencyFor (estado local que decidía TODO: si se abría, con
+  // qué color, y cuándo se cerraba) se retiran de acá — ahora es
+  // GameShell quien valida contra state.consultationsRemaining, despacha
+  // USE_BUDA_CONSULTATION, y le dice a Board qué mostrar vía
+  // budaConsultationOpenBy. Board deja de decidir reglas; solo comunica
+  // el click (onConsultBuda) y renderiza lo que le llega por prop —
+  // mismo criterio que ya usan onRoll/moveOptions/onChooseMove.
 
   // 🔊 DISPARAR SONIDO / FX POR LAST MOVE
   useEffect(() => {
@@ -668,14 +679,7 @@ top: stackedPosition.top,
   <img
 src={budaKarmaER}
 onClick={() => {
-  setDharmaEmergencyFor(state.turn);
-
-  setBigHeadSchoolBy(state.turn === "P1" ? "white" : "black");
-
-  setTimeout(() => {
-    setBigHeadSchoolBy(null);
-    setDharmaEmergencyFor(null);
-  }, 5000);
+  onConsultBuda?.();
 }}
 
 onMouseEnter={(e)=>{
@@ -703,10 +707,10 @@ filter:"drop-shadow(0 0 7px rgba(255,255,255,.95))",
 display: oriolEntered ? "block" : "none"
 }}
 />
-{bigHeadSchoolBy && (
-  <BigHeadSchoolOverlay openedBy={bigHeadSchoolBy} />
+{budaConsultationOpenBy && (
+  <BigHeadSchoolOverlay openedBy={budaConsultationOpenBy} />
 )}
-{onRoll && !dharmaEmergencyFor && (() => {
+{onRoll && !budaConsultationOpenBy && (() => {
   // 2026-08-05 — CORRECCIÓN: se asumía que ringWrap (position:absolute,
   // zIndex:5000) contenía el zIndex:999999 !important de
   // .samsaraDicePortalButton dentro de su propio stacking context, y que

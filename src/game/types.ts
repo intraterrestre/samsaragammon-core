@@ -1,5 +1,6 @@
 // src/game/types.ts
 import type { PatternEngineState } from "./behavior/patternEngine";
+import type { KarmaBreakdown } from "./engine/computeKarmaTurn";
 import type { BehaviorState } from "./behavior/types";
 import type { NidanaId } from "./nidanas";
 import type { ActorId } from "./actors/actorProfiles";
@@ -325,6 +326,14 @@ export type GameState = {
 
   captures: Record<PlayerId, number>;
 
+  // Fase 1 — Buda Azul / Dharma Emergencies (6 septiembre 2026, pedido de
+  // Federico): consultas restantes por jugador. Vive en GameState (no en
+  // estado local de UI a propósito): App.tsx sincroniza el objeto state
+  // COMPLETO a Supabase en cada dispatch (ver updateGameState) — así el
+  // contador real llega al rival en multiplayer, no solo se ve en la
+  // pantalla de quien consultó.
+  consultationsRemaining: Record<PlayerId, number>;
+
   // v68 (27 agosto 2026) — contadores para FinalVestigium (ver
   // src/game/Vestigium.ts): cuántas veces una ficha propia (Veneno o
   // Avatar) fue enviada a Mara, y cuántas veces el Pattern Engine le
@@ -420,14 +429,17 @@ export type GameState = {
 
   lastMove: LastMove | null;
 
-  lastKarma: {
-    combo: number;
-    context: number;
-    realm: number;
-    pattern: number;
-    purification: number;
-    total: number;
-  } | null;
+  lastKarma: KarmaBreakdown | null;
+
+  // Fase 2A — Buda Azul (7 septiembre 2026), pedido de Federico: memoria
+  // PERSONAL del Oracle, independiente de lastMove/lastKarma (que se
+  // conservan intactos como "último acontecimiento GLOBAL" para
+  // animaciones/sonidos — ver reducer.ts CONSCIOUS_MOVE). Guarda la
+  // última jugada/karma DE CADA jugador, para que el Oracle de P2 nunca
+  // muestre la lectura de P1 (ni viceversa) sin importar de quién fue
+  // el último movimiento global.
+  lastMoveByPlayer: Record<PlayerId, LastMove | null>;
+  lastKarmaByPlayer: Record<PlayerId, KarmaBreakdown | null>;
 
   karmaTotal: Record<PlayerId, number>;
 

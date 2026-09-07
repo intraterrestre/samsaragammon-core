@@ -6,7 +6,7 @@ import type {
   PieceKind,
 } from "../types";
 
-type KarmaBreakdown = {
+export type KarmaBreakdown = {
   combo: number;
   context: number;
   realm: number;

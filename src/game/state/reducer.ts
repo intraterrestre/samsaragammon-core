@@ -2,6 +2,7 @@
 import type {
   BasePieceKind,
   GameState,
+  LastMove,
   MoveOption,
   PendingTrade,
   PieceKind,
@@ -104,7 +105,16 @@ type Action =
   // ya usa FandangoWindow para decidir de quién son "YOUR NIDANAS").
   | { type: "SEND_TRADE_OFFER"; player: PlayerId; offer: NidanaId; want: NidanaId }
   | { type: "ACCEPT_TRADE_OFFER" }
-  | { type: "REFUSE_TRADE_OFFER" };
+  | { type: "REFUSE_TRADE_OFFER" }
+  // Fase 1 — Buda Azul (6 septiembre 2026), pedido de Federico: consumir
+  // una consulta. "player" viaja EXPLÍCITO en la acción a propósito — el
+  // reducer no lee state.turn para esto. Motivo: a futuro (fase
+  // OFFER_OTHER, "THE MIRROR IS OPEN. WILL YOU LOOK TOO?") el jugador que
+  // consulta puede no ser el del turno activo (el rival acepta mirar
+  // durante una ventana que abrió el otro). Resolver a día de hoy quién
+  // consulta sigue siendo cosa del caller (GameShell usa state.turn) —
+  // el reducer mismo queda agnóstico de eso desde ahora.
+  | { type: "USE_BUDA_CONSULTATION"; player: PlayerId };
 
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 const rollDie = () => 1 + Math.floor(Math.random() * 6);
@@ -834,6 +844,25 @@ export function reducer(state: GameState, action: Action): GameState {
       const toPlayer = otherPlayer(trade.fromPlayer);
       if (state.turn !== toPlayer) return state;
       return { ...state, pendingTrade: null };
+    }
+
+    // Fase 1 — Buda Azul (6 septiembre 2026): consumir una consulta.
+    // Deliberadamente NO valida contra state.turn (ver comentario en el
+    // Action union arriba) — única regla: que a ese jugador le queden
+    // consultas (> 0). No toca turn, phase, ni ningún otro campo de
+    // juego: usar el Buda no es una jugada, no debe interferir con el
+    // Orquestador ni con Karma/Nidanas.
+    case "USE_BUDA_CONSULTATION": {
+      const { player } = action;
+      const remaining = state.consultationsRemaining[player] ?? 0;
+      if (remaining <= 0) return state;
+      return {
+        ...state,
+        consultationsRemaining: {
+          ...state.consultationsRemaining,
+          [player]: remaining - 1,
+        },
+      };
     }
 
     case "ROLL": {
@@ -2276,6 +2305,66 @@ if (shouldCollapse) {
         };
       }
 
+      // Fase 2A — Buda Azul (7 septiembre 2026), pedido de Federico: se
+      // extrae la construcción de LastMove a una constante para
+      // reutilizarla tal cual (mismo objeto) tanto en el slot global
+      // lastMove como en la memoria personal lastMoveByPlayer[me] — no
+      // se duplica a mano, para que ambos no puedan divergir mañana.
+      const nextLastMove: LastMove = {
+        at: Date.now(),
+        player: me,
+        pieceKind: activePiece,
+
+        // v2: Avatar activo y Veneno usado (para KarmaEngine v2)
+        avatarId: state.actors.bruno?.owner === me && state.actors.bruno?.unlocked
+          ? "bruno"
+          : undefined,
+        // v3 — Actualización Crítica (D-007): el Veneno usado es el propio
+        // (Fase 1, moviéndose por sí mismo) o el que originó el destino
+        // del Avatar (option.venomId, ver getMoveOptionsForPlayer v3).
+        venomUsed: isBasePiece
+          ? (activePiece as import("../actors/actorProfiles").VenomId)
+          : (option.venomId as import("../actors/actorProfiles").VenomId | undefined),
+
+        // v3: posición del Veneno antes y después — fromPos/finalToPos ya
+        // representan la posición del Veneno en ambos casos (ver arriba).
+        venomPositionBefore:
+          isBasePiece || option.venomId ? fromPos : undefined,
+        venomPositionAfter:
+          isBasePiece || option.venomId ? finalToPos : undefined,
+
+        // v2: datos para detección de capturas declinadas (D-018)
+        captureWasAvailable: allOptions.some(o => o.meaning === "IMPACT"),
+        legalCapturesCount: allOptions.filter(o => o.meaning === "IMPACT").length,
+        turnLost: false,
+
+        a,
+        b,
+        chosenValue: option.value,
+        choice: option.choice,
+        meaning: option.meaning,
+        fromPos,
+        toPos: finalToPos,
+        didCapture,
+        capturedPieceKind,
+        // 2026-08-22: lastMove.fromRealm/toRealm declaran el Realm
+        // CANONICO (game/types.ts), no el vocabulario interno del mural
+        // (MuralZoneId). Antes esto guardaba realmFromPos() (NARAKA/
+        // PRETA/...) tapado con "as any" — nada rama sobre ese valor
+        // hoy (KarmaEngine.ingest lo trata como string opaco, y
+        // pushExportEvent solo lo exporta), asi que no cambiaba el
+        // comportamiento del juego, pero sí dejaba el log/export con
+        // el nombre interno en vez del nombre real del reino. Se usa
+        // el puente correcto para que ambos coincidan con la verdad.
+        fromRealm: canonicalRealmFromPos(fromPos),
+        toRealm: canonicalRealmFromPos(finalToPos),
+        turnIndex: nextTurnIndex,
+        cycleIndex: nextCycleIndex,
+        level: state.level,
+        availableOptions: allOptions,
+        availableOptionsCount: allOptions.length,
+      };
+
       return {
         ...state,
         pieces: nextPiecesAfterCollapse,
@@ -2331,6 +2420,18 @@ realmAscension: nextRealmAscensionForBrunoInMove ?? (didAscendRealm && unlockedR
         snakeBet: nextSnakeBet,
         decisionSignature: nextDecisionSignature,
         lastKarma: karma,
+        // Fase 2A — Buda Azul (7 septiembre 2026): memoria personal,
+        // reutiliza EXACTAMENTE los mismos objetos (nextLastMove, karma)
+        // que van a los slots globales de arriba — nunca se reconstruyen
+        // a mano, así que no pueden divergir.
+        lastMoveByPlayer: {
+          ...state.lastMoveByPlayer,
+          [me]: nextLastMove,
+        },
+        lastKarmaByPlayer: {
+          ...state.lastKarmaByPlayer,
+          [me]: karma,
+        },
         karmaTotal: {
           ...state.karmaTotal,
           [me]: state.karmaTotal[me] + karma.total,
@@ -2340,60 +2441,7 @@ realmAscension: nextRealmAscensionForBrunoInMove ?? (didAscendRealm && unlockedR
         turn: nextTurn,
         winner: didWin ? me : state.winner,
         venomTrio: nextVenomTrio,
-        lastMove: {
-          at: Date.now(),
-          player: me,
-          pieceKind: activePiece,
-
-          // v2: Avatar activo y Veneno usado (para KarmaEngine v2)
-          avatarId: state.actors.bruno?.owner === me && state.actors.bruno?.unlocked
-            ? "bruno"
-            : undefined,
-          // v3 — Actualización Crítica (D-007): el Veneno usado es el propio
-          // (Fase 1, moviéndose por sí mismo) o el que originó el destino
-          // del Avatar (option.venomId, ver getMoveOptionsForPlayer v3).
-          venomUsed: isBasePiece
-            ? (activePiece as import("../actors/actorProfiles").VenomId)
-            : (option.venomId as import("../actors/actorProfiles").VenomId | undefined),
-
-          // v3: posición del Veneno antes y después — fromPos/finalToPos ya
-          // representan la posición del Veneno en ambos casos (ver arriba).
-          venomPositionBefore:
-            isBasePiece || option.venomId ? fromPos : undefined,
-          venomPositionAfter:
-            isBasePiece || option.venomId ? finalToPos : undefined,
-
-          // v2: datos para detección de capturas declinadas (D-018)
-          captureWasAvailable: allOptions.some(o => o.meaning === "IMPACT"),
-          legalCapturesCount: allOptions.filter(o => o.meaning === "IMPACT").length,
-          turnLost: false,
-
-          a,
-          b,
-          chosenValue: option.value,
-          choice: option.choice,
-          meaning: option.meaning,
-          fromPos,
-          toPos: finalToPos,
-          didCapture,
-          capturedPieceKind,
-          // 2026-08-22: lastMove.fromRealm/toRealm declaran el Realm
-          // CANONICO (game/types.ts), no el vocabulario interno del mural
-          // (MuralZoneId). Antes esto guardaba realmFromPos() (NARAKA/
-          // PRETA/...) tapado con "as any" — nada rama sobre ese valor
-          // hoy (KarmaEngine.ingest lo trata como string opaco, y
-          // pushExportEvent solo lo exporta), asi que no cambiaba el
-          // comportamiento del juego, pero sí dejaba el log/export con
-          // el nombre interno en vez del nombre real del reino. Se usa
-          // el puente correcto para que ambos coincidan con la verdad.
-          fromRealm: canonicalRealmFromPos(fromPos),
-          toRealm: canonicalRealmFromPos(finalToPos),
-          turnIndex: nextTurnIndex,
-          cycleIndex: nextCycleIndex,
-          level: state.level,
-          availableOptions: allOptions,
-          availableOptionsCount: allOptions.length,
-        },
+        lastMove: nextLastMove,
         activeNidanaEffect: null,
         ledgerOpen: nextLedgerOpen,
         ledgerEntry: nextLedgerEntry,
