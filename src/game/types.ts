@@ -334,6 +334,25 @@ export type GameState = {
   // pantalla de quien consultó.
   consultationsRemaining: Record<PlayerId, number>;
 
+  // Fase 2C — Buda Azul (7 septiembre 2026), pedido de Federico: quién
+  // está AHORA MISMO en el splash de una consulta (Big Head School),
+  // para que el RIVAL también lo vea en su propia pantalla — a
+  // diferencia de budaConsultationOpenBy/budaPanelOpen en GameShell.tsx
+  // (puramente locales, nunca sincronizados), este campo SÍ viaja por
+  // GameState y por lo tanto se sincroniza a Supabase (ver App.tsx,
+  // updateGameState). Solo cubre la ventana del splash (~1.8s) — el
+  // contenido del panel (Oracle/Mirror) sigue siendo privado, nunca se
+  // sincroniza. null = nadie está consultando ahora mismo.
+  budaConsultationInProgress: PlayerId | null;
+
+  // Fase 2D — Buda Azul (7 septiembre 2026), pedido de Federico: "mirada
+  // gratis" para el rival. Cuando un jugador consulta, se abre una
+  // oferta para el OTRO jugador — puede ver sus propias notas SIN
+  // gastar ninguna de sus 4 consultas, pero solo durante una ventana
+  // fija (~15s), independiente de cuándo el consultante original cierre
+  // su propio panel. null = no hay ninguna oferta abierta ahora mismo.
+  budaFreeLookOffer: { offeredTo: PlayerId; expiresAt: number } | null;
+
   // v68 (27 agosto 2026) — contadores para FinalVestigium (ver
   // src/game/Vestigium.ts): cuántas veces una ficha propia (Veneno o
   // Avatar) fue enviada a Mara, y cuántas veces el Pattern Engine le

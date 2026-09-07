@@ -114,7 +114,22 @@ type Action =
   // durante una ventana que abrió el otro). Resolver a día de hoy quién
   // consulta sigue siendo cosa del caller (GameShell usa state.turn) —
   // el reducer mismo queda agnóstico de eso desde ahora.
-  | { type: "USE_BUDA_CONSULTATION"; player: PlayerId };
+  | { type: "USE_BUDA_CONSULTATION"; player: PlayerId }
+  // Fase 2C — Buda Azul (7 septiembre 2026), pedido de Federico: cierra
+  // la ventana sincronizada del splash (budaConsultationInProgress →
+  // null). GameShell la dispatchea en el mismo setTimeout que ya existía
+  // para pasar de splash a panel (un solo timer, ver GameShell.tsx) — no
+  // agrega un segundo timer. No lleva "player": solo puede haber una
+  // consulta activa a la vez (GameShell ya lo garantiza), así que
+  // limpiar siempre a null es seguro e idempotente.
+  | { type: "CLEAR_BUDA_SPLASH" }
+  // Fase 2D — Buda Azul (7 septiembre 2026), pedido de Federico: el
+  // rival consume la "mirada gratis" que se abrió cuando el otro
+  // consultó. "player" viaja explícito (igual que en
+  // USE_BUDA_CONSULTATION) — el reducer valida que sea justo a quien se
+  // le ofreció y que la ventana (~15s) no haya vencido; NO descuenta
+  // consultationsRemaining, es gratis por definición.
+  | { type: "USE_FREE_BUDA_LOOK"; player: PlayerId };
 
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 const rollDie = () => 1 + Math.floor(Math.random() * 6);
@@ -862,7 +877,40 @@ export function reducer(state: GameState, action: Action): GameState {
           ...state.consultationsRemaining,
           [player]: remaining - 1,
         },
+        // Fase 2C — pedido de Federico: se sincroniza quién está en el
+        // splash AHORA MISMO, para que el rival lo vea en su propia
+        // pantalla (ver App.tsx/Supabase — todo GameState viaja junto).
+        // GameShell lo limpia a los ~1.8s con CLEAR_BUDA_SPLASH.
+        budaConsultationInProgress: player,
+        // Fase 2D — pedido de Federico: se abre la "mirada gratis" para
+        // el RIVAL (nunca para uno mismo), con ventana fija de 15s
+        // independiente de cuándo este consultante cierre su propio
+        // panel. Una consulta nueva pisa/renueva cualquier oferta
+        // anterior sin usar (mismo criterio que pendingSnakeBet: solo
+        // una activa a la vez tiene sentido).
+        budaFreeLookOffer: {
+          offeredTo: otherPlayer(player),
+          expiresAt: Date.now() + 15000,
+        },
       };
+    }
+
+    case "USE_FREE_BUDA_LOOK": {
+      const { player } = action;
+      const offer = state.budaFreeLookOffer;
+      if (!offer) return state;
+      if (offer.offeredTo !== player) return state;
+      if (Date.now() > offer.expiresAt) return state;
+      return {
+        ...state,
+        budaFreeLookOffer: null,
+        // A propósito NO se toca consultationsRemaining acá — es
+        // exactamente lo que hace que sea "gratis".
+      };
+    }
+
+    case "CLEAR_BUDA_SPLASH": {
+      return { ...state, budaConsultationInProgress: null };
     }
 
     case "ROLL": {

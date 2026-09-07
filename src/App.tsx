@@ -1207,6 +1207,14 @@ nidanaCoinSide={nidanaSide}
       onUseBudaConsultation={(player) =>
         dispatch({ type: "USE_BUDA_CONSULTATION", player })
       }
+      // Fase 2C — Buda Azul (7 septiembre 2026), pedido de Federico: ver
+      // reducer.ts case "CLEAR_BUDA_SPLASH".
+      onClearBudaSplash={() => dispatch({ type: "CLEAR_BUDA_SPLASH" })}
+      // Fase 2D — Buda Azul (7 septiembre 2026), pedido de Federico: ver
+      // reducer.ts case "USE_FREE_BUDA_LOOK".
+      onUseFreeBudaLook={(player) =>
+        dispatch({ type: "USE_FREE_BUDA_LOOK", player })
+      }
       onVestigiumDone={() => setShowVestigium(false)}
       onCloseLedger={() => dispatch({ type: "CLOSE_LEDGER" })}
       // 2026-08-22: onIntroDone (dispatch INTRO_DONE → state.introSeen =

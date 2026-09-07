@@ -23,6 +23,11 @@ import { getDharma777Opportunity, getDharma777EligibleTargets } from "../game/dh
 import { REALM_AVATAR_NAME } from "../game/realmAvatarNames";
 import type { NidanaId } from "../game/nidanas";
 import { MaraPanel } from "./MaraPanel";
+// Fase 2B — Buda Azul (7 septiembre 2026): función canónica única del
+// Oracle (mismo consumidor que getGameDerivedState.ts) y explainPattern
+// canónico (NO la función duplicada de explain.ts — ver auditoría previa).
+import { getOracleReading } from "../game/Karma/getOracleReading";
+import { explainPattern } from "../game/behavior/patternCopy";
 import { SamsaraStage } from "../samsara/SamsaraStage";
 
 import watcherVideo from "../assets/video/jesus_watch.mp4";
@@ -155,6 +160,17 @@ nidanaCoinSide: "front" | "back";
   // (que ya llega dentro de `state`, sin prop aparte) y despacha esto;
   // Board.tsx solo comunica el click (ver onConsultBuda en Board Props).
   onUseBudaConsultation: (player: PlayerId) => void;
+
+  // Fase 2C — Buda Azul (7 septiembre 2026), pedido de Federico: cierra
+  // la ventana sincronizada del splash (ver reducer.ts CLEAR_BUDA_SPLASH).
+  // Se dispatchea en el mismo timer que ya cerraba el splash local — no
+  // agrega un segundo timer.
+  onClearBudaSplash: () => void;
+
+  // Fase 2D — Buda Azul (7 septiembre 2026), pedido de Federico: el
+  // rival consume la mirada gratis ofrecida. Ver reducer.ts
+  // USE_FREE_BUDA_LOOK y GameShell.tsx handleUseFreeBudaLook.
+  onUseFreeBudaLook: (player: PlayerId) => void;
 
   // DEV ONLY (13 agosto 2026) — atajo pedido por Federico, ver reducer.ts
   // case "DEV_SKIP_TO_RUFUS" (v54, 17 agosto 2026: renombrado — el atajo
@@ -689,8 +705,12 @@ React.useEffect(() => {
     play(tensionAudio.current);
   }
 }, [state.activeNidanaEffect]);
+  // Fase 2B (7 septiembre 2026): mientras una consulta del Buda está
+  // activa (splash o panel), no hay opciones de movimiento — "no debe
+  // poder mover piezas" durante la consulta, sin tocar reglas de
+  // movimiento ni GameState: simplemente no se calculan.
   const moveOptions =
-    state.phase === "rolled"
+    state.phase === "rolled" && !budaConsultationActive
       ? getMoveOptionsForPlayer(state, state.turn)
       : [];
 
@@ -988,29 +1008,157 @@ const [pendingDharmaChoice, setPendingDharmaChoice] = React.useState<{
 } | null>(null);
 
 // Fase 1 — Buda Azul (6 septiembre 2026): estado puramente cosmético
-// (qué overlay se ve ahora mismo), NO sincronizado — a diferencia de
-// state.consultationsRemaining (el contador real, en GameState). Mismo
-// criterio que ya separa pendingDharmaChoice (arriba) de los campos que
-// sí viajan por dispatch. openedBy espeja el tipo que ya usa
-// BigHeadSchoolOverlay ("white"/"black"), no PlayerId, porque Board.tsx
-// sigue renderizando ese overlay tal cual estaba — ver handleConsultBuda.
+// (qué imagen de splash se ve ahora mismo), NO sincronizado — a
+// diferencia de state.consultationsRemaining (el contador real, en
+// GameState). openedBy espeja el tipo que ya usa BigHeadSchoolOverlay
+// ("white"/"black"), no PlayerId, porque Board.tsx sigue renderizando
+// ese overlay tal cual estaba, dentro de ringWrap, para no romper su
+// CSS (position:absolute centrado respecto a .ringWrap).
 const [budaConsultationOpenBy, setBudaConsultationOpenBy] =
   React.useState<"white" | "black" | null>(null);
 
+// Fase 2B — Buda Azul (7 septiembre 2026), pedido de Federico: PlayerId
+// EXPLÍCITO capturado en el momento del click y conservado durante TODA
+// la secuencia (splash + panel) — nunca se deriva de state.turn en
+// tiempo de render, porque el panel no se autocierra (puede seguir
+// abierto después de que el turno ya cambió) y a futuro (OFFER_OTHER)
+// el consultante puede no ser quien tiene el turno activo.
+const [budaConsultingPlayer, setBudaConsultingPlayer] =
+  React.useState<PlayerId | null>(null);
+
+// Fase 2B: separado de budaConsultationOpenBy — el panel provisional
+// (ORACLE/MIRROR) sigue abierto después de que el splash desaparece. Un
+// único setTimeout pasa de uno a otro (ver handleConsultBuda) para no
+// tener dos timers independientes que puedan desincronizarse.
+const [budaPanelOpen, setBudaPanelOpen] = React.useState(false);
+
+// Verdadero durante TODA la consulta (splash + panel) — es el gate real
+// que bloquea dado/movimiento/nueva consulta (ver moveOptions más abajo
+// y el prop budaConsultationActive que recibe Board para el dado).
+// budaConsultationOpenBy en cambio solo controla la imagen del splash.
+const budaConsultationActive = budaConsultingPlayer !== null;
+
 // GameShell es quien valida y despacha (Board.tsx ya no decide reglas —
-// ver Board Props onConsultBuda). El overlay sigue viviendo físicamente
-// dentro de Board/ringWrap sin moverse: .bighead-overlay (overlays.css)
-// es position:absolute centrado respecto a .ringWrap, así que sacarlo de
-// ahí lo descentraría. El setTimeout de 5s reproduce el mismo
-// comportamiento visual que ya existía en Board.tsx — NO es la
-// arquitectura definitiva de la consulta (fases siguientes: BigHeadSchool
-// pasa a ser una intro, luego ORACLE → MIRROR → OFFER_OTHER).
+// ver Board Props onConsultBuda). El overlay del splash sigue viviendo
+// físicamente dentro de Board/ringWrap sin moverse. Se acorta de 5000ms
+// a 1800ms (pedido de Federico, para poder testear el flujo completo
+// sin esperar) y, al vencer, en vez de simplemente cerrar, abre el
+// panel provisional — sigue siendo UN solo timer, no dos.
 const handleConsultBuda = (player: PlayerId) => {
+  if (budaConsultationActive) return; // ya hay una consulta en curso
   if ((state.consultationsRemaining?.[player] ?? 0) <= 0) return;
   onUseBudaConsultation(player);
+  setBudaConsultingPlayer(player);
   setBudaConsultationOpenBy(player === "P1" ? "white" : "black");
-  setTimeout(() => setBudaConsultationOpenBy(null), 5000);
+  setTimeout(() => {
+    setBudaConsultationOpenBy(null);
+    setBudaPanelOpen(true);
+    onClearBudaSplash();
+  }, 1800);
 };
+
+// CLOSE: solo cierra el panel — la consulta ya se consumió al abrir
+// (ver handleConsultBuda), cerrar NO la devuelve.
+const handleCloseBudaPanel = () => {
+  setBudaPanelOpen(false);
+  setBudaConsultingPlayer(null);
+};
+
+// Fase 2B — lectura provisional (diagnóstica, no copy final) para el
+// jugador que está consultando ahora mismo. Oracle vía la función
+// canónica getOracleReading (memoria PERSONAL, nunca state.lastMove/
+// state.lastKarma globales); Mirror vía state.behavior.stablePattern
+// exclusivamente (NO state.pattern, NO mirrorData, NO history, NO
+// computePattern, NO decisionSignature — ver auditoría previa a esta
+// fase). stablePattern === null significa "todavía no hay ni un ciclo
+// completado" — no se fabrica ninguna clasificación para eso.
+const budaOracleText = budaConsultingPlayer
+  ? getOracleReading(
+      state.lastMoveByPlayer?.[budaConsultingPlayer] ?? null,
+      state.lastKarmaByPlayer?.[budaConsultingPlayer] ?? null
+    )
+  : null;
+
+const budaStablePattern: string | null = budaConsultingPlayer
+  ? state.behavior?.stablePattern?.[budaConsultingPlayer] ?? null
+  : null;
+
+const budaMirrorLines: string[] | null = budaStablePattern
+  ? explainPattern(budaStablePattern as any, "B")
+  : null;
+
+const budaStableStreak = budaConsultingPlayer
+  ? state.behavior?.stableStreak?.[budaConsultingPlayer] ?? 0
+  : 0;
+
+const budaLifeStabilized = budaConsultingPlayer
+  ? state.behavior?.lifeStabilized?.[budaConsultingPlayer] ?? false
+  : false;
+
+const budaConsultationsLeft = budaConsultingPlayer
+  ? state.consultationsRemaining?.[budaConsultingPlayer] ?? 0
+  : 0;
+
+// Fase 2D — Buda Azul (7 septiembre 2026), pedido de Federico: la foto
+// del splash para el RIVAL (Fase 2C) queda RETIRADA acá — Federico
+// decidió reemplazarla directamente por el cartel de "mirada gratis"
+// (ver más abajo, budaFreeLookOffer), no mostrarla además. Board vuelve
+// a recibir el color de splash puramente LOCAL, igual que en Fase 1/2B
+// (solo lo ve quien clickeó, nunca el rival). El campo sincronizado
+// budaConsultationInProgress (Fase 2C) sigue existiendo en GameState y
+// se sigue seteando/limpiando igual que antes — simplemente ya no
+// maneja ninguna UI. Se deja intacto en vez de retirarlo: no estorba, y
+// puede servir para algo más adelante.
+
+// Fase 2D — pedido de Federico: cuando el rival acepta la "mirada
+// gratis", corre EXACTAMENTE la misma secuencia local (splash 1.8s →
+// panel, un solo timer) que una consulta paga — mismo código, misma
+// experiencia — salvo que dispatchea USE_FREE_BUDA_LOOK (que no
+// descuenta consultationsRemaining) en vez de USE_BUDA_CONSULTATION.
+const handleUseFreeBudaLook = () => {
+  if (budaConsultationActive) return; // ya hay una consulta/mirada abierta
+  const offer = state.budaFreeLookOffer;
+  if (!offer) return;
+  if (Date.now() > offer.expiresAt) return; // ya venció — defensa en profundidad, el reducer también lo valida
+  const player = offer.offeredTo;
+  onUseFreeBudaLook(player);
+  setBudaConsultingPlayer(player);
+  setBudaConsultationOpenBy(player === "P1" ? "white" : "black");
+  setTimeout(() => {
+    setBudaConsultationOpenBy(null);
+    setBudaPanelOpen(true);
+    onClearBudaSplash();
+  }, 1800);
+};
+
+// Fase 2D — la oferta vive en GameState con una expiración absoluta
+// (Date.now() + 15000 al crearse), no un timer local — así que, para
+// que el cartel desaparezca solo cuando vence (incluso si nadie hizo
+// click), se arma un único setTimeout por oferta que fuerza un
+// re-render al llegar esa hora. No cierra nada por sí mismo: solo hace
+// que el chequeo de expiración de más abajo se vuelva a evaluar.
+const [, forceBudaOfferTick] = React.useState(0);
+React.useEffect(() => {
+  const offer = state.budaFreeLookOffer;
+  if (!offer) return;
+  const msLeft = offer.expiresAt - Date.now();
+  if (msLeft <= 0) {
+    forceBudaOfferTick((n) => n + 1);
+    return;
+  }
+  const id = setTimeout(() => forceBudaOfferTick((n) => n + 1), msLeft + 50);
+  return () => clearTimeout(id);
+}, [state.budaFreeLookOffer]);
+
+// Se muestra únicamente cuando: hay una oferta viva, no venció todavía,
+// y esta pantalla no está ocupada por MI PROPIA consulta (en hotseat,
+// evita superponerse con el panel de quien acaba de consultar; en
+// multijugador real, budaConsultationActive de mi lado nunca es true
+// por la consulta ajena, así que aparece enseguida).
+const budaFreeLookOfferVisible =
+  !!state.budaFreeLookOffer &&
+  Date.now() <= state.budaFreeLookOffer.expiresAt &&
+  !budaConsultationActive;
 
 const handleMove = (opt: MoveOption, all: MoveOption[]) => {
   const dharmaOpportunity = getDharma777Opportunity(state, state.turn, opt);
@@ -1655,6 +1803,172 @@ return (
         </div>
       )}
 
+      {/* Fase 2B — Buda Azul (7 septiembre 2026), pedido de Federico: panel
+          PROVISIONAL de diagnóstico (no es diseño final) para poder jugar y
+          leer/testear el cerebro del Buda: Oracle personal (memoria por
+          jugador, vía getOracleReading) + Mirror personal (state.behavior.
+          stablePattern exclusivamente). No se autocierra — CLOSE es la
+          única forma de cerrarlo, y no devuelve la consulta ya consumida.
+          Deliberadamente NO reutiliza .bighead-overlay (evita cualquier
+          problema de containing block) — es un overlay propio, mismo
+          patrón que ya usa pendingDharmaChoice arriba (position: fixed,
+          centrado, zIndex por encima de todo). */}
+      {budaPanelOpen && budaConsultingPlayer && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1000000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(4,4,10,0.75)",
+          }}
+        >
+          <div
+            style={{
+              width: "min(460px, 92vw)",
+              maxHeight: "82vh",
+              overflowY: "auto",
+              padding: "24px 28px",
+              borderRadius: 12,
+              background: "#0c0e16",
+              border: "1px solid rgba(120,160,255,0.35)",
+              boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+              color: "#e8ecf8",
+              fontFamily: "monospace",
+              fontSize: 14,
+              lineHeight: 1.5,
+              textAlign: "left",
+            }}
+          >
+            <div style={{ fontSize: 12, letterSpacing: 3, opacity: 0.55, marginBottom: 4 }}>
+              PROVISIONAL — FASE 2B
+            </div>
+            <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: 2, marginBottom: 10 }}>
+              BLUE BUDDHA
+            </div>
+            <div style={{ opacity: 0.85, marginBottom: 4 }}>
+              PLAYER: {budaConsultingPlayer}
+            </div>
+            <div style={{ opacity: 0.85, marginBottom: 16 }}>
+              CONSULTATIONS LEFT: {budaConsultationsLeft}
+            </div>
+
+            <div style={{ fontWeight: 800, letterSpacing: 2, opacity: 0.7, marginBottom: 4 }}>
+              ORACLE
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              {budaOracleText ?? "No personal reading yet."}
+            </div>
+
+            <div style={{ fontWeight: 800, letterSpacing: 2, opacity: 0.7, marginBottom: 4 }}>
+              MIRROR
+            </div>
+            {budaStablePattern && budaMirrorLines ? (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontWeight: 700, marginBottom: 4 }}>{budaStablePattern}</div>
+                {budaMirrorLines.map((line, i) => (
+                  <div key={i}>{line}</div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ marginBottom: 16 }}>No completed cycle yet.</div>
+            )}
+
+            <div style={{ fontWeight: 800, letterSpacing: 2, opacity: 0.5, marginBottom: 4 }}>
+              DEBUG
+            </div>
+            <div style={{ opacity: 0.7, marginBottom: 20 }}>
+              stableStreak: {budaStableStreak}
+              <br />
+              lifeStabilized: {String(budaLifeStabilized)}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleCloseBudaPanel}
+              style={{
+                padding: "10px 24px",
+                borderRadius: 8,
+                border: "2px solid rgba(120,160,255,0.5)",
+                background: "rgba(120,160,255,0.1)",
+                color: "#e8ecf8",
+                fontWeight: 800,
+                cursor: "pointer",
+                letterSpacing: 1,
+              }}
+            >
+              CLOSE
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Fase 2D — Buda Azul (7 septiembre 2026), pedido de Federico:
+          "mirada gratis" para el rival. Reemplaza directamente lo que en
+          Fase 2C era la foto del Big Head School para el rival — acá no
+          hay foto, va directo al cartel con el texto de la oferta y el
+          botón, con ventana fija de 15s. Mismo patrón visual que el
+          panel de arriba (position: fixed, propio, sin depender de
+          .bighead-overlay). */}
+      {budaFreeLookOfferVisible && state.budaFreeLookOffer && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 999999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(4,4,10,0.7)",
+          }}
+        >
+          <div
+            style={{
+              width: "min(380px, 90vw)",
+              padding: "26px 30px",
+              borderRadius: 12,
+              background: "#0c0e16",
+              border: "1px solid rgba(120,160,255,0.35)",
+              boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+              color: "#e8ecf8",
+              fontFamily: "monospace",
+              fontSize: 14,
+              lineHeight: 1.5,
+              textAlign: "center",
+            }}
+          >
+            <div style={{ fontSize: 12, letterSpacing: 3, opacity: 0.55, marginBottom: 10 }}>
+              PROVISIONAL — FASE 2D
+            </div>
+            <div style={{ marginBottom: 8 }}>
+              YOUR OPPONENT IS CONSULTING THE BLUE BUDDHA.
+            </div>
+            <div style={{ marginBottom: 20, opacity: 0.85 }}>
+              You ({state.budaFreeLookOffer.offeredTo}) can look at your own
+              notes too — free, no consultation spent.
+            </div>
+            <button
+              type="button"
+              onClick={handleUseFreeBudaLook}
+              style={{
+                padding: "10px 22px",
+                borderRadius: 8,
+                border: "2px solid rgba(120,160,255,0.5)",
+                background: "rgba(120,160,255,0.1)",
+                color: "#e8ecf8",
+                fontWeight: 800,
+                cursor: "pointer",
+                letterSpacing: 1,
+              }}
+            >
+              LOOK FOR FREE
+            </button>
+          </div>
+        </div>
+      )}
+
      {oriolEntered && (
        <FandangoKarma
          onOpen={() => setFandangoOpen(true)}
@@ -1701,6 +2015,7 @@ return (
           p2VenomsRevealed={p2VenomsRevealed}
           oriolEntered={oriolEntered}
           budaConsultationOpenBy={budaConsultationOpenBy}
+          budaConsultationActive={budaConsultationActive}
           onConsultBuda={() => handleConsultBuda(state.turn)}
         />
       </div>

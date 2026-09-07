@@ -110,6 +110,17 @@ actors: {
     P2: 4,
   },
 
+  // Fase 2C — Buda Azul (7 septiembre 2026): campo escalar simple (no
+  // Record), ya cubierto por el spread {...initialState, ...overrides}
+  // de makeInitialState más abajo — no hace falta un bloque de merge
+  // aparte (mismo criterio que turn/phase/winner).
+  budaConsultationInProgress: null,
+
+  // Fase 2D — Buda Azul (7 septiembre 2026): campo escalar simple (no
+  // Record), cubierto por el spread de makeInitialState — sin bloque de
+  // merge aparte, mismo criterio que pendingSnakeBet/pendingTrade.
+  budaFreeLookOffer: null,
+
   maraVisits: {
     P1: 0,
     P2: 0,

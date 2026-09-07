@@ -2,7 +2,7 @@ import { REALM_CANON } from "./realm/realmCanon";
 import { karmaOracle } from "./Karma/KarmaOracle";
 import { masterOracleLine } from "./master/masterEngine";
 import { getMirrorPatternReading } from "./Karma/getMirrorPatternReading";
-import { getMasterMessage } from "./Karma/getMasterMessage";
+import { getOracleReading } from "./Karma/getOracleReading";
 import type { GameState, PlayerId } from "./types";
 
 type DerivedState = {
@@ -88,11 +88,12 @@ export function getGameDerivedState(params: {
     decisionSignature: state.decisionSignature[state.turn],
   });
 
-  const oracleText = getMasterMessage(
-    state.lastMove?.capturedPieceKind ?? null,
-    state.lastMove?.meaning ?? "",
-    state.lastKarma?.pattern ?? 0
-  ) || fallbackOracleText;
+  // Fase 2B — Buda Azul (7 septiembre 2026): el Oracle global ahora pasa
+  // por la función canónica getOracleReading (misma que usa el Oracle
+  // personal del Buda en GameShell.tsx) en vez de llamar a
+  // getMasterMessage inline acá. Resultado observable sin cambios: es
+  // exactamente la misma llamada, solo encapsulada.
+  const oracleText = getOracleReading(state.lastMove, state.lastKarma) ?? fallbackOracleText;
 
   return {
     hasRolled,

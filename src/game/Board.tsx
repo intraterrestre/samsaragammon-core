@@ -129,6 +129,12 @@ type Props = {
   // overlay que GameShell le indica y comunica el click hacia arriba.
   budaConsultationOpenBy?: "white" | "black" | null;
   onConsultBuda?: () => void;
+  // Fase 2B (7 septiembre 2026): true durante TODA la consulta (splash +
+  // panel provisional), a diferencia de budaConsultationOpenBy (que solo
+  // controla la imagen del splash y se apaga antes de que aparezca el
+  // panel). Este es el flag real que bloquea el dado — ver GameShell.tsx
+  // budaConsultationActive.
+  budaConsultationActive?: boolean;
 };
 // Era 1 (Ignorance) gate: only unlocked base pieces render on the board or
 // can be clicked/selected. Snake and Rooster stay fully coded (imports,
@@ -230,6 +236,7 @@ export function Board({
   oriolEntered = false,
   budaConsultationOpenBy = null,
   onConsultBuda,
+  budaConsultationActive = false,
 }: Props){
 
   const captureAudioWhite = useRef<HTMLAudioElement | null>(null);
@@ -710,7 +717,7 @@ display: oriolEntered ? "block" : "none"
 {budaConsultationOpenBy && (
   <BigHeadSchoolOverlay openedBy={budaConsultationOpenBy} />
 )}
-{onRoll && !budaConsultationOpenBy && (() => {
+{onRoll && !budaConsultationActive && (() => {
   // 2026-08-05 — CORRECCIÓN: se asumía que ringWrap (position:absolute,
   // zIndex:5000) contenía el zIndex:999999 !important de
   // .samsaraDicePortalButton dentro de su propio stacking context, y que
