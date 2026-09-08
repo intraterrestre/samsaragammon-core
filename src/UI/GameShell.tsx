@@ -263,6 +263,9 @@ export function GameShell({
   onSendEmoji,
   onCloseLedger,
   avatarVideoPlaying = false,
+  onUseBudaConsultation,
+  onClearBudaSplash,
+  onUseFreeBudaLook,
 }: Props) {
 // v68 (27 agosto 2026) — FinalVestigium del jugador que ganó, para el
 // menú WHAT NOW? (ver VictoryScreen.tsx/WhatNowScreen.tsx). Se recalcula
@@ -705,15 +708,6 @@ React.useEffect(() => {
     play(tensionAudio.current);
   }
 }, [state.activeNidanaEffect]);
-  // Fase 2B (7 septiembre 2026): mientras una consulta del Buda está
-  // activa (splash o panel), no hay opciones de movimiento — "no debe
-  // poder mover piezas" durante la consulta, sin tocar reglas de
-  // movimiento ni GameState: simplemente no se calculan.
-  const moveOptions =
-    state.phase === "rolled" && !budaConsultationActive
-      ? getMoveOptionsForPlayer(state, state.turn)
-      : [];
-
   // 2026-08-23 — reportado por Federico: elegía un Avatar, probaba los
   // 3 Venenos y no aparecía ninguna opción de movimiento. Causa: la
   // regla PIG (venomImpulse.ts) obliga en silencio a elegir OTRO
@@ -1037,6 +1031,18 @@ const [budaPanelOpen, setBudaPanelOpen] = React.useState(false);
 // y el prop budaConsultationActive que recibe Board para el dado).
 // budaConsultationOpenBy en cambio solo controla la imagen del splash.
 const budaConsultationActive = budaConsultingPlayer !== null;
+
+// Fase 2B (7 septiembre 2026): mientras una consulta del Buda está
+// activa (splash o panel), no hay opciones de movimiento — "no debe
+// poder mover piezas" durante la consulta, sin tocar reglas de
+// movimiento ni GameState: simplemente no se calculan.
+// (Movido acá el 8 sept 2026 — fix de crash en producción: dependía de
+// budaConsultationActive/budaConsultingPlayer, declarados más abajo en
+// el archivo. TDZ ReferenceError en cada render desde el primer roll.)
+const moveOptions =
+  state.phase === "rolled" && !budaConsultationActive
+    ? getMoveOptionsForPlayer(state, state.turn)
+    : [];
 
 // GameShell es quien valida y despacha (Board.tsx ya no decide reglas —
 // ver Board Props onConsultBuda). El overlay del splash sigue viviendo
