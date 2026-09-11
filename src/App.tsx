@@ -28,6 +28,7 @@ import {
   joinGame,
   updateGameState,
   subscribeToGame,
+  getGame,
   type Game,
 } from "./lib/gameService";
 import diceRollSound from "./assets/sounds/dice_roll.mp3";
@@ -362,6 +363,16 @@ const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
   const [lobbyLoading, setLobbyLoading] = useState(false);
   const isReceivingFromRealtime = useRef(false);
   const lastSyncedVersion = useRef<number>(-1);
+  // 2026-09-11 -- rediseno del sync multiplayer (ver useEffect de push
+  // mas abajo para el porque). lastPushedState sigue por REFERENCIA el
+  // ultimo `state` que ya sabemos reflejado en el servidor (sea porque
+  // lo pusheamos con exito, sea porque lo acabamos de recibir por
+  // Realtime); syncInFlight evita mandar dos updateGameState en
+  // paralelo; latestStateRef le da a pushLoop acceso al `state` mas
+  // reciente sin depender de un closure viejo.
+  const lastPushedState = useRef<typeof state | null>(null);
+  const syncInFlight = useRef(false);
+  const latestStateRef = useRef(state);
 
   useEffect(() => {
     const init = async () => {
@@ -953,26 +964,92 @@ useEffect(() => {
   /** =========================
    *  Multiplayer — sync state to Supabase
    *  ========================= */
+  // 2026-09-11 -- BUG DE FONDO encontrado en la version anterior de este
+  // efecto: comparaba multiplayerGame.version contra lastSyncedVersion.current
+  // para decidir si habia algo nuevo que pushear. El problema es que AMBOS
+  // se actualizan siempre juntos (exito de push, o recepcion por Realtime),
+  // asi que en la practica esa condicion es casi SIEMPRE verdadera y el
+  // push casi nunca se disparaba de verdad -- ninguna de las dos variables
+  // reflejaba si el `state` local (el que de verdad cambia con cada
+  // jugada) ya estaba reflejado en el servidor. Resultado: jugadas que a
+  // veces se sincronizaban (por una ventana de timing accidental) y la
+  // mayoria de las veces no -- "se tranca", "no se vio en el otro
+  // navegador", retraso variable.
+  //
+  // Reemplazo: lastPushedState.current guarda por REFERENCIA el ultimo
+  // `state` ya reflejado en el servidor. Se compara state === lastPushedState
+  // (identidad de objeto, no version numerica) para decidir si hay algo
+  // nuevo. syncInFlight serializa los pushes -- si `state` cambia de
+  // nuevo mientras un updateGameState sigue en vuelo (dos jugadas rapidas
+  // seguidas, o el propio reducer disparando dos cambios encadenados),
+  // pushLoop lo detecta al terminar la escritura anterior y vuelve a
+  // pushear la version MAS reciente, en vez de perderla en silencio.
+  //
+  // Ademas: si updateGameState devuelve ok=false (perdimos el lock
+  // optimista de version -- alguien mas escribio primero), antes no
+  // pasaba nada: la pantalla se quedaba mostrando localmente una jugada
+  // que nunca se guardo, divergida para siempre del resto de la partida
+  // ("se tranco"). Ahora se hace un getGame() y se reconcilia el estado
+  // local con el del servidor, igual que si hubiera llegado por Realtime.
+  const pushLoop = useCallback(async () => {
+    if (syncInFlight.current) return;
+    syncInFlight.current = true;
+
+    try {
+      // drena todos los cambios locales pendientes, no solo el primero
+      while (
+        multiplayerGame &&
+        session?.user &&
+        latestStateRef.current !== lastPushedState.current
+      ) {
+        const stateToPush = latestStateRef.current;
+        const versionToPush = lastSyncedVersion.current;
+        lastPushedState.current = stateToPush;
+
+        const ok = await updateGameState(
+          multiplayerGame.id,
+          stateToPush,
+          versionToPush,
+          session.user.id,
+          stateToPush.phase === "rolled" ? "roll" : "move"
+        );
+
+        if (ok) {
+          lastSyncedVersion.current = versionToPush + 1;
+          setMultiplayerGame((g) => (g ? { ...g, version: versionToPush + 1 } : g));
+          // el while sigue: puede haber una jugada mas nueva esperando
+        } else {
+          const fresh = await getGame(multiplayerGame.id);
+          if (fresh) {
+            isReceivingFromRealtime.current = true;
+            lastSyncedVersion.current = fresh.version;
+            lastPushedState.current = fresh.state;
+            dispatchBase({ type: "SET_MULTIPLAYER_STATE", state: fresh.state });
+            setMultiplayerGame(fresh);
+            window.setTimeout(() => {
+              isReceivingFromRealtime.current = false;
+            }, 100);
+          }
+          // no reintentamos la jugada perdida -- si el usuario hace una
+          // jugada nueva sobre el estado ya reconciliado, el proximo
+          // cambio de `state` dispara este mismo efecto de nuevo.
+          break;
+        }
+      }
+    } finally {
+      syncInFlight.current = false;
+    }
+  }, [multiplayerGame, session]);
+
   useEffect(() => {
+    latestStateRef.current = state;
+
     if (gameMode !== "multiplayer" || !multiplayerGame || !session?.user) return;
     if (isReceivingFromRealtime.current) return;
+    if (state === lastPushedState.current) return;
 
-    const version = multiplayerGame.version;
-    if (version === lastSyncedVersion.current) return;
-
-    updateGameState(
-      multiplayerGame.id,
-      state,
-      version,
-      session.user.id,
-      state.phase === "rolled" ? "roll" : "move"
-    ).then((ok) => {
-      if (ok) {
-        lastSyncedVersion.current = version + 1;
-        setMultiplayerGame((g) => g ? { ...g, version: version + 1 } : g);
-      }
-    });
-  }, [state, gameMode, multiplayerGame, session]);
+    void pushLoop();
+  }, [state, gameMode, multiplayerGame, session, pushLoop]);
 
   /** =========================
    *  Multiplayer — Realtime subscription
@@ -988,6 +1065,10 @@ useEffect(() => {
       dispatchBase({ type: "SET_MULTIPLAYER_STATE", state: game.state });
       setMultiplayerGame(game);
       lastSyncedVersion.current = game.version;
+      // 2026-09-11: marcar este estado como "ya reflejado en el servidor"
+      // para que pushLoop no intente reenviarlo de vuelta apenas se
+      // libere isReceivingFromRealtime.
+      lastPushedState.current = game.state;
 
       setTimeout(() => {
         isReceivingFromRealtime.current = false;
@@ -1081,6 +1162,9 @@ useEffect(() => {
           setMyRole("P1");
           setLobbyCode(game.code);
           lastSyncedVersion.current = 0;
+          // el estado recien insertado ya es exactamente `state` -- no
+          // hay nada nuevo que pushear todavia.
+          lastPushedState.current = state;
           // Esperar a que se una P2 via Realtime.
           // 2026-09-11: esta suscripcion "de espera" y la del useEffect de
           // sincronizacion (mas abajo, activo una vez gameMode==="multiplayer")
@@ -1093,6 +1177,8 @@ useEffect(() => {
           const unsubscribeWaitingForP2 = subscribeToGame(game.id, (updated) => {
             if (updated.player2_id && updated.status === "active") {
               unsubscribeWaitingForP2();
+              lastSyncedVersion.current = updated.version;
+              lastPushedState.current = updated.state;
               setMultiplayerGame(updated);
               setGameMode("multiplayer");
             }
@@ -1111,6 +1197,7 @@ useEffect(() => {
           setMultiplayerGame(game);
           setMyRole("P2");
           lastSyncedVersion.current = game.version;
+          lastPushedState.current = game.state;
           dispatchBase({ type: "SET_MULTIPLAYER_STATE", state: game.state });
           setGameMode("multiplayer");
         } catch (e: any) {
