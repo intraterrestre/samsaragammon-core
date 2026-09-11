@@ -1081,9 +1081,18 @@ useEffect(() => {
           setMyRole("P1");
           setLobbyCode(game.code);
           lastSyncedVersion.current = 0;
-          // Esperar a que se una P2 via Realtime
-          subscribeToGame(game.id, (updated) => {
+          // Esperar a que se una P2 via Realtime.
+          // 2026-09-11: esta suscripcion "de espera" y la del useEffect de
+          // sincronizacion (mas abajo, activo una vez gameMode==="multiplayer")
+          // apuntaban al MISMO canal (`game:${gameId}`). Si esta no se cerraba
+          // al llegar P2, la del useEffect chocaba al agregar su propio
+          // postgres_changes sobre un canal ya suscripto -> excepcion sin
+          // capturar ("cannot add postgres_changes callbacks... after
+          // subscribe()") que rompia el render de P1 (pantalla negra) justo
+          // al unirse P2. Se cierra explicitamente apenas cumple su proposito.
+          const unsubscribeWaitingForP2 = subscribeToGame(game.id, (updated) => {
             if (updated.player2_id && updated.status === "active") {
+              unsubscribeWaitingForP2();
               setMultiplayerGame(updated);
               setGameMode("multiplayer");
             }
