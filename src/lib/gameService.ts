@@ -48,35 +48,21 @@ export async function createGame(
 }
 
 // Unirse a una partida por código (el que llama es P2)
+// Va por un RPC (SECURITY DEFINER) porque la policy de SELECT normal
+// ("Players can view their games") solo deja ver la fila a quien YA es
+// player1 o player2. P2 todavía no calza ahí antes de unirse, así que
+// un select directo siempre devuelve 0 filas -> "Partida no encontrada",
+// aunque el código sea correcto y la partida exista.
 export async function joinGame(
   code: string,
-  userId: string
+  _userId: string
 ): Promise<Game> {
-  // Buscar la partida
-  const { data: game, error: findError } = await supabase
-    .from("games")
-    .select("*")
-    .eq("code", code.toUpperCase())
-    .single();
+  const { data, error } = await supabase.rpc("join_game_by_code", {
+    p_code: code.toUpperCase(),
+  });
 
-  if (findError || !game) throw new Error("Partida no encontrada");
-  if (game.player2_id && game.player2_id !== userId)
-    throw new Error("La partida ya está completa");
-
-  // Asignarse como P2 si no está asignado
-  if (!game.player2_id) {
-    const { data: updated, error: updateError } = await supabase
-      .from("games")
-      .update({ player2_id: userId, status: "active" })
-      .eq("id", game.id)
-      .select()
-      .single();
-
-    if (updateError) throw updateError;
-    return updated as Game;
-  }
-
-  return game as Game;
+  if (error) throw new Error(error.message || "Partida no encontrada");
+  return data as Game;
 }
 
 // Actualiza el estado del juego con control de versión
