@@ -1301,9 +1301,14 @@ onConsciousMove={(option, allOptions) => {
   });
 }}
 
-onSelectPiece={(piece: PieceKind) =>
-  dispatch({ type: "SELECT_PIECE", player: state.turn, piece })
-}
+onSelectPiece={(piece: PieceKind) => {
+  // 2026-09-11: unico dispatch de juego real (ademas de onRoll y
+  // onConsciousMove) que llegaba sin guard de turno en multiplayer --
+  // cualquiera de los dos navegadores podia elegir Avatar+Veneno sin
+  // importar de quien fuera el turno.
+  if (gameMode === "multiplayer" && myRole !== state.turn) return;
+  dispatch({ type: "SELECT_PIECE", player: state.turn, piece });
+}}
 
 onSendEmoji={(emoji: string) =>
   dispatch({ type: "EMOJI", emoji, player: state.turn })
