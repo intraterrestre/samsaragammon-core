@@ -152,7 +152,7 @@ function SquareKarma666Block({
       <div style={boxStyle}>
         🐍 SQUARE KARMA 666 {isMine ? "— yours" : "— rival's"} on{" "}
         {REALM_AVATAR_NAME[activeSnakeBet.targetAvatar]} —{" "}
-        {activeSnakeBet.roundsLeft} ROUND{activeSnakeBet.roundsLeft === 1 ? "" : "S"} LEFT
+        {activeSnakeBet.roundsLeft} TURN{activeSnakeBet.roundsLeft === 1 ? "" : "S"} LEFT
       </div>
     );
   }

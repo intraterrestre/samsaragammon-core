@@ -112,6 +112,7 @@ import { buildFinalVestigium, saveFinalVestigium } from "../game/Vestigium";
 import { VictoryScreen } from "./VictoryScreen";
 import { EvolutionClockIndicator } from "./EvolutionClockIndicator";
 import { VenomBanner } from "./VenomBanner";
+import { hasAnyLegalMove } from "../game/rules/legalMoves";
 import {
   pickLesson,
   loadSeenLessons,
@@ -236,6 +237,8 @@ nidanaCoinSide: "front" | "back";
   avatarVideoPlaying?: boolean;
   // PLAY WITH BUDDHA (30 sept 2026): ver App.tsx. Solo ayuda visual.
   beginnerMode?: boolean;
+  // Rule Canon Repair (30 sept 2026): terminar el turno sin jugada legal.
+  onPass?: () => void;
 };
 
 export function GameShell({
@@ -272,6 +275,7 @@ export function GameShell({
   onCloseLedger,
   avatarVideoPlaying = false,
   beginnerMode = false,
+  onPass,
   onUseBudaConsultation,
   onClearBudaSplash,
   onUseFreeBudaLook,
@@ -1053,6 +1057,16 @@ const moveOptions =
     ? getMoveOptionsForPlayer(state, state.turn)
     : [];
 
+// Rule Canon Repair (30 sept 2026): tras tirar, si no existe NINGUNA
+// jugada legal (con ninguna combinación de pieza), el turno se termina
+// con PASS. Antes la partida se quedaba congelada en este punto.
+const noLegalMove =
+  genesisComplete &&
+  state.phase === "rolled" &&
+  !state.winner &&
+  !budaConsultationActive &&
+  !hasAnyLegalMove(state, state.turn);
+
 // GameShell es quien valida y despacha (Board.tsx ya no decide reglas —
 // ver Board Props onConsultBuda). El overlay del splash sigue viviendo
 // físicamente dentro de Board/ringWrap sin moverse. Se acorta de 5000ms
@@ -1649,6 +1663,49 @@ return (
           }}
         >
           {pigForcedAvatarName} just returned from Mara — must move this turn
+        </div>
+      )}
+
+      {noLegalMove && onPass && (
+        <div
+          style={{
+            position: "fixed",
+            left: "50%",
+            top: 96,
+            transform: "translateX(-50%)",
+            zIndex: 9600,
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            background: "rgba(10, 12, 24, 0.9)",
+            border: "1px solid rgba(120, 190, 255, 0.6)",
+            borderRadius: 999,
+            padding: "8px 10px 8px 18px",
+            color: "#e8f1ff",
+            fontFamily: "Georgia, 'Times New Roman', serif",
+            fontSize: 14,
+            fontWeight: 700,
+            letterSpacing: "0.04em",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+          }}
+        >
+          NO PATH THIS ROLL
+          <button
+            type="button"
+            onClick={onPass}
+            style={{
+              padding: "8px 18px",
+              borderRadius: 999,
+              border: "2px solid rgba(120, 190, 255, 0.8)",
+              background: "rgba(120, 190, 255, 0.15)",
+              color: "#e8f1ff",
+              fontWeight: 800,
+              cursor: "pointer",
+              letterSpacing: "0.08em",
+            }}
+          >
+            PASS
+          </button>
         </div>
       )}
 

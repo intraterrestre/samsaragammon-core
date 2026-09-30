@@ -1,3 +1,5 @@
+> **OBSOLETO — NO USAR (30 sept 2026).** Esta versión describe mal SQUARE KARMA 666. La versión vigente es `samsaragammon_reglas-1.md`.
+
 # Samsaragammon — Reglas para tu primera partida
 
 Juego de tablero original para 2 jugadores, con la cosmología budista de fondo (los 6 reinos del samsara) pero jugable como un "fast fun chaos" de dados y captura — no hace falta saber nada de budismo para jugarlo.

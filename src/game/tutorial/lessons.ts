@@ -18,6 +18,7 @@ import { getAllLegalMoves, isPhase2 } from "../rules/legalMoves";
 import { getPigForcedAvatar } from "../rules/getMoveOptionsForPlayer";
 
 export type LessonId =
+  | "noMove"
   | "firstAvatar"
   | "secondAvatar"
   | "phase2"
@@ -83,6 +84,11 @@ const rolled = (state: GameState) => state.phase === "rolled";
 // cumple al principio de la partida de todos modos.
 export const LESSONS: Lesson[] = [
   {
+    id: "noMove",
+    text: "No path this roll. Pass, and the wheel turns.",
+    holds: (s, p) => rolled(s) && getAllLegalMoves(s, p).length === 0,
+  },
+  {
     id: "firstAvatar",
     text: "Bruno is your first Avatar. He jumps from where your animals stand.",
     holds: (s, p) => !!s.realmPieces[p]?.hungry_ghost?.unlocked,
@@ -127,7 +133,7 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "mara",
-    text: "Captured pieces wait in Mara for 6 rolls.",
+    text: "Six rolls in Mara. Then rebirth, anywhere but Humans.",
     holds: (s) =>
       (["P1", "P2"] as PlayerId[]).some(
         (pl) =>
@@ -138,7 +144,7 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "maraReturn",
-    text: "Back from Mara. The wheel goes on.",
+    text: "Reborn from Mara. The way to Humans starts again.",
     holds: (s) => s.genesisNovelty.hasMaraReturn,
   },
   {

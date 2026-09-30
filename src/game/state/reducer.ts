@@ -28,6 +28,7 @@ import type { NidanaId } from "../nidanas";
 import { isBasePieceUnlocked } from "../era";
 import { evaluateOrchestrator, evaluateGenesisToBruno } from "../orchestrator/Orchestrator";
 import { getMoveOptionsForPlayer } from "../rules/getMoveOptionsForPlayer";
+import { hasAnyLegalMove } from "../rules/legalMoves";
 
 const BASE_PIECE_KINDS: BasePieceKind[] = ["pig", "snake", "rooster"];
 const isBasePieceKind = (kind: PieceKind): kind is BasePieceKind =>
@@ -129,7 +130,13 @@ type Action =
   // USE_BUDA_CONSULTATION) — el reducer valida que sea justo a quien se
   // le ofreció y que la ventana (~15s) no haya vencido; NO descuenta
   // consultationsRemaining, es gratis por definición.
-  | { type: "USE_FREE_BUDA_LOOK"; player: PlayerId };
+  | { type: "USE_FREE_BUDA_LOOK"; player: PlayerId }
+  // Rule Canon Repair (30 septiembre 2026) — PASS: tras tirar, si no
+  // existe NINGUNA jugada legal (ver legalMoves.ts), el jugador termina
+  // su turno. Antes de esto no había salida: ROLL quedaba bloqueado con
+  // phase "rolled" y la partida se congelaba. "player" viaja explícito,
+  // igual que en las acciones del Buda.
+  | { type: "PASS_NO_MOVES"; player: PlayerId };
 
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 const rollDie = () => 1 + Math.floor(Math.random() * 6);
@@ -249,6 +256,68 @@ function findEmptySpawnPos(
   }
 
   return ((preferredPos % state.trackSize) + state.trackSize) % state.trackSize; // tablero lleno (no debería pasar nunca) — mejor esto que crashear
+}
+
+// Rule Canon Repair (30 septiembre 2026) — CANON DE MARA, cerrado con
+// Federico: tras 6 lances globales, la pieza renace en una casilla libre
+// AL AZAR fuera de Humans. Igual para los dos jugadores, Venenos y
+// Avatares. Reemplaza el retorno anterior, que buscaba desde la casilla
+// 23 por accidente (el -1 de una ficha capturada normalizado a 23, ver
+// historial de findEmptySpawnPos) y devolvía piezas directo a Humans.
+// No es un movimiento consciente: no recoge Nidanas ni sella (ambas
+// cosas solo ocurren en CONSCIOUS_MOVE). "Libre" = sin ninguna pieza de
+// ningún jugador, mismo criterio que findEmptySpawnPos.
+// Math.random() en el reducer es seguro en multijugador por la misma
+// razón que los dados (rollDie): el estado resultante se sincroniza
+// entero, el otro cliente nunca recalcula el sorteo.
+function pickMaraRebirthPos(state: GameState): number {
+  const occupied = new Set<number>();
+  for (const player of ["P1", "P2"] as PlayerId[]) {
+    for (const kind of BASE_PIECES) {
+      const p = state.pieces[player][kind];
+      if (!p.inLimbo) occupied.add(p.pos);
+    }
+    for (const kind of REALM_PIECE_ORDER) {
+      const p = state.realmPieces[player]?.[kind];
+      if (p && p.unlocked && !p.inLimbo) occupied.add(p.pos);
+    }
+  }
+  const candidates: number[] = [];
+  for (let pos = 0; pos < state.trackSize; pos++) {
+    if (occupied.has(pos)) continue;
+    if (canonicalRealmFromPos(pos) === "humans") continue;
+    candidates.push(pos);
+  }
+  if (candidates.length === 0) {
+    // Imposible con 18 piezas en 20 casillas fuera de Humans, pero
+    // mejor una casilla libre cualquiera que romper la partida.
+    return findEmptySpawnPos(state, 1);
+  }
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+// Rule Canon Repair (30 septiembre 2026) — CANON DE SQUARE KARMA 666:
+// el apostador dispone de sus PRÓXIMOS 3 TURNOS tras la aceptación.
+// Cuenta el turno, no cómo terminó: una jugada, un PASS o un Round
+// Dharma 777 del apostador consumen uno por igual. Los turnos del rival
+// no consumen nada. snakeBet.roundsLeft conserva su nombre (es la forma
+// del GameState que se sincroniza a Supabase) pero ahora significa
+// "turnos que le quedan al apostador". La victoria de la apuesta se
+// resuelve ANTES de llamar a esto (ver CONSCIOUS_MOVE).
+function consumeBettorTurn(
+  bet: GameState["snakeBet"],
+  endingPlayer: PlayerId
+): GameState["snakeBet"] {
+  if (!bet || bet.byPlayer !== endingPlayer) return bet;
+  const roundsLeft = bet.roundsLeft - 1;
+  if (roundsLeft > 0) return { ...bet, roundsLeft };
+  console.log("SNAKE BET LOST", {
+    byPlayer: bet.byPlayer,
+    targetAvatar: bet.targetAvatar,
+    stake: bet.stake,
+  });
+  settleSnakeBetStake({ byPlayer: bet.byPlayer, stake: bet.stake });
+  return null;
 }
 
 function detectVenomTrio(
@@ -779,6 +848,38 @@ export function reducer(state: GameState, action: Action): GameState {
         winner: didWin ? player : state.winner,
         turn: nextTurn,
         turnIndex: state.turnIndex + 1,
+        // Rule Canon Repair — 777 termina un turno normal: cierra el
+        // ciclo si lo declara P2 (igual que CONSCIOUS_MOVE; antes no lo
+        // hacía) y consume un turno de 666 si lo declara el apostador.
+        cycleIndex: player === "P2" ? state.cycleIndex + 1 : state.cycleIndex,
+        snakeBet: consumeBettorTurn(state.snakeBet, player),
+        phase: "idle",
+        rollOptions: null,
+      };
+    }
+
+    case "PASS_NO_MOVES": {
+      const { player } = action;
+      if (state.phase !== "rolled" || !state.rollOptions) return state;
+      if (player !== state.turn) return state;
+      // Solo si de verdad no existe ninguna jugada: mismo motor con el
+      // que CONSCIOUS_MOVE valida cada jugada (via legalMoves.ts).
+      if (hasAnyLegalMove(state, player)) return state;
+
+      // Termina un turno normal: el tiempo avanza (turnIndex, ciclo,
+      // turno de 666) y no ocurre nada de lo que describe una jugada
+      // (lastMove, firma de decisiones, karma, Pattern Engine, reloj de
+      // evolución). globalRollCount no se toca: ya avanzó en ROLL. Si el
+      // reloj ya cumplió, el Avatar nace en la próxima jugada real, en la
+      // casilla donde aterrice, como siempre.
+      return {
+        ...state,
+        turn: otherPlayer(player),
+        turnIndex: state.turnIndex + 1,
+        cycleIndex: player === "P2" ? state.cycleIndex + 1 : state.cycleIndex,
+        snakeBet: consumeBettorTurn(state.snakeBet, player),
+        selectedPiece: { ...state.selectedPiece, [player]: "pig" },
+        selectedVenom: { ...state.selectedVenom, [player]: null },
         phase: "idle",
         rollOptions: null,
       };
@@ -974,9 +1075,9 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
         // findEmptySpawnPos ya revisa Venenos + Avatares de los dos
         // jugadores — mismo helper que ya arregló esto para el
         // nacimiento de Bruno.
-        const spawnPos = findEmptySpawnPos(
-          { pieces: releasedPieces, realmPieces: releasedPiecesRealm, trackSize: state.trackSize } as GameState,
-          piece.pos
+        // Rule Canon Repair — ver pickMaraRebirthPos.
+        const spawnPos = pickMaraRebirthPos(
+          { pieces: releasedPieces, realmPieces: releasedPiecesRealm, trackSize: state.trackSize } as GameState
         );
 
         if (spawnPos !== null) {
@@ -1003,9 +1104,9 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
       // v23 — mismo arreglo que el bucle de Venenos de arriba: antes
       // solo comprobaba colisión contra OTROS Avatares del rival, nunca
       // contra Venenos. findEmptySpawnPos ya revisa todo.
-      const spawnPos = findEmptySpawnPos(
-        { pieces: releasedPieces, realmPieces: releasedPiecesRealm, trackSize: state.trackSize } as GameState,
-        piece.pos
+      // Rule Canon Repair — ver pickMaraRebirthPos.
+      const spawnPos = pickMaraRebirthPos(
+        { pieces: releasedPieces, realmPieces: releasedPiecesRealm, trackSize: state.trackSize } as GameState
       );
 
       if (spawnPos !== null) {
@@ -1179,10 +1280,18 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
         : state.realmProgress;
 
       if (!playerHasActivePiece(nextState, state.turn)) {
+        // Rule Canon Repair — este pase automático (sin ninguna pieza
+        // activa) termina el turno igual que PASS_NO_MOVES: avanza
+        // turnIndex/cycleIndex y consume un turno de 666 si el que pasa
+        // es el apostador. Antes solo cambiaba state.turn.
         return {
           ...nextState,
           venomTrio: nextVenomTrio,
           turn: otherPlayer(state.turn),
+          turnIndex: state.turnIndex + 1,
+          cycleIndex:
+            state.turn === "P2" ? state.cycleIndex + 1 : state.cycleIndex,
+          snakeBet: consumeBettorTurn(state.snakeBet, state.turn),
           phase: "idle",
           rollOptions: null,
           brunoRevealed: nextBrunoRevealed,
@@ -2068,24 +2177,12 @@ if (!didCapture) {
             },
           };
           nextSnakeBet = null;
-        } else if (!isBettorMoving) {
-          // Un ciclo P1+P2 completo termina cuando mueve quien NO
-          // apostó — nunca cuando mueve el propio apostador. No
-          // reutiliza ningún contador del Orquestador (tiene otra
-          // semántica, ver Orchestrator.ts) — cuenta ciclos reales de
-          // turno, el evento más seguro disponible.
-          const roundsLeft = bet.roundsLeft - 1;
-          if (roundsLeft <= 0) {
-            console.log("SNAKE BET LOST", {
-              byPlayer: bet.byPlayer,
-              targetAvatar: bet.targetAvatar,
-              stake: bet.stake,
-            });
-            settleSnakeBetStake({ byPlayer: bet.byPlayer, stake: bet.stake });
-            nextSnakeBet = null;
-          } else {
-            nextSnakeBet = { ...bet, roundsLeft };
-          }
+        } else {
+          // Rule Canon Repair — ver consumeBettorTurn: solo consume
+          // cuando termina un turno del APOSTADOR (antes descontaba en
+          // los turnos del rival, y el apostador tenía en la práctica 2
+          // oportunidades, no 3).
+          nextSnakeBet = consumeBettorTurn(bet, me);
         }
       }
 

@@ -1393,6 +1393,14 @@ if (shouldTriggerNidana) {
 playDiceSound={playDiceSound}
 onReset={() => dispatch({ type: "RESET" })}
 
+onPass={() => {
+  // Rule Canon Repair (30 sept 2026): PASS cuando no hay ninguna jugada
+  // legal. Mismo guard de turno que onRoll/onConsciousMove; el reducer
+  // vuelve a comprobar que de verdad no hay jugada.
+  if (gameMode === "multiplayer" && myRole !== state.turn) return;
+  dispatch({ type: "PASS_NO_MOVES", player: state.turn });
+}}
+
 onConsciousMove={(option, allOptions) => {
   if (gameMode === "multiplayer" && myRole !== state.turn) return;
   dispatch({

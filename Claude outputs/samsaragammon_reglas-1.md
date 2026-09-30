@@ -40,7 +40,11 @@ No depende de qué Veneno elegiste: depende de cómo está parado el Avatar al e
 
 ## Captura y Mara
 
-Si tu Avatar aterriza justo en una casilla donde hay UN solo Avatar o Veneno rival (no dos o más), lo capturás: esa ficha va a **Mara** (limbo), del lado izquierdo del tablero, y tarda 6 turnos en volver al tablero.
+Si tu Avatar aterriza justo en una casilla donde hay UN solo Avatar o Veneno rival (no dos o más), lo capturás: esa ficha va a **Mara** (limbo), del lado izquierdo del tablero. Vuelve después de 6 lances de dados (contando los de ambos jugadores; unos 3 turnos tuyos) y renace en una casilla libre al azar de cualquier reino excepto Humans. Renacer no cuenta como jugada: no recoge Nidanas ni consolida.
+
+## Sin jugada posible (PASS)
+
+Si después de tirar ninguna de tus piezas tiene una jugada legal, aparece **NO PATH THIS ROLL** y pasás el turno con **PASS**. Es un turno normal: el tiempo avanza igual.
 
 ## Apilamiento protegido
 
@@ -63,7 +67,7 @@ Si juntás dos Nidanas consecutivas (ej. 6 y 7) podés "formar un link". El íco
 
 Esto es lo nuevo y lo menos obvio: un Avatar que **nunca fue capturado en toda la partida** consolida automáticamente al llegar a Humans — ese es el camino normal. Pero un Avatar que sí fue capturado y volvió de Mara en algún momento necesita "reconquistarse" por una de estas dos vías:
 
-- **SQUARE KARMA 666** (el ícono de la serpiente 🐍): el "Avatar objetivo" de la apuesta no es del rival — es uno de los tuyos propios, ya parado en Humans y todavía sin consolidar: el que estás poniendo en juego. Ganás la apuesta si, dentro de las 3 rondas siguientes, capturás con tu Snake cualquier ficha del rival (Veneno o Avatar, la que sea que llegues a alcanzar) — no hace falta que sea una pieza específica decidida de antemano. Si lo lográs, el Avatar que elegiste coronar al empezar la apuesta queda consolidado (ya cuenta como uno de los 6 que necesitás para ganar). Si se acaban las 3 rondas sin capturar nada con la Snake, perdés la apuesta y pagás con 2 Nidanas.
+- **SQUARE KARMA 666** (el ícono de la serpiente 🐍): el "Avatar objetivo" de la apuesta no es del rival — es uno de los tuyos propios, ya parado en Humans y todavía sin consolidar: el que estás poniendo en juego. Ganás la apuesta si, durante tus 3 próximos turnos después de que el rival la acepte, capturás con tu Snake cualquier ficha del rival (Veneno o Avatar, la que sea que llegues a alcanzar) — no hace falta que sea una pieza específica decidida de antemano. Si lo lográs, el Avatar que elegiste coronar al empezar la apuesta queda consolidado (ya cuenta como uno de los 6 que necesitás para ganar). Cada turno tuyo cuenta, termine como termine (una jugada, un PASS o un ROUND DHARMA 777). Si se acaban tus 3 turnos sin capturar nada con la Snake, perdés la apuesta y pagás con 2 Nidanas.
 - **ROUND DHARMA 777**: si el rival ya tiene a Whitman revelado (el último Avatar en nacer) y tu tirada te da la opción legal de capturar un Avatar suyo parado en Humans, podés renunciar a esa captura y en su lugar consolidar uno de tus propios Avatares pendientes en Humans — automático si tenés uno solo elegible, a elegir si tenés más de uno.
 
 ## Buda Azul (consulta al Oracle) — nuevo, todavía en pruebas
