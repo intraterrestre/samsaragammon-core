@@ -1,0 +1,90 @@
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import { reducer } from "../../state/reducer";
+import { initialState } from "../../state/state";
+import { getMoveOptionsForPlayer } from "../../rules/getMoveOptionsForPlayer";
+import { getAllLegalMoves, isPhase2 } from "../../rules/legalMoves";
+import { LESSONS, pickLesson, type LessonId } from "../lessons";
+import type { GameState } from "../../types";
+
+beforeAll(() => {
+  vi.spyOn(console, "log").mockImplementation(() => {});
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+});
+afterAll(() => vi.restoreAllMocks());
+
+const none = new Set<LessonId>();
+
+describe("lecciones de Buddha", () => {
+  it("al empezar, la primera lección es tirar", () => {
+    expect(pickLesson(initialState, "P1", none)?.id).toBe("roll");
+  });
+
+  it("tras tirar, la lección es mover", () => {
+    const s = { ...initialState, phase: "rolled", rollOptions: [2, 5] } as GameState;
+    expect(pickLesson(s, "P1", new Set<LessonId>(["roll"]))?.id).toBe("move");
+  });
+
+  it("una lección ya vista no se repite", () => {
+    const seen = new Set<LessonId>(LESSONS.map((l) => l.id));
+    expect(pickLesson(initialState, "P1", seen)).toBeNull();
+  });
+
+  it("con la partida ganada, Buddha calla", () => {
+    expect(pickLesson({ ...initialState, winner: "P1" }, "P1", none)).toBeNull();
+  });
+
+  it("las lecciones de historia tienen prioridad sobre las básicas", () => {
+    const s = {
+      ...initialState,
+      brunoRevealed: true,
+      realmPieces: {
+        P1: {
+          hungry_ghost: {
+            id: "P1-hungry_ghost",
+            kind: "hungry_ghost",
+            pos: 0,
+            inLimbo: false,
+            maraLevel: null,
+            unlocked: true,
+          },
+        },
+        P2: {},
+      },
+    } as GameState;
+    expect(pickLesson(s, "P1", none)?.id).toBe("firstAvatar");
+  });
+
+  it("en partidas reales aparecen casi todas las lecciones y ninguna falla", () => {
+    const shown = new Set<LessonId>();
+    for (let game = 0; game < 4; game++) {
+      let s = reducer(initialState, { type: "RESET" } as never);
+      s = reducer(s, { type: "SET_GENESIS_UI_COMPLETE" } as never);
+      for (let step = 0; step < 800 && !s.winner; step++) {
+        for (const l of LESSONS) if (l.holds(s, s.turn)) shown.add(l.id);
+        if (s.phase === "idle") {
+          s = reducer(s, { type: "ROLL" } as never);
+          continue;
+        }
+        const legal = getAllLegalMoves(s, s.turn);
+        if (legal.length === 0) {
+          s = { ...s, phase: "idle", rollOptions: null, turn: s.turn === "P1" ? "P2" : "P1" };
+          continue;
+        }
+        const m = legal[Math.floor(Math.random() * legal.length)];
+        if (isPhase2(s, s.turn) && m.avatar && m.venom) {
+          s = reducer(s, { type: "SELECT_PIECE", player: s.turn, piece: m.avatar } as never);
+          s = reducer(s, { type: "SELECT_PIECE", player: s.turn, piece: m.venom } as never);
+        }
+        s = reducer(s, {
+          type: "CONSCIOUS_MOVE",
+          option: m.option,
+          allOptions: getMoveOptionsForPlayer(s, s.turn),
+        } as never);
+      }
+    }
+    // Las básicas y las de historia tienen que aparecer siempre.
+    for (const id of ["roll", "move", "capture", "mara", "maraReturn", "firstAvatar", "secondAvatar", "phase2"] as LessonId[]) {
+      expect(shown.has(id)).toBe(true);
+    }
+  }, 60000);
+});

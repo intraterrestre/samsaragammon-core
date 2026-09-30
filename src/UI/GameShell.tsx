@@ -112,6 +112,12 @@ import { buildFinalVestigium, saveFinalVestigium } from "../game/Vestigium";
 import { VictoryScreen } from "./VictoryScreen";
 import { EvolutionClockIndicator } from "./EvolutionClockIndicator";
 import { VenomBanner } from "./VenomBanner";
+import {
+  pickLesson,
+  loadSeenLessons,
+  saveSeenLessons,
+  type LessonId,
+} from "../game/tutorial/lessons";
 
 type MirrorData = {
   title: string;
@@ -1213,6 +1219,48 @@ const confirmDharmaSpare = (targetAvatar: RealmPieceKind) => {
 React.useEffect(() => {
   if (state.phase !== "rolled") setHoveredOption(null);
 }, [state.phase]);
+
+// PLAY WITH BUDDHA — lecciones (30 sept 2026). Buddha dice UNA frase la
+// primera vez que una situación aparece de verdad (ver
+// game/tutorial/lessons.ts). Usa el mismo globo que "THE FIRST EYE
+// OPENS" (fireDharmaEvent), pero nunca lo pisa: solo habla cuando el
+// globo está libre, no hay video de Avatar, ni consulta al Buda, ni el
+// modal de Dharma 777 abierto. Entre una frase y la siguiente deja una
+// pausa corta para que no se encadenen.
+const seenLessonsRef = React.useRef<Set<LessonId>>(loadSeenLessons());
+const [lessonSlotReady, setLessonSlotReady] = React.useState(false);
+
+React.useEffect(() => {
+  if (transientDharma) {
+    setLessonSlotReady(false);
+    return;
+  }
+  const t = window.setTimeout(() => setLessonSlotReady(true), 1200);
+  return () => window.clearTimeout(t);
+}, [transientDharma]);
+
+React.useEffect(() => {
+  if (!beginnerMode || !genesisComplete || state.winner) return;
+  if (!lessonSlotReady || transientDharma || avatarVideoPlaying) return;
+  if (budaConsultationActive || pendingDharmaChoice) return;
+
+  const lesson = pickLesson(state, state.turn, seenLessonsRef.current);
+  if (!lesson) return;
+
+  seenLessonsRef.current.add(lesson.id);
+  saveSeenLessons(seenLessonsRef.current);
+  fireDharmaEvent(lesson.text.toUpperCase(), false);
+}, [
+  beginnerMode,
+  genesisComplete,
+  lessonSlotReady,
+  transientDharma,
+  avatarVideoPlaying,
+  budaConsultationActive,
+  pendingDharmaChoice,
+  state,
+  fireDharmaEvent,
+]);
 // v58 (18 agosto 2026) — pedido de Federico: el video de Jesús (watcher)
 // debe salir cuando un jugador usa la Culebra (Snake) 2 veces SEGUIDAS,
 // pero solo después de que Oriol haya entrado (mismo gate `oriolEntered`
