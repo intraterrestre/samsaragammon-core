@@ -6,6 +6,7 @@ type Props = {
   onCreateGame: () => Promise<void>;
   onJoinGame: (code: string) => Promise<void>;
   onPlayLocal: () => void;
+  onPlayWithBuddha?: () => void;
   createdCode?: string | null;
   isLoading?: boolean;
   error?: string | null;
@@ -15,6 +16,7 @@ export function Lobby({
   onCreateGame,
   onJoinGame,
   onPlayLocal,
+  onPlayWithBuddha,
   createdCode,
   isLoading,
   error,
@@ -78,6 +80,30 @@ export function Lobby({
           maxWidth: 340,
         }}
       >
+        {/* PLAY WITH BUDDHA (30 sept 2026) — modo principiante: partida
+            local donde el tablero ilumina qué se puede tocar. Solo se
+            muestra si App.tsx pasa el callback. */}
+        {onPlayWithBuddha && (
+          <button
+            onClick={onPlayWithBuddha}
+            disabled={isLoading}
+            style={{
+              ...btnStyle("primary"),
+              background: "#3f6fd8",
+              color: "#f4f7ff",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
+            <span>PLAY WITH BUDDHA</span>
+            <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.85 }}>
+              First time? Buddha will guide you.
+            </span>
+          </button>
+        )}
+
         {/* Crear partida */}
         <button
           onClick={onCreateGame}

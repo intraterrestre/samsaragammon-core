@@ -228,6 +228,8 @@ nidanaCoinSide: "front" | "back";
   ) => void;
 
   avatarVideoPlaying?: boolean;
+  // PLAY WITH BUDDHA (30 sept 2026): ver App.tsx. Solo ayuda visual.
+  beginnerMode?: boolean;
 };
 
 export function GameShell({
@@ -263,6 +265,7 @@ export function GameShell({
   onSendEmoji,
   onCloseLedger,
   avatarVideoPlaying = false,
+  beginnerMode = false,
   onUseBudaConsultation,
   onClearBudaSplash,
   onUseFreeBudaLook,
@@ -2023,6 +2026,12 @@ return (
           budaConsultationOpenBy={budaConsultationOpenBy}
           budaConsultationActive={budaConsultationActive}
           onConsultBuda={() => handleConsultBuda(state.turn)}
+          beginnerMode={beginnerMode}
+          // PLAY WITH BUDDHA: el hover de las líneas (etiqueta de la
+          // jugada sobre la casilla destino) existía pero nunca se
+          // conectó. Se conecta solo en modo principiante para no cambiar
+          // la experiencia del modo normal.
+          onHoverOption={beginnerMode ? setHoveredOption : undefined}
         />
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { GameState, MoveOption, PieceKind, BasePieceKind, PlayerId, RealmPieceKind, RealmPieceState } from "./types";
 import { REALM_PIECE_ORDER } from "./types";
 import {  cellStyle as ringCellStyle, RING_SIZE,  piecePosition,} from "../UI/geometry";
@@ -6,6 +6,12 @@ import { realmFromPos, REALM_LABEL, pickLine } from "../UI/realm";
 import { ExplainModal } from "../UI/ExplainModal";
 import { MoveEmanations } from "../UI/MoveEmanations";
 import { MoveOptionsPanel } from "../UI/MoveOptionsPanel";
+import {
+  getMovablePieces,
+  getUsefulVenomsForAvatar,
+  isPhase2,
+} from "./rules/legalMoves";
+import "../UI/beginnerHints.css";
 import budaKarmaER from "../assets/tokens/buda-karma-er.webp";
 import BigHeadSchoolOverlay from "../UI/BigHeadSchoolOverlay";
 import { getUnlockedBasePieces } from "./era";
@@ -135,6 +141,10 @@ type Props = {
   // panel). Este es el flag real que bloquea el dado — ver GameShell.tsx
   // budaConsultationActive.
   budaConsultationActive?: boolean;
+  // PLAY WITH BUDDHA (30 sept 2026): modo principiante. Solo cambia lo
+  // que se ilumina en pantalla; nunca qué es legal.
+  beginnerMode?: boolean;
+  onHoverOption?: (option: MoveOption | null) => void;
 };
 // Era 1 (Ignorance) gate: only unlocked base pieces render on the board or
 // can be clicked/selected. Snake and Rooster stay fully coded (imports,
@@ -237,7 +247,57 @@ export function Board({
   budaConsultationOpenBy = null,
   onConsultBuda,
   budaConsultationActive = false,
+  beginnerMode = false,
+  onHoverOption,
 }: Props){
+
+  // PLAY WITH BUDDHA — SHOW ME. Qué debe pulsar en pantalla para que un
+  // principiante sepa qué tocar, sin leer nada. Todo sale de
+  // getAllLegalMoves (legalMoves.ts), que envuelve la misma función con
+  // la que el reducer valida cada jugada: lo que pulsa es exactamente lo
+  // que el motor aceptaría. Fuera del modo principiante, todo vacío.
+  const beginnerHints = useMemo(() => {
+    const empty = {
+      dice: false,
+      pieces: new Set<PieceKind>(),
+    };
+    if (!beginnerMode || !genesisComplete || state.winner) return empty;
+    if (budaConsultationActive) return empty;
+
+    if (state.phase === "idle") return { ...empty, dice: true };
+
+    const player = state.turn;
+    const movable = getMovablePieces(state, player);
+    const selected = state.selectedPiece[player];
+
+    if (!isPhase2(state, player)) {
+      // Fase 1: pulsan las piezas con jugada que no son la elegida (la
+      // elegida ya muestra sus líneas).
+      const pieces = new Set<PieceKind>();
+      movable.forEach((kind) => {
+        if (kind !== selected) pieces.add(kind);
+      });
+      return { ...empty, pieces };
+    }
+
+    // Fase 2: primero el Avatar, luego el Veneno.
+    const selectedAvatar = selected as RealmPieceKind;
+    const avatarSelectedAndMovable = movable.has(selectedAvatar);
+    if (!avatarSelectedAndMovable) {
+      return { ...empty, pieces: new Set<PieceKind>(movable) };
+    }
+    // Sin Veneno elegido, o con uno que no da ninguna jugada para este
+    // Avatar: pulsan los Venenos que sí le sirven.
+    if (!state.selectedVenom[player] || moveOptions.length === 0) {
+      return {
+        ...empty,
+        pieces: new Set<PieceKind>(
+          getUsefulVenomsForAvatar(state, player, selectedAvatar)
+        ),
+      };
+    }
+    return empty;
+  }, [beginnerMode, genesisComplete, budaConsultationActive, state, moveOptions]);
 
   const captureAudioWhite = useRef<HTMLAudioElement | null>(null);
   const captureAudioBlack = useRef<HTMLAudioElement | null>(null);
@@ -546,6 +606,11 @@ const stackedPosition = getStackedTokenPosition({
       return (
         <div
           key={`${player}-${kind}`}
+          className={
+            player === state.turn && beginnerHints.pieces.has(kind)
+              ? "bwbPulsePiece"
+              : undefined
+          }
           onClick={() => {
             if (player === state.turn && !pieceState.inLimbo) {
               onSelectPiece?.(kind);
@@ -754,7 +819,9 @@ display: oriolEntered ? "block" : "none"
     <>
       <button
         type="button"
-        className="samsaraDicePortalButton"
+        className={`samsaraDicePortalButton${
+          beginnerHints.dice ? " bwbPulseDice" : ""
+        }`}
         onClick={onRoll}
         title="Roll dice"
         style={{
@@ -916,6 +983,7 @@ animation: "nidanaReveal 2.6s cubic-bezier(.16,1.25,.32,1) both",
             trackSize={size}
             selectedPiece={state.selectedPiece[state.turn]}
             onChoose={onChooseMove}
+            onHoverOption={onHoverOption}
           />
         )}
       {/* v32 (12 agosto 2026) — panel de botones grandes, alternativa
@@ -1011,6 +1079,10 @@ const carriedNidana = state.avatarNidana[player][piece.kind];
         }}
         className={`realmPieceToken realmPiece-${piece.kind} ${
           player === "P1" ? "realmPieceP1" : "realmPieceP2"
+        }${
+          player === state.turn && beginnerHints.pieces.has(piece.kind)
+            ? " bwbPulsePiece"
+            : ""
         }`}
 style={{
   left: stackedPosition.left,
@@ -1088,7 +1160,12 @@ style={{
   });
 })}
         {(p1VenomsRevealed || p2VenomsRevealed) && renderedPieces}
-        {genesisComplete && boardNidanaTokens}
+        {/* PLAY WITH BUDDHA: antes de que nazca Bruno ningún Avatar puede
+            recoger Nidanas, así que en modo principiante no se muestran
+            todavía (siguen existiendo en el estado, solo no se dibujan). */}
+        {genesisComplete &&
+          (!beginnerMode || state.brunoRevealed) &&
+          boardNidanaTokens}
 
 
 

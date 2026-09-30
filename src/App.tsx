@@ -356,6 +356,12 @@ const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
    *  Multiplayer state
    *  ========================= */
   const [gameMode, setGameMode] = useState<"lobby" | "local" | "multiplayer">("lobby");
+  // PLAY WITH BUDDHA (30 sept 2026): modo principiante. Es una partida
+  // local normal (hot-seat); lo único que cambia es que el tablero
+  // ilumina qué se puede tocar. Vive fuera de GameState a propósito:
+  // GameState se sincroniza entero a Supabase y se reinicia en RESET, y
+  // nada de la ayuda debe viajar ni alterar las reglas.
+  const [beginnerMode, setBeginnerMode] = useState(false);
   const [multiplayerGame, setMultiplayerGame] = useState<Game | null>(null);
   const [myRole, setMyRole] = useState<"P1" | "P2" | null>(null);
   const [lobbyCode, setLobbyCode] = useState<string | null>(null);
@@ -1152,7 +1158,14 @@ useEffect(() => {
       createdCode={lobbyCode}
       isLoading={lobbyLoading}
       error={lobbyError}
-      onPlayLocal={() => setGameMode("local")}
+      onPlayLocal={() => {
+        setBeginnerMode(false);
+        setGameMode("local");
+      }}
+      onPlayWithBuddha={() => {
+        setBeginnerMode(true);
+        setGameMode("local");
+      }}
       onCreateGame={async () => {
         setLobbyLoading(true);
         setLobbyError(null);
@@ -1224,6 +1237,7 @@ useEffect(() => {
       // paso de esas 6 props; los estados/cálculos de origen se dejan
       // intactos por si algún consumidor futuro los necesita.
       avatarVideoPlaying={activeRealmIntro !== null}
+      beginnerMode={beginnerMode}
       activeRealmData={activeRealmData}
       activeEra={activeEra}
       oracleText={oracleText}

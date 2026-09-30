@@ -1,0 +1,58 @@
+/* PLAY WITH BUDDHA — SHOW ME (30 septiembre 2026).
+   Pulsos del modo principiante: solo se aplican cuando Board.tsx añade
+   estas clases (beginnerMode). Anillos dibujados con ::after para no
+   tocar el transform ni el box-shadow que ya usan las fichas y el dado. */
+
+@keyframes bwbRingPulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.85);
+    opacity: 0.9;
+  }
+  70% {
+    transform: translate(-50%, -50%) scale(1.35);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.35);
+    opacity: 0;
+  }
+}
+
+/* Fichas (Venenos y Avatares) que pueden empezar una jugada. */
+.bwbPulsePiece::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 118%;
+  height: 118%;
+  border-radius: 50%;
+  border: 3px solid rgba(120, 190, 255, 0.95);
+  box-shadow: 0 0 12px rgba(120, 190, 255, 0.8);
+  pointer-events: none;
+  animation: bwbRingPulse 1.4s ease-out infinite;
+}
+
+/* El dado, cuando es tu turno de tirar. */
+.samsaraDicePortalButton.bwbPulseDice::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: 4px solid rgba(120, 190, 255, 0.95);
+  box-shadow: 0 0 18px rgba(120, 190, 255, 0.85);
+  pointer-events: none;
+  animation: bwbRingPulse 1.4s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bwbPulsePiece::after,
+  .samsaraDicePortalButton.bwbPulseDice::after {
+    animation: none;
+    opacity: 0.8;
+    transform: translate(-50%, -50%);
+  }
+}

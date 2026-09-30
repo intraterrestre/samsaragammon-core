@@ -114,8 +114,15 @@ describe("checkNirvanaFormation usa realmente las casillas de Humans (21,22,23,0
         unlocked: pos !== undefined,
       };
     }
+    // 30 sept 2026 — desde v82 countNirvanaFormationProgress exige
+    // ademas consolidatedAvatars[player][kind] === true. Estos tests
+    // prueban la GEOMETRIA de Humans, asi que todos los Avatares vienen
+    // consolidados: la unica variable es la casilla.
+    const allConsolidated: Partial<Record<CanonicalRealmId, boolean>> = {};
+    for (const kind of REALM_PIECE_ORDER) allConsolidated[kind] = true;
     return {
       realmPieces: { P1: realmPieces, P2: realmPieces },
+      consolidatedAvatars: { P1: allConsolidated, P2: allConsolidated },
       realmProgress: {
         P1: {
           currentRealmStep: 6,
@@ -162,6 +169,26 @@ describe("checkNirvanaFormation usa realmente las casillas de Humans (21,22,23,0
     });
     expect(countNirvanaFormationProgress(state, "P1")).toBeLessThan(6);
     expect(checkNirvanaFormation(state, "P1")).toBe(false);
+  });
+
+  it("en Humans pero SIN consolidar no cuenta para la formacion", () => {
+    const state = fakeState({
+      hungry_ghost: 21,
+      hell: 22,
+      animals: 23,
+      humans: 0,
+      asura: 21,
+      deva: 22,
+    });
+    const notConsolidated = {
+      ...state,
+      consolidatedAvatars: {
+        ...state.consolidatedAvatars,
+        P1: { ...state.consolidatedAvatars.P1, deva: false },
+      },
+    } as GameState;
+    expect(countNirvanaFormationProgress(notConsolidated, "P1")).toBe(5);
+    expect(checkNirvanaFormation(notConsolidated, "P1")).toBe(false);
   });
 
   it("6 avatares en la vieja zona 12-15 (Hell/morado pre-v46) NO cuentan como Humans", () => {
