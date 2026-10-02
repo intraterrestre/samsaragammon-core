@@ -9,7 +9,7 @@ export const es: Dictionary = {
 
   "login.question": "¿QUIERES SALIR DE LA RUEDA DEL SAMSARA?",
   "login.then": "ENTONCES",
-  "login.breakTheBox": "ROMPE LA CAJA.",
+  "login.breakTheBox": "ROMPE EL CUBO.",
   "login.emailPlaceholder": "Tu correo",
   "login.sending": "Enviando…",
   "login.proveIt": "DEMUÉSTRALO",
