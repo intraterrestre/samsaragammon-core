@@ -113,6 +113,7 @@ import { VictoryScreen } from "./VictoryScreen";
 import { EvolutionClockIndicator } from "./EvolutionClockIndicator";
 import { VenomBanner } from "./VenomBanner";
 import { hasAnyLegalMove } from "../game/rules/legalMoves";
+import { getBuddhaHelp, type HelpTopic } from "../game/tutorial/help";
 import {
   pickLesson,
   loadSeenLessons,
@@ -1241,6 +1242,12 @@ React.useEffect(() => {
 // globo está libre, no hay video de Avatar, ni consulta al Buda, ni el
 // modal de Dharma 777 abierto. Entre una frase y la siguiente deja una
 // pausa corta para que no se encadenen.
+// PLAY WITH BUDDHA — ayuda a demanda (2 oct 2026). Estado puramente
+// local de UI, nunca en GameState: no se sincroniza, no gasta consultas
+// y no es una jugada. Las respuestas salen de game/tutorial/help.ts.
+const [buddhaHelpOpen, setBuddhaHelpOpen] = React.useState(false);
+const [buddhaHelpTopic, setBuddhaHelpTopic] = React.useState<HelpTopic>("now");
+
 const seenLessonsRef = React.useRef<Set<LessonId>>(loadSeenLessons());
 const [lessonSlotReady, setLessonSlotReady] = React.useState(false);
 
@@ -1927,6 +1934,112 @@ return (
           problema de containing block) — es un overlay propio, mismo
           patrón que ya usa pendingDharmaChoice arriba (position: fixed,
           centrado, zIndex por encima de todo). */}
+      {buddhaHelpOpen && (
+        <div
+          onClick={() => setBuddhaHelpOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 999990,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(4,6,14,0.6)",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "min(520px, 92vw)",
+              maxHeight: "84vh",
+              overflowY: "auto",
+              padding: "30px 36px 26px",
+              borderRadius: "48px",
+              background: "linear-gradient(180deg, #0f1730 0%, #090d1c 100%)",
+              border: "1px solid rgba(120,170,255,0.4)",
+              boxShadow: "0 14px 44px rgba(0,0,0,0.6)",
+              color: "#e8eefc",
+              fontFamily: "Georgia, 'Times New Roman', serif",
+              textAlign: "center",
+            }}
+          >
+            <div style={{ fontSize: 13, letterSpacing: 4, opacity: 0.7, marginBottom: 14 }}>
+              ASK BUDDHA
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 18 }}>
+              {([
+                ["now", "WHAT CAN I DO NOW?"],
+                ["win", "HOW DO I WIN?"],
+                ["happened", "WHAT JUST HAPPENED?"],
+              ] as [HelpTopic, string][]).map(([topic, label]) => (
+                <button
+                  key={topic}
+                  type="button"
+                  onClick={() => setBuddhaHelpTopic(topic)}
+                  style={{
+                    padding: "9px 14px",
+                    borderRadius: 999,
+                    border: `2px solid ${buddhaHelpTopic === topic ? "rgba(120,190,255,0.95)" : "rgba(120,170,255,0.3)"}`,
+                    background: buddhaHelpTopic === topic ? "rgba(120,190,255,0.18)" : "transparent",
+                    color: "#e8eefc",
+                    fontSize: 12,
+                    fontWeight: 800,
+                    letterSpacing: "0.06em",
+                    cursor: "pointer",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div style={{ textAlign: "left", fontSize: 16, lineHeight: 1.5, marginBottom: 22 }}>
+              {getBuddhaHelp(state, state.turn, buddhaHelpTopic).map((line, i) => (
+                <div key={i} style={{ marginBottom: 6 }}>
+                  {line}
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+              {oriolEntered && (state.consultationsRemaining?.[state.turn] ?? 0) > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBuddhaHelpOpen(false);
+                    handleConsultBuda(state.turn);
+                  }}
+                  style={{
+                    padding: "10px 18px",
+                    borderRadius: 999,
+                    border: "2px solid rgba(216,196,138,0.6)",
+                    background: "rgba(216,196,138,0.08)",
+                    color: "#f2e8d4",
+                    fontWeight: 800,
+                    cursor: "pointer",
+                  }}
+                >
+                  LOOK IN THE MIRROR ({state.consultationsRemaining?.[state.turn] ?? 0} LEFT)
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setBuddhaHelpOpen(false)}
+                style={{
+                  padding: "10px 22px",
+                  borderRadius: 999,
+                  border: "2px solid rgba(120,170,255,0.5)",
+                  background: "transparent",
+                  color: "#e8eefc",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                CLOSE
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {budaPanelOpen && budaConsultingPlayer && (
         <div
           style={{
@@ -2130,7 +2243,14 @@ return (
           oriolEntered={oriolEntered}
           budaConsultationOpenBy={budaConsultationOpenBy}
           budaConsultationActive={budaConsultationActive}
-          onConsultBuda={() => handleConsultBuda(state.turn)}
+          // PLAY WITH BUDDHA: en modo principiante, tocar a Buddha abre
+          // primero la ayuda gratuita; el Mirror de pago es un botón
+          // aparte dentro de ella (ver buddhaHelpOpen).
+          onConsultBuda={() =>
+            beginnerMode
+              ? setBuddhaHelpOpen(true)
+              : handleConsultBuda(state.turn)
+          }
           beginnerMode={beginnerMode}
           // PLAY WITH BUDDHA: el hover de las líneas (etiqueta de la
           // jugada sobre la casilla destino) existía pero nunca se

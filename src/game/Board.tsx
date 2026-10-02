@@ -776,7 +776,9 @@ pointerEvents: "auto",
 transition:"0.3s",
 
 filter:"drop-shadow(0 0 7px rgba(255,255,255,.95))",
-display: oriolEntered ? "block" : "none"
+// PLAY WITH BUDDHA: en modo principiante Buddha está desde el
+// principio (abre la ayuda); fuera de él, como siempre, desde Oriol.
+display: oriolEntered || (beginnerMode && genesisComplete) ? "block" : "none"
 }}
 />
 {budaConsultationOpenBy && (
