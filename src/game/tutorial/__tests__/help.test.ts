@@ -129,3 +129,13 @@ describe("ayuda de Buddha", () => {
     }
   }, 60000);
 });
+
+describe("ayuda de Buddha en español", () => {
+  it("responde en el idioma pedido", () => {
+    const s = { ...initialState, phase: "rolled", rollOptions: [2, 3] } as GameState;
+    const text = getBuddhaHelp(s, "P1", "now", "es").join(" ");
+    expect(text).toMatch(/Sacaste 2 y 3/);
+    expect(text).toMatch(/Cerdo/);
+    expect(getBuddhaHelp(initialState, "P1", "win", "es")).toContain("Whitman: todavía no nació");
+  });
+});

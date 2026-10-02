@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import introImage from "../assets/intro/intro_samsaragammon.webp";
+import { useI18n } from "../i18n";
+import { LanguageSwitch } from "./LanguageSwitch";
 
 type Props = {
   userId: string;
@@ -22,6 +24,7 @@ export function Lobby({
   error,
 }: Props) {
   const [joinCode, setJoinCode] = useState("");
+  const { t } = useI18n();
 
   const handleJoin = async () => {
     if (!joinCode.trim()) return;
@@ -55,6 +58,8 @@ export function Lobby({
           }}
         />
       </div>
+
+      <LanguageSwitch />
 
       {error && (
         <div
@@ -97,9 +102,9 @@ export function Lobby({
               gap: 2,
             }}
           >
-            <span>PLAY WITH BUDDHA</span>
+            <span>{t("lobby.playWithBuddha")}</span>
             <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.85 }}>
-              First time? Buddha will guide you.
+              {t("lobby.playWithBuddhaSub")}
             </span>
           </button>
         )}
@@ -110,7 +115,7 @@ export function Lobby({
           disabled={isLoading}
           style={btnStyle("primary")}
         >
-          {isLoading ? "Creating…" : "Create game"}
+          {isLoading ? t("lobby.creating") : t("lobby.createGame")}
         </button>
 
         {createdCode && (
@@ -124,7 +129,7 @@ export function Lobby({
             }}
           >
             <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 6 }}>
-              Share this code with your opponent:
+              {t("lobby.shareCode")}
             </div>
             <div
               style={{
@@ -149,10 +154,10 @@ export function Lobby({
                 cursor: "pointer",
               }}
             >
-              Copy code
+              {t("lobby.copyCode")}
             </button>
             <div style={{ fontSize: 11, opacity: 0.4, marginTop: 8 }}>
-              Waiting for opponent…
+              {t("lobby.waiting")}
             </div>
           </div>
         )}
@@ -166,7 +171,7 @@ export function Lobby({
         >
           <input
             type="text"
-            placeholder="Game code (e.g. KARMA-7X3)"
+            placeholder={t("lobby.codePlaceholder")}
             value={joinCode}
             onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
             onKeyDown={(e) => e.key === "Enter" && handleJoin()}
@@ -187,7 +192,7 @@ export function Lobby({
             disabled={isLoading || !joinCode.trim()}
             style={btnStyle("secondary")}
           >
-            Join
+            {t("lobby.join")}
           </button>
         </div>
 
@@ -198,7 +203,7 @@ export function Lobby({
           }}
         >
           <button onClick={onPlayLocal} style={btnStyle("ghost")}>
-            Play local (hot-seat)
+            {t("lobby.playLocal")}
           </button>
         </div>
       </div>

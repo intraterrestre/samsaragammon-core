@@ -114,7 +114,9 @@ import { EvolutionClockIndicator } from "./EvolutionClockIndicator";
 import { VenomBanner } from "./VenomBanner";
 import { hasAnyLegalMove } from "../game/rules/legalMoves";
 import { getBuddhaHelp, type HelpTopic } from "../game/tutorial/help";
+import { useI18n } from "../i18n";
 import {
+  lessonKey,
   pickLesson,
   loadSeenLessons,
   saveSeenLessons,
@@ -281,6 +283,8 @@ export function GameShell({
   onClearBudaSplash,
   onUseFreeBudaLook,
 }: Props) {
+// Multilingüe (2 oct 2026): textos de PLAY WITH BUDDHA en src/i18n.
+const { t, lang } = useI18n();
 // v68 (27 agosto 2026) — FinalVestigium del jugador que ganó, para el
 // menú WHAT NOW? (ver VictoryScreen.tsx/WhatNowScreen.tsx). Se recalcula
 // solo cuando cambia state.winner (useMemo — no en cada tirada), y se
@@ -1270,7 +1274,7 @@ React.useEffect(() => {
 
   seenLessonsRef.current.add(lesson.id);
   saveSeenLessons(seenLessonsRef.current);
-  fireDharmaEvent(lesson.text.toUpperCase(), false);
+  fireDharmaEvent(t(lessonKey(lesson.id)).toUpperCase(), false);
 }, [
   beginnerMode,
   genesisComplete,
@@ -1696,7 +1700,7 @@ return (
             boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
           }}
         >
-          NO PATH THIS ROLL
+          {t("pass.noPath")}
           <button
             type="button"
             onClick={onPass}
@@ -1711,7 +1715,7 @@ return (
               letterSpacing: "0.08em",
             }}
           >
-            PASS
+            {t("pass.button")}
           </button>
         </div>
       )}
@@ -1964,13 +1968,13 @@ return (
             }}
           >
             <div style={{ fontSize: 13, letterSpacing: 4, opacity: 0.7, marginBottom: 14 }}>
-              ASK BUDDHA
+              {t("ask.title")}
             </div>
             <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 18 }}>
               {([
-                ["now", "WHAT CAN I DO NOW?"],
-                ["win", "HOW DO I WIN?"],
-                ["happened", "WHAT JUST HAPPENED?"],
+                ["now", t("ask.now")],
+                ["win", t("ask.win")],
+                ["happened", t("ask.happened")],
               ] as [HelpTopic, string][]).map(([topic, label]) => (
                 <button
                   key={topic}
@@ -1993,7 +1997,7 @@ return (
               ))}
             </div>
             <div style={{ textAlign: "left", fontSize: 16, lineHeight: 1.5, marginBottom: 22 }}>
-              {getBuddhaHelp(state, state.turn, buddhaHelpTopic).map((line, i) => (
+              {getBuddhaHelp(state, state.turn, buddhaHelpTopic, lang).map((line, i) => (
                 <div key={i} style={{ marginBottom: 6 }}>
                   {line}
                 </div>
@@ -2017,7 +2021,7 @@ return (
                     cursor: "pointer",
                   }}
                 >
-                  LOOK IN THE MIRROR ({state.consultationsRemaining?.[state.turn] ?? 0} LEFT)
+                  {t("ask.mirror", { n: state.consultationsRemaining?.[state.turn] ?? 0 })}
                 </button>
               )}
               <button
@@ -2033,7 +2037,7 @@ return (
                   cursor: "pointer",
                 }}
               >
-                CLOSE
+                {t("ask.close")}
               </button>
             </div>
           </div>

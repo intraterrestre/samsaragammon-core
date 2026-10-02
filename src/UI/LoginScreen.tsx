@@ -1,6 +1,8 @@
 import { useState } from "react";
 import introImage from "../assets/intro/intro_samsaragammon.webp";
 import { supabase } from "../lib/supabaseClient";
+import { useI18n } from "../i18n";
+import { LanguageSwitch } from "./LanguageSwitch";
 
 type LoginScreenProps = {
   onLogin: () => void | Promise<void>;
@@ -12,6 +14,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useI18n();
 
   // v75 (28 agosto 2026) — bug reportado por Federico: el botón se
   // quedaba trabado en "Sending…" para siempre, sin mostrar error. Acá
@@ -41,8 +44,8 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
     } catch (err) {
       setError(
         err instanceof Error
-          ? `Could not send: ${err.message}`
-          : "Could not send the code. Check your connection and try again.",
+          ? t("login.couldNotSendDetail", { detail: err.message })
+          : t("login.couldNotSend"),
       );
     } finally {
       setLoading(false);
@@ -60,15 +63,15 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
         type: "email",
       });
       if (error) {
-        setError("Invalid code. Try again.");
+        setError(t("login.invalidCode"));
       } else {
         onLogin();
       }
     } catch (err) {
       setError(
         err instanceof Error
-          ? `Could not verify: ${err.message}`
-          : "Could not verify the code. Check your connection and try again.",
+          ? t("login.couldNotVerifyDetail", { detail: err.message })
+          : t("login.couldNotVerify"),
       );
     } finally {
       setLoading(false);
@@ -101,13 +104,15 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
         }}
       />
 
+      <LanguageSwitch />
+
       <div style={{ marginTop: 8, maxWidth: 500 }}>
         <div style={{ opacity: 0.95, fontSize: 22, fontWeight: 700, letterSpacing: 0.5 }}>
-          WANT OUT OF THE SAMSARA WHEEL?
+          {t("login.question")}
         </div>
         <div style={{ marginTop: 8, fontSize: 19, letterSpacing: 1 }}>
-          <span style={{ opacity: 0.85 }}>THEN </span>
-          <span style={{ color: "#c8a84b" }}>BREAK THE BOX.</span>
+          <span style={{ opacity: 0.85 }}>{t("login.then")} </span>
+          <span style={{ color: "#c8a84b" }}>{t("login.breakTheBox")}</span>
         </div>
       </div>
 
@@ -125,7 +130,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
           <>
             <input
               type="email"
-              placeholder="Your email"
+              placeholder={t("login.emailPlaceholder")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSendCode()}
@@ -137,13 +142,13 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
               disabled={loading || !email.trim()}
               style={btnStyle}
             >
-              {loading ? "Sending…" : "PROVE IT"}
+              {loading ? t("login.sending") : t("login.proveIt")}
             </button>
           </>
         ) : (
           <>
             <div style={{ fontSize: 13, opacity: 0.6, marginBottom: 4 }}>
-              Check your email…
+              {t("login.checkEmail")}
             </div>
             <input
               type="text"
@@ -161,13 +166,13 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
               disabled={loading || code.length < 6}
               style={btnStyle}
             >
-              {loading ? "Verifying…" : "ENTER"}
+              {loading ? t("login.verifying") : t("login.enter")}
             </button>
             <button
               onClick={() => { setStep("email"); setError(null); setCode(""); }}
               style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 13, cursor: "pointer", marginTop: 4 }}
             >
-              ← Change email
+              {t("login.changeEmail")}
             </button>
           </>
         )}

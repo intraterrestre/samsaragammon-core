@@ -16,6 +16,7 @@ import { REALM_PIECE_ORDER } from "../types";
 import { canonicalRealmFromPos } from "../../UI/realm";
 import { getAllLegalMoves, isPhase2 } from "../rules/legalMoves";
 import { getPigForcedAvatar } from "../rules/getMoveOptionsForPlayer";
+import type { MessageKey } from "../../i18n/en";
 
 export type LessonId =
   | "noMove"
@@ -37,7 +38,6 @@ export type LessonId =
 
 export type Lesson = {
   id: LessonId;
-  text: string;
   // player = quien tiene el turno (hot-seat: la pantalla es de los dos).
   holds: (state: GameState, player: PlayerId) => boolean;
 };
@@ -85,38 +85,31 @@ const rolled = (state: GameState) => state.phase === "rolled";
 export const LESSONS: Lesson[] = [
   {
     id: "noMove",
-    text: "No path this roll. Pass, and the wheel turns.",
     holds: (s, p) => rolled(s) && getAllLegalMoves(s, p).length === 0,
   },
   {
     id: "firstAvatar",
-    text: "Bruno is your first Avatar. He jumps from where your animals stand.",
     holds: (s, p) => !!s.realmPieces[p]?.hungry_ghost?.unlocked,
   },
   {
     id: "secondAvatar",
-    text: "Margot is born. Six Avatars will come, one by one.",
     holds: (s, p) => !!s.realmPieces[p]?.hell?.unlocked,
   },
   {
     id: "phase2",
-    text: "Now your animals follow. Tap an Avatar, then an animal.",
     holds: (s, p) => rolled(s) && isPhase2(s, p),
   },
   {
     id: "whitman",
-    text: "Whitman is here. Six sealed Avatars in Humans wins.",
     holds: (s, p) => !!s.realmPieces[p]?.deva?.unlocked,
   },
   {
     id: "sealed",
-    text: "Home and sealed. Six sealed Avatars in Humans wins.",
     holds: (s, p) =>
       Object.values(s.consolidatedAvatars[p] ?? {}).some(Boolean),
   },
   {
     id: "unsealed",
-    text: "It was captured once. Seal it with 666 or 777.",
     holds: (s, p) =>
       ownAvatars(s, p).some(
         ({ kind, piece }) =>
@@ -128,12 +121,10 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "pig",
-    text: "Back from Mara, this one must move first.",
     holds: (s, p) => rolled(s) && getPigForcedAvatar(s, p) !== null,
   },
   {
     id: "mara",
-    text: "Six rolls in Mara. Then rebirth, anywhere but Humans.",
     holds: (s) =>
       (["P1", "P2"] as PlayerId[]).some(
         (pl) =>
@@ -144,19 +135,16 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "maraReturn",
-    text: "Reborn from Mara. The way to Humans starts again.",
     holds: (s) => s.genesisNovelty.hasMaraReturn,
   },
   {
     id: "capture",
-    text: "Red line: land alone on a rival to send it to Mara.",
     holds: (s, p) =>
       rolled(s) &&
       getAllLegalMoves(s, p).some((m) => m.option.meaning === "IMPACT"),
   },
   {
     id: "nidanaCollect",
-    text: "An Avatar collects a Nidana in its own realm.",
     holds: (s, p) =>
       rolled(s) &&
       getAllLegalMoves(s, p).some(
@@ -169,12 +157,10 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "block",
-    text: "Two pieces together are safe. Nobody can land there.",
     holds: (s, p) => rolled(s) && rivalHasBlock(s, p),
   },
   {
     id: "threeAnimals",
-    text: "Try all three animals. Something is waiting to wake.",
     holds: (s, p) => {
       if (!rolled(s) || isPhase2(s, p) || s.brunoRevealed) return false;
       const sig = s.decisionSignature[p];
@@ -186,15 +172,18 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "move",
-    text: "Tap a glowing piece, then a line.",
     holds: (s, p) => rolled(s) && getAllLegalMoves(s, p).length > 0,
   },
   {
     id: "roll",
-    text: "Your turn. Roll the stones.",
     holds: (s) => s.phase === "idle",
   },
 ];
+
+// Texto de cada lección: clave "lesson.<id>" en src/i18n (en.ts, es.ts).
+export function lessonKey(id: LessonId): MessageKey {
+  return `lesson.${id}` as MessageKey;
+}
 
 // Primera lección de la lista que no se vio y se cumple ahora.
 export function pickLesson(
