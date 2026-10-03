@@ -23,6 +23,9 @@ export const es: Dictionary = {
   "login.couldNotVerify": "No se pudo verificar el código. Revisa tu conexión y vuelve a intentarlo.",
   "login.couldNotVerifyDetail": "No se pudo verificar: {detail}",
 
+  "login.back": "← Volver",
+  "lobby.playOnline": "Jugar en línea con otra persona",
+  "lobby.playOnlineSub": "Necesita tu correo",
   "lobby.playWithBuddha": "JUEGA CON BUDDHA",
   "lobby.playWithBuddhaSub": "¿Primera vez? Buddha te guiará.",
   "lobby.creating": "Creando…",

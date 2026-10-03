@@ -362,6 +362,10 @@ const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
   // GameState se sincroniza entero a Supabase y se reinicia en RESET, y
   // nada de la ayuda debe viajar ni alterar las reglas.
   const [beginnerMode, setBeginnerMode] = useState(false);
+  // 3 oct 2026 — pedido de Federico: JUEGA CON BUDDHA (y el local) son
+  // libres, sin correo. El correo solo se pide para jugar en línea con
+  // otra persona: showLogin abre la pantalla de login desde el lobby.
+  const [showLogin, setShowLogin] = useState(false);
   const [multiplayerGame, setMultiplayerGame] = useState<Game | null>(null);
   const [myRole, setMyRole] = useState<"P1" | "P2" | null>(null);
   const [lobbyCode, setLobbyCode] = useState<string | null>(null);
@@ -1161,11 +1165,19 @@ useEffect(() => {
   </div>
 )}
 
-  {!session ? (
-    <LoginScreen onLogin={handleLogin} />
+  {!session && showLogin ? (
+    <LoginScreen
+      onLogin={() => {
+        handleLogin();
+        setShowLogin(false);
+      }}
+      onBack={() => setShowLogin(false)}
+    />
   ) : gameMode === "lobby" ? (
     <Lobby
-      userId={session.user.id}
+      userId={session?.user.id ?? ""}
+      signedIn={!!session}
+      onSignIn={() => setShowLogin(true)}
       createdCode={lobbyCode}
       isLoading={lobbyLoading}
       error={lobbyError}
@@ -1178,6 +1190,10 @@ useEffect(() => {
         setGameMode("local");
       }}
       onCreateGame={async () => {
+        if (!session) {
+          setShowLogin(true);
+          return;
+        }
         setLobbyLoading(true);
         setLobbyError(null);
         try {
@@ -1214,6 +1230,10 @@ useEffect(() => {
         }
       }}
       onJoinGame={async (code) => {
+        if (!session) {
+          setShowLogin(true);
+          return;
+        }
         setLobbyLoading(true);
         setLobbyError(null);
         try {

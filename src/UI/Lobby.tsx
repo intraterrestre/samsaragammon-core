@@ -9,6 +9,10 @@ type Props = {
   onJoinGame: (code: string) => Promise<void>;
   onPlayLocal: () => void;
   onPlayWithBuddha?: () => void;
+  // 3 oct 2026 — sin sesión, el lobby igual se muestra (Buddha y local
+  // son libres); crear/unirse piden antes el correo vía onSignIn.
+  signedIn?: boolean;
+  onSignIn?: () => void;
   createdCode?: string | null;
   isLoading?: boolean;
   error?: string | null;
@@ -19,6 +23,8 @@ export function Lobby({
   onJoinGame,
   onPlayLocal,
   onPlayWithBuddha,
+  signedIn = true,
+  onSignIn,
   createdCode,
   isLoading,
   error,
@@ -109,6 +115,24 @@ export function Lobby({
           </button>
         )}
 
+        {!signedIn ? (
+          <button
+            onClick={onSignIn}
+            style={{
+              ...btnStyle("primary"),
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
+            <span>{t("lobby.playOnline")}</span>
+            <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.8 }}>
+              {t("lobby.playOnlineSub")}
+            </span>
+          </button>
+        ) : (
+        <>
         {/* Crear partida */}
         <button
           onClick={onCreateGame}
@@ -195,6 +219,9 @@ export function Lobby({
             {t("lobby.join")}
           </button>
         </div>
+
+        </>
+        )}
 
         <div
           style={{

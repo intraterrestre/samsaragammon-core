@@ -6,9 +6,12 @@ import { LanguageSwitch } from "./LanguageSwitch";
 
 type LoginScreenProps = {
   onLogin: () => void | Promise<void>;
+  // 3 oct 2026 — el login ahora se abre desde el lobby (solo para jugar
+  // en línea): "Volver" regresa sin iniciar sesión.
+  onBack?: () => void;
 };
 
-export function LoginScreen({ onLogin }: LoginScreenProps) {
+export function LoginScreen({ onLogin, onBack }: LoginScreenProps) {
   const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -181,6 +184,26 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
           <div style={{ color: "#ff8080", fontSize: 13, marginTop: 4 }}>{error}</div>
         )}
       </div>
+
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          style={{
+            marginTop: 28,
+            background: "none",
+            border: "1px solid rgba(255,255,255,0.25)",
+            borderRadius: 999,
+            color: "rgba(255,255,255,0.8)",
+            padding: "10px 22px",
+            fontSize: 15,
+            cursor: "pointer",
+            fontFamily: "system-ui, sans-serif",
+          }}
+        >
+          {t("login.back")}
+        </button>
+      )}
     </div>
   );
 }

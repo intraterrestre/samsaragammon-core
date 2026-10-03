@@ -26,6 +26,9 @@ export const en = {
   "login.couldNotVerifyDetail": "Could not verify: {detail}",
 
   // ---- lobby
+  "login.back": "← Back",
+  "lobby.playOnline": "Play online with someone",
+  "lobby.playOnlineSub": "Needs your email",
   "lobby.playWithBuddha": "PLAY WITH BUDDHA",
   "lobby.playWithBuddhaSub": "First time? Buddha will guide you.",
   "lobby.creating": "Creating…",
