@@ -529,6 +529,9 @@ export type GameState = {
   // de reino ni Mara visual, aunque el sistema ya los soporte por dentro.
   brunoRevealed: boolean;
   genesisUIComplete: boolean; // true cuando el Genesis visual terminó (clic 8)
+  // 3 oct 2026 — PLAY WITH BUDDHA (partida de tutorial, local). Solo
+  // acorta la espera de Bruno (ver Orchestrator.evaluateGenesisToBruno).
+  tutorialMode?: boolean;
 
   // v49 — Venenos como impulsos (Rooster/Snake/Pig v0, RFC "physics not
   // powers" cerrado con Federico/Gemini/Chat). Marca transitoria: este

@@ -322,3 +322,25 @@ describe("PASS cuando no hay ninguna jugada legal", () => {
     expect(s.turnIndex).toBe(5);
   });
 });
+
+describe("Bruno en el tutorial (3 oct 2026)", () => {
+  it("en PLAY WITH BUDDHA Bruno llega a las 16 tiradas; en partida normal, a las 30", async () => {
+    const { evaluateGenesisToBruno } = await import("../../orchestrator/Orchestrator");
+    const sig = initialState.decisionSignature.P1;
+    const all = { ...sig, pigTrace: 1, snakeTrace: 1, roosterTrace: 1 };
+    const base = {
+      ...initialState,
+      genesisUIComplete: true,
+      globalRollCount: 16,
+      decisionSignature: { P1: all, P2: all },
+    } as GameState;
+    expect(evaluateGenesisToBruno({ ...base, tutorialMode: true })).toBe(true);
+    expect(evaluateGenesisToBruno({ ...base, tutorialMode: false })).toBe(false);
+    expect(evaluateGenesisToBruno({ ...base, globalRollCount: 30 })).toBe(true);
+  });
+
+  it("reiniciar conserva el modo tutorial", () => {
+    const s = reducer({ ...initialState, tutorialMode: true }, { type: "RESET" } as never);
+    expect(s.tutorialMode).toBe(true);
+  });
+});

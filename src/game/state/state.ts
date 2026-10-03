@@ -244,6 +244,7 @@ realmAscension: null,
   },
   brunoRevealed: false,
   genesisUIComplete: false,
+  tutorialMode: false,
 
   // v49 — Rooster/Snake/Pig v0. Ver types.ts para la explicación completa.
   justReturnedFromMara: {

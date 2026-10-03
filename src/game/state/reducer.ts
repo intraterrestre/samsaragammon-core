@@ -58,6 +58,7 @@ type Action =
   | { type: "EMOJI"; emoji: string; player: PlayerId }
   | { type: "SET_MULTIPLAYER_STATE"; state: GameState }
   | { type: "SET_GENESIS_UI_COMPLETE" }
+  | { type: "SET_TUTORIAL_MODE"; on: boolean }
   | { type: "DEV_SKIP_TO_RUFUS" }
   | { type: "DEV_SKIP_TO_5_HUMANS" }
   // v74 (28 agosto 2026) — dev-tool de Federico/Chaty para probar
@@ -429,7 +430,18 @@ export function reducer(state: GameState, action: Action): GameState {
       // v68 (27 agosto 2026) — gameStartedAt/gameId no pueden venir
       // del initialState estático (se evalúa una sola vez al cargar
       // el módulo) — se pisan acá con valores reales de esta partida.
-      return { ...initialState, gameStartedAt: Date.now(), gameId: makeGameId() };
+      return {
+        ...initialState,
+        gameStartedAt: Date.now(),
+        gameId: makeGameId(),
+        // Reiniciar dentro de PLAY WITH BUDDHA sigue siendo tutorial.
+        tutorialMode: state.tutorialMode ?? false,
+      };
+
+    case "SET_TUTORIAL_MODE":
+      // Sin cambio real, mismo objeto: no dispara sync ni renders.
+      if ((state.tutorialMode ?? false) === action.on) return state;
+      return { ...state, tutorialMode: action.on };
 
     // DEV ONLY (13 agosto 2026) — atajo pedido por Federico para no jugar
     // toda la progresion Bruno->Rufus cada vez que necesita probar

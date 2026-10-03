@@ -367,6 +367,12 @@ const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
   // libres, sin correo. El correo solo se pide para jugar en línea con
   // otra persona: showLogin abre la pantalla de login desde el lobby.
   const [showLogin, setShowLogin] = useState(false);
+
+  // 3 oct 2026 — el reducer necesita saber si la partida es de tutorial
+  // (Bruno llega antes). Se sincroniza al elegir el modo y en cada reinicio.
+  useEffect(() => {
+    dispatchBase({ type: "SET_TUTORIAL_MODE", on: beginnerMode } as never);
+  }, [beginnerMode, genesisResetSeq]);
   const [multiplayerGame, setMultiplayerGame] = useState<Game | null>(null);
   const [myRole, setMyRole] = useState<"P1" | "P2" | null>(null);
   const [lobbyCode, setLobbyCode] = useState<string | null>(null);

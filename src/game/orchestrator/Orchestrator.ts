@@ -56,6 +56,10 @@ export function evaluateOrchestrator(
 export const MIN_GENESIS_TURNS = 6;
 export const MIN_NOVELTY_EVENTS = 4;
 export const PITY_GENESIS_TURNS = 30;
+// 3 oct 2026 — Federico: en PLAY WITH BUDDHA (jugando solo contra uno
+// mismo) Bruno debe llegar antes para no aburrirse. Con otra persona la
+// espera se llena conversando; en el tutorial, no.
+export const TUTORIAL_PITY_GENESIS_TURNS = 16;
 
 export function evaluateGenesisToBruno(state: GameState): boolean {
   if (state.brunoRevealed) return false;
@@ -83,7 +87,10 @@ export function evaluateGenesisToBruno(state: GameState): boolean {
 
   if (noveltyCount >= MIN_NOVELTY_EVENTS) return true;
 
-  return state.globalRollCount >= PITY_GENESIS_TURNS;
+  return (
+    state.globalRollCount >=
+    (state.tutorialMode ? TUTORIAL_PITY_GENESIS_TURNS : PITY_GENESIS_TURNS)
+  );
 }
 
 export function getAvatarNameForStep(step: number): string {
