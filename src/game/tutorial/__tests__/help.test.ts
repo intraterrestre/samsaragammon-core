@@ -74,7 +74,7 @@ describe("ayuda de Buddha", () => {
     expect(getBuddhaHelp(s, "P1", "now").join(" ")).toMatch(/PASS/);
   });
 
-  it("cómo ganar: cuenta sellados y explica cada Avatar", () => {
+  it("cómo ganar: cuenta lotos y explica cada Avatar", () => {
     const s = {
       ...initialState,
       realmPieces: {
@@ -87,9 +87,9 @@ describe("ayuda de Buddha", () => {
       consolidatedAvatars: { P1: { hungry_ghost: true }, P2: {} },
     } as GameState;
     const text = getBuddhaHelp(s, "P1", "win");
-    expect(text).toContain("You have 1 of 6 sealed in Humans.");
-    expect(text).toContain("Bruno: sealed, in Humans");
-    expect(text).toContain("Margot: in Humans, not sealed (needs 666 or 777)");
+    expect(text).toContain("You have 1 of 6 with a lotus in Humans.");
+    expect(text).toContain("Bruno: 🪷 lotus, in Humans");
+    expect(text).toContain("Margot: in Humans, no lotus (needs 666 or 777)");
     expect(text).toContain("Whitman: not born yet");
   });
 

@@ -14,6 +14,7 @@
 import type { GameState, PlayerId, RealmPieceKind } from "../types";
 import { REALM_PIECE_ORDER } from "../types";
 import { canonicalRealmFromPos } from "../../UI/realm";
+import { REALM_AVATAR_NAME } from "../realmAvatarNames";
 import { getAllLegalMoves, isPhase2 } from "../rules/legalMoves";
 import { getPigForcedAvatar } from "../rules/getMoveOptionsForPlayer";
 import type { MessageKey } from "../../i18n/en";
@@ -251,8 +252,18 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "sealed",
+    // 3 oct 2026 — Federico + ChatGPT: en la interfaz "sello" pasa a ser
+    // el LOTO 🪷 (internamente sigue siendo consolidatedAvatars).
     holds: (s) =>
       anyPlayer((pl) => Object.values(s.consolidatedAvatars[pl] ?? {}).some(Boolean)),
+    vars: (s) => {
+      for (const pl of ["P1", "P2"] as PlayerId[]) {
+        for (const kind of REALM_PIECE_ORDER) {
+          if (s.consolidatedAvatars[pl]?.[kind]) return { name: REALM_AVATAR_NAME[kind] };
+        }
+      }
+      return { name: "" };
+    },
   },
   {
     id: "unsealed",

@@ -1126,6 +1126,14 @@ style={{
       : "none",
   }}
 />
+      {/* 3 oct 2026 — el loto 🪷 marca al Avatar consolidado
+          (antes "sellado"): llegó limpio a Humanos o lo ganó con
+          666/777. Se conserva aunque luego lo capturen. */}
+      {state.consolidatedAvatars[player]?.[piece.kind] && (
+        <span className="avatarLotusBadge" aria-label="lotus" title="🪷">
+          🪷
+        </span>
+      )}
       {carriedNidana && (
         <div
           style={{

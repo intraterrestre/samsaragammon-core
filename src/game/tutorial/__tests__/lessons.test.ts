@@ -204,3 +204,12 @@ describe("nacimientos en hot-seat", () => {
     expect(pickLesson(s, "P1", seen)?.id).toBe("secondAvatar");
   });
 });
+
+describe("el loto", () => {
+  it("el cartel nombra al Avatar que recibió su loto", () => {
+    const s = { ...initialState, brunoRevealed: true, consolidatedAvatars: { P1: {}, P2: { hell: true } } } as unknown as GameState;
+    const l = pickLesson(s, "P1", new Set<LessonId>(["brunoEra"]));
+    expect(l?.id).toBe("sealed");
+    expect(l!.vars!(s, "P1", (k) => k).name).toBe("Margot");
+  });
+});
