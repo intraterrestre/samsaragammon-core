@@ -49,7 +49,7 @@ export const es: Dictionary = {
 
   "lesson.noMove": "No hay camino en esta tirada. Pasa, y la rueda gira.",
   "lesson.firstAvatar": "Bruno es tu primer Avatar. Se mueve por ignorancia, impulsividad o rabia.",
-  "lesson.secondAvatar": "Nace Margot. Vendrán seis Avatares, uno a uno.",
+  "lesson.secondAvatar": "MARGOT HA LLEGADO\nA veces aprendemos por curiosidad.\nA veces, porque duele.\nLo vivo aprende a curvarse.",
   "lesson.phase2": "Ahora tus animales te siguen. Toca un Avatar y luego un animal.",
   "lesson.whitman": "Llegó Whitman. Seis Avatares sellados en Humanos ganan.",
   "lesson.sealed": "En casa y sellado. Seis Avatares sellados en Humanos ganan.",
