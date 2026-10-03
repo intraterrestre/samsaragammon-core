@@ -563,10 +563,17 @@ useEffect(() => {
   // Si el navegador igual lo bloquea, el video se ve pero sin audio hasta
   // el tap en el botón (que sigue ahí como respaldo) — no hay forma
   // 100% confiable de saltarse esa política del navegador.
+  // 3 oct 2026 — PLAY WITH BUDDHA, pedido de Federico: antes del video
+  // de Bruno, Buddha dice cuánto tiempo pasó ("más de dos millones y
+  // medio de años..."). Con 800 ms el video lo tapaba enseguida y no se
+  // alcanzaba a leer: en el modo principiante, Bruno espera unos
+  // segundos con el cartel en pantalla antes de arrancar.
+  const introDelayMs =
+    beginnerMode && realmKey === "hungry_ghost" ? 7000 : 800;
   window.setTimeout(() => {
     setRealmIntroMuted(false);
     setActiveRealmIntro(introSrc);
-  }, 800);
+  }, introDelayMs);
 
 }, [state.realmAscension]);
 
