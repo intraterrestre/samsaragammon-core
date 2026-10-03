@@ -70,6 +70,13 @@ export type SeenLessons = Map<LessonId, number>;
 
 const other = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 
+// 3 oct 2026 — Federico: "salió Margot pero no hubo cartelito". Los
+// nacimientos se miraban solo para el jugador con el turno; Margot nace
+// en la jugada de un color y el turno pasa enseguida al otro, así que la
+// lección esperaba (o se perdía). En hot-seat la pantalla es de los dos:
+// basta con que le haya pasado a cualquiera.
+const anyPlayer = (f: (pl: PlayerId) => boolean) => f("P1") || f("P2");
+
 function inHumans(pos: number): boolean {
   return canonicalRealmFromPos(pos) === "humans";
 }
@@ -222,11 +229,11 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "firstAvatar",
-    holds: (s, p) => !!s.realmPieces[p]?.hungry_ghost?.unlocked,
+    holds: (s) => anyPlayer((pl) => !!s.realmPieces[pl]?.hungry_ghost?.unlocked),
   },
   {
     id: "secondAvatar",
-    holds: (s, p) => !!s.realmPieces[p]?.hell?.unlocked,
+    holds: (s) => anyPlayer((pl) => !!s.realmPieces[pl]?.hell?.unlocked),
   },
   {
     id: "phase2",
@@ -240,12 +247,12 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "whitman",
-    holds: (s, p) => !!s.realmPieces[p]?.deva?.unlocked,
+    holds: (s) => anyPlayer((pl) => !!s.realmPieces[pl]?.deva?.unlocked),
   },
   {
     id: "sealed",
-    holds: (s, p) =>
-      Object.values(s.consolidatedAvatars[p] ?? {}).some(Boolean),
+    holds: (s) =>
+      anyPlayer((pl) => Object.values(s.consolidatedAvatars[pl] ?? {}).some(Boolean)),
   },
   {
     id: "unsealed",

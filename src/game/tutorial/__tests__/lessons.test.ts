@@ -188,3 +188,19 @@ describe("Bruno todavía duerme", () => {
     expect(vars.missing).toBe("Blancas: Serpiente");
   });
 });
+
+describe("nacimientos en hot-seat", () => {
+  it("si Margot nace para las negras con turno de las blancas, el cartel sale igual", () => {
+    const s = {
+      ...initialState,
+      brunoRevealed: true,
+      turn: "P1",
+      realmPieces: {
+        P1: {},
+        P2: { hell: { id: "P2-hell", kind: "hell", pos: 3, inLimbo: false, maraLevel: null, unlocked: true } },
+      },
+    } as unknown as GameState;
+    const seen = new Set<LessonId>(["brunoEra"]);
+    expect(pickLesson(s, "P1", seen)?.id).toBe("secondAvatar");
+  });
+});
