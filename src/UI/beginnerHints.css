@@ -56,3 +56,62 @@
     transform: translate(-50%, -50%);
   }
 }
+
+/* 3 oct 2026 — tarjeta de lección de PLAY WITH BUDDHA. Fija sobre la
+   pantalla real (no dentro del tablero escalado), para que en el móvil
+   se lea grande. Arriba al centro: deja libre el tablero y las líneas. */
+.bwbLessonCard {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999980;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: max-content;
+  max-width: min(760px, calc(100vw - 32px));
+  padding: 14px 22px;
+  border-radius: 28px;
+  background: rgba(8, 14, 34, 0.9);
+  border: 2px solid rgba(120, 180, 255, 0.75);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.6);
+  color: #f4f7ff;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(19px, 2.2vw + 9px, 30px);
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: left;
+  opacity: 1;
+  transition: opacity 700ms ease;
+  animation: bwbLessonIn 350ms ease-out;
+}
+
+.bwbLessonCardIcon {
+  color: #7fb2ff;
+  font-size: 1.15em;
+  line-height: 1.1;
+}
+
+.bwbLessonCardFading {
+  opacity: 0;
+}
+
+@keyframes bwbLessonIn {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* Móvil horizontal (poca altura): un poco más compacta, sin bajar la letra
+   de 19 px. */
+@media (max-height: 480px) {
+  .bwbLessonCard {
+    padding: 10px 18px;
+    border-radius: 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bwbLessonCard { animation: none; }
+}

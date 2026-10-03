@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 
 import { DicePopup } from "./DicePopup";
 
@@ -1312,7 +1313,7 @@ React.useEffect(() => {
   seen.set(lesson.id, (seen.get(lesson.id) ?? 0) + 1);
   saveSeenLessons(seen);
   if (lesson.eventKey) lessonKeysRef.current.set(lesson.id, lesson.eventKey(state));
-  const message = t(lessonKey(lesson.id)).toUpperCase();
+  const message = t(lessonKey(lesson.id));
   lessonShowingRef.current = { message, urgent: !!lesson.urgent };
   fireDharmaEvent(message, false, false, LESSON_MS);
 }, [
@@ -1562,7 +1563,15 @@ React.useEffect(() => {
   prevFullFormationRef.current = { P1: p1Full, P2: p2Full };
 }, [p1NearWin, p2NearWin]);
 
-const buddhaMessage = transientDharma?.message ?? "";
+// 3 oct 2026 — Federico jugando en iPhone: los carteles de lecciones
+// "casi no se pueden leer". El globo vive dentro del tablero escalado
+// (en un iPhone horizontal, 20 px quedan en ~12 px). Las lecciones de
+// PLAY WITH BUDDHA ya no van en ese globo: salen en una tarjeta fija,
+// fuera del escalado, con letra grande medida sobre la pantalla real.
+const lessonOnScreen =
+  !!transientDharma &&
+  lessonShowingRef.current?.message === transientDharma.message;
+const buddhaMessage = lessonOnScreen ? "" : transientDharma?.message ?? "";
 const isDharmaBig = transientDharma?.big ?? false;
 const isDharmaFading = transientDharma?.fading ?? false;
 const showDjBuddha = transientDharma?.withDjBuddha ?? false;
@@ -1978,6 +1987,19 @@ return (
           problema de containing block) — es un overlay propio, mismo
           patrón que ya usa pendingDharmaChoice arriba (position: fixed,
           centrado, zIndex por encima de todo). */}
+      {lessonOnScreen &&
+        createPortal(
+          <div
+            className={`bwbLessonCard${transientDharma?.fading ? " bwbLessonCardFading" : ""}`}
+            role="status"
+            aria-live="polite"
+          >
+            <span className="bwbLessonCardIcon" aria-hidden="true">☸</span>
+            <span>{transientDharma?.message}</span>
+          </div>,
+          document.body
+        )}
+
       {buddhaHelpOpen && (
         <div
           onClick={() => setBuddhaHelpOpen(false)}
