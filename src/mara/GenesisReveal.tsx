@@ -251,7 +251,11 @@ export function GenesisReveal({
           playsInline
           preload="auto"
           onEnded={handleVideoEnd}
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          // 3 oct 2026 — Federico: el video se desbordaba y no se leían
+          // los mensajes. "cover" recortaba los bordes en cualquier
+          // pantalla que no fuera 16:9 (Mac a pantalla completa, móvil);
+          // "contain" lo muestra entero, con franjas negras si sobra.
+          style={{ width: "100%", height: "100%", objectFit: "contain" }}
         />
         <button
           type="button"

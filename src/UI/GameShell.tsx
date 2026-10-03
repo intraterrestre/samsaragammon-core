@@ -115,6 +115,7 @@ import { VenomBanner } from "./VenomBanner";
 import { hasAnyLegalMove } from "../game/rules/legalMoves";
 import { getBuddhaHelp, type HelpTopic } from "../game/tutorial/help";
 import { useI18n } from "../i18n";
+import { LanguageSwitch } from "./LanguageSwitch";
 import {
   lessonKey,
   pickLesson,
@@ -1989,6 +1990,9 @@ return (
           >
             <div style={{ fontSize: 13, letterSpacing: 4, opacity: 0.7, marginBottom: 14 }}>
               {t("ask.title")}
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+              <LanguageSwitch />
             </div>
             <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 18 }}>
               {([
