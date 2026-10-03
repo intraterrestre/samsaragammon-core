@@ -212,7 +212,13 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "phase2",
-    holds: (s, p) => rolled(s) && isPhase2(s, p),
+    // 3 oct 2026 — Federico: "MUEVE A BRUNO". Desde la Fase 2 un Avatar
+    // se mueve en dos toques (Avatar → animal). Sale cuando Bruno puede
+    // moverse de verdad, para que el cartel nunca nombre algo imposible.
+    holds: (s, p) =>
+      rolled(s) &&
+      isPhase2(s, p) &&
+      getAllLegalMoves(s, p).some((m) => m.avatar === "hungry_ghost"),
   },
   {
     id: "whitman",

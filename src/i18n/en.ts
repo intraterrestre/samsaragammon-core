@@ -56,7 +56,7 @@ export const en = {
   "lesson.noMove": "No path this roll. Pass, and the wheel turns.",
   "lesson.firstAvatar": "Bruno is your first Avatar. He moves through ignorance, impulse or anger.",
   "lesson.secondAvatar": "MARGOT HAS ARRIVED\nSometimes we learn through curiosity.\nSometimes, because it hurts.\nLiving things learn to bend.",
-  "lesson.phase2": "Now your animals follow. Tap an Avatar, then an animal.",
+  "lesson.phase2": "MOVE BRUNO\nFirst tap Bruno.\nThen choose Pig, Rooster or Snake.\nThey drive Bruno around the Wheel of Samsara.",
   "lesson.whitman": "Whitman is here. Six sealed Avatars in Humans wins.",
   "lesson.sealed": "Home and sealed. Six sealed Avatars in Humans wins.",
   "lesson.unsealed": "It was captured once. Seal it with 666 or 777.",
