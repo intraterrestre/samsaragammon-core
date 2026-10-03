@@ -165,6 +165,7 @@ describe("el espejo del Buda azul", () => {
       brunoRevealed: true,
       cosmicClock: { ...initialState.cosmicClock, era: "oriol" },
     } as unknown as GameState;
-    expect(pickLesson(s, "P1", new Set<LessonId>(["brunoEra"]))?.id).toBe("mirror");
+    expect(pickLesson(s, "P1", new Set<LessonId>(["brunoEra"]))?.id).toBe("oriol");
+    expect(pickLesson(s, "P1", new Set<LessonId>(["brunoEra", "oriol"]))?.id).toBe("mirror");
   });
 });

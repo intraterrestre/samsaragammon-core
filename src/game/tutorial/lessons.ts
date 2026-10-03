@@ -23,6 +23,7 @@ export type LessonId =
   | "threePoisons"
   | "sixRealms"
   | "brunoEra"
+  | "oriol"
   | "mirror"
   | "nidanaCarry"
   | "nidanaSpawn"
@@ -156,6 +157,13 @@ export const LESSONS: Lesson[] = [
   {
     id: "brunoEra",
     holds: (s) => s.brunoRevealed,
+  },
+  // 3 oct 2026 — semilla de Oriol (Curvismo sin nombrarlo): el
+  // desacople entre el entorno recto y un cerebro que evolucionó en curvas.
+  // Sale justo antes de EL ESPEJO SE ABRE.
+  {
+    id: "oriol",
+    holds: (s) => oriolEntered(s),
   },
   // 3 oct 2026 — al entrar Oriol se abre el espejo del Buda azul.
   {
