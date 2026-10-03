@@ -75,6 +75,8 @@ export const en = {
   "lesson.sixRealms": "As the game goes on, these green squares will turn into six different sections called realms. Your goal is Humans.",
   "lesson.brunoEra": "All that happened in a flash: more than two and a half million years. Then came the first human. We call him Bruno.",
   "lesson.dismiss": "Close",
+  "mirror.opens": "THE MIRROR OPENS.",
+  "lesson.mirror": "THE MIRROR OPENS\nUntil now, Buddha has taught you how to play.\nNow he can begin to observe how you play.\nYou have 4 looks into the mirror during the game.",
   "lesson.roll": "Your turn. Roll the stones.",
 
   // ---- nombres

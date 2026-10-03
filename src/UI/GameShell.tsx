@@ -115,7 +115,7 @@ import { EvolutionClockIndicator } from "./EvolutionClockIndicator";
 import { VenomBanner } from "./VenomBanner";
 import { hasAnyLegalMove } from "../game/rules/legalMoves";
 import { getBuddhaHelp, type HelpTopic } from "../game/tutorial/help";
-import { useI18n } from "../i18n";
+import { useI18n, translate } from "../i18n";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { LessonCard } from "./LessonCard";
 import {
@@ -935,7 +935,11 @@ const dismissDharma = React.useCallback(() => {
 
 React.useEffect(() => {
   if (oriolEntered && !prevOriolEnteredRef.current) {
-    fireDharmaEvent("THE FIRST EYE OPENS.", false);
+    // 3 oct 2026 — Federico + ChatGPT: los ojos son de Mara; el Buda azul
+    // es el espejo ("Mara te mira; Buddha te hace mirarte"). "THE FIRST
+    // EYE OPENS" pasa a "THE MIRROR OPENS". En PLAY WITH BUDDHA lo dice
+    // la lección "mirror" (tarjeta grande, con la explicación completa).
+    if (!beginnerMode) fireDharmaEvent(translate(lang, "mirror.opens"), false);
   }
   prevOriolEnteredRef.current = oriolEntered;
 }, [oriolEntered, fireDharmaEvent]);

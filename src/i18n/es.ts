@@ -69,6 +69,8 @@ export const es: Dictionary = {
   "lesson.sixRealms": "Con el paso del juego, estas casillas verdes se convertirán en seis secciones diferentes llamadas reinos. Tu meta es Humanos.",
   "lesson.brunoEra": "Todo eso pasó en un instante: más de dos millones y medio de años. Entonces llegó el primer humano. Lo llamamos Bruno.",
   "lesson.dismiss": "Cerrar",
+  "mirror.opens": "EL ESPEJO SE ABRE.",
+  "lesson.mirror": "EL ESPEJO SE ABRE\nHasta ahora Buddha te ha enseñado a jugar.\nAhora puede empezar a observar cómo juegas tú.\nTienes 4 miradas al espejo durante la partida.",
   "lesson.roll": "Tu turno. Tira las piedras.",
 
   "venom.pig": "Cerdo",

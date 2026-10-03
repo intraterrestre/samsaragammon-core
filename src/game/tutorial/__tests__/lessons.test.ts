@@ -157,3 +157,14 @@ describe("lecciones urgentes", () => {
     expect(pickLesson(initialState, "P1", new Map(), new Map(), true)).toBeNull();
   });
 });
+
+describe("el espejo del Buda azul", () => {
+  it("al entrar Oriol, Buddha explica el espejo", () => {
+    const s = {
+      ...initialState,
+      brunoRevealed: true,
+      cosmicClock: { ...initialState.cosmicClock, era: "oriol" },
+    } as unknown as GameState;
+    expect(pickLesson(s, "P1", new Set<LessonId>(["brunoEra"]))?.id).toBe("mirror");
+  });
+});

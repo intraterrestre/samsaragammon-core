@@ -23,6 +23,7 @@ export type LessonId =
   | "threePoisons"
   | "sixRealms"
   | "brunoEra"
+  | "mirror"
   | "nidanaCarry"
   | "nidanaSpawn"
   | "nidanaMirror"
@@ -155,6 +156,11 @@ export const LESSONS: Lesson[] = [
   {
     id: "brunoEra",
     holds: (s) => s.brunoRevealed,
+  },
+  // 3 oct 2026 — al entrar Oriol se abre el espejo del Buda azul.
+  {
+    id: "mirror",
+    holds: (s) => oriolEntered(s),
   },
   // Una pieza acaba de ser capturada (esta jugada exacta). Se repite
   // 4 veces: "al comerte una ficha se va a Mara" tiene que grabarse.

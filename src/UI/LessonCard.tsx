@@ -70,7 +70,17 @@ export function LessonCard({ message, fading, onDismiss, dismissLabel }: Props) 
       }
     >
       <span className="bwbLessonCardIcon" aria-hidden="true">☸</span>
-      <span>{message}</span>
+      <span>
+        {/* Si la lección trae título (primera línea), va destacado. */}
+        {message.includes("\n") ? (
+          <>
+            <strong className="bwbLessonCardTitle">{message.split("\n")[0]}</strong>
+            {message.split("\n").slice(1).join("\n")}
+          </>
+        ) : (
+          message
+        )}
+      </span>
       <button
         type="button"
         className="bwbLessonCardClose"
