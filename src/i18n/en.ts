@@ -74,6 +74,7 @@ export const en = {
   "lesson.threePoisons": "You play with three animals: the Pig (ignorance), the Snake (anger) and the Rooster (impulse). The forces that move every life.",
   "lesson.sixRealms": "As the game goes on, these green squares will turn into six different sections called realms. Your goal is Humans.",
   "lesson.brunoEra": "All that happened in a flash: more than two and a half million years. Then came the first human. We call him Bruno.",
+  "lesson.dismiss": "Close",
   "lesson.roll": "Your turn. Roll the stones.",
 
   // ---- nombres

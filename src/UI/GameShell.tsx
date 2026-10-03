@@ -117,6 +117,7 @@ import { hasAnyLegalMove } from "../game/rules/legalMoves";
 import { getBuddhaHelp, type HelpTopic } from "../game/tutorial/help";
 import { useI18n } from "../i18n";
 import { LanguageSwitch } from "./LanguageSwitch";
+import { LessonCard } from "./LessonCard";
 import {
   lessonKey,
   pickLesson,
@@ -919,6 +920,17 @@ React.useEffect(() => {
     if (dharmaHideTimerRef.current) window.clearTimeout(dharmaHideTimerRef.current);
     if (dharmaFadeTimerRef.current) window.clearTimeout(dharmaFadeTimerRef.current);
   };
+}, []);
+
+// 3 oct 2026 — cerrar el cartel antes de tiempo (la tarjeta de lección
+// se aparta con el dedo o con un toque). Desvanecido corto y fuera.
+const dismissDharma = React.useCallback(() => {
+  if (dharmaHideTimerRef.current) window.clearTimeout(dharmaHideTimerRef.current);
+  if (dharmaFadeTimerRef.current) window.clearTimeout(dharmaFadeTimerRef.current);
+  setTransientDharma((cur) => (cur ? { ...cur, fading: true } : cur));
+  dharmaFadeTimerRef.current = window.setTimeout(() => {
+    setTransientDharma(null);
+  }, 250);
 }, []);
 
 React.useEffect(() => {
@@ -1989,14 +2001,12 @@ return (
           centrado, zIndex por encima de todo). */}
       {lessonOnScreen &&
         createPortal(
-          <div
-            className={`bwbLessonCard${transientDharma?.fading ? " bwbLessonCardFading" : ""}`}
-            role="status"
-            aria-live="polite"
-          >
-            <span className="bwbLessonCardIcon" aria-hidden="true">☸</span>
-            <span>{transientDharma?.message}</span>
-          </div>,
+          <LessonCard
+            message={transientDharma?.message ?? ""}
+            fading={!!transientDharma?.fading}
+            onDismiss={dismissDharma}
+            dismissLabel={t("lesson.dismiss")}
+          />,
           document.body
         )}
 

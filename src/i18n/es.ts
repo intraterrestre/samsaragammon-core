@@ -68,6 +68,7 @@ export const es: Dictionary = {
   "lesson.threePoisons": "Juegas con tres animales: el Cerdo (ignorancia), la Serpiente (ira) y el Gallo (impulso). Las fuerzas que mueven toda vida.",
   "lesson.sixRealms": "Con el paso del juego, estas casillas verdes se convertirán en seis secciones diferentes llamadas reinos. Tu meta es Humanos.",
   "lesson.brunoEra": "Todo eso pasó en un instante: más de dos millones y medio de años. Entonces llegó el primer humano. Lo llamamos Bruno.",
+  "lesson.dismiss": "Cerrar",
   "lesson.roll": "Tu turno. Tira las piedras.",
 
   "venom.pig": "Cerdo",
