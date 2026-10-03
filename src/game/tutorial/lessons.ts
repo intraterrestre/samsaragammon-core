@@ -20,6 +20,9 @@ import type { MessageKey } from "../../i18n/en";
 
 export type LessonId =
   | "noMove"
+  | "nidanaCarry"
+  | "nidanaSpawn"
+  | "nidanaMirror"
   | "firstAvatar"
   | "secondAvatar"
   | "phase2"
@@ -40,7 +43,18 @@ export type Lesson = {
   id: LessonId;
   // player = quien tiene el turno (hot-seat: la pantalla es de los dos).
   holds: (state: GameState, player: PlayerId) => boolean;
+  // 3 oct 2026 (playtest de Federico): algunas lecciones se repiten para
+  // que la idea se grabe. repeat = cuántas veces como máximo en este
+  // dispositivo (por defecto 1).
+  repeat?: number;
+  // Para las que se repiten: identifica el ACONTECIMIENTO concreto
+  // (p. ej. esta captura). La misma lección no vuelve a salir mientras
+  // el acontecimiento sea el mismo.
+  eventKey?: (state: GameState) => string;
 };
+
+// Cuántas veces se vio cada lección (por dispositivo).
+export type SeenLessons = Map<LessonId, number>;
 
 const other = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
 
@@ -79,6 +93,36 @@ function rivalHasBlock(state: GameState, player: PlayerId): boolean {
 
 const rolled = (state: GameState) => state.phase === "rolled";
 
+const ERA_ORDER = ["bruno", "margot", "oriol", "marino", "rufus", "whitman"];
+function oriolEntered(state: GameState): boolean {
+  return ERA_ORDER.indexOf(state.cosmicClock.era as string) >= ERA_ORDER.indexOf("oriol");
+}
+
+// La última jugada capturó y la víctima está de verdad en Mara (si
+// llevaba Nidana, el escudo la salvó y no fue a Mara).
+function lastCaptureWentToMara(state: GameState): boolean {
+  const m = state.lastMove;
+  if (!m?.didCapture || !m.capturedPieceKind) return false;
+  const rival = other(m.player);
+  const kind = m.capturedPieceKind;
+  const victim = (REALM_PIECE_ORDER as readonly string[]).includes(kind)
+    ? state.realmPieces[rival]?.[kind as RealmPieceKind]
+    : state.pieces[rival][kind as "pig" | "snake" | "rooster"];
+  return !!victim?.inLimbo;
+}
+
+function carriedNidanasKey(state: GameState): string {
+  return (["P1", "P2"] as PlayerId[])
+    .map((pl) =>
+      Object.entries(state.avatarNidana[pl] ?? {})
+        .filter(([, n]) => Boolean(n))
+        .map(([k, n]) => `${pl}:${k}:${n}`)
+        .sort()
+        .join(",")
+    )
+    .join("|");
+}
+
 // Orden = prioridad. Los momentos de historia (nace un Avatar, Fase 2)
 // van primero; lo básico (tirar, mover) va al final porque solo se
 // cumple al principio de la partida de todos modos.
@@ -86,6 +130,37 @@ export const LESSONS: Lesson[] = [
   {
     id: "noMove",
     holds: (s, p) => rolled(s) && getAllLegalMoves(s, p).length === 0,
+  },
+  // Una pieza acaba de ser capturada (esta jugada exacta). Se repite
+  // 4 veces: "al comerte una ficha se va a Mara" tiene que grabarse.
+  {
+    id: "mara",
+    holds: lastCaptureWentToMara,
+    repeat: 4,
+    eventKey: (s) => `${s.turnIndex}:${s.lastMove?.toPos}:${s.lastMove?.capturedPieceKind}`,
+  },
+  // Monedas de Nidana (la moneda grande que sale por las dos caras).
+  // Antes de Bruno no aparecen en el modo principiante (ver App.tsx).
+  {
+    id: "nidanaCarry",
+    holds: (s) => s.brunoRevealed && carriedNidanasKey(s) !== "|",
+    repeat: 2,
+    eventKey: carriedNidanasKey,
+  },
+  {
+    id: "nidanaSpawn",
+    holds: (s) => s.brunoRevealed && Object.keys(s.boardNidanas).length > 0,
+    repeat: 2,
+    eventKey: (s) => Object.keys(s.boardNidanas).sort().join(","),
+  },
+  {
+    id: "nidanaMirror",
+    holds: (s) =>
+      oriolEntered(s) &&
+      !!s.currentNidana &&
+      s.turnIndex - s.lastNidanaAtTurn <= 1,
+    repeat: 2,
+    eventKey: (s) => String(s.lastNidanaAtTurn),
   },
   {
     id: "firstAvatar",
@@ -124,16 +199,6 @@ export const LESSONS: Lesson[] = [
     holds: (s, p) => rolled(s) && getPigForcedAvatar(s, p) !== null,
   },
   {
-    id: "mara",
-    holds: (s) =>
-      (["P1", "P2"] as PlayerId[]).some(
-        (pl) =>
-          (["pig", "snake", "rooster"] as const).some(
-            (k) => s.pieces[pl][k].inLimbo
-          ) || ownAvatars(s, pl).some(({ piece }) => piece.inLimbo)
-      ),
-  },
-  {
     id: "maraReturn",
     holds: (s) => s.genesisNovelty.hasMaraReturn,
   },
@@ -142,6 +207,8 @@ export const LESSONS: Lesson[] = [
     holds: (s, p) =>
       rolled(s) &&
       getAllLegalMoves(s, p).some((m) => m.option.meaning === "IMPACT"),
+    repeat: 3,
+    eventKey: (s) => String(s.turnIndex),
   },
   {
     id: "nidanaCollect",
@@ -185,16 +252,23 @@ export function lessonKey(id: LessonId): MessageKey {
   return `lesson.${id}` as MessageKey;
 }
 
-// Primera lección de la lista que no se vio y se cumple ahora.
+// Primera lección de la lista que todavía puede salir y se cumple ahora.
+// seen: veces que ya salió cada una. lastKeys: el último acontecimiento
+// por el que salió cada lección repetible.
 export function pickLesson(
   state: GameState,
   player: PlayerId,
-  seen: ReadonlySet<LessonId>
+  seen: ReadonlyMap<LessonId, number> | ReadonlySet<LessonId>,
+  lastKeys: ReadonlyMap<LessonId, string> = new Map()
 ): Lesson | null {
   if (state.winner) return null;
+  const times = (id: LessonId) =>
+    seen instanceof Map ? seen.get(id) ?? 0 : (seen as ReadonlySet<LessonId>).has(id) ? 1 : 0;
   for (const lesson of LESSONS) {
-    if (seen.has(lesson.id)) continue;
-    if (lesson.holds(state, player)) return lesson;
+    if (times(lesson.id) >= (lesson.repeat ?? 1)) continue;
+    if (!lesson.holds(state, player)) continue;
+    if (lesson.eventKey && lastKeys.get(lesson.id) === lesson.eventKey(state)) continue;
+    return lesson;
   }
   return null;
 }
@@ -206,19 +280,30 @@ export function pickLesson(
 
 const SEEN_KEY = "samsara_tutorial_seen_v1";
 
-export function loadSeenLessons(): Set<LessonId> {
+// Formato actual: { "<id>": veces }. Formato viejo (30 sept): [ids].
+export function loadSeenLessons(): SeenLessons {
   try {
     const raw = localStorage.getItem(SEEN_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return new Set(Array.isArray(parsed) ? (parsed as LessonId[]) : []);
+    const parsed: unknown = raw ? JSON.parse(raw) : {};
+    if (Array.isArray(parsed)) {
+      return new Map((parsed as LessonId[]).map((id) => [id, 1]));
+    }
+    if (parsed && typeof parsed === "object") {
+      return new Map(
+        Object.entries(parsed as Record<string, unknown>)
+          .filter(([, n]) => typeof n === "number")
+          .map(([id, n]) => [id as LessonId, n as number])
+      );
+    }
+    return new Map();
   } catch {
-    return new Set();
+    return new Map();
   }
 }
 
-export function saveSeenLessons(seen: ReadonlySet<LessonId>): void {
+export function saveSeenLessons(seen: ReadonlyMap<LessonId, number>): void {
   try {
-    localStorage.setItem(SEEN_KEY, JSON.stringify([...seen]));
+    localStorage.setItem(SEEN_KEY, JSON.stringify(Object.fromEntries(seen)));
   } catch {
     // sin almacenamiento: nada que hacer
   }

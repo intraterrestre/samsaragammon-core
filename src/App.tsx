@@ -776,11 +776,15 @@ useEffect(() => {
 
   prevBoardNidanasRef.current = current;
   if (!spawnedNidana) return;
+  // 3 oct 2026 — en PLAY WITH BUDDHA las Nidanas del tablero están
+  // ocultas antes de Bruno (Board.tsx); la moneda tampoco sale, para no
+  // mostrar una foto grande sin nada en el tablero que la explique.
+  if (beginnerMode && !state.brunoRevealed) return;
 
   const numericId = NIDANA_LIST.indexOf(spawnedNidana) + 1;
   if (numericId < 1) return;
   triggerNidanaCoin(numericId);
-}, [state.boardNidanas]);
+}, [state.boardNidanas, beginnerMode, state.brunoRevealed]);
 
 useEffect(() => {
   const pickedUp = findNewlyCarriedNidana(

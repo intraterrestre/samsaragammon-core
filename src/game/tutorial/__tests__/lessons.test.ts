@@ -88,3 +88,46 @@ describe("lecciones de Buddha", () => {
     }
   }, 60000);
 });
+
+describe("lecciones que se repiten (playtest 3 oct 2026)", () => {
+  // Captura real: P1 come una pieza de P2 que va a Mara.
+  const captured = (turnIndex: number) =>
+    ({
+      ...initialState,
+      turnIndex,
+      lastMove: { player: "P1", didCapture: true, capturedPieceKind: "pig", toPos: 7 },
+      pieces: {
+        ...initialState.pieces,
+        P2: { ...initialState.pieces.P2, pig: { ...initialState.pieces.P2.pig, inLimbo: true } },
+      },
+    }) as unknown as GameState;
+
+  it("cada captura vuelve a explicar Mara, hasta 4 veces", () => {
+    const seen = new Map<LessonId, number>();
+    const keys = new Map<LessonId, string>();
+    for (let i = 0; i < 4; i++) {
+      const s = captured(10 + i);
+      const l = pickLesson(s, "P1", seen, keys);
+      expect(l?.id).toBe("mara");
+      seen.set("mara", (seen.get("mara") ?? 0) + 1);
+      keys.set("mara", l!.eventKey!(s));
+      // la misma captura no la repite
+      expect(pickLesson(s, "P1", seen, keys)?.id).not.toBe("mara");
+    }
+    expect(pickLesson(captured(20), "P1", seen, keys)?.id).not.toBe("mara");
+  });
+
+  it("si la Nidana la salvó, no dice que fue a Mara", () => {
+    const s = { ...captured(3), pieces: initialState.pieces } as GameState;
+    expect(pickLesson(s, "P1", new Map())?.id).not.toBe("mara");
+  });
+
+  it("la moneda de Nidana se explica cuando aparece en el tablero", () => {
+    const s = { ...initialState, brunoRevealed: true, boardNidanas: { 9: "CRAVING" } } as unknown as GameState;
+    expect(pickLesson(s, "P1", new Map())?.id).toBe("nidanaSpawn");
+  });
+
+  it("el formato viejo de lecciones vistas sigue sirviendo", () => {
+    expect(pickLesson(initialState, "P1", new Set<LessonId>(["roll"]))?.id).not.toBe("roll");
+  });
+});

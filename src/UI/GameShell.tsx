@@ -121,6 +121,7 @@ import {
   loadSeenLessons,
   saveSeenLessons,
   type LessonId,
+  type SeenLessons,
 } from "../game/tutorial/lessons";
 
 type MirrorData = {
@@ -867,7 +868,13 @@ const [transientDharma, setTransientDharma] = React.useState<{
 // se reutiliza transientDharma.fading para las dos cosas a la vez, no
 // se crean timers nuevos ni una segunda fuente de verdad de timing.
 const fireDharmaEvent = React.useCallback(
-  (message: string, big: boolean, withDjBuddha: boolean = false) => {
+  (
+    message: string,
+    big: boolean,
+    withDjBuddha: boolean = false,
+    // 3 oct 2026 — las lecciones de Buddha piden más tiempo de lectura.
+    durationMs: number = 5000
+  ) => {
     if (dharmaHideTimerRef.current) window.clearTimeout(dharmaHideTimerRef.current);
     if (dharmaFadeTimerRef.current) window.clearTimeout(dharmaFadeTimerRef.current);
 
@@ -900,7 +907,7 @@ const fireDharmaEvent = React.useCallback(
       dharmaFadeTimerRef.current = window.setTimeout(() => {
         setTransientDharma(null);
       }, 700);
-    }, 5000);
+    }, durationMs);
   },
   []
 );
@@ -1252,7 +1259,13 @@ React.useEffect(() => {
 const [buddhaHelpOpen, setBuddhaHelpOpen] = React.useState(false);
 const [buddhaHelpTopic, setBuddhaHelpTopic] = React.useState<HelpTopic>("now");
 
-const seenLessonsRef = React.useRef<Set<LessonId>>(loadSeenLessons());
+const seenLessonsRef = React.useRef<SeenLessons>(loadSeenLessons());
+// Último acontecimiento por el que salió cada lección repetible (solo en
+// memoria: evita repetir la misma frase por la misma captura).
+const lessonKeysRef = React.useRef<Map<LessonId, string>>(new Map());
+// 3 oct 2026, playtest de Federico: "que los carteles de lecciones
+// duren un poquito más". 5 s → 8 s.
+const LESSON_MS = 8000;
 const [lessonSlotReady, setLessonSlotReady] = React.useState(false);
 
 React.useEffect(() => {
@@ -1269,12 +1282,19 @@ React.useEffect(() => {
   if (!lessonSlotReady || transientDharma || avatarVideoPlaying) return;
   if (budaConsultationActive || pendingDharmaChoice) return;
 
-  const lesson = pickLesson(state, state.turn, seenLessonsRef.current);
+  const lesson = pickLesson(
+    state,
+    state.turn,
+    seenLessonsRef.current,
+    lessonKeysRef.current
+  );
   if (!lesson) return;
 
-  seenLessonsRef.current.add(lesson.id);
-  saveSeenLessons(seenLessonsRef.current);
-  fireDharmaEvent(t(lessonKey(lesson.id)).toUpperCase(), false);
+  const seen = seenLessonsRef.current;
+  seen.set(lesson.id, (seen.get(lesson.id) ?? 0) + 1);
+  saveSeenLessons(seen);
+  if (lesson.eventKey) lessonKeysRef.current.set(lesson.id, lesson.eventKey(state));
+  fireDharmaEvent(t(lessonKey(lesson.id)).toUpperCase(), false, false, LESSON_MS);
 }, [
   beginnerMode,
   genesisComplete,
