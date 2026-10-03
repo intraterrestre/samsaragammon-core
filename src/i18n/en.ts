@@ -54,7 +54,7 @@ export const en = {
 
   // ---- lecciones (Buddha las dice una vez, en mayúsculas)
   "lesson.noMove": "No path this roll. Pass, and the wheel turns.",
-  "lesson.firstAvatar": "Bruno is your first Avatar. He jumps from where your animals stand.",
+  "lesson.firstAvatar": "Bruno is your first Avatar. He moves through ignorance, impulse or anger.",
   "lesson.secondAvatar": "Margot is born. Six Avatars will come, one by one.",
   "lesson.phase2": "Now your animals follow. Tap an Avatar, then an animal.",
   "lesson.whitman": "Whitman is here. Six sealed Avatars in Humans wins.",
