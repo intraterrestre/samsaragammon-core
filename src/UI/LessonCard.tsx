@@ -14,11 +14,13 @@ type Props = {
   dismissLabel: string;
   // Lecciones de Nidana: las 12 monedas numeradas; active = en juego ahora.
   nidanas?: { id: string; src: string; active: boolean }[];
+  // Imagen en lugar de la rueda ☸ (p. ej. el loto).
+  icon?: string;
 };
 
 const SWIPE_PX = 60;
 
-export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas }: Props) {
+export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, icon }: Props) {
   const start = React.useRef<{ x: number; y: number } | null>(null);
   const [drag, setDrag] = React.useState({ x: 0, y: 0 });
 
@@ -71,7 +73,11 @@ export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas }
           : undefined
       }
     >
-      <span className="bwbLessonCardIcon" aria-hidden="true">☸</span>
+      {icon ? (
+        <img src={icon} alt="" aria-hidden="true" className="bwbLessonCardIconImg" draggable={false} />
+      ) : (
+        <span className="bwbLessonCardIcon" aria-hidden="true">☸</span>
+      )}
       <span>
         {/* Si la lección trae título (primera línea), va destacado. */}
         {message.includes("\n") ? (

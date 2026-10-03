@@ -88,7 +88,7 @@ describe("ayuda de Buddha", () => {
     } as GameState;
     const text = getBuddhaHelp(s, "P1", "win");
     expect(text).toContain("You have 1 of 6 with a lotus in Humans.");
-    expect(text).toContain("Bruno: 🪷 lotus, in Humans");
+    expect(text).toContain("Bruno: lotus, in Humans");
     expect(text).toContain("Margot: in Humans, no lotus (needs 666 or 777)");
     expect(text).toContain("Whitman: not born yet");
   });

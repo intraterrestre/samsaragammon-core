@@ -120,6 +120,7 @@ import { getBuddhaHelp, type HelpTopic } from "../game/tutorial/help";
 import { useI18n, translate } from "../i18n";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { LessonCard } from "./LessonCard";
+import lotusSeal from "../assets/lotus_seal.webp";
 import {
   lessonKey,
   pickLesson,
@@ -2037,6 +2038,12 @@ return (
             onDismiss={dismissDharma}
             dismissLabel={t("lesson.dismiss")}
             nidanas={lessonNidanas}
+            icon={
+              lessonShowingRef.current?.id === "sealed" ||
+              lessonShowingRef.current?.id === "whitman"
+                ? lotusSeal
+                : undefined
+            }
           />,
           document.body
         )}

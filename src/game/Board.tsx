@@ -12,6 +12,7 @@ import {
   isPhase2,
 } from "./rules/legalMoves";
 import "../UI/beginnerHints.css";
+import lotusSeal from "../assets/lotus_seal.webp";
 import budaKarmaER from "../assets/tokens/buda-karma-er.webp";
 import BigHeadSchoolOverlay from "../UI/BigHeadSchoolOverlay";
 import { getUnlockedBasePieces } from "./era";
@@ -1130,9 +1131,12 @@ style={{
           (antes "sellado"): llegó limpio a Humanos o lo ganó con
           666/777. Se conserva aunque luego lo capturen. */}
       {state.consolidatedAvatars[player]?.[piece.kind] && (
-        <span className="avatarLotusBadge" aria-label="lotus" title="🪷">
-          🪷
-        </span>
+        <img
+          src={lotusSeal}
+          alt="lotus"
+          className="avatarLotusBadge"
+          draggable={false}
+        />
       )}
       {carriedNidana && (
         <div
