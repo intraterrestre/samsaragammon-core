@@ -53,6 +53,10 @@ export type Lesson = {
   // (p. ej. esta captura). La misma lección no vuelve a salir mientras
   // el acontecimiento sea el mismo.
   eventKey?: (state: GameState) => string;
+  // Urgente: el momento dura poco (una línea roja, una captura). Puede
+  // interrumpir una lección no urgente que esté en pantalla, en vez de
+  // esperar a que termine y llegar tarde.
+  urgent?: boolean;
 };
 
 // Cuántas veces se vio cada lección (por dispositivo).
@@ -132,6 +136,7 @@ export const LESSONS: Lesson[] = [
   {
     id: "noMove",
     holds: (s, p) => rolled(s) && getAllLegalMoves(s, p).length === 0,
+    urgent: true,
   },
   // 3 oct 2026, pedido de Federico: lo primero que oye un principiante
   // es qué son los tres animales, antes de tirar.
@@ -150,6 +155,7 @@ export const LESSONS: Lesson[] = [
     id: "mara",
     holds: lastCaptureWentToMara,
     repeat: 4,
+    urgent: true,
     eventKey: (s) => `${s.turnIndex}:${s.lastMove?.toPos}:${s.lastMove?.capturedPieceKind}`,
   },
   // Monedas de Nidana (la moneda grande que sale por las dos caras).
@@ -210,6 +216,7 @@ export const LESSONS: Lesson[] = [
   {
     id: "pig",
     holds: (s, p) => rolled(s) && getPigForcedAvatar(s, p) !== null,
+    urgent: true,
   },
   {
     id: "maraReturn",
@@ -221,6 +228,7 @@ export const LESSONS: Lesson[] = [
       rolled(s) &&
       getAllLegalMoves(s, p).some((m) => m.option.meaning === "IMPACT"),
     repeat: 3,
+    urgent: true,
     eventKey: (s) => String(s.turnIndex),
   },
   {
@@ -272,12 +280,14 @@ export function pickLesson(
   state: GameState,
   player: PlayerId,
   seen: ReadonlyMap<LessonId, number> | ReadonlySet<LessonId>,
-  lastKeys: ReadonlyMap<LessonId, string> = new Map()
+  lastKeys: ReadonlyMap<LessonId, string> = new Map(),
+  onlyUrgent = false
 ): Lesson | null {
   if (state.winner) return null;
   const times = (id: LessonId) =>
     seen instanceof Map ? seen.get(id) ?? 0 : (seen as ReadonlySet<LessonId>).has(id) ? 1 : 0;
   for (const lesson of LESSONS) {
+    if (onlyUrgent && !lesson.urgent) continue;
     if (times(lesson.id) >= (lesson.repeat ?? 1)) continue;
     if (!lesson.holds(state, player)) continue;
     if (lesson.eventKey && lastKeys.get(lesson.id) === lesson.eventKey(state)) continue;

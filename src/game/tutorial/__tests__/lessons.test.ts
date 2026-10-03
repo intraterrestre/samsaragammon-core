@@ -137,3 +137,22 @@ describe("lecciones que se repiten (playtest 3 oct 2026)", () => {
     expect(pickLesson(initialState, "P1", new Set<LessonId>(["roll"]))?.id).not.toBe("roll");
   });
 });
+
+describe("lecciones urgentes", () => {
+  it("con una línea roja disponible, la captura puede interrumpir", () => {
+    const s = {
+      ...initialState,
+      phase: "rolled",
+      rollOptions: [1, 2],
+      pieces: {
+        P1: { ...initialState.pieces.P1, pig: { pos: 3, inLimbo: false, maraLevel: null } },
+        P2: { ...initialState.pieces.P2, pig: { pos: 4, inLimbo: false, maraLevel: null } },
+      },
+    } as unknown as GameState;
+    expect(pickLesson(s, "P1", new Map(), new Map(), true)?.id).toBe("capture");
+  });
+
+  it("solo las urgentes interrumpen", () => {
+    expect(pickLesson(initialState, "P1", new Map(), new Map(), true)).toBeNull();
+  });
+});

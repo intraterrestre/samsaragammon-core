@@ -1268,6 +1268,9 @@ const lessonKeysRef = React.useRef<Map<LessonId, string>>(new Map());
 // duren un poquito más". 5 s → 8 s.
 const LESSON_MS = 8000;
 const [lessonSlotReady, setLessonSlotReady] = React.useState(false);
+// Lección que está ahora en el globo (mensaje + si es urgente), para
+// saber si una urgente puede interrumpirla.
+const lessonShowingRef = React.useRef<{ message: string; urgent: boolean } | null>(null);
 
 React.useEffect(() => {
   if (transientDharma) {
@@ -1280,14 +1283,28 @@ React.useEffect(() => {
 
 React.useEffect(() => {
   if (!beginnerMode || !genesisComplete || state.winner) return;
-  if (!lessonSlotReady || transientDharma || avatarVideoPlaying) return;
-  if (budaConsultationActive || pendingDharmaChoice) return;
+  if (avatarVideoPlaying || budaConsultationActive || pendingDharmaChoice) return;
+
+  // 3 oct 2026 — playtest de Federico: la línea roja apuntaba a un rival
+  // y la lección de captura no salió, porque el globo seguía ocupado con
+  // otra lección (8 s) y cuando quedó libre la jugada ya había pasado.
+  // Una lección urgente ahora interrumpe a una lección NO urgente; nunca
+  // a los demás mensajes del juego.
+  const showing = lessonShowingRef.current;
+  const canInterrupt =
+    !!transientDharma &&
+    !transientDharma.fading &&
+    !!showing &&
+    !showing.urgent &&
+    transientDharma.message === showing.message;
+  if (!canInterrupt && (!lessonSlotReady || transientDharma)) return;
 
   const lesson = pickLesson(
     state,
     state.turn,
     seenLessonsRef.current,
-    lessonKeysRef.current
+    lessonKeysRef.current,
+    canInterrupt
   );
   if (!lesson) return;
 
@@ -1295,7 +1312,9 @@ React.useEffect(() => {
   seen.set(lesson.id, (seen.get(lesson.id) ?? 0) + 1);
   saveSeenLessons(seen);
   if (lesson.eventKey) lessonKeysRef.current.set(lesson.id, lesson.eventKey(state));
-  fireDharmaEvent(t(lessonKey(lesson.id)).toUpperCase(), false, false, LESSON_MS);
+  const message = t(lessonKey(lesson.id)).toUpperCase();
+  lessonShowingRef.current = { message, urgent: !!lesson.urgent };
+  fireDharmaEvent(message, false, false, LESSON_MS);
 }, [
   beginnerMode,
   genesisComplete,
