@@ -114,6 +114,6 @@ export const es: Dictionary = {
   "happened.via": " con el {venom}",
   "happened.captured": "Capturó la pieza {piece} de las {victim}.",
   "happened.shielded": "Su Nidana lo protegió: escapó de Mara, pero perdió la Nidana.",
-  "happened.toMara": "Espera en Mara 6 tiradas y luego renace en cualquier sitio menos Humanos.",
+  "happened.toMara": "Espera en Mara 6 tiradas y luego renace en un reino al azar, nunca en Humanos.",
   "happened.declined": "Se podía capturar, pero se eligió otro camino.",
 };

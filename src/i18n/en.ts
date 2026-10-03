@@ -124,7 +124,7 @@ export const en = {
   "happened.via": " with the {venom}",
   "happened.captured": "It captured {victim}'s {piece}.",
   "happened.shielded": "Its Nidana shielded it: it escaped Mara, but lost the Nidana.",
-  "happened.toMara": "It waits in Mara for 6 rolls, then is reborn anywhere but Humans.",
+  "happened.toMara": "It waits in Mara for 6 rolls, then is reborn in a random realm, never in Humans.",
   "happened.declined": "A capture was possible, but another path was chosen.",
 } as const;
 
