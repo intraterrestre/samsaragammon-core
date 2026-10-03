@@ -59,7 +59,7 @@ export const es: Dictionary = {
   "lesson.nidanaSpawn": "Esa moneda es una Nidana. Ahora espera en el tablero: un Avatar la recoge en su propio reino.",
   "lesson.nidanaCarry": "¡Nidana recogida! Salva a este Avatar de Mara una vez, pero el atacante se la roba.",
   "lesson.nidanaMirror": "Esta moneda nombra un eslabón de tu karma. Buddha lo lee en tu forma de jugar.",
-  "lesson.maraReturn": "Renació de Mara. El camino a Humanos empieza otra vez.",
+  "lesson.maraReturn": "Volvió de Mara. Para vencer al Samsara, más adelante tendrá que llegar al Reino de los Humanos.",
   "lesson.capture": "Línea roja: cae solo sobre un rival para mandarlo a Mara.",
   "lesson.nidanaCollect": "Un Avatar recoge una Nidana en su propio reino.",
   "lesson.block": "Dos piezas juntas están a salvo. Nadie puede caer ahí.",

@@ -65,7 +65,7 @@ export const en = {
   "lesson.nidanaSpawn": "That coin is a Nidana. Now it waits on the board: an Avatar collects it in its own realm.",
   "lesson.nidanaCarry": "Nidana collected! It saves this Avatar from Mara once, but the attacker steals it.",
   "lesson.nidanaMirror": "This coin names a link of your karma. Buddha reads it from the way you play.",
-  "lesson.maraReturn": "Reborn from Mara. The way to Humans starts again.",
+  "lesson.maraReturn": "Back from Mara. To defeat Samsara, it will later have to reach the Realm of Humans.",
   "lesson.capture": "Red line: land alone on a rival to send it to Mara.",
   "lesson.nidanaCollect": "An Avatar collects a Nidana in its own realm.",
   "lesson.block": "Two pieces together are safe. Nobody can land there.",
