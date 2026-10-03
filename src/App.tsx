@@ -21,6 +21,7 @@ import { KarmaEngine } from "./game/engine/KarmaEngine";
 
 import { GameShell } from "./UI/GameShell";
 import { LoginScreen } from "./UI/LoginScreen";
+import { resetSeenLessons } from "./game/tutorial/lessons";
 import { Lobby } from "./UI/Lobby";
 import { useGameController } from "./game/hooks/useGameController";
 import {
@@ -956,6 +957,8 @@ useEffect(() => {
   playedRealmIntrosRef.current = {};
   setActiveRealmIntro(null);
   setRealmIntroMuted(true);
+  // Partida nueva con Buddha: las lecciones vuelven a empezar.
+  if (beginnerMode) resetSeenLessons();
   setGenesisResetSeq((n) => n + 1);
 
   setRollsCount(0);
@@ -971,7 +974,7 @@ useEffect(() => {
 
       dispatchBase(action);
     },
-    [resetRunExport]
+    [resetRunExport, beginnerMode]
   );
 
   /** =========================
@@ -1186,6 +1189,13 @@ useEffect(() => {
         setGameMode("local");
       }}
       onPlayWithBuddha={() => {
+        // 3 oct 2026 — Federico: "no están saliendo los carteles". Cada
+        // lección salía una sola vez POR DISPOSITIVO, así que en la
+        // segunda partida con Buddha ya no había carteles. Quien elige
+        // JUEGA CON BUDDHA quiere la guía: cada partida nueva empieza
+        // con las lecciones desde cero (dentro de la partida siguen
+        // saliendo una vez, o las veces que diga cada lección).
+        resetSeenLessons();
         setBeginnerMode(true);
         setGameMode("local");
       }}
