@@ -68,6 +68,8 @@ export const en = {
   "lesson.block": "Two pieces together are safe. Nobody can land there.",
   "lesson.threeAnimals": "Try all three animals. Something is waiting to wake.",
   "lesson.move": "Tap a glowing piece, then a line.",
+  "lesson.threePoisons": "You play with three animals: the Pig (ignorance), the Snake (anger) and the Rooster (impulse). The forces that move every life.",
+  "lesson.brunoEra": "All that happened in a flash: more than two and a half million years. Then came the first human. We call him Bruno.",
   "lesson.roll": "Your turn. Roll the stones.",
 
   // ---- nombres

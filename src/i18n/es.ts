@@ -62,6 +62,8 @@ export const es: Dictionary = {
   "lesson.block": "Dos piezas juntas están a salvo. Nadie puede caer ahí.",
   "lesson.threeAnimals": "Prueba los tres animales. Algo espera para despertar.",
   "lesson.move": "Toca una pieza que brilla y luego una línea.",
+  "lesson.threePoisons": "Juegas con tres animales: el Cerdo (ignorancia), la Serpiente (ira) y el Gallo (impulso). Las fuerzas que mueven toda vida.",
+  "lesson.brunoEra": "Todo eso pasó en un instante: más de dos millones y medio de años. Entonces llegó el primer humano. Lo llamamos Bruno.",
   "lesson.roll": "Tu turno. Tira las piedras.",
 
   "venom.pig": "Cerdo",

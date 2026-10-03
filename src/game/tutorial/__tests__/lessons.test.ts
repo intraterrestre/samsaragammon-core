@@ -15,8 +15,14 @@ afterAll(() => vi.restoreAllMocks());
 const none = new Set<LessonId>();
 
 describe("lecciones de Buddha", () => {
-  it("al empezar, la primera lección es tirar", () => {
-    expect(pickLesson(initialState, "P1", none)?.id).toBe("roll");
+  it("al empezar, primero los tres animales y después tirar", () => {
+    expect(pickLesson(initialState, "P1", none)?.id).toBe("threePoisons");
+    expect(pickLesson(initialState, "P1", new Set<LessonId>(["threePoisons"]))?.id).toBe("roll");
+  });
+
+  it("al llegar Bruno, primero cuánto tiempo pasó", () => {
+    const s = { ...initialState, brunoRevealed: true } as GameState;
+    expect(pickLesson(s, "P1", none)?.id).toBe("brunoEra");
   });
 
   it("tras tirar, la lección es mover", () => {
@@ -51,7 +57,7 @@ describe("lecciones de Buddha", () => {
         P2: {},
       },
     } as GameState;
-    expect(pickLesson(s, "P1", none)?.id).toBe("firstAvatar");
+    expect(pickLesson(s, "P1", new Set<LessonId>(["brunoEra"]))?.id).toBe("firstAvatar");
   });
 
   it("en partidas reales aparecen casi todas las lecciones y ninguna falla", () => {
@@ -103,7 +109,7 @@ describe("lecciones que se repiten (playtest 3 oct 2026)", () => {
     }) as unknown as GameState;
 
   it("cada captura vuelve a explicar Mara, hasta 4 veces", () => {
-    const seen = new Map<LessonId, number>();
+    const seen = new Map<LessonId, number>([["threePoisons", 1]]);
     const keys = new Map<LessonId, string>();
     for (let i = 0; i < 4; i++) {
       const s = captured(10 + i);
@@ -124,7 +130,7 @@ describe("lecciones que se repiten (playtest 3 oct 2026)", () => {
 
   it("la moneda de Nidana se explica cuando aparece en el tablero", () => {
     const s = { ...initialState, brunoRevealed: true, boardNidanas: { 9: "CRAVING" } } as unknown as GameState;
-    expect(pickLesson(s, "P1", new Map())?.id).toBe("nidanaSpawn");
+    expect(pickLesson(s, "P1", new Map([["brunoEra", 1]]))?.id).toBe("nidanaSpawn");
   });
 
   it("el formato viejo de lecciones vistas sigue sirviendo", () => {

@@ -20,6 +20,8 @@ import type { MessageKey } from "../../i18n/en";
 
 export type LessonId =
   | "noMove"
+  | "threePoisons"
+  | "brunoEra"
   | "nidanaCarry"
   | "nidanaSpawn"
   | "nidanaMirror"
@@ -130,6 +132,17 @@ export const LESSONS: Lesson[] = [
   {
     id: "noMove",
     holds: (s, p) => rolled(s) && getAllLegalMoves(s, p).length === 0,
+  },
+  // 3 oct 2026, pedido de Federico: lo primero que oye un principiante
+  // es qué son los tres animales, antes de tirar.
+  {
+    id: "threePoisons",
+    holds: (s) => s.phase === "idle" && !s.brunoRevealed,
+  },
+  // ...y al llegar Bruno, cuánto tiempo pasó en esa introducción rápida.
+  {
+    id: "brunoEra",
+    holds: (s) => s.brunoRevealed,
   },
   // Una pieza acaba de ser capturada (esta jugada exacta). Se repite
   // 4 veces: "al comerte una ficha se va a Mara" tiene que grabarse.
