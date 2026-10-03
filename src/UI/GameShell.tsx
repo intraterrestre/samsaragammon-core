@@ -23,6 +23,8 @@ import { DevNidanaTool } from "../dev/DevNidanaTool";
 import { getDharma777Opportunity, getDharma777EligibleTargets } from "../game/dharma777";
 import { REALM_AVATAR_NAME } from "../game/realmAvatarNames";
 import type { NidanaId } from "../game/nidanas";
+import { NIDANA_LIST } from "../game/nidanas";
+import { NIDANA_NUMBER_IMAGE } from "../game/nidanaNumberAssets";
 import { MaraPanel } from "./MaraPanel";
 // Fase 2B — Buda Azul (7 septiembre 2026): función canónica única del
 // Oracle (mismo consumidor que getGameDerivedState.ts) y explainPattern
@@ -1287,7 +1289,7 @@ const LESSON_MS = 8000;
 const [lessonSlotReady, setLessonSlotReady] = React.useState(false);
 // Lección que está ahora en el globo (mensaje + si es urgente), para
 // saber si una urgente puede interrumpirla.
-const lessonShowingRef = React.useRef<{ message: string; urgent: boolean } | null>(null);
+const lessonShowingRef = React.useRef<{ id: LessonId; message: string; urgent: boolean } | null>(null);
 
 React.useEffect(() => {
   if (transientDharma) {
@@ -1330,7 +1332,7 @@ React.useEffect(() => {
   saveSeenLessons(seen);
   if (lesson.eventKey) lessonKeysRef.current.set(lesson.id, lesson.eventKey(state));
   const message = t(lessonKey(lesson.id));
-  lessonShowingRef.current = { message, urgent: !!lesson.urgent };
+  lessonShowingRef.current = { id: lesson.id, message, urgent: !!lesson.urgent };
   fireDharmaEvent(message, false, false, LESSON_MS);
 }, [
   beginnerMode,
@@ -1588,6 +1590,27 @@ const lessonOnScreen =
   !!transientDharma &&
   lessonShowingRef.current?.message === transientDharma.message;
 const buddhaMessage = lessonOnScreen ? "" : transientDharma?.message ?? "";
+
+// 3 oct 2026 — pedido de Federico: el cartel de Nidanas "no se entiende
+// bien". En las lecciones de Nidana, la tarjeta muestra las 12 monedas
+// numeradas (las mismas que se ven sobre las casillas) y resalta las que
+// están ahora en juego.
+const lessonNidanas = (() => {
+  const id = lessonOnScreen ? lessonShowingRef.current?.id : undefined;
+  if (id !== "nidanaSpawn" && id !== "nidanaCarry") return undefined;
+  const active = new Set<NidanaId>(
+    id === "nidanaSpawn"
+      ? (Object.values(state.boardNidanas).filter(Boolean) as NidanaId[])
+      : (["P1", "P2"] as const).flatMap(
+          (pl) => Object.values(state.avatarNidana[pl] ?? {}).filter(Boolean) as NidanaId[]
+        )
+  );
+  return NIDANA_LIST.map((n) => ({
+    id: n,
+    src: NIDANA_NUMBER_IMAGE[n],
+    active: active.has(n),
+  }));
+})();
 const isDharmaBig = transientDharma?.big ?? false;
 const isDharmaFading = transientDharma?.fading ?? false;
 const showDjBuddha = transientDharma?.withDjBuddha ?? false;
@@ -2010,6 +2033,7 @@ return (
             fading={!!transientDharma?.fading}
             onDismiss={dismissDharma}
             dismissLabel={t("lesson.dismiss")}
+            nidanas={lessonNidanas}
           />,
           document.body
         )}

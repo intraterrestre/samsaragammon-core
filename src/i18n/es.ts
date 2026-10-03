@@ -56,7 +56,7 @@ export const es: Dictionary = {
   "lesson.unsealed": "Fue capturado una vez. Séllalo con 666 o 777.",
   "lesson.pig": "Vuelve de Mara: este tiene que moverse primero.",
   "lesson.mara": "¡Capturada! Se va a Mara durante seis tiradas. Después renace en un reino al azar, nunca en Humanos.",
-  "lesson.nidanaSpawn": "Esa moneda es una Nidana. Ahora espera en el tablero: un Avatar la recoge en su propio reino.",
+  "lesson.nidanaSpawn": "Esa moneda es una de las 12 Nidanas (abajo). Ahora espera sobre una casilla: un Avatar la recoge si cae en ella dentro de su propio reino.",
   "lesson.nidanaCarry": "¡Nidana recogida! Salva a este Avatar de Mara una vez, pero el atacante se la roba.",
   "lesson.nidanaMirror": "Esta moneda nombra un eslabón de tu karma. Buddha lo lee en tu forma de jugar.",
   "lesson.maraReturn": "Volvió de Mara. Para vencer al Samsara, más adelante tendrá que llegar al Reino de los Humanos.",

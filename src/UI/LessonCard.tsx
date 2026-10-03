@@ -12,11 +12,13 @@ type Props = {
   fading: boolean;
   onDismiss: () => void;
   dismissLabel: string;
+  // Lecciones de Nidana: las 12 monedas numeradas; active = en juego ahora.
+  nidanas?: { id: string; src: string; active: boolean }[];
 };
 
 const SWIPE_PX = 60;
 
-export function LessonCard({ message, fading, onDismiss, dismissLabel }: Props) {
+export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas }: Props) {
   const start = React.useRef<{ x: number; y: number } | null>(null);
   const [drag, setDrag] = React.useState({ x: 0, y: 0 });
 
@@ -79,6 +81,19 @@ export function LessonCard({ message, fading, onDismiss, dismissLabel }: Props) 
           </>
         ) : (
           message
+        )}
+        {nidanas && (
+          <span className="bwbLessonNidanas" aria-hidden="true">
+            {nidanas.map((n) => (
+              <img
+                key={n.id}
+                src={n.src}
+                alt=""
+                draggable={false}
+                className={n.active ? "bwbLessonNidanaOn" : undefined}
+              />
+            ))}
+          </span>
         )}
       </span>
       <button

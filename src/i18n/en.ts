@@ -62,7 +62,7 @@ export const en = {
   "lesson.unsealed": "It was captured once. Seal it with 666 or 777.",
   "lesson.pig": "Back from Mara, this one must move first.",
   "lesson.mara": "Captured! It goes to Mara for six rolls. Then it is reborn in a random realm, never in Humans.",
-  "lesson.nidanaSpawn": "That coin is a Nidana. Now it waits on the board: an Avatar collects it in its own realm.",
+  "lesson.nidanaSpawn": "That coin is one of the 12 Nidanas (below). Now it waits on a square: an Avatar collects it by landing there inside its own realm.",
   "lesson.nidanaCarry": "Nidana collected! It saves this Avatar from Mara once, but the attacker steals it.",
   "lesson.nidanaMirror": "This coin names a link of your karma. Buddha reads it from the way you play.",
   "lesson.maraReturn": "Back from Mara. To defeat Samsara, it will later have to reach the Realm of Humans.",

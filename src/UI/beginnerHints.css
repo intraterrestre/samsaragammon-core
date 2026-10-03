@@ -144,3 +144,31 @@
   letter-spacing: 0.08em;
   font-size: 0.9em;
 }
+
+/* Las 12 monedas de Nidana dentro de la tarjeta (2 filas de 6 en el
+   móvil, 1 fila de 12 si cabe). Las que están en juego, grandes y con
+   aro dorado; las demás, apagadas. */
+.bwbLessonNidanas {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 10px;
+  max-width: 560px;
+}
+.bwbLessonNidanas img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  border-radius: 50%;
+  opacity: 0.45;
+  filter: saturate(0.6);
+}
+.bwbLessonNidanas img.bwbLessonNidanaOn {
+  opacity: 1;
+  filter: none;
+  box-shadow: 0 0 0 3px #f0c060, 0 0 14px rgba(240, 192, 96, 0.8);
+  transform: scale(1.12);
+}
+@media (max-width: 520px) {
+  .bwbLessonNidanas { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
