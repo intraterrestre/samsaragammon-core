@@ -78,6 +78,7 @@ export const en = {
   "mirror.opens": "THE MIRROR OPENS.",
   "lesson.mirror": "THE MIRROR OPENS\nUntil now, Buddha has taught you how to play.\nNow he can begin to observe how you play.\nYou have 4 looks into the mirror during the game.",
   "lesson.oriol": "ORIOL HAS ARRIVED\nFor millions of years, we lived among curves.\nWe built the box and forgot our round homes.\nBut our brains never forgot the curves.",
+  "lesson.brunoWaiting": "BRUNO IS STILL ASLEEP\nHe wakes when both players have moved all three animals.\nStill to move: {missing}.",
   "lesson.roll": "Your turn. Roll the stones.",
 
   // ---- nombres

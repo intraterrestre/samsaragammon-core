@@ -169,3 +169,22 @@ describe("el espejo del Buda azul", () => {
     expect(pickLesson(s, "P1", new Set<LessonId>(["brunoEra", "oriol"]))?.id).toBe("mirror");
   });
 });
+
+describe("Bruno todavía duerme", () => {
+  it("si un jugador no movió la Serpiente, Buddha lo dice", () => {
+    const sig = initialState.decisionSignature.P1;
+    const s = {
+      ...initialState,
+      globalRollCount: 10,
+      decisionSignature: {
+        P1: { ...sig, pigTrace: 2, snakeTrace: 0, roosterTrace: 1 },
+        P2: { ...sig, pigTrace: 1, snakeTrace: 1, roosterTrace: 1 },
+      },
+    } as GameState;
+    const seen = new Set<LessonId>(["threePoisons", "sixRealms"]);
+    const l = pickLesson(s, "P1", seen);
+    expect(l?.id).toBe("brunoWaiting");
+    const vars = l!.vars!(s, "P1", (k) => (k === "color.P1" ? "Blancas" : k === "venom.snake" ? "Serpiente" : k));
+    expect(vars.missing).toBe("Blancas: Serpiente");
+  });
+});

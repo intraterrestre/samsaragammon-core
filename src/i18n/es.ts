@@ -72,6 +72,7 @@ export const es: Dictionary = {
   "mirror.opens": "EL ESPEJO SE ABRE.",
   "lesson.mirror": "EL ESPEJO SE ABRE\nHasta ahora Buddha te ha enseñado a jugar.\nAhora puede empezar a observar cómo juegas tú.\nTienes 4 miradas al espejo durante la partida.",
   "lesson.oriol": "ORIOL HA LLEGADO\nDurante millones de años vivimos entre curvas.\nConstruimos el cubo y olvidamos nuestras casas redondas.\nPero nuestro cerebro nunca olvidó las curvas.",
+  "lesson.brunoWaiting": "BRUNO TODAVÍA DUERME\nDespertará cuando los dos jugadores hayan movido sus tres animales.\nFalta mover: {missing}.",
   "lesson.roll": "Tu turno. Tira las piedras.",
 
   "venom.pig": "Cerdo",

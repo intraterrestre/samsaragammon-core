@@ -41,6 +41,7 @@ export type LessonId =
   | "nidanaCollect"
   | "block"
   | "threeAnimals"
+  | "brunoWaiting"
   | "move"
   | "roll";
 
@@ -60,6 +61,8 @@ export type Lesson = {
   // interrumpir una lección no urgente que esté en pantalla, en vez de
   // esperar a que termine y llegar tarde.
   urgent?: boolean;
+  // Variables del texto ({missing}, etc.), ya traducidas.
+  vars?: (state: GameState, player: PlayerId, t: (key: MessageKey) => string) => Record<string, string>;
 };
 
 // Cuántas veces se vio cada lección (por dispositivo).
@@ -118,6 +121,21 @@ function lastCaptureWentToMara(state: GameState): boolean {
     ? state.realmPieces[rival]?.[kind as RealmPieceKind]
     : state.pieces[rival][kind as "pig" | "snake" | "rooster"];
   return !!victim?.inLimbo;
+}
+
+// Animales que cada jugador todavía no movió nunca (requisito de Bruno).
+function missingAnimals(state: GameState): [PlayerId, ("pig" | "snake" | "rooster")[]][] {
+  const out: [PlayerId, ("pig" | "snake" | "rooster")[]][] = [];
+  for (const pl of ["P1", "P2"] as PlayerId[]) {
+    const sig = state.decisionSignature?.[pl];
+    if (!sig) continue;
+    const ks: ("pig" | "snake" | "rooster")[] = [];
+    if (sig.pigTrace === 0) ks.push("pig");
+    if (sig.snakeTrace === 0) ks.push("snake");
+    if (sig.roosterTrace === 0) ks.push("rooster");
+    if (ks.length) out.push([pl, ks]);
+  }
+  return out;
 }
 
 function carriedNidanasKey(state: GameState): string {
@@ -284,6 +302,24 @@ export const LESSONS: Lesson[] = [
         (sig.pigTrace === 0 || sig.snakeTrace === 0 || sig.roosterTrace === 0)
       );
     },
+  },
+  // 3 oct 2026 — Federico: "llevo muchísimo tiempo jugando y no llega
+  // Bruno". Bruno solo despierta cuando LOS DOS jugadores movieron sus
+  // tres animales (Orchestrator.evaluateGenesisToBruno); si uno nunca
+  // usa la Serpiente, Bruno no llega nunca. Buddha dice qué falta.
+  {
+    id: "brunoWaiting",
+    holds: (s) =>
+      !s.brunoRevealed &&
+      s.globalRollCount >= 6 &&
+      missingAnimals(s).length > 0,
+    repeat: 4,
+    eventKey: (s) => missingAnimals(s).map(([pl, ks]) => pl + ks.join("")).join("|"),
+    vars: (s, _p, t) => ({
+      missing: missingAnimals(s)
+        .map(([pl, ks]) => `${t(`color.${pl}` as MessageKey)}: ${ks.map((k) => t(`venom.${k}` as MessageKey)).join(", ")}`)
+        .join(" · "),
+    }),
   },
   {
     id: "move",

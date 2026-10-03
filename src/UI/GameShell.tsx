@@ -1331,7 +1331,10 @@ React.useEffect(() => {
   seen.set(lesson.id, (seen.get(lesson.id) ?? 0) + 1);
   saveSeenLessons(seen);
   if (lesson.eventKey) lessonKeysRef.current.set(lesson.id, lesson.eventKey(state));
-  const message = t(lessonKey(lesson.id));
+  const message = t(
+    lessonKey(lesson.id),
+    lesson.vars?.(state, state.turn, (k) => t(k))
+  );
   lessonShowingRef.current = { id: lesson.id, message, urgent: !!lesson.urgent };
   fireDharmaEvent(message, false, false, LESSON_MS);
 }, [
