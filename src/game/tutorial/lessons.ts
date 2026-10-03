@@ -21,6 +21,7 @@ import type { MessageKey } from "../../i18n/en";
 export type LessonId =
   | "noMove"
   | "threePoisons"
+  | "sixRealms"
   | "brunoEra"
   | "nidanaCarry"
   | "nidanaSpawn"
@@ -142,6 +143,12 @@ export const LESSONS: Lesson[] = [
   // es qué son los tres animales, antes de tirar.
   {
     id: "threePoisons",
+    holds: (s) => s.phase === "idle" && !s.brunoRevealed,
+  },
+  // 3 oct 2026, Federico: sin saber que el tablero se vuelve seis reinos,
+  // "renace en cualquier sitio menos Humanos" no le dice nada al novato.
+  {
+    id: "sixRealms",
     holds: (s) => s.phase === "idle" && !s.brunoRevealed,
   },
   // ...y al llegar Bruno, cuánto tiempo pasó en esa introducción rápida.

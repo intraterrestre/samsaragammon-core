@@ -58,7 +58,7 @@ export const en = {
   "lesson.sealed": "Home and sealed. Six sealed Avatars in Humans wins.",
   "lesson.unsealed": "It was captured once. Seal it with 666 or 777.",
   "lesson.pig": "Back from Mara, this one must move first.",
-  "lesson.mara": "Captured! It goes to Mara for six rolls. Then rebirth, anywhere but Humans.",
+  "lesson.mara": "Captured! It goes to Mara for six rolls. Then it is reborn in a random realm, never in Humans.",
   "lesson.nidanaSpawn": "That coin is a Nidana. Now it waits on the board: an Avatar collects it in its own realm.",
   "lesson.nidanaCarry": "Nidana collected! It saves this Avatar from Mara once, but the attacker steals it.",
   "lesson.nidanaMirror": "This coin names a link of your karma. Buddha reads it from the way you play.",
@@ -69,6 +69,7 @@ export const en = {
   "lesson.threeAnimals": "Try all three animals. Something is waiting to wake.",
   "lesson.move": "Tap a glowing piece, then a line.",
   "lesson.threePoisons": "You play with three animals: the Pig (ignorance), the Snake (anger) and the Rooster (impulse). The forces that move every life.",
+  "lesson.sixRealms": "As the game goes on, these green squares will turn into six different sections called realms. Your goal is Humans.",
   "lesson.brunoEra": "All that happened in a flash: more than two and a half million years. Then came the first human. We call him Bruno.",
   "lesson.roll": "Your turn. Roll the stones.",
 

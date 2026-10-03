@@ -52,7 +52,7 @@ export const es: Dictionary = {
   "lesson.sealed": "En casa y sellado. Seis Avatares sellados en Humanos ganan.",
   "lesson.unsealed": "Fue capturado una vez. Séllalo con 666 o 777.",
   "lesson.pig": "Vuelve de Mara: este tiene que moverse primero.",
-  "lesson.mara": "¡Capturada! Se va a Mara durante seis tiradas. Después renace en cualquier sitio menos Humanos.",
+  "lesson.mara": "¡Capturada! Se va a Mara durante seis tiradas. Después renace en un reino al azar, nunca en Humanos.",
   "lesson.nidanaSpawn": "Esa moneda es una Nidana. Ahora espera en el tablero: un Avatar la recoge en su propio reino.",
   "lesson.nidanaCarry": "¡Nidana recogida! Salva a este Avatar de Mara una vez, pero el atacante se la roba.",
   "lesson.nidanaMirror": "Esta moneda nombra un eslabón de tu karma. Buddha lo lee en tu forma de jugar.",
@@ -63,6 +63,7 @@ export const es: Dictionary = {
   "lesson.threeAnimals": "Prueba los tres animales. Algo espera para despertar.",
   "lesson.move": "Toca una pieza que brilla y luego una línea.",
   "lesson.threePoisons": "Juegas con tres animales: el Cerdo (ignorancia), la Serpiente (ira) y el Gallo (impulso). Las fuerzas que mueven toda vida.",
+  "lesson.sixRealms": "Con el paso del juego, estas casillas verdes se convertirán en seis secciones diferentes llamadas reinos. Tu meta es Humanos.",
   "lesson.brunoEra": "Todo eso pasó en un instante: más de dos millones y medio de años. Entonces llegó el primer humano. Lo llamamos Bruno.",
   "lesson.roll": "Tu turno. Tira las piedras.",
 

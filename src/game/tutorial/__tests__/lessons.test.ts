@@ -17,7 +17,8 @@ const none = new Set<LessonId>();
 describe("lecciones de Buddha", () => {
   it("al empezar, primero los tres animales y después tirar", () => {
     expect(pickLesson(initialState, "P1", none)?.id).toBe("threePoisons");
-    expect(pickLesson(initialState, "P1", new Set<LessonId>(["threePoisons"]))?.id).toBe("roll");
+    expect(pickLesson(initialState, "P1", new Set<LessonId>(["threePoisons"]))?.id).toBe("sixRealms");
+    expect(pickLesson(initialState, "P1", new Set<LessonId>(["threePoisons", "sixRealms"]))?.id).toBe("roll");
   });
 
   it("al llegar Bruno, primero cuánto tiempo pasó", () => {
@@ -109,7 +110,7 @@ describe("lecciones que se repiten (playtest 3 oct 2026)", () => {
     }) as unknown as GameState;
 
   it("cada captura vuelve a explicar Mara, hasta 4 veces", () => {
-    const seen = new Map<LessonId, number>([["threePoisons", 1]]);
+    const seen = new Map<LessonId, number>([["threePoisons", 1], ["sixRealms", 1]]);
     const keys = new Map<LessonId, string>();
     for (let i = 0; i < 4; i++) {
       const s = captured(10 + i);
