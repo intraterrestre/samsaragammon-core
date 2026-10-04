@@ -2493,6 +2493,11 @@ return (
     onAcceptSnakeBet();
   }}
   onRefuseSnakeBet={onRefuseSnakeBet}
+  tour={beginnerMode && !seenLessonsRef.current.has("fandangoTour")}
+  onTourDone={() => {
+    seenLessonsRef.current.set("fandangoTour", 1);
+    saveSeenLessons(seenLessonsRef.current);
+  }}
 />
 
 {/* v74 (28 agosto 2026) — DEV — FANDANGO / NIDANA TEST TOOL. Montado

@@ -23,6 +23,9 @@ import { fandangoIsCalling } from "../../fandango/nidanaLinks";
 export type LessonId =
   | "noMove"
   | "fandango"
+  // No es una lección del globo: marca el recorrido de Fandango ya hecho
+  // (vive en el mismo contador, así se reinicia con cada partida).
+  | "fandangoTour"
   | "threePoisons"
   | "sixRealms"
   | "brunoEra"

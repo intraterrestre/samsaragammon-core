@@ -349,3 +349,58 @@ body.bwb-hl-options .moveOptionsPanel::after {
 @media (prefers-reduced-motion: reduce) {
   body.bwb-hl-options .moveOptionsPanel::after { animation: none; }
 }
+
+/* 4 oct 2026 — recorrido de Buddha por Chat Fandango (3 pisos). */
+.fandangoZone { transition: opacity 0.25s ease; border-radius: 12px; }
+.fandangoZoneDim { opacity: 0.22; pointer-events: none; }
+.fandangoZoneFocus {
+  outline: 2px solid rgba(200, 168, 75, 0.85);
+  outline-offset: 6px;
+  animation: fandangoZonePulse 1.6s ease-in-out infinite;
+}
+@keyframes fandangoZonePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(200, 168, 75, 0.0); }
+  50% { box-shadow: 0 0 18px 4px rgba(200, 168, 75, 0.35); }
+}
+.fandangoTourCallout {
+  position: relative;
+  margin: 18px auto 6px;
+  max-width: 420px;
+  padding: 14px 18px 12px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #1f3a72 0%, #12244a 100%);
+  border: 1px solid rgba(160, 196, 255, 0.55);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+  color: #f2f6ff;
+  font-size: 15px;
+  line-height: 1.45;
+  cursor: pointer;
+  animation: bwbLessonIn 0.3s ease-out;
+}
+.fandangoTourTitle {
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.fandangoTourArrow {
+  position: absolute;
+  top: -22px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: #c8a84b;
+  font-size: 18px;
+  animation: fandangoArrowBob 1.2s ease-in-out infinite;
+}
+@keyframes fandangoArrowBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.fandangoTourNext {
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #c8a84b;
+}

@@ -31,7 +31,9 @@
 // su overflow:hidden. Mismo bug que ya se arregló en VictoryScreen.tsx
 // (ver ese archivo) — acá se evita de raíz montando en el lugar
 // correcto en vez de portal.
-import { useState, type ReactNode, type CSSProperties } from "react";
+import { useEffect, useState, type ReactNode, type CSSProperties } from "react";
+import { useI18n } from "../i18n";
+import type { MessageKey } from "../i18n/en";
 import type { NidanaId } from "../game/nidanas";
 import { NIDANAS } from "../game/nidanas";
 import type { PendingTrade, PlayerId, RealmPieceKind } from "../game/types";
@@ -95,7 +97,55 @@ type Props = {
   onRequestSnakeBet: (targetAvatar: RealmPieceKind) => void;
   onAcceptSnakeBet: () => void;
   onRefuseSnakeBet: () => void;
+
+  // 4 oct 2026 — JUEGA CON BUDDHA: la primera vez que se abre Fandango,
+  // Buddha recorre los tres pisos (lo tuyo / lo del rival → trato /
+  // apuesta 666) en vez de explicarlo todo de golpe. onTourDone avisa
+  // a GameShell para no repetirlo en esta partida.
+  tour?: boolean;
+  onTourDone?: () => void;
 };
+
+type TourStep = "welcome" | "mine" | "rival" | "bet";
+
+const TOUR_TEXT: Record<TourStep, MessageKey> = {
+  welcome: "fandangoTour.welcome",
+  mine: "fandangoTour.mine",
+  rival: "fandangoTour.rival",
+  bet: "fandangoTour.bet",
+};
+
+// Globo de Buddha dentro de la ventana, justo debajo del piso que
+// explica (con flecha ▲ apuntándolo). Se avanza tocándolo.
+function TourCallout({
+  step,
+  last,
+  onNext,
+}: {
+  step: TourStep;
+  last: boolean;
+  onNext: () => void;
+}) {
+  const { t } = useI18n();
+  const [title, ...rest] = t(TOUR_TEXT[step]).split("\n");
+  return (
+    <div
+      className="fandangoTourCallout"
+      role="button"
+      tabIndex={0}
+      onClick={onNext}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onNext()}
+      ref={(el) => el?.scrollIntoView({ block: "nearest", behavior: "smooth" })}
+    >
+      {step !== "welcome" && <div className="fandangoTourArrow">▲</div>}
+      <div className="fandangoTourTitle">☸ {title}</div>
+      {rest.map((line, i) => (
+        <div key={i}>{line}</div>
+      ))}
+      <div className="fandangoTourNext">{t(last ? "fandangoTour.done" : "fandangoTour.next")}</div>
+    </div>
+  );
+}
 
 // v84 (4 septiembre 2026) — Square Karma 666 (Snake Bet), pedido de
 // Federico. Tres estados posibles, mutuamente excluyentes: apuesta
@@ -726,7 +776,15 @@ export function FandangoWindow({
   onRequestSnakeBet,
   onAcceptSnakeBet,
   onRefuseSnakeBet,
+  tour = false,
+  onTourDone,
 }: Props) {
+  const [tourIndex, setTourIndex] = useState<number | null>(null);
+  useEffect(() => {
+    setTourIndex(open && tour ? 0 : null);
+    // Solo al abrir: si tour cambia con la ventana abierta, no reinicia.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
   // v76 (28 agosto 2026) — flash local "LINK FORMED X → Y", ver
   // LinkFormedFlash arriba. Vive en este componente (no en GameShell)
   // porque es puramente decorativo, sin efecto en el estado de
@@ -766,6 +824,34 @@ export function FandangoWindow({
       numA: low,
       numB: low + 1,
     }));
+
+  // El piso 666 solo existe en pantalla cuando SquareKarma666Block
+  // dibuja algo (mismas condiciones que ese componente).
+  const has666 =
+    !!activeSnakeBet ||
+    !!pendingSnakeBet ||
+    (mySnakeBetEligibleTargets.length > 0 && myCarriedNidanaCount >= 2);
+  const tourSteps: TourStep[] = has666
+    ? ["welcome", "mine", "rival", "bet"]
+    : ["welcome", "mine", "rival"];
+  const tourStep: TourStep | null = tourIndex === null ? null : tourSteps[tourIndex] ?? null;
+  const nextTour = () => {
+    if (tourIndex === null) return;
+    if (tourIndex + 1 >= tourSteps.length) {
+      setTourIndex(null);
+      onTourDone?.();
+    } else {
+      setTourIndex(tourIndex + 1);
+    }
+  };
+  const zone = (z: TourStep) =>
+    tourStep === null || tourStep === "welcome"
+      ? tourStep === "welcome" ? "fandangoZone fandangoZoneDim" : "fandangoZone"
+      : tourStep === z ? "fandangoZone fandangoZoneFocus" : "fandangoZone fandangoZoneDim";
+  const callout = (z: TourStep) =>
+    tourStep === z ? (
+      <TourCallout step={z} last={tourIndex === tourSteps.length - 1} onNext={nextTour} />
+    ) : null;
 
   const handleFormLinkClick = (link: OwnLink) => {
     onFormLink(link.numA);
@@ -832,7 +918,9 @@ export function FandangoWindow({
         <div style={{ fontSize: 13, opacity: 0.6, marginBottom: 22 }}>
           Messages, suspicious offers, and karmic arrangements.
         </div>
+        {callout("welcome")}
 
+        <div className={zone("mine")}>
         {pendingTrade && (
           <TradeOfferPanel
             pendingTrade={pendingTrade}
@@ -847,6 +935,8 @@ export function FandangoWindow({
         <LinkAvailableBlock links={unformedLinks} onFormLink={handleFormLinkClick} />
         {justFormed && <LinkFormedFlash link={justFormed} />}
         <YourLinksBlock links={formedLinksDisplay} />
+        </div>
+        {callout("mine")}
 
         <div
           style={{
@@ -855,6 +945,7 @@ export function FandangoWindow({
           }}
         />
 
+        <div className={zone("rival")}>
         <SectionTitle>{rivalLabel}</SectionTitle>
         <CoinRow entries={rival} />
         <RivalHasWhatYouNeedBlock
@@ -869,6 +960,10 @@ export function FandangoWindow({
           onCancelDeal={handleCancelDeal}
         />
 
+        </div>
+        {callout("rival")}
+
+        <div className={zone("bet")}>
         <SquareKarma666Block
           myPlayer={myPlayer}
           eligibleTargets={mySnakeBetEligibleTargets}
@@ -879,6 +974,8 @@ export function FandangoWindow({
           onAccept={onAcceptSnakeBet}
           onRefuse={onRefuseSnakeBet}
         />
+        </div>
+        {callout("bet")}
 
         <button
           onClick={onClose}
