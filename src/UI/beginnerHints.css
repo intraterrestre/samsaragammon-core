@@ -257,3 +257,52 @@
   stroke-width: 11;
   filter: drop-shadow(0 0 4px rgba(111, 168, 255, 0.8));
 }
+
+/* Reloj de la Evolución: flecha que late (tutorial) y ayuda al tocarlo. */
+.evoClockArrow {
+  margin-right: 40px;
+  font-size: 44px;
+  line-height: 1;
+  color: #ffd24a;
+  text-shadow: 0 0 10px rgba(255, 210, 74, 0.95), 0 2px 4px rgba(0, 0, 0, 0.9);
+  animation: evoArrowPulse 0.9s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes evoArrowPulse {
+  0%, 100% { transform: translateX(0) scale(1); opacity: 1; }
+  50% { transform: translateY(-10px) scale(1.15); opacity: 0.75; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .evoClockArrow { animation: none; }
+}
+.evoClockTip {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 40;
+  width: max-content;
+  max-width: 280px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: rgba(20, 14, 2, 0.94);
+  border: 2px solid #ffd24a;
+  color: #fff3c4;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.3;
+  text-align: left;
+  text-shadow: none;
+  white-space: pre-line;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+}
+
+/* Tarjeta de lección a la izquierda (para no tapar lo que señala). */
+.bwbLessonCard.bwbLessonCardLeft {
+  top: 50%;
+  left: max(16px, env(safe-area-inset-left));
+  transform: translateY(-50%);
+  max-width: min(440px, calc(55vw));
+  animation: none;
+}

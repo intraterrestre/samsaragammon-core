@@ -30,6 +30,7 @@ export type LessonId =
   | "nidanaSpawn"
   | "nidanaMirror"
   | "firstAvatar"
+  | "evoClock"
   | "secondAvatar"
   | "phase2"
   | "whitman"
@@ -231,6 +232,12 @@ export const LESSONS: Lesson[] = [
   {
     id: "firstAvatar",
     holds: (s) => anyPlayer((pl) => !!s.realmPieces[pl]?.hungry_ghost?.unlocked),
+  },
+  // 4 oct 2026 — el Reloj de la Evolución aparece con Bruno; Buddha lo
+  // señala con una flecha la primera vez (ver EvolutionClockIndicator).
+  {
+    id: "evoClock",
+    holds: (s) => s.brunoRevealed,
   },
   {
     id: "secondAvatar",

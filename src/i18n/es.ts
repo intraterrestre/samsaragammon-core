@@ -76,6 +76,8 @@ export const es: Dictionary = {
   "lotus.title": "El loto",
   "lotus.body": "Como el loto, que nace del barro sin mancharse,\nun Avatar recibe el suyo al llegar a Humanos\nsin haber sido capturado.\nUna vez ganado, es suyo para siempre.",
   "humansX.tip": "HUMANOS — TU META\nLleva tus Avatares hasta aquí.\nLas X son solo una ayuda del tutorial.\nDesaparecerán cuando se revele Humanos.",
+  "lesson.evoClock": "EL RELOJ DE LA EVOLUCIÓN ↗\nCada tirada te acerca al próximo Avatar.\nArriba: Blancas · Abajo: Negras",
+  "evo.tip": "EL RELOJ DE LA EVOLUCIÓN\nCada tirada te acerca al próximo Avatar.\nArriba: Blancas · Abajo: Negras",
   "lesson.roll": "Tu turno. Tira las piedras.",
 
   "venom.pig": "Cerdo",

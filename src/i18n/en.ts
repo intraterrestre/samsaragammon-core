@@ -82,6 +82,8 @@ export const en = {
   "lotus.title": "The lotus",
   "lotus.body": "Like the lotus, born from the mud without being stained,\nan Avatar receives its own by reaching Humans\nwithout ever being captured.\nOnce earned, it is theirs forever.",
   "humansX.tip": "HUMANS — YOUR GOAL\nBring your Avatars here.\nThe Xs are only a tutorial guide.\nThey disappear when Humans is revealed.",
+  "lesson.evoClock": "THE EVOLUTION CLOCK ↗\nEvery roll brings you closer to your next Avatar.\nTop: White · Bottom: Black",
+  "evo.tip": "THE EVOLUTION CLOCK\nEvery roll brings you closer to your next Avatar.\nTop: White · Bottom: Black",
   "lesson.roll": "Your turn. Roll the stones.",
 
   // ---- nombres

@@ -16,11 +16,14 @@ type Props = {
   nidanas?: { id: string; src: string; active: boolean }[];
   // Imagen en lugar de la rueda ☸ (p. ej. el loto).
   icon?: string;
+  // "left": a la izquierda, centrada en vertical (no tapa la esquina
+  // superior derecha, p. ej. el Reloj de la Evolución).
+  placement?: "top" | "left";
 };
 
 const SWIPE_PX = 60;
 
-export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, icon }: Props) {
+export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, icon, placement = "top" }: Props) {
   const start = React.useRef<{ x: number; y: number } | null>(null);
   const [drag, setDrag] = React.useState({ x: 0, y: 0 });
 
@@ -53,7 +56,7 @@ export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, 
 
   return (
     <div
-      className={`bwbLessonCard${fading ? " bwbLessonCardFading" : ""}`}
+      className={`bwbLessonCard${placement === "left" ? " bwbLessonCardLeft" : ""}${fading ? " bwbLessonCardFading" : ""}`}
       role="status"
       aria-live="polite"
       onPointerDown={onPointerDown}
@@ -66,7 +69,10 @@ export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, 
       style={
         dragging
           ? {
-              transform: `translate(calc(-50% + ${drag.x}px), ${drag.y}px)`,
+              transform:
+                placement === "left"
+                  ? `translate(${drag.x}px, calc(-50% + ${drag.y}px))`
+                  : `translate(calc(-50% + ${drag.x}px), ${drag.y}px)`,
               opacity: Math.max(0.15, 1 - away),
               transition: "none",
             }

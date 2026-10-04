@@ -580,7 +580,7 @@ useEffect(() => {
   // alcanzaba a leer: en el modo principiante, Bruno espera unos
   // segundos con el cartel en pantalla antes de arrancar.
   const introDelayMs =
-    beginnerMode && realmKey === "hungry_ghost" ? 7000 : 800;
+    beginnerMode && realmKey === "hungry_ghost" ? 9000 : 800;
   window.setTimeout(() => {
     setRealmIntroMuted(false);
     setActiveRealmIntro(introSrc);

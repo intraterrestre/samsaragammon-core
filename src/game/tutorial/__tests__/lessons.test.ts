@@ -200,7 +200,7 @@ describe("nacimientos en hot-seat", () => {
         P2: { hell: { id: "P2-hell", kind: "hell", pos: 3, inLimbo: false, maraLevel: null, unlocked: true } },
       },
     } as unknown as GameState;
-    const seen = new Set<LessonId>(["brunoEra"]);
+    const seen = new Set<LessonId>(["brunoEra", "evoClock"]);
     expect(pickLesson(s, "P1", seen)?.id).toBe("secondAvatar");
   });
 });
@@ -208,8 +208,19 @@ describe("nacimientos en hot-seat", () => {
 describe("el loto", () => {
   it("el cartel nombra al Avatar que recibió su loto", () => {
     const s = { ...initialState, brunoRevealed: true, consolidatedAvatars: { P1: {}, P2: { hell: true } } } as unknown as GameState;
-    const l = pickLesson(s, "P1", new Set<LessonId>(["brunoEra"]));
+    const l = pickLesson(s, "P1", new Set<LessonId>(["brunoEra", "evoClock"]));
     expect(l?.id).toBe("sealed");
     expect(l!.vars!(s, "P1", (k) => k).name).toBe("Margot");
+  });
+});
+
+describe("el reloj de la evolución", () => {
+  it("al llegar Bruno, Buddha señala el reloj", () => {
+    const s = {
+      ...initialState,
+      brunoRevealed: true,
+      realmPieces: { P1: { hungry_ghost: { id: "x", kind: "hungry_ghost", pos: 3, inLimbo: false, maraLevel: null, unlocked: true } }, P2: {} },
+    } as unknown as GameState;
+    expect(pickLesson(s, "P1", new Set<LessonId>(["brunoEra", "firstAvatar"]))?.id).toBe("evoClock");
   });
 });

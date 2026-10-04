@@ -1292,6 +1292,27 @@ const [lessonSlotReady, setLessonSlotReady] = React.useState(false);
 // saber si una urgente puede interrumpirla.
 const lessonShowingRef = React.useRef<{ id: LessonId; message: string; urgent: boolean } | null>(null);
 
+// 4 oct 2026 — Federico: "el cartel previo al video de Oriol se vio
+// menos de un segundo". Si arranca el video de un Avatar con una lección
+// en pantalla, la lección se retira y se devuelve a la cola: vuelve a
+// salir entera cuando termina el video.
+React.useEffect(() => {
+  if (!avatarVideoPlaying) return;
+  const showing = lessonShowingRef.current;
+  if (!showing || !transientDharma || transientDharma.message !== showing.message) return;
+  const seen = seenLessonsRef.current;
+  const n = seen.get(showing.id) ?? 0;
+  if (n <= 1) seen.delete(showing.id);
+  else seen.set(showing.id, n - 1);
+  saveSeenLessons(seen);
+  lessonKeysRef.current.delete(showing.id);
+  lessonShowingRef.current = null;
+  if (dharmaHideTimerRef.current) window.clearTimeout(dharmaHideTimerRef.current);
+  if (dharmaFadeTimerRef.current) window.clearTimeout(dharmaFadeTimerRef.current);
+  setTransientDharma(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [avatarVideoPlaying]);
+
 React.useEffect(() => {
   if (transientDharma) {
     setLessonSlotReady(false);
@@ -1847,7 +1868,12 @@ return (
       )}
 
       {genesisComplete && <MaraPanel state={state} />}
-      {genesisComplete && <EvolutionClockIndicator state={state} />}
+      {genesisComplete && (
+        <EvolutionClockIndicator
+          state={state}
+          highlight={lessonOnScreen && lessonShowingRef.current?.id === "evoClock"}
+        />
+      )}
 
       {/* v43 (13 agosto 2026) — buda DJ: entra desde la izquierda
           tapando a Mara cuando se dispara "ONLY ONE MORE" (5 de 6 en
@@ -2038,6 +2064,7 @@ return (
             onDismiss={dismissDharma}
             dismissLabel={t("lesson.dismiss")}
             nidanas={lessonNidanas}
+            placement={lessonShowingRef.current?.id === "evoClock" ? "left" : "top"}
             icon={
               lessonShowingRef.current?.id === "sealed" ||
               lessonShowingRef.current?.id === "whitman"
