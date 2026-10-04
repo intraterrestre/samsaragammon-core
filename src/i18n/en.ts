@@ -81,7 +81,7 @@ export const en = {
   "lesson.brunoWaiting": "BRUNO IS STILL ASLEEP\nHe wakes when both players have moved all three animals.\nStill to move: {missing}.",
   "lotus.title": "{name}'s Lotus",
   "lotus.body": "Like the lotus, born from the mud without being stained.\nAn Avatar receives its lotus when it reaches Humans without ever being captured, or when it earns it with 666 or 777.\nOnce earned, it is theirs forever.\nSix Avatars with their lotus, together in Humans, break the Wheel.",
-  "humansX.tip": "HUMANS — your goal.\nYour Avatars must reach these squares.",
+  "humansX.tip": "HUMANS — YOUR GOAL\nBring your Avatars here.\nThe Xs are only a tutorial guide.\nThey disappear when Humans is revealed.",
   "lesson.roll": "Your turn. Roll the stones.",
 
   // ---- nombres
