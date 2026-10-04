@@ -12,6 +12,7 @@ import {
   isPhase2,
 } from "./rules/legalMoves";
 import "../UI/beginnerHints.css";
+import { canonicalRealmFromPos } from "../UI/realm";
 import lotusSeal from "../assets/lotus_seal.webp";
 import budaKarmaER from "../assets/tokens/buda-karma-er.webp";
 import BigHeadSchoolOverlay from "../UI/BigHeadSchoolOverlay";
@@ -1173,6 +1174,38 @@ style={{
     );
   });
 })}
+        {/* 3 oct 2026 — Federico: "Tu meta es Humanos" pero Humanos no se
+            pinta hasta Marino; el novato no sabía dónde estaba la meta
+            (y Bruno podía ganar su loto ahí sin que se entendiera). En
+            PLAY WITH BUDDHA, mientras Humanos no está pintado, sus 4
+            casillas llevan una X grande (anti-zombies). Debajo de las
+            piezas: no tapa ni bloquea nada. */}
+        {beginnerMode &&
+          genesisComplete &&
+          !["marino", "rufus", "whitman"].includes(state.cosmicClock.era as string) &&
+          Array.from({ length: size }, (_, pos) => pos)
+            .filter((pos) => canonicalRealmFromPos(pos) === "humans")
+            .map((pos) => {
+              const base = piecePosition(pos, size);
+              return (
+                <svg
+                  key={`humans-x-${pos}`}
+                  className="bwbHumansX"
+                  viewBox="0 0 100 100"
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    left: Number(base.left) - 14,
+                    top: Number(base.top) - 14,
+                    width: 72,
+                    height: 72,
+                  }}
+                >
+                  <path d="M18 18 L82 82 M82 18 L18 82" className="bwbHumansXShadow" />
+                  <path d="M18 18 L82 82 M82 18 L18 82" className="bwbHumansXStroke" />
+                </svg>
+              );
+            })}
         {(p1VenomsRevealed || p2VenomsRevealed) && renderedPieces}
         {/* PLAY WITH BUDDHA: antes de que nazca Bruno ningún Avatar puede
             recoger Nidanas, así que en modo principiante no se muestran

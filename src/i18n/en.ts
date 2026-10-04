@@ -72,7 +72,7 @@ export const en = {
   "lesson.threeAnimals": "Try all three animals. Something is waiting to wake.",
   "lesson.move": "Tap a glowing piece, then a line.",
   "lesson.threePoisons": "You play with three animals: the Pig (ignorance), the Snake (anger) and the Rooster (impulse). The forces that move every life.",
-  "lesson.sixRealms": "As the game goes on, these green squares will turn into six sections called realms. This first period equals more than two million years in nature. Your goal is Humans.",
+  "lesson.sixRealms": "As the game goes on, these green squares will turn into six sections called realms. This first period equals more than two million years in nature. Your goal is Humans: the 4 squares marked with an X.",
   "lesson.brunoEra": "All that happened in a flash: more than two and a half million years. Then came the first human. We call him Bruno.",
   "lesson.dismiss": "Close",
   "mirror.opens": "THE MIRROR OPENS.",

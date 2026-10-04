@@ -66,7 +66,7 @@ export const es: Dictionary = {
   "lesson.threeAnimals": "Prueba los tres animales. Algo espera para despertar.",
   "lesson.move": "Toca una pieza que brilla y luego una línea.",
   "lesson.threePoisons": "Juegas con tres animales: el Cerdo (ignorancia), la Serpiente (ira) y el Gallo (impulso). Las fuerzas que mueven toda vida.",
-  "lesson.sixRealms": "Con el paso del juego, estas casillas verdes se convertirán en seis secciones llamadas reinos. Este primer período equivale a más de dos millones de años en la naturaleza. Tu meta es Humanos.",
+  "lesson.sixRealms": "Con el paso del juego, estas casillas verdes se convertirán en seis secciones llamadas reinos. Este primer período equivale a más de dos millones de años en la naturaleza. Tu meta es Humanos: las 4 casillas marcadas con X.",
   "lesson.brunoEra": "Todo eso pasó en un instante: más de dos millones y medio de años. Entonces llegó el primer humano. Lo llamamos Bruno.",
   "lesson.dismiss": "Cerrar",
   "mirror.opens": "EL ESPEJO SE ABRE.",

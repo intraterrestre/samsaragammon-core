@@ -197,3 +197,24 @@
   flex: none;
   filter: drop-shadow(0 0 6px rgba(176, 92, 250, 0.8));
 }
+
+/* X grande sobre las casillas de Humanos (meta) mientras no están
+   pintadas — solo en PLAY WITH BUDDHA. */
+.bwbHumansX {
+  z-index: 650;
+  pointer-events: none;
+  overflow: visible;
+}
+.bwbHumansXShadow {
+  stroke: rgba(0, 0, 0, 0.75);
+  stroke-width: 22;
+  stroke-linecap: round;
+  fill: none;
+}
+.bwbHumansXStroke {
+  stroke: #ffd24a;
+  stroke-width: 13;
+  stroke-linecap: round;
+  fill: none;
+  filter: drop-shadow(0 0 6px rgba(255, 210, 74, 0.9));
+}
