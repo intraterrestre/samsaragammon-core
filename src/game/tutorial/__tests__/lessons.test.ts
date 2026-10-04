@@ -224,3 +224,22 @@ describe("el reloj de la evolución", () => {
     expect(pickLesson(s, "P1", new Set<LessonId>(["brunoEra", "firstAvatar"]))?.id).toBe("evoClock");
   });
 });
+
+describe("bienvenida al Avatar del adversario", () => {
+  it("cuando el segundo jugador consigue a Margot, Buddha le da la bienvenida", () => {
+    const av = (kind: string) => ({ id: kind, kind, pos: 3, inLimbo: false, maraLevel: null, unlocked: true });
+    const s = {
+      ...initialState,
+      brunoRevealed: true,
+      realmPieces: { P1: { hungry_ghost: av("hungry_ghost"), hell: av("hell") }, P2: { hungry_ghost: av("hungry_ghost"), hell: av("hell") } },
+      realmProgress: {
+        P1: { ...initialState.realmProgress.P1, stageStartedAtRoll: 10 },
+        P2: { ...initialState.realmProgress.P2, stageStartedAtRoll: 14 },
+      },
+    } as unknown as GameState;
+    const seen = new Set<LessonId>(["brunoEra", "evoClock", "firstAvatar", "secondAvatar"]);
+    const l = pickLesson(s, "P1", seen);
+    expect(l?.id).toBe("rivalAvatar");
+    expect(l!.vars!(s, "P1", (k) => (k === "color.P2" ? "Negras" : k))).toEqual({ name: "Margot", color: "Negras" });
+  });
+});

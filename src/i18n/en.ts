@@ -90,6 +90,7 @@ export const en = {
   "moveopt.risk": "Risk",
   "moveopt.safe": "Safe",
   "moveopt.stays": "Stays",
+  "lesson.rivalAvatar": "WELCOME, {name}!\n{color} now have their own {name} too.",
   "lesson.roll": "Your turn. Roll the stones.",
 
   // ---- nombres

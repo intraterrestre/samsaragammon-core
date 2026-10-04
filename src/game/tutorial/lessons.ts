@@ -32,6 +32,7 @@ export type LessonId =
   | "firstAvatar"
   | "evoClock"
   | "secondAvatar"
+  | "rivalAvatar"
   | "phase2"
   | "optionsPanel"
   | "whitman"
@@ -148,6 +149,17 @@ function missingAnimals(state: GameState): [PlayerId, ("pig" | "snake" | "rooste
   return out;
 }
 
+// Avatares (menos Bruno, que nace para los dos a la vez) que ya tienen
+// los DOS jugadores, en orden de aparición.
+function sharedAvatars(state: GameState): RealmPieceKind[] {
+  return REALM_PIECE_ORDER.filter(
+    (kind) =>
+      kind !== "hungry_ghost" &&
+      !!state.realmPieces.P1?.[kind]?.unlocked &&
+      !!state.realmPieces.P2?.[kind]?.unlocked
+  );
+}
+
 function carriedNidanasKey(state: GameState): string {
   return (["P1", "P2"] as PlayerId[])
     .map((pl) =>
@@ -243,6 +255,29 @@ export const LESSONS: Lesson[] = [
   {
     id: "secondAvatar",
     holds: (s) => anyPlayer((pl) => !!s.realmPieces[pl]?.hell?.unlocked),
+  },
+  // 4 oct 2026 — Federico: cuando el SEGUNDO jugador consigue un Avatar
+  // que el otro ya tenía, no hay video (solo aplausos y risas) y no se
+  // entiende qué pasó. Buddha da la bienvenida al Avatar del adversario.
+  {
+    id: "rivalAvatar",
+    holds: (s) => sharedAvatars(s).length > 0,
+    repeat: 6,
+    eventKey: (s) => sharedAvatars(s).join(","),
+    vars: (s, _p, t) => {
+      const shared = sharedAvatars(s);
+      const kind = shared[shared.length - 1];
+      // El que lo consiguió después es quien empezó su etapa más tarde.
+      const second: PlayerId =
+        (s.realmProgress.P2.stageStartedAtRoll ?? 0) >=
+        (s.realmProgress.P1.stageStartedAtRoll ?? 0)
+          ? "P2"
+          : "P1";
+      return {
+        name: kind ? REALM_AVATAR_NAME[kind] : "",
+        color: t(`color.${second}` as MessageKey),
+      };
+    },
   },
   {
     id: "phase2",
