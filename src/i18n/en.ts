@@ -79,8 +79,8 @@ export const en = {
   "lesson.mirror": "THE MIRROR OPENS\nUntil now, Buddha has taught you how to play.\nNow he can begin to observe how you play.\nYou have 4 looks into the mirror during the game.",
   "lesson.oriol": "ORIOL HAS ARRIVED\nFor millions of years, we lived among curves.\nWe built the box and forgot our round homes.\nBut our brains never forgot the curves.",
   "lesson.brunoWaiting": "BRUNO IS STILL ASLEEP\nHe wakes when both players have moved all three animals.\nStill to move: {missing}.",
-  "lotus.title": "{name}'s Lotus",
-  "lotus.body": "Like the lotus, born from the mud without being stained.\nAn Avatar receives its lotus when it reaches Humans without ever being captured, or when it earns it with 666 or 777.\nOnce earned, it is theirs forever.\nSix Avatars with their lotus, together in Humans, break the Wheel.",
+  "lotus.title": "The lotus",
+  "lotus.body": "Like the lotus, born from the mud without being stained,\nan Avatar receives its own by reaching Humans\nwithout ever being captured.\nOnce earned, it is theirs forever.",
   "humansX.tip": "HUMANS — YOUR GOAL\nBring your Avatars here.\nThe Xs are only a tutorial guide.\nThey disappear when Humans is revealed.",
   "lesson.roll": "Your turn. Roll the stones.",
 
