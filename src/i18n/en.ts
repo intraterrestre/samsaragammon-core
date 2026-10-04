@@ -84,7 +84,7 @@ export const en = {
   "humansX.tip": "HUMANS — YOUR GOAL\nGather your Avatars in this realm to escape the Wheel.",
   "lesson.evoClock": "THE EVOLUTION CLOCK ↗\nEvery roll brings you closer to your next Avatar.\nTop: White · Bottom: Black",
   "evo.tip": "THE EVOLUTION CLOCK\nEvery roll brings you closer to your next Avatar.\nTop: White · Bottom: Black",
-  "lesson.optionsPanel": "CHOOSE YOUR DESTINATION ↖\nTap one of these buttons to choose exactly which square you land on.\n“Risk”: you’ll end up next to a rival.",
+  "lesson.optionsPanel": "WHERE CAN {name} GO?\nTap {name} and try your 3 animals.\nTheir possible destinations appear at the top left.",
   "moveopt.cell": "Square {n}",
   "moveopt.capture": "Capture!",
   "moveopt.risk": "Risk",

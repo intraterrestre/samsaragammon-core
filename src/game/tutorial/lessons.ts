@@ -266,6 +266,11 @@ export const LESSONS: Lesson[] = [
       !!s.selectedVenom?.[p] &&
       getAllLegalMoves(s, p).length > 0,
     urgent: true,
+    // El Avatar que el jugador tiene elegido (normalmente Bruno).
+    vars: (s, p) => {
+      const kind = s.selectedPiece[p] as RealmPieceKind | null;
+      return { name: kind && REALM_AVATAR_NAME[kind] ? REALM_AVATAR_NAME[kind] : "Bruno" };
+    },
   },
   {
     id: "whitman",

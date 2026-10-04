@@ -139,6 +139,7 @@
 
 .bwbLessonCardTitle {
   display: block;
+  text-transform: uppercase;
   margin-bottom: 4px;
   color: #9cc4ff;
   letter-spacing: 0.08em;
@@ -325,4 +326,26 @@ body.bwb-hl-options .moveOptionsPanel {
 }
 @media (prefers-reduced-motion: reduce) {
   body.bwb-hl-options .moveOptionsPanel { animation: none; }
+}
+
+/* Flecha que late junto al panel de destinos mientras Buddha lo explica. */
+body.bwb-hl-options .moveOptionsPanel::after {
+  content: "⬅";
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 44px;
+  line-height: 1;
+  color: #ffd24a;
+  text-shadow: 0 0 10px rgba(255, 210, 74, 0.95), 0 2px 4px rgba(0, 0, 0, 0.9);
+  animation: bwbArrowLeft 0.9s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes bwbArrowLeft {
+  0%, 100% { transform: translate(0, -50%) scale(1); opacity: 1; }
+  50% { transform: translate(10px, -50%) scale(1.15); opacity: 0.75; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.bwb-hl-options .moveOptionsPanel::after { animation: none; }
 }

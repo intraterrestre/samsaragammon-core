@@ -78,7 +78,7 @@ export const es: Dictionary = {
   "humansX.tip": "HUMANOS — TU META\nJunta tus Avatares en este reino para salir de la Rueda.",
   "lesson.evoClock": "EL RELOJ DE LA EVOLUCIÓN ↗\nCada tirada te acerca al próximo Avatar.\nArriba: Blancas · Abajo: Negras",
   "evo.tip": "EL RELOJ DE LA EVOLUCIÓN\nCada tirada te acerca al próximo Avatar.\nArriba: Blancas · Abajo: Negras",
-  "lesson.optionsPanel": "ELIGE TU DESTINO ↖\nToca uno de estos botones para elegir exactamente la casilla a la que llegas.\n«Riesgo»: quedarás al lado de un rival.",
+  "lesson.optionsPanel": "¿DÓNDE PUEDE IR {name}?\nPulsa a {name} y prueba tus 3 animales.\nArriba a la izquierda verás sus posibles destinos.",
   "moveopt.cell": "Casilla {n}",
   "moveopt.capture": "¡Captura!",
   "moveopt.risk": "Riesgo",
