@@ -15,9 +15,7 @@ import {
 import { FandangoKarma } from "../fandango/FandangoKarma";
 import { FandangoWindow } from "../fandango/FandangoWindow";
 import {
-  listCarriedNidanas,
-  computeOwnLinks,
-  computeRivalOpportunities,
+  fandangoIsCalling,
 } from "../fandango/nidanaLinks";
 import { DevNidanaTool } from "../dev/DevNidanaTool";
 import { getDharma777Opportunity, getDharma777EligibleTargets } from "../game/dharma777";
@@ -326,24 +324,7 @@ const [fandangoOpen, setFandangoOpen] = React.useState(false);
 // Mismas funciones que ya usa FandangoWindow para calcular esas dos
 // categorías — una sola fuente de verdad, no un chequeo aparte.
 const fandangoHasNotification = React.useMemo(() => {
-  const rivalPlayer = state.turn === "P1" ? "P2" : "P1";
-  const myIds = listCarriedNidanas(state.avatarNidana[state.turn]).map(
-    (e) => e.nidana,
-  );
-  const rivalIds = listCarriedNidanas(state.avatarNidana[rivalPlayer]).map(
-    (e) => e.nidana,
-  );
-  // v77 (28 agosto 2026) — el pulso también avisa de una oferta de
-  // trade entrante (alguien te mandó un FORM DEAL y todavía no
-  // respondiste) — mismo espíritu que el resto: "tentación, no
-  // obligación", nunca abre Fandango solo.
-  const incomingTrade =
-    state.pendingTrade && state.pendingTrade.fromPlayer !== state.turn;
-  return (
-    computeOwnLinks(myIds).length > 0 ||
-    computeRivalOpportunities(myIds, rivalIds).length > 0 ||
-    !!incomingTrade
-  );
+  return fandangoIsCalling(state, state.turn);
 }, [state.avatarNidana, state.turn, state.pendingTrade]);
 
 // v76 (28 agosto 2026) — FORM LINK: los links que el jugador con el

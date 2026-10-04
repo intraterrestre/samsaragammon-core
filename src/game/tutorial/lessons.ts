@@ -18,9 +18,11 @@ import { REALM_AVATAR_NAME } from "../realmAvatarNames";
 import { getAllLegalMoves, isPhase2 } from "../rules/legalMoves";
 import { getPigForcedAvatar } from "../rules/getMoveOptionsForPlayer";
 import type { MessageKey } from "../../i18n/en";
+import { fandangoIsCalling } from "../../fandango/nidanaLinks";
 
 export type LessonId =
   | "noMove"
+  | "fandango"
   | "threePoisons"
   | "sixRealms"
   | "brunoEra"
@@ -163,6 +165,9 @@ function sharedAvatars(state: GameState): RealmPieceKind[] {
 
 // Avatar que con la ÚLTIMA jugada entró en Humanos habiendo sido
 // capturado alguna vez (y sigue sin loto). null si no es el caso.
+// Margot es la única Avatar femenina (para "capturado/capturada").
+const FEMININE_AVATARS: ReadonlySet<RealmPieceKind> = new Set<RealmPieceKind>(["hell"]);
+
 function unsealedArrival(state: GameState): RealmPieceKind | null {
   const m = state.lastMove;
   if (!m || !(REALM_PIECE_ORDER as readonly string[]).includes(m.pieceKind)) return null;
@@ -189,6 +194,14 @@ function carriedNidanasKey(state: GameState): string {
 // van primero; lo básico (tirar, mover) va al final porque solo se
 // cumple al principio de la partida de todos modos.
 export const LESSONS: Lesson[] = [
+  // 4 oct 2026 — primera vez que suena el spray de Fandango ("PSSSS…
+  // PSSSS…"): se enseña la asociación sonido → Fandango → alguien te
+  // propone algo. A partir de la segunda vez, solo el sonido.
+  {
+    id: "fandango",
+    holds: (s, p) => fandangoIsCalling(s, p),
+    urgent: true,
+  },
   {
     id: "noMove",
     holds: (s, p) => rolled(s) && getAllLegalMoves(s, p).length === 0,
@@ -361,9 +374,12 @@ export const LESSONS: Lesson[] = [
     holds: (s) => unsealedArrival(s) !== null,
     repeat: 2,
     eventKey: (s) => `${s.turnIndex}:${unsealedArrival(s) ?? ""}`,
-    vars: (s) => {
+    vars: (s, _p, t) => {
       const kind = unsealedArrival(s);
-      return { name: kind ? REALM_AVATAR_NAME[kind] : "" };
+      return {
+        name: kind ? REALM_AVATAR_NAME[kind] : "",
+        captured: t(kind && FEMININE_AVATARS.has(kind) ? "lesson.capturedF" : "lesson.capturedM"),
+      };
     },
   },
   {

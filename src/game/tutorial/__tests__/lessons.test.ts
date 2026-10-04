@@ -261,3 +261,21 @@ describe("no florece el loto", () => {
     expect(l!.vars!(s, "P2", (k) => k).name).toBe("Margot");
   });
 });
+
+describe("pssss pssss", () => {
+  it("Margot va en femenino", () => {
+    const s = {
+      ...initialState,
+      brunoRevealed: true,
+      lastMove: { player: "P1", pieceKind: "hell", toPos: 0, didCapture: false, capturedPieceKind: null },
+      realmPieces: { P1: { hell: { id: "h", kind: "hell", pos: 0, inLimbo: false, maraLevel: null, unlocked: true, everCaptured: true } }, P2: {} },
+    } as unknown as GameState;
+    const l = pickLesson(s, "P2", new Set<LessonId>(["brunoEra", "evoClock", "secondAvatar"]));
+    expect(l!.vars!(s, "P2", (k) => k).captured).toBe("lesson.capturedF");
+  });
+  it("sale el primer llamado de Fandango con una oferta entrante", () => {
+    const s = { ...initialState, pendingTrade: { fromPlayer: "P2" } } as unknown as GameState;
+    expect(pickLesson(s, "P1", new Set<LessonId>())?.id).toBe("fandango");
+    expect(pickLesson(s, "P1", new Set<LessonId>(["fandango"]))?.id).not.toBe("fandango");
+  });
+});

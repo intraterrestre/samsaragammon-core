@@ -24,7 +24,7 @@
 // (agregar el par 12-1 en computeOwnLinks/computeRivalOpportunities).
 import type { NidanaId } from "../game/nidanas";
 import { NIDANA_NUMBER } from "../game/nidanaNumberAssets";
-import type { RealmPieceKind } from "../game/types";
+import type { GameState, PlayerId, RealmPieceKind } from "../game/types";
 
 export type CarriedNidana = { realm: RealmPieceKind; nidana: NidanaId };
 
@@ -117,4 +117,21 @@ export function computeRivalOpportunities(
     }
   }
   return opportunities;
+}
+
+// "PSSSS… PSSSS…": Fandango llama a este jugador — tiene un link propio
+// por formar, el rival porta una Nidana que le sirve, o le llegó una
+// oferta de trade sin responder. Única fuente de verdad para el punto
+// pulsante + spray.mp3 (GameShell) y para el cartel de Buddha
+// (tutorial/lessons.ts, lección "fandango").
+export function fandangoIsCalling(state: GameState, player: PlayerId): boolean {
+  const rival: PlayerId = player === "P1" ? "P2" : "P1";
+  const myIds = listCarriedNidanas(state.avatarNidana[player] ?? {}).map((e) => e.nidana);
+  const rivalIds = listCarriedNidanas(state.avatarNidana[rival] ?? {}).map((e) => e.nidana);
+  const incomingTrade = !!state.pendingTrade && state.pendingTrade.fromPlayer !== player;
+  return (
+    computeOwnLinks(myIds).length > 0 ||
+    computeRivalOpportunities(myIds, rivalIds).length > 0 ||
+    incomingTrade
+  );
 }
