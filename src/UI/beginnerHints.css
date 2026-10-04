@@ -246,3 +246,14 @@
   fill: none;
   filter: drop-shadow(0 0 6px rgba(255, 210, 74, 0.9));
 }
+
+/* Desde Margot: X pequeña y azul. */
+.bwbHumansXSmall .bwbHumansXShadow {
+  stroke-width: 18;
+  stroke: rgba(0, 0, 0, 0.6);
+}
+.bwbHumansXSmall .bwbHumansXStroke {
+  stroke: #6fa8ff;
+  stroke-width: 11;
+  filter: drop-shadow(0 0 4px rgba(111, 168, 255, 0.8));
+}

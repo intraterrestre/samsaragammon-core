@@ -1208,6 +1208,12 @@ style={{
               (pos) => canonicalRealmFromPos(pos) === "humans"
             );
             const bases = cells.map((pos) => piecePosition(pos, size));
+            // 4 oct 2026 — Federico: grandes y doradas cansan. Hasta Margot,
+            // X grande dorada; desde Margot, X pequeña azul (la meta se
+            // sigue viendo sin estorbar).
+            const smallX = state.cosmicClock.era !== "bruno";
+            const xSize = smallX ? 40 : 72;
+            const xOff = smallX ? 2 : -14;
             const cx = bases.reduce((a, b) => a + Number(b.left), 0) / bases.length + 22;
             const cy = bases.reduce((a, b) => a + Number(b.top), 0) / bases.length + 22;
             return (
@@ -1215,7 +1221,7 @@ style={{
                 {bases.map((base, i) => (
                   <svg
                     key={`humans-x-${cells[i]}`}
-                    className="bwbHumansX"
+                    className={`bwbHumansX${smallX ? " bwbHumansXSmall" : ""}`}
                     viewBox="0 0 100 100"
                     role="img"
                     aria-label={t("humansX.tip")}
@@ -1227,10 +1233,10 @@ style={{
                     }}
                     style={{
                       position: "absolute",
-                      left: Number(base.left) - 14,
-                      top: Number(base.top) - 14,
-                      width: 72,
-                      height: 72,
+                      left: Number(base.left) + xOff,
+                      top: Number(base.top) + xOff,
+                      width: xSize,
+                      height: xSize,
                     }}
                   >
                     <title>{t("humansX.tip")}</title>
