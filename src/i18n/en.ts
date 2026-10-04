@@ -81,7 +81,7 @@ export const en = {
   "lesson.brunoWaiting": "BRUNO IS STILL ASLEEP\nHe wakes when both players have moved all three animals.\nStill to move: {missing}.",
   "lotus.title": "The lotus",
   "lotus.body": "Like the lotus, born from the mud without being stained,\nan Avatar receives its own by reaching Humans\nwithout ever being captured.\nOnce earned, it is theirs forever.",
-  "humansX.tip": "HUMANS — YOUR GOAL\nBring your Avatars here.\nThe Xs are only a tutorial guide.\nThey disappear when Humans is revealed.",
+  "humansX.tip": "HUMANS — YOUR GOAL\nGather your Avatars in this realm to escape the Wheel.",
   "lesson.evoClock": "THE EVOLUTION CLOCK ↗\nEvery roll brings you closer to your next Avatar.\nTop: White · Bottom: Black",
   "evo.tip": "THE EVOLUTION CLOCK\nEvery roll brings you closer to your next Avatar.\nTop: White · Bottom: Black",
   "lesson.optionsPanel": "CHOOSE YOUR DESTINATION ↖\nTap one of these buttons to choose exactly which square you land on.\n“Risk”: you’ll end up next to a rival.",

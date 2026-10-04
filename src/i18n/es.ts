@@ -75,7 +75,7 @@ export const es: Dictionary = {
   "lesson.brunoWaiting": "BRUNO TODAVÍA DUERME\nDespertará cuando los dos jugadores hayan movido sus tres animales.\nFalta mover: {missing}.",
   "lotus.title": "El loto",
   "lotus.body": "Como el loto, que nace del barro sin mancharse,\nun Avatar recibe el suyo al llegar a Humanos\nsin haber sido capturado.\nUna vez ganado, es suyo para siempre.",
-  "humansX.tip": "HUMANOS — TU META\nLleva tus Avatares hasta aquí.\nLas X son solo una ayuda del tutorial.\nDesaparecerán cuando se revele Humanos.",
+  "humansX.tip": "HUMANOS — TU META\nJunta tus Avatares en este reino para salir de la Rueda.",
   "lesson.evoClock": "EL RELOJ DE LA EVOLUCIÓN ↗\nCada tirada te acerca al próximo Avatar.\nArriba: Blancas · Abajo: Negras",
   "evo.tip": "EL RELOJ DE LA EVOLUCIÓN\nCada tirada te acerca al próximo Avatar.\nArriba: Blancas · Abajo: Negras",
   "lesson.optionsPanel": "ELIGE TU DESTINO ↖\nToca uno de estos botones para elegir exactamente la casilla a la que llegas.\n«Riesgo»: quedarás al lado de un rival.",
