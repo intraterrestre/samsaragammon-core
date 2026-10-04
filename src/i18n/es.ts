@@ -73,6 +73,8 @@ export const es: Dictionary = {
   "lesson.mirror": "EL ESPEJO SE ABRE\nHasta ahora Buddha te ha enseñado a jugar.\nAhora puede empezar a observar cómo juegas tú.\nTienes 4 miradas al espejo durante la partida.",
   "lesson.oriol": "ORIOL HA LLEGADO\nDurante millones de años vivimos entre curvas.\nConstruimos el cubo y olvidamos nuestras casas redondas.\nPero nuestro cerebro nunca olvidó las curvas.",
   "lesson.brunoWaiting": "BRUNO TODAVÍA DUERME\nDespertará cuando los dos jugadores hayan movido sus tres animales.\nFalta mover: {missing}.",
+  "lotus.title": "El loto de {name}",
+  "lotus.body": "Como el loto, que nace del barro sin mancharse.\n{name} llegó a Humanos sin haber sido capturado, o lo ganó con 666 o 777.\nEste loto es suyo para siempre.\nSeis Avatares con su loto, juntos en Humanos, rompen la Rueda.",
   "lesson.roll": "Tu turno. Tira las piedras.",
 
   "venom.pig": "Cerdo",

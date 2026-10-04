@@ -187,7 +187,9 @@
   border-radius: 50%;
   background: rgba(14, 6, 28, 0.85);
   box-shadow: 0 0 8px rgba(176, 92, 250, 0.9);
-  pointer-events: none;
+  /* 4 oct 2026 — se toca para ver el loto en grande. */
+  pointer-events: auto;
+  cursor: pointer;
   box-sizing: border-box;
 }
 

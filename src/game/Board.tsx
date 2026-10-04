@@ -13,6 +13,8 @@ import {
 } from "./rules/legalMoves";
 import "../UI/beginnerHints.css";
 import { canonicalRealmFromPos } from "../UI/realm";
+import { REALM_AVATAR_NAME } from "./realmAvatarNames";
+import { useI18n } from "../i18n";
 import lotusSeal from "../assets/lotus_seal.webp";
 import budaKarmaER from "../assets/tokens/buda-karma-er.webp";
 import BigHeadSchoolOverlay from "../UI/BigHeadSchoolOverlay";
@@ -437,6 +439,10 @@ const wheelCenter = {
   // abajo junto a ExplainModal) — mas facil de descubrir que un press
   // largo, y ahora sí muestra la moneda de verdad, no solo el nombre.
   const [enlargedNidana, setEnlargedNidana] = useState<NidanaId | null>(null);
+  // 4 oct 2026 — Federico: el loto se abre en grande al tocarlo, igual
+  // que las Nidanas, con su explicación.
+  const [enlargedLotus, setEnlargedLotus] = useState<RealmPieceKind | null>(null);
+  const { t } = useI18n();
 
   const piecesByPos: Record<number, { player: PlayerId; kind: PieceKind }[]> =
     {};
@@ -1137,6 +1143,11 @@ style={{
           alt="lotus"
           className="avatarLotusBadge"
           draggable={false}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            setEnlargedLotus(piece.kind);
+          }}
         />
       )}
       {carriedNidana && (
@@ -1426,6 +1437,105 @@ style={{
                 }}
               >
                 {NIDANAS[enlargedNidana].short}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {enlargedLotus && (
+          <div
+            onClick={() => setEnlargedLotus(null)}
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 9800,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgba(5,7,13,0.85)",
+              cursor: "pointer",
+            }}
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setEnlargedLotus(null);
+              }}
+              aria-label="Cerrar"
+              style={{
+                position: "absolute",
+                top: 18,
+                right: 22,
+                width: 44,
+                height: 44,
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(176,92,250,0.55)",
+                color: "#f2e8d4",
+                fontSize: 22,
+                lineHeight: "44px",
+                textAlign: "center",
+                padding: 0,
+                cursor: "pointer",
+                zIndex: 9900,
+              }}
+            >
+              ✕
+            </button>
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 12,
+                padding: "20px 28px",
+                cursor: "default",
+                maxWidth: 520,
+              }}
+            >
+              <div
+                style={{
+                  width: 280,
+                  height: 280,
+                  borderRadius: "50%",
+                  background: "radial-gradient(circle, rgba(40,16,70,0.95) 0%, rgba(14,6,28,0.95) 70%)",
+                  border: "2px solid rgba(176,92,250,0.5)",
+                  boxShadow: "0 0 40px rgba(176,92,250,0.45), 0 14px 34px rgba(0,0,0,0.55)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <img src={lotusSeal} alt="lotus" style={{ width: "86%", height: "86%" }} />
+              </div>
+              <div
+                style={{
+                  fontFamily: "'Cinzel', 'Trajan Pro', 'Times New Roman', serif",
+                  fontWeight: 600,
+                  fontSize: 24,
+                  letterSpacing: "0.08em",
+                  color: "#f2e8d4",
+                  textShadow: "0 2px 5px rgba(0,0,0,0.55)",
+                  textTransform: "uppercase",
+                  textAlign: "center",
+                }}
+              >
+                {t("lotus.title", { name: REALM_AVATAR_NAME[enlargedLotus] })}
+              </div>
+              <div
+                style={{
+                  fontFamily: "Georgia, 'Times New Roman', serif",
+                  fontStyle: "italic",
+                  fontSize: 17,
+                  lineHeight: 1.45,
+                  color: "rgba(242,232,212,0.85)",
+                  textAlign: "center",
+                  whiteSpace: "pre-line",
+                }}
+              >
+                {t("lotus.body", { name: REALM_AVATAR_NAME[enlargedLotus] })}
               </div>
             </div>
           </div>

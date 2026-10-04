@@ -79,6 +79,8 @@ export const en = {
   "lesson.mirror": "THE MIRROR OPENS\nUntil now, Buddha has taught you how to play.\nNow he can begin to observe how you play.\nYou have 4 looks into the mirror during the game.",
   "lesson.oriol": "ORIOL HAS ARRIVED\nFor millions of years, we lived among curves.\nWe built the box and forgot our round homes.\nBut our brains never forgot the curves.",
   "lesson.brunoWaiting": "BRUNO IS STILL ASLEEP\nHe wakes when both players have moved all three animals.\nStill to move: {missing}.",
+  "lotus.title": "{name}'s Lotus",
+  "lotus.body": "Like the lotus, born from the mud without being stained.\n{name} reached Humans without ever being captured, or earned it with 666 or 777.\nThis lotus is theirs forever.\nSix Avatars with their lotus, together in Humans, break the Wheel.",
   "lesson.roll": "Your turn. Roll the stones.",
 
   // ---- nombres
