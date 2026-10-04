@@ -58,7 +58,7 @@ export const en = {
   "lesson.secondAvatar": "MARGOT HAS ARRIVED\nSometimes we learn through curiosity.\nSometimes, because it hurts.\nLiving things learn to bend.",
   "lesson.phase2": "MOVE BRUNO\nFirst tap Bruno.\nThen choose Pig, Rooster or Snake.\nThey drive Bruno around the Wheel of Samsara.",
   "lesson.whitman": "SIX AVATARS. SIX LOTUSES.\nGather them in Humans.\nAnd break the Wheel.",
-  "lesson.sealed": "A LOTUS BLOOMS!\n{name} reached Humans without ever being captured.\nThis lotus is theirs forever.",
+  "lesson.sealed": "A LOTUS BLOOMS!\n{name} has received its lotus, and it is theirs forever.\nAn Avatar blooms when it reaches Humans without ever being captured.",
   "lesson.unsealed": "NO LOTUS BLOOMS\nThis Avatar has already been through Mara.\nReaching Humans is no longer enough.",
   "lesson.pig": "Back from Mara, this one must move first.",
   "lesson.mara": "Captured! It goes to Mara for six rolls. Then it is reborn in a random realm, never in Humans.",
@@ -80,7 +80,7 @@ export const en = {
   "lesson.oriol": "ORIOL HAS ARRIVED\nFor millions of years, we lived among curves.\nWe built the box and forgot our round homes.\nBut our brains never forgot the curves.",
   "lesson.brunoWaiting": "BRUNO IS STILL ASLEEP\nHe wakes when both players have moved all three animals.\nStill to move: {missing}.",
   "lotus.title": "{name}'s Lotus",
-  "lotus.body": "Like the lotus, born from the mud without being stained.\n{name} reached Humans without ever being captured, or earned it with 666 or 777.\nThis lotus is theirs forever.\nSix Avatars with their lotus, together in Humans, break the Wheel.",
+  "lotus.body": "Like the lotus, born from the mud without being stained.\nAn Avatar receives its lotus when it reaches Humans without ever being captured, or when it earns it with 666 or 777.\nOnce earned, it is theirs forever.\nSix Avatars with their lotus, together in Humans, break the Wheel.",
   "lesson.roll": "Your turn. Roll the stones.",
 
   // ---- nombres

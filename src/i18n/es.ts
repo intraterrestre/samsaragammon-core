@@ -52,7 +52,7 @@ export const es: Dictionary = {
   "lesson.secondAvatar": "MARGOT HA LLEGADO\nA veces aprendemos por curiosidad.\nA veces, porque duele.\nLo vivo aprende a curvarse.",
   "lesson.phase2": "MUEVE A BRUNO\nPrimero toca a Bruno.\nLuego elige Cerdo, Gallo o Serpiente.\nEllos impulsan a Bruno por la Rueda del Samsara.",
   "lesson.whitman": "SEIS AVATARES. SEIS LOTOS.\nReúnelos en Humanos.\nY rompe la Rueda.",
-  "lesson.sealed": "¡FLORECE UN LOTO!\n{name} llegó a Humanos sin haber sido capturado.\nEste loto es suyo para siempre.",
+  "lesson.sealed": "¡FLORECE UN LOTO!\n{name} recibió su loto, y es suyo para siempre.\nUn Avatar florece cuando llega a Humanos sin haber sido capturado nunca.",
   "lesson.unsealed": "NO FLORECE EL LOTO\nEste Avatar ya pasó por Mara.\nLlegar a Humanos ya no es suficiente.",
   "lesson.pig": "Vuelve de Mara: este tiene que moverse primero.",
   "lesson.mara": "¡Capturada! Se va a Mara durante seis tiradas. Después renace en un reino al azar, nunca en Humanos.",
@@ -74,7 +74,7 @@ export const es: Dictionary = {
   "lesson.oriol": "ORIOL HA LLEGADO\nDurante millones de años vivimos entre curvas.\nConstruimos el cubo y olvidamos nuestras casas redondas.\nPero nuestro cerebro nunca olvidó las curvas.",
   "lesson.brunoWaiting": "BRUNO TODAVÍA DUERME\nDespertará cuando los dos jugadores hayan movido sus tres animales.\nFalta mover: {missing}.",
   "lotus.title": "El loto de {name}",
-  "lotus.body": "Como el loto, que nace del barro sin mancharse.\n{name} llegó a Humanos sin haber sido capturado, o lo ganó con 666 o 777.\nEste loto es suyo para siempre.\nSeis Avatares con su loto, juntos en Humanos, rompen la Rueda.",
+  "lotus.body": "Como el loto, que nace del barro sin mancharse.\nUn Avatar recibe su loto cuando llega a Humanos sin haber sido capturado nunca, o cuando lo gana con 666 o 777.\nUna vez ganado, es suyo para siempre.\nSeis Avatares con su loto, juntos en Humanos, rompen la Rueda.",
   "lesson.roll": "Tu turno. Tira las piedras.",
 
   "venom.pig": "Cerdo",
