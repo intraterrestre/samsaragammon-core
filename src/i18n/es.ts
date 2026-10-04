@@ -75,6 +75,7 @@ export const es: Dictionary = {
   "lesson.brunoWaiting": "BRUNO TODAVÍA DUERME\nDespertará cuando los dos jugadores hayan movido sus tres animales.\nFalta mover: {missing}.",
   "lotus.title": "El loto de {name}",
   "lotus.body": "Como el loto, que nace del barro sin mancharse.\nUn Avatar recibe su loto cuando llega a Humanos sin haber sido capturado nunca, o cuando lo gana con 666 o 777.\nUna vez ganado, es suyo para siempre.\nSeis Avatares con su loto, juntos en Humanos, rompen la Rueda.",
+  "humansX.tip": "HUMANOS — tu meta.\nTus Avatares tienen que llegar a estas casillas.",
   "lesson.roll": "Tu turno. Tira las piedras.",
 
   "venom.pig": "Cerdo",

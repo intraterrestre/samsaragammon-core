@@ -204,8 +204,34 @@
    pintadas — solo en PLAY WITH BUDDHA. */
 .bwbHumansX {
   z-index: 650;
+  /* Solo el trazo de la X responde al ratón/dedo: lo demás de la casilla
+     sigue libre. */
   pointer-events: none;
   overflow: visible;
+}
+.bwbHumansX path {
+  pointer-events: stroke;
+  cursor: help;
+}
+.bwbHumansTip {
+  position: absolute;
+  z-index: 9700;
+  transform: translate(-50%, calc(-100% - 46px));
+  width: max-content;
+  max-width: 260px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: rgba(20, 14, 2, 0.92);
+  border: 2px solid #ffd24a;
+  color: #fff3c4;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  white-space: pre-line;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
 }
 .bwbHumansXShadow {
   stroke: rgba(0, 0, 0, 0.75);

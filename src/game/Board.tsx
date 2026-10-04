@@ -442,6 +442,15 @@ const wheelCenter = {
   // 4 oct 2026 — Federico: el loto se abre en grande al tocarlo, igual
   // que las Nidanas, con su explicación.
   const [enlargedLotus, setEnlargedLotus] = useState<RealmPieceKind | null>(null);
+  // 4 oct 2026 — Federico: "si paso el mouse o tap las X grandes, que
+  // diga qué significan". Etiqueta junto a las X de Humanos.
+  const [humansTipOpen, setHumansTipOpen] = useState(false);
+  const humansTipTimer = useRef<number | null>(null);
+  const showHumansTip = (ms?: number) => {
+    if (humansTipTimer.current) window.clearTimeout(humansTipTimer.current);
+    setHumansTipOpen(true);
+    if (ms) humansTipTimer.current = window.setTimeout(() => setHumansTipOpen(false), ms);
+  };
   const { t } = useI18n();
 
   const piecesByPos: Record<number, { player: PlayerId; kind: PieceKind }[]> =
@@ -1194,29 +1203,53 @@ style={{
         {beginnerMode &&
           genesisComplete &&
           !["marino", "rufus", "whitman"].includes(state.cosmicClock.era as string) &&
-          Array.from({ length: size }, (_, pos) => pos)
-            .filter((pos) => canonicalRealmFromPos(pos) === "humans")
-            .map((pos) => {
-              const base = piecePosition(pos, size);
-              return (
-                <svg
-                  key={`humans-x-${pos}`}
-                  className="bwbHumansX"
-                  viewBox="0 0 100 100"
-                  aria-hidden="true"
-                  style={{
-                    position: "absolute",
-                    left: Number(base.left) - 14,
-                    top: Number(base.top) - 14,
-                    width: 72,
-                    height: 72,
-                  }}
-                >
-                  <path d="M18 18 L82 82 M82 18 L18 82" className="bwbHumansXShadow" />
-                  <path d="M18 18 L82 82 M82 18 L18 82" className="bwbHumansXStroke" />
-                </svg>
-              );
-            })}
+          (() => {
+            const cells = Array.from({ length: size }, (_, pos) => pos).filter(
+              (pos) => canonicalRealmFromPos(pos) === "humans"
+            );
+            const bases = cells.map((pos) => piecePosition(pos, size));
+            const cx = bases.reduce((a, b) => a + Number(b.left), 0) / bases.length + 22;
+            const cy = bases.reduce((a, b) => a + Number(b.top), 0) / bases.length + 22;
+            return (
+              <>
+                {bases.map((base, i) => (
+                  <svg
+                    key={`humans-x-${cells[i]}`}
+                    className="bwbHumansX"
+                    viewBox="0 0 100 100"
+                    role="img"
+                    aria-label={t("humansX.tip")}
+                    onMouseEnter={() => showHumansTip()}
+                    onMouseLeave={() => setHumansTipOpen(false)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      showHumansTip(4500);
+                    }}
+                    style={{
+                      position: "absolute",
+                      left: Number(base.left) - 14,
+                      top: Number(base.top) - 14,
+                      width: 72,
+                      height: 72,
+                    }}
+                  >
+                    <title>{t("humansX.tip")}</title>
+                    <path d="M18 18 L82 82 M82 18 L18 82" className="bwbHumansXShadow" />
+                    <path d="M18 18 L82 82 M82 18 L18 82" className="bwbHumansXStroke" />
+                  </svg>
+                ))}
+                {humansTipOpen && (
+                  <div
+                    className="bwbHumansTip"
+                    style={{ left: cx, top: cy }}
+                    onClick={() => setHumansTipOpen(false)}
+                  >
+                    {t("humansX.tip")}
+                  </div>
+                )}
+              </>
+            );
+          })()}
         {(p1VenomsRevealed || p2VenomsRevealed) && renderedPieces}
         {/* PLAY WITH BUDDHA: antes de que nazca Bruno ningún Avatar puede
             recoger Nidanas, así que en modo principiante no se muestran
