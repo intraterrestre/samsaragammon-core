@@ -59,7 +59,7 @@ export const en = {
   "lesson.phase2": "MOVE BRUNO\nFirst tap Bruno.\nThen choose Pig, Rooster or Snake.\nThey drive Bruno around the Wheel of Samsara.",
   "lesson.whitman": "SIX AVATARS. SIX LOTUSES.\nGather them in Humans.\nAnd break the Wheel.",
   "lesson.sealed": "A LOTUS BLOOMS!\n{name} has received its lotus, and it is theirs forever.\nAn Avatar blooms when it reaches Humans without ever being captured.",
-  "lesson.unsealed": "NO LOTUS BLOOMS\nThis Avatar has already been through Mara.\nReaching Humans is no longer enough.",
+  "lesson.unsealed": "NO LOTUS BLOOMS\n{name} reached Humans, but was captured once and spent time in Mara.\nOnly an Avatar that was never captured blooms on arrival.",
   "lesson.pig": "Back from Mara, this one must move first.",
   "lesson.mara": "Captured! It goes to Mara for six rolls. Then it is reborn in a random realm, never in Humans.",
   "lesson.nidanaSpawn": "This is one of the 12 Nidanas.\nAn Avatar collects it by landing on it inside its own realm.",

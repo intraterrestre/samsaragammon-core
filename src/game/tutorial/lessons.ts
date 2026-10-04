@@ -161,6 +161,18 @@ function sharedAvatars(state: GameState): RealmPieceKind[] {
   );
 }
 
+// Avatar que con la ÚLTIMA jugada entró en Humanos habiendo sido
+// capturado alguna vez (y sigue sin loto). null si no es el caso.
+function unsealedArrival(state: GameState): RealmPieceKind | null {
+  const m = state.lastMove;
+  if (!m || !(REALM_PIECE_ORDER as readonly string[]).includes(m.pieceKind)) return null;
+  const kind = m.pieceKind as RealmPieceKind;
+  const piece = state.realmPieces[m.player]?.[kind];
+  if (!piece || piece.inLimbo || piece.pos !== m.toPos || !inHumans(m.toPos)) return null;
+  if (!piece.everCaptured || state.consolidatedAvatars[m.player]?.[kind]) return null;
+  return kind;
+}
+
 function carriedNidanasKey(state: GameState): string {
   return (["P1", "P2"] as PlayerId[])
     .map((pl) =>
@@ -342,14 +354,17 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "unsealed",
-    holds: (s, p) =>
-      ownAvatars(s, p).some(
-        ({ kind, piece }) =>
-          !piece.inLimbo &&
-          inHumans(piece.pos) &&
-          piece.everCaptured &&
-          !s.consolidatedAvatars[p]?.[kind]
-      ),
+    // 4 oct 2026 — Federico no entendió el cartel: no decía de QUÉ Avatar
+    // hablaba y podía referirse a uno que estaba en Humanos desde hacía
+    // rato. Ahora sale justo cuando un Avatar ya capturado alguna vez
+    // ENTRA en Humanos con esta jugada, y lo nombra.
+    holds: (s) => unsealedArrival(s) !== null,
+    repeat: 2,
+    eventKey: (s) => `${s.turnIndex}:${unsealedArrival(s) ?? ""}`,
+    vars: (s) => {
+      const kind = unsealedArrival(s);
+      return { name: kind ? REALM_AVATAR_NAME[kind] : "" };
+    },
   },
   {
     id: "pig",

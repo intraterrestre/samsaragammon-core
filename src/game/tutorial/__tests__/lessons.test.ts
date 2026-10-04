@@ -243,3 +243,21 @@ describe("bienvenida al Avatar del adversario", () => {
     expect(l!.vars!(s, "P1", (k) => (k === "color.P2" ? "Negras" : k))).toEqual({ name: "Margot", color: "Negras" });
   });
 });
+
+describe("no florece el loto", () => {
+  it("nombra al Avatar ya capturado que acaba de entrar en Humanos", () => {
+    const s = {
+      ...initialState,
+      brunoRevealed: true,
+      lastMove: { player: "P1", pieceKind: "hell", toPos: 0, didCapture: false, capturedPieceKind: null },
+      realmPieces: {
+        P1: { hell: { id: "h", kind: "hell", pos: 0, inLimbo: false, maraLevel: null, unlocked: true, everCaptured: true } },
+        P2: {},
+      },
+    } as unknown as GameState;
+    const seen = new Set<LessonId>(["brunoEra", "evoClock", "secondAvatar"]);
+    const l = pickLesson(s, "P2", seen);
+    expect(l?.id).toBe("unsealed");
+    expect(l!.vars!(s, "P2", (k) => k).name).toBe("Margot");
+  });
+});

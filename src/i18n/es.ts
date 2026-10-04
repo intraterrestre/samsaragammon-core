@@ -53,7 +53,7 @@ export const es: Dictionary = {
   "lesson.phase2": "MUEVE A BRUNO\nPrimero toca a Bruno.\nLuego elige Cerdo, Gallo o Serpiente.\nEllos impulsan a Bruno por la Rueda del Samsara.",
   "lesson.whitman": "SEIS AVATARES. SEIS LOTOS.\nReúnelos en Humanos.\nY rompe la Rueda.",
   "lesson.sealed": "¡FLORECE UN LOTO!\n{name} recibió su loto, y es suyo para siempre.\nUn Avatar florece cuando llega a Humanos sin haber sido capturado nunca.",
-  "lesson.unsealed": "NO FLORECE EL LOTO\nEste Avatar ya pasó por Mara.\nLlegar a Humanos ya no es suficiente.",
+  "lesson.unsealed": "NO FLORECE EL LOTO\n{name} llegó a Humanos, pero antes fue capturado y estuvo en Mara.\nSolo florece quien llega sin haber sido capturado nunca.",
   "lesson.pig": "Vuelve de Mara: este tiene que moverse primero.",
   "lesson.mara": "¡Capturada! Se va a Mara durante seis tiradas. Después renace en un reino al azar, nunca en Humanos.",
   "lesson.nidanaSpawn": "Esta es una de las 12 Nidanas.\nUn Avatar la recoge al caer sobre ella dentro de su propio reino.",
