@@ -85,6 +85,7 @@ export const es: Dictionary = {
   "moveopt.safe": "Seguro",
   "moveopt.stays": "Se queda",
   "lesson.rivalAvatar": "¡BIENVENIDO, {name}!\nAhora las {color} también tienen su {name}.",
+  "lesson.howToMove": "¿CÓMO MUEVO MIS AVATARES?\nPulsa un Avatar y mira las flechas: cada animal te muestra sus destinos.",
   "lesson.roll": "Tu turno. Tira las piedras.",
 
   "venom.pig": "Cerdo",

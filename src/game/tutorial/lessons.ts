@@ -35,6 +35,7 @@ export type LessonId =
   | "rivalAvatar"
   | "phase2"
   | "optionsPanel"
+  | "howToMove"
   | "whitman"
   | "sealed"
   | "unsealed"
@@ -306,6 +307,19 @@ export const LESSONS: Lesson[] = [
       const kind = s.selectedPiece[p] as RealmPieceKind | null;
       return { name: kind && REALM_AVATAR_NAME[kind] ? REALM_AVATAR_NAME[kind] : "Bruno" };
     },
+  },
+  // 4 oct 2026 — Federico: recordatorio que se repite en Fase 2 (hasta
+  // 3 veces, como mucho cada 6 turnos), cuando el jugador todavía no ha
+  // elegido Avatar en esta tirada.
+  {
+    id: "howToMove",
+    holds: (s, p) =>
+      rolled(s) &&
+      isPhase2(s, p) &&
+      !s.selectedPiece[p] &&
+      getAllLegalMoves(s, p).length > 0,
+    repeat: 3,
+    eventKey: (s) => String(Math.floor((s.turnIndex ?? 0) / 6)),
   },
   {
     id: "whitman",

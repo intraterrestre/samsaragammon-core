@@ -91,6 +91,7 @@ export const en = {
   "moveopt.safe": "Safe",
   "moveopt.stays": "Stays",
   "lesson.rivalAvatar": "WELCOME, {name}!\n{color} now have their own {name} too.",
+  "lesson.howToMove": "HOW DO I MOVE MY AVATARS?\nTap an Avatar and look at the arrows: each animal shows you its destinations.",
   "lesson.roll": "Your turn. Roll the stones.",
 
   // ---- nombres
