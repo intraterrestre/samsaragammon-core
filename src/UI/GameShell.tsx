@@ -195,6 +195,7 @@ nidanaCoinSide: "front" | "back";
   // entrada real de Whitman se siga jugando a mano). Opcional para no
   // romper otros usos de GameShell que no la pasen.
   onDevSkipToRufus?: () => void;
+  onTesterSkip?: (step: number) => void;
   // DEV ONLY (27 agosto 2026) — atajo pedido por Federico, ver reducer.ts
   // case "DEV_SKIP_TO_5_HUMANS": deja al jugador activo en 5/6 fichas en
   // Humans con Whitman ya desbloqueado (dispara "ONE MORE TO GET OUT" +
@@ -266,6 +267,7 @@ export function GameShell({
   onRoll,
   onReset,
   onDevSkipToRufus,
+  onTesterSkip,
   onDevSkipTo5Humans,
   onDevSetAvatarNidana,
   onDevSetAllAvatarNidanas,
@@ -1709,6 +1711,48 @@ return (
           producción", se corrigió acá también para no dejar dos
           botones DEV expuestos en el sitio real mientras el tercero
           queda oculto. */}
+      {/* 4 oct 2026 — saltos de prueba (?saltos): barra discreta abajo a
+          la izquierda para ir directo a cada Avatar. */}
+      {genesisComplete && onTesterSkip && (
+        <div
+          style={{
+            position: "absolute",
+            left: 8,
+            bottom: 8,
+            zIndex: 20000,
+            display: "flex",
+            gap: 4,
+            alignItems: "center",
+            padding: "4px 6px",
+            borderRadius: 8,
+            background: "rgba(0,0,0,0.6)",
+            border: "1px solid rgba(245,215,110,0.4)",
+            fontSize: 11,
+            color: "#f5d76e",
+          }}
+        >
+          <span style={{ marginRight: 2 }}>⏩</span>
+          {["Bruno", "Margot", "Oriol", "Marino", "Rufus"].map((name, i) => (
+            <button
+              key={name}
+              type="button"
+              onClick={() => onTesterSkip(i + 1)}
+              style={{
+                fontSize: 11,
+                padding: "3px 6px",
+                borderRadius: 6,
+                background: "rgba(245,215,110,0.12)",
+                color: "#f5d76e",
+                border: "1px solid rgba(245,215,110,0.35)",
+                cursor: "pointer",
+              }}
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+      )}
+
       {import.meta.env.DEV && genesisComplete && onDevSkipToRufus && (
         <button
           onClick={onDevSkipToRufus}

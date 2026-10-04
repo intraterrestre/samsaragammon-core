@@ -367,6 +367,11 @@ const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
   // libres, sin correo. El correo solo se pide para jugar en línea con
   // otra persona: showLogin abre la pantalla de login desde el lobby.
   const [showLogin, setShowLogin] = useState(false);
+  // 4 oct 2026 — modo de prueba de Federico: añadir ?saltos a la
+  // dirección muestra botones para saltar a cada Avatar (partidas locales).
+  const testerSkips =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).has("saltos");
 
   // 3 oct 2026 — el reducer necesita saber si la partida es de tutorial
   // (Bruno llega antes). Se sincroniza al elegir el modo y en cada reinicio.
@@ -1308,6 +1313,13 @@ nidanaCoinSide={nidanaSide}
       // DEV_SKIP_TO_RUFUS y se detiene un Avatar antes (ver reducer.ts)
       // para que Federico pueda jugar el último tramo a mano.
       onDevSkipToRufus={() => dispatch({ type: "DEV_SKIP_TO_RUFUS" })}
+      // 4 oct 2026 — saltos de prueba (?saltos en la dirección), solo en
+      // partidas locales: nunca en línea con otra persona.
+      onTesterSkip={
+        (import.meta.env.DEV || testerSkips) && gameMode !== "multiplayer"
+          ? (step: number) => dispatch({ type: "TESTER_SKIP_TO_STEP", step })
+          : undefined
+      }
       // v69 (27 agosto 2026) — atajo pedido por Federico: deja al
       // jugador activo en 5/6 fichas en Humans (ver reducer.ts, case
       // "DEV_SKIP_TO_5_HUMANS") para probar el aviso "ONE MORE TO GET

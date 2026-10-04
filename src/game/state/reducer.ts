@@ -60,6 +60,7 @@ type Action =
   | { type: "SET_GENESIS_UI_COMPLETE" }
   | { type: "SET_TUTORIAL_MODE"; on: boolean }
   | { type: "DEV_SKIP_TO_RUFUS" }
+  | { type: "TESTER_SKIP_TO_STEP"; step: number }
   | { type: "DEV_SKIP_TO_5_HUMANS" }
   // v74 (28 agosto 2026) — dev-tool de Federico/Chaty para probar
   // Fandango/Nidanas sin depender del azar (ver DevNidanaTool.tsx).
@@ -465,6 +466,81 @@ export function reducer(state: GameState, action: Action): GameState {
     // Las posiciones se buscan libres una por una (mismo criterio que
     // findEmptySpawnPos ya usa en Genesis/Mara), evitando a proposito el
     // rango de Humans (12-15) para no regalar la formacion.
+    // 4 oct 2026 — pedido de Federico: probar las fases de más adelante
+    // sin rejugar desde Bruno. Generaliza DEV_SKIP_TO_RUFUS a cualquier
+    // Avatar (1 = Bruno … 5 = Rufus; Whitman se juega a mano, como
+    // pidió en v54). Solo se ofrece en partidas locales con ?saltos en
+    // la dirección (ver App.tsx). Misma lógica: escribe el estado final
+    // que el Orquestador produciría y arranca una etapa nueva.
+    case "TESTER_SKIP_TO_STEP": {
+      const step = Math.max(1, Math.min(5, Math.floor(action.step)));
+      const ERAS = ["bruno", "margot", "oriol", "marino", "rufus"] as const;
+      const kinds = REALM_PIECE_ORDER.slice(0, step);
+      let working: GameState = {
+        ...state,
+        genesisUIComplete: true,
+        realmPieces: {
+          P1: { ...state.realmPieces.P1 },
+          P2: { ...state.realmPieces.P2 },
+        },
+      };
+      (["P1", "P2"] as PlayerId[]).forEach((player) => {
+        const seed = player === "P1" ? 16 : 4;
+        kinds.forEach((kind, idx) => {
+          const existing = working.realmPieces[player]?.[kind];
+          if (existing?.unlocked) return;
+          const pos = findEmptySpawnPos(working, (seed + idx) % working.trackSize);
+          working = {
+            ...working,
+            realmPieces: {
+              ...working.realmPieces,
+              [player]: {
+                ...working.realmPieces[player],
+                [kind]: {
+                  id: `${player}-${kind}`,
+                  kind,
+                  pos,
+                  inLimbo: false,
+                  maraLevel: null,
+                  unlocked: true,
+                },
+              },
+            },
+          };
+        });
+      });
+      const brunoActor = working.actors.bruno;
+      const stage = (pl: PlayerId) => ({
+        ...state.realmProgress[pl],
+        currentRealmStep: Math.max(step, state.realmProgress[pl].currentRealmStep),
+        stageStartedAtRoll: state.globalRollCount,
+        capturesInStage: 0,
+        movesInStage: 0,
+      });
+      return {
+        ...working,
+        brunoRevealed: true,
+        actors: brunoActor
+          ? {
+              ...working.actors,
+              bruno: {
+                ...brunoActor,
+                unlocked: true,
+                inLimbo: false,
+                maraLevel: null,
+                pos: working.realmPieces.P1.hungry_ghost?.pos ?? brunoActor.pos,
+              },
+            }
+          : working.actors,
+        cosmicClock: {
+          era: ERAS[step - 1],
+          progress: 0,
+          transitionSequence: state.cosmicClock.transitionSequence + 1,
+        },
+        realmProgress: { P1: stage("P1"), P2: stage("P2") },
+      };
+    }
+
     case "DEV_SKIP_TO_RUFUS": {
       let working: GameState = {
         ...state,

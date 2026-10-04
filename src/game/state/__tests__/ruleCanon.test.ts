@@ -344,3 +344,15 @@ describe("Bruno en el tutorial (3 oct 2026)", () => {
     expect(s.tutorialMode).toBe(true);
   });
 });
+
+describe("saltos de prueba (4 oct 2026)", () => {
+  it("saltar a Oriol deja 3 Avatares por color, era oriol y Fase 2", () => {
+    const s = reducer(initialState, { type: "TESTER_SKIP_TO_STEP", step: 3 } as never);
+    expect(s.cosmicClock.era).toBe("oriol");
+    expect(s.brunoRevealed).toBe(true);
+    for (const pl of ["P1", "P2"] as const) {
+      expect(Object.values(s.realmPieces[pl]).filter((p) => p?.unlocked).length).toBe(3);
+      expect(s.realmProgress[pl].currentRealmStep).toBe(3);
+    }
+  });
+});
