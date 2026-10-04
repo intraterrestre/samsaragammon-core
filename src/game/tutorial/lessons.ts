@@ -33,6 +33,7 @@ export type LessonId =
   | "evoClock"
   | "secondAvatar"
   | "phase2"
+  | "optionsPanel"
   | "whitman"
   | "sealed"
   | "unsealed"
@@ -252,6 +253,19 @@ export const LESSONS: Lesson[] = [
       rolled(s) &&
       isPhase2(s, p) &&
       getAllLegalMoves(s, p).some((m) => m.avatar === "hungry_ghost"),
+  },
+  // 4 oct 2026 — Federico: en Fase 2, arriba a la izquierda salen
+  // botones con las casillas posibles; nadie sabía que se pueden pulsar.
+  // Sale cuando el panel está en pantalla (Avatar y animal elegidos).
+  {
+    id: "optionsPanel",
+    holds: (s, p) =>
+      rolled(s) &&
+      isPhase2(s, p) &&
+      !!s.selectedPiece[p] &&
+      !!s.selectedVenom?.[p] &&
+      getAllLegalMoves(s, p).length > 0,
+    urgent: true,
   },
   {
     id: "whitman",

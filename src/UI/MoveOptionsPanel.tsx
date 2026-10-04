@@ -15,24 +15,27 @@
 // contexto visual distinto del mismo destino.
 import { createPortal } from "react-dom";
 import type { MoveOption } from "../game/types";
+import { useI18n } from "../i18n";
+import type { MessageKey } from "../i18n/en";
 
 type Props = {
   options: MoveOption[];
   onChoose: (option: MoveOption, allOptions: MoveOption[]) => void;
 };
 
-function meaningLabel(meaning: MoveOption["meaning"]): string {
+// 4 oct 2026 — multilingüe (antes fijo en inglés).
+function meaningKey(meaning: MoveOption["meaning"]): MessageKey | null {
   switch (meaning) {
     case "IMPACT":
-      return "Capture!";
+      return "moveopt.capture";
     case "RISK":
-      return "Risk";
+      return "moveopt.risk";
     case "SAFE":
-      return "Safe";
+      return "moveopt.safe";
     case "SAME":
-      return "Stays";
+      return "moveopt.stays";
     default:
-      return "";
+      return null;
   }
 }
 
@@ -52,6 +55,7 @@ function meaningColor(meaning: MoveOption["meaning"]): string {
 }
 
 export function MoveOptionsPanel({ options, onChoose }: Props) {
+  const { t } = useI18n();
   if (!options.length) return null;
 
   // Evita dos botones idénticos (mismo destino) si dos vías de cálculo
@@ -89,6 +93,7 @@ export function MoveOptionsPanel({ options, onChoose }: Props) {
 
   return createPortal(
     <div
+      className="moveOptionsPanel"
       style={{
         position: sceneEl ? "absolute" : "fixed",
         left: 20,
@@ -110,7 +115,8 @@ export function MoveOptionsPanel({ options, onChoose }: Props) {
     >
       {uniqueOptions.map((opt, i) => {
         const color = meaningColor(opt.meaning);
-        const label = meaningLabel(opt.meaning);
+        const key = meaningKey(opt.meaning);
+        const label = key ? t(key) : "";
 
         return (
           <button
@@ -136,7 +142,7 @@ export function MoveOptionsPanel({ options, onChoose }: Props) {
               boxShadow: `0 0 10px ${color}`,
             }}
           >
-            <span>Cell {opt.toPos}</span>
+            <span>{t("moveopt.cell", { n: opt.toPos })}</span>
             {label && (
               <span style={{ fontSize: 11, fontWeight: 700, color, marginTop: 2 }}>
                 {label}

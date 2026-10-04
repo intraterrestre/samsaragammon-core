@@ -1292,6 +1292,16 @@ const [lessonSlotReady, setLessonSlotReady] = React.useState(false);
 // saber si una urgente puede interrumpirla.
 const lessonShowingRef = React.useRef<{ id: LessonId; message: string; urgent: boolean } | null>(null);
 
+// 4 oct 2026 — resalta el panel de destinos mientras Buddha lo explica.
+const optionsLessonOn =
+  !!transientDharma &&
+  lessonShowingRef.current?.id === "optionsPanel" &&
+  lessonShowingRef.current?.message === transientDharma.message;
+React.useEffect(() => {
+  document.body.classList.toggle("bwb-hl-options", optionsLessonOn);
+  return () => document.body.classList.remove("bwb-hl-options");
+}, [optionsLessonOn]);
+
 // 4 oct 2026 — Federico: "el cartel previo al video de Oriol se vio
 // menos de un segundo". Si arranca el video de un Avatar con una lección
 // en pantalla, la lección se retira y se devuelve a la cola: vuelve a
@@ -2064,7 +2074,13 @@ return (
             onDismiss={dismissDharma}
             dismissLabel={t("lesson.dismiss")}
             nidanas={lessonNidanas}
-            placement={lessonShowingRef.current?.id === "evoClock" ? "left" : "top"}
+            placement={
+              lessonShowingRef.current?.id === "evoClock"
+                ? "left"
+                : lessonShowingRef.current?.id === "optionsPanel"
+                  ? "bottom"
+                  : "top"
+            }
             icon={
               lessonShowingRef.current?.id === "sealed" ||
               lessonShowingRef.current?.id === "whitman"

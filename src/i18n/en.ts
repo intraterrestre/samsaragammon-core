@@ -84,6 +84,12 @@ export const en = {
   "humansX.tip": "HUMANS — YOUR GOAL\nBring your Avatars here.\nThe Xs are only a tutorial guide.\nThey disappear when Humans is revealed.",
   "lesson.evoClock": "THE EVOLUTION CLOCK ↗\nEvery roll brings you closer to your next Avatar.\nTop: White · Bottom: Black",
   "evo.tip": "THE EVOLUTION CLOCK\nEvery roll brings you closer to your next Avatar.\nTop: White · Bottom: Black",
+  "lesson.optionsPanel": "CHOOSE YOUR DESTINATION ↖\nTap one of these buttons to choose exactly which square you land on.\n“Risk”: you’ll end up next to a rival.",
+  "moveopt.cell": "Square {n}",
+  "moveopt.capture": "Capture!",
+  "moveopt.risk": "Risk",
+  "moveopt.safe": "Safe",
+  "moveopt.stays": "Stays",
   "lesson.roll": "Your turn. Roll the stones.",
 
   // ---- nombres

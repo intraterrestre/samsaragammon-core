@@ -18,7 +18,7 @@ type Props = {
   icon?: string;
   // "left": a la izquierda, centrada en vertical (no tapa la esquina
   // superior derecha, p. ej. el Reloj de la Evolución).
-  placement?: "top" | "left";
+  placement?: "top" | "left" | "bottom";
 };
 
 const SWIPE_PX = 60;
@@ -56,7 +56,7 @@ export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, 
 
   return (
     <div
-      className={`bwbLessonCard${placement === "left" ? " bwbLessonCardLeft" : ""}${fading ? " bwbLessonCardFading" : ""}`}
+      className={`bwbLessonCard${placement === "left" ? " bwbLessonCardLeft" : placement === "bottom" ? " bwbLessonCardBottom" : ""}${fading ? " bwbLessonCardFading" : ""}`}
       role="status"
       aria-live="polite"
       onPointerDown={onPointerDown}

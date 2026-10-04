@@ -306,3 +306,23 @@
   max-width: min(440px, calc(55vw));
   animation: none;
 }
+
+/* Tarjeta abajo al centro (no tapa el panel de destinos de arriba). */
+.bwbLessonCard.bwbLessonCardBottom {
+  top: auto;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  animation: none;
+}
+
+/* Panel de destinos resaltado mientras Buddha lo explica. */
+body.bwb-hl-options .moveOptionsPanel {
+  outline: 3px solid #ffd24a;
+  animation: bwbPanelPulse 1s ease-in-out infinite;
+}
+@keyframes bwbPanelPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 210, 74, 0.9), 0 6px 24px rgba(0, 0, 0, 0.55); }
+  50% { box-shadow: 0 0 0 10px rgba(255, 210, 74, 0), 0 6px 24px rgba(0, 0, 0, 0.55); }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.bwb-hl-options .moveOptionsPanel { animation: none; }
+}
