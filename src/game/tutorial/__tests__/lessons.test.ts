@@ -279,3 +279,33 @@ describe("pssss pssss", () => {
     expect(pickLesson(s, "P1", new Set<LessonId>(["fandango"]))?.id).not.toBe("fandango");
   });
 });
+
+describe("Mara: experiencia → misterio → nombre → significado", () => {
+  const era = (e: string) => ({ era: e, progress: 0, transitionSequence: 3 });
+  it("la pista sale con el mural de Margot, sin nombrar a Mara", () => {
+    const s = { ...initialState, brunoRevealed: true, cosmicClock: era("margot") } as unknown as GameState;
+    const seen = new Set<LessonId>(["brunoEra", "evoClock", "firstAvatar", "secondAvatar", "nidanaCarry", "nidanaSpawn"]);
+    expect(pickLesson(s, "P1", seen)?.id).toBe("maraClue");
+  });
+  it("con Whitman: nombre y, justo después, MARA TE ATRAPA", () => {
+    const s = { ...initialState, brunoRevealed: true, cosmicClock: era("whitman") } as unknown as GameState;
+    expect(LESSONS.find((l) => l.id === "maraName")?.holds(s, "P1")).toBe(true);
+    const all = new Map<LessonId, number>(LESSONS.map((l) => [l.id, 9]));
+    all.delete("maraName"); all.delete("maraHolds");
+    expect(pickLesson(s, "P1", all)?.id).toBe("maraName");
+    all.set("maraName", 1);
+    expect(pickLesson(s, "P1", all)?.id).toBe("maraHolds");
+  });
+  it("la frase final solo después de EL RENACIMIENTO", () => {
+    const s = {
+      ...initialState,
+      lastMove: { player: "P1", pieceKind: "pig", toPos: 3, didCapture: true, capturedPieceKind: "pig" },
+      pieces: { ...initialState.pieces, P2: { ...initialState.pieces.P2, pig: { ...initialState.pieces.P2.pig, inLimbo: true } } },
+    } as unknown as GameState;
+    const all = new Map<LessonId, number>(LESSONS.map((l) => [l.id, 9]));
+    all.delete("mara"); all.delete("maraRepeat"); all.delete("rebirth");
+    expect(pickLesson(s, "P1", all)?.id).toBe("mara");
+    all.set("rebirth", 1);
+    expect(pickLesson(s, "P1", all)?.id).toBe("maraRepeat");
+  });
+});

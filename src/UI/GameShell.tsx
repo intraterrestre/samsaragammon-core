@@ -1350,7 +1350,7 @@ React.useEffect(() => {
     lessonKey(lesson.id),
     lesson.vars?.(state, state.turn, (k) => t(k))
   );
-  lessonShowingRef.current = { id: lesson.id, message, urgent: !!lesson.urgent };
+  lessonShowingRef.current = { id: lesson.id, message, urgent: !!lesson.urgent || !!lesson.steady };
   fireDharmaEvent(message, false, false, LESSON_MS);
 }, [
   beginnerMode,
@@ -1821,7 +1821,11 @@ return (
             pointerEvents: "none",
           }}
         >
-          {pigForcedAvatarName} just returned from Mara — must move this turn
+          {/* 6 oct 2026 — en JUEGA CON BUDDHA no se dice "Mara" hasta
+              Whitman: aviso neutro y traducido. Juego normal intacto. */}
+          {beginnerMode
+            ? t("pigHint.reborn", { name: pigForcedAvatarName ?? "" })
+            : `${pigForcedAvatarName} just returned from Mara — must move this turn`}
         </div>
       )}
 
@@ -2006,7 +2010,7 @@ return (
             }}
           >
             <div style={{ fontSize: 13, letterSpacing: 2, opacity: 0.65 }}>
-              A ese Avatar ya le duele Mara.
+              {beginnerMode ? t("dharma777.alreadyCaptured") : "A ese Avatar ya le duele Mara."}
             </div>
             <div style={{ display: "flex", gap: 12 }}>
               <button

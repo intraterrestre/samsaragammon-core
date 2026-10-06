@@ -23,6 +23,11 @@ import { fandangoIsCalling } from "../../fandango/nidanaLinks";
 export type LessonId =
   | "noMove"
   | "fandango"
+  | "maraClue"
+  | "maraName"
+  | "maraHolds"
+  | "rebirth"
+  | "maraRepeat"
   // No es una lección del globo: marca el recorrido de Fandango ya hecho
   // (vive en el mismo contador, así se reinicia con cada partida).
   | "fandangoTour"
@@ -71,6 +76,12 @@ export type Lesson = {
   // interrumpir una lección no urgente que esté en pantalla, en vez de
   // esperar a que termine y llegar tarde.
   urgent?: boolean;
+  // 6 oct 2026 — solo puede salir cuando la lección indicada ya salió
+  // (la presentación de Mara es una secuencia).
+  after?: LessonId;
+  // No la interrumpe ninguna lección urgente (AHORA CONOCES A MARA →
+  // MARA TE ATRAPA es una sola revelación, sin nada en medio).
+  steady?: boolean;
   // Variables del texto ({missing}, etc.), ya traducidas.
   vars?: (state: GameState, player: PlayerId, t: (key: MessageKey) => string) => Record<string, string>;
 };
@@ -123,6 +134,17 @@ function rivalHasBlock(state: GameState, player: PlayerId): boolean {
 const rolled = (state: GameState) => state.phase === "rolled";
 
 const ERA_ORDER = ["bruno", "margot", "oriol", "marino", "rufus", "whitman"];
+// El mural ya está en la etapa de ese Avatar (o más allá).
+function muralAtLeast(state: GameState, era: string): boolean {
+  if (state.cosmicClock.transitionSequence === 0) return false;
+  return ERA_ORDER.indexOf(state.cosmicClock.era as string) >= ERA_ORDER.indexOf(era);
+}
+
+// Algún Avatar acaba de renacer y todavía no se movió.
+function someoneJustReborn(state: GameState): boolean {
+  return anyPlayer((pl) => Object.values(state.justReturnedFromMara?.[pl] ?? {}).some(Boolean));
+}
+
 function oriolEntered(state: GameState): boolean {
   return ERA_ORDER.indexOf(state.cosmicClock.era as string) >= ERA_ORDER.indexOf("oriol");
 }
@@ -200,6 +222,28 @@ export const LESSONS: Lesson[] = [
   // 4 oct 2026 — primera vez que suena el spray de Fandango ("PSSSS…
   // PSSSS…"): se enseña la asociación sonido → Fandango → alguien te
   // propone algo. A partir de la segunda vez, solo el sonido.
+  // ===== MARA (6 oct 2026, Federico + ChatGPT) =====================
+  // EXPERIENCIA → MISTERIO → REVELACIÓN → NOMBRE → SIGNIFICADO.
+  // Hasta Whitman ningún texto de JUEGA CON BUDDHA dice "Mara": las
+  // capturas se explican como "sale del Samsara 6 lances y renace".
+  // Margot destapa el primer par de ojos extraños → pista sin nombre.
+  // Whitman destapa el último → AHORA CONOCES A MARA + MARA TE ATRAPA
+  // (dos tarjetas seguidas: MARA TE ATRAPA va primera en la lista para
+  // salir justo después, y AHORA CONOCES A MARA no se interrumpe).
+  // Luego: primer renacimiento → EL RENACIMIENTO (excepto Humanos);
+  // primera captura después → MARA NO NECESITA DETENERTE.
+  {
+    id: "maraHolds",
+    holds: (s) => muralAtLeast(s, "whitman"),
+    after: "maraName",
+    steady: true,
+  },
+  {
+    id: "maraRepeat",
+    holds: lastCaptureWentToMara,
+    after: "rebirth",
+    urgent: true,
+  },
   {
     id: "fandango",
     holds: (s, p) => fandangoIsCalling(s, p),
@@ -288,6 +332,12 @@ export const LESSONS: Lesson[] = [
   // 4 oct 2026 — Federico: cuando el SEGUNDO jugador consigue un Avatar
   // que el otro ya tenía, no hay video (solo aplausos y risas) y no se
   // entiende qué pasó. Buddha da la bienvenida al Avatar del adversario.
+  // Justo después de MARGOT HA LLEGADO: el mural acaba de destapar el
+  // primer par de ojos que no es humano.
+  {
+    id: "maraClue",
+    holds: (s) => muralAtLeast(s, "margot"),
+  },
   {
     id: "rivalAvatar",
     holds: (s) => sharedAvatars(s).length > 0,
@@ -352,6 +402,17 @@ export const LESSONS: Lesson[] = [
   {
     id: "whitman",
     holds: (s) => anyPlayer((pl) => !!s.realmPieces[pl]?.deva?.unlocked),
+  },
+  {
+    id: "maraName",
+    holds: (s) => muralAtLeast(s, "whitman"),
+    after: "whitman",
+    steady: true,
+  },
+  {
+    id: "rebirth",
+    holds: someoneJustReborn,
+    after: "maraHolds",
   },
   {
     id: "sealed",
@@ -479,6 +540,7 @@ export function pickLesson(
   for (const lesson of LESSONS) {
     if (onlyUrgent && !lesson.urgent) continue;
     if (times(lesson.id) >= (lesson.repeat ?? 1)) continue;
+    if (lesson.after && times(lesson.after) === 0) continue;
     if (!lesson.holds(state, player)) continue;
     if (lesson.eventKey && lastKeys.get(lesson.id) === lesson.eventKey(state)) continue;
     return lesson;
