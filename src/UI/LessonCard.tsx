@@ -21,11 +21,13 @@ type Props = {
   placement?: "top" | "left" | "bottom";
   // 6 oct 2026 — icono grande (la moneda de Buddha dentro del cartel).
   iconLarge?: boolean;
+  // Sin desenfoque de fondo (deja ver el tablero nítido).
+  plain?: boolean;
 };
 
 const SWIPE_PX = 60;
 
-export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, icon, placement = "top", iconLarge = false }: Props) {
+export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, icon, placement = "top", iconLarge = false, plain = false }: Props) {
   const start = React.useRef<{ x: number; y: number } | null>(null);
   const [drag, setDrag] = React.useState({ x: 0, y: 0 });
 
@@ -58,7 +60,7 @@ export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, 
 
   return (
     <div
-      className={`bwbLessonCard${placement === "left" ? " bwbLessonCardLeft" : placement === "bottom" ? " bwbLessonCardBottom" : ""}${fading ? " bwbLessonCardFading" : ""}`}
+      className={`bwbLessonCard${placement === "left" ? " bwbLessonCardLeft" : placement === "bottom" ? " bwbLessonCardBottom" : ""}${fading ? " bwbLessonCardFading" : ""}${plain ? " bwbLessonCardPlain" : ""}`}
       role="status"
       aria-live="polite"
       onPointerDown={onPointerDown}

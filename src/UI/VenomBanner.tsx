@@ -1,4 +1,6 @@
 import "./VenomBanner.css";
+import { useI18n } from "../i18n";
+import type { MessageKey } from "../i18n/en";
 import { POISON_META } from "../game/poisonMeta";
 import type { BasePieceKind } from "../game/types";
 
@@ -29,6 +31,7 @@ function isEmoji(icon: string): boolean {
 }
 
 export function VenomBanner({ kind, fading }: VenomBannerProps) {
+  const { t } = useI18n();
   if (!kind) return null;
   const meta = POISON_META[kind];
 
@@ -41,7 +44,7 @@ export function VenomBanner({ kind, fading }: VenomBannerProps) {
       ) : (
         <img src={meta.icon} alt="" className="venom-banner-icon" />
       )}
-      <div className="venom-banner-label">{meta.label}</div>
+      <div className="venom-banner-label">{t(`venomBanner.${kind}` as MessageKey)}</div>
     </div>
   );
 }

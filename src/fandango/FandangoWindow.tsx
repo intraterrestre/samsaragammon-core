@@ -177,6 +177,7 @@ function SquareKarma666Block({
   onAccept: () => void;
   onRefuse: () => void;
 }) {
+  const { t } = useI18n();
   const boxStyle: CSSProperties = {
     marginTop: 20,
     padding: "16px 12%",
@@ -200,9 +201,11 @@ function SquareKarma666Block({
     const isMine = activeSnakeBet.byPlayer === myPlayer;
     return (
       <div style={boxStyle}>
-        🐍 SQUARE KARMA 666 {isMine ? "— yours" : "— rival's"} on{" "}
-        {REALM_AVATAR_NAME[activeSnakeBet.targetAvatar]} —{" "}
-        {activeSnakeBet.roundsLeft} TURN{activeSnakeBet.roundsLeft === 1 ? "" : "S"} LEFT
+        {t("fan.betActive", {
+          who: t(isMine ? "fan.betYours" : "fan.betRivals"),
+          name: REALM_AVATAR_NAME[activeSnakeBet.targetAvatar],
+          n: String(activeSnakeBet.roundsLeft),
+        })}
       </div>
     );
   }
@@ -212,24 +215,21 @@ function SquareKarma666Block({
     if (isMine) {
       return (
         <div style={boxStyle}>
-          🐍 SQUARE KARMA 666 proposed on{" "}
-          {REALM_AVATAR_NAME[pendingSnakeBet.targetAvatar]} — waiting for rival's
-          response.
+          {t("fan.betProposed", { name: REALM_AVATAR_NAME[pendingSnakeBet.targetAvatar] })}
         </div>
       );
     }
     return (
       <div style={boxStyle}>
         <div style={{ marginBottom: 8 }}>
-          🐍 Rival proposes SQUARE KARMA 666 on your{" "}
-          {REALM_AVATAR_NAME[pendingSnakeBet.targetAvatar]}.
+          {t("fan.betIncoming", { name: REALM_AVATAR_NAME[pendingSnakeBet.targetAvatar] })}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button type="button" onClick={onAccept} style={buttonStyle}>
-            ACCEPT
+            {t("fan.accept")}
           </button>
           <button type="button" onClick={onRefuse} style={buttonStyle}>
-            REFUSE
+            {t("fan.refuse")}
           </button>
         </div>
       </div>
@@ -240,7 +240,7 @@ function SquareKarma666Block({
 
   return (
     <div style={boxStyle}>
-      <div style={{ marginBottom: 8 }}>🐍 SQUARE KARMA 666 — propose bet:</div>
+      <div style={{ marginBottom: 8 }}>{t("fan.betPropose")}</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {eligibleTargets.map((kind) => (
           <button
@@ -322,8 +322,9 @@ function Coin({ entry }: { entry: CarriedNidana }) {
 }
 
 function CoinRow({ entries }: { entries: CarriedNidana[] }) {
+  const { t } = useI18n();
   if (entries.length === 0) {
-    return <EmptyNote>No Nidanas carried yet.</EmptyNote>;
+    return <EmptyNote>{t("fan.noNidanas")}</EmptyNote>;
   }
   return (
     <div
@@ -369,6 +370,7 @@ function LinkAvailableBlock({
   links: OwnLink[];
   onFormLink: (link: OwnLink) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div style={{ marginTop: 14 }}>
       <div
@@ -380,10 +382,10 @@ function LinkAvailableBlock({
           marginBottom: 8,
         }}
       >
-        LINK AVAILABLE
+        {t("fan.linkAvailable")}
       </div>
       {links.length === 0 ? (
-        <EmptyNote>None yet.</EmptyNote>
+        <EmptyNote>{t("fan.none")}</EmptyNote>
       ) : (
         <div
           style={{
@@ -417,7 +419,7 @@ function LinkAvailableBlock({
                   cursor: "pointer",
                 }}
               >
-                FORM LINK
+                {t("fan.formLink")}
               </button>
             </div>
           ))}
@@ -433,6 +435,7 @@ function LinkAvailableBlock({
 // arriba con algo que todavía no aplica la primera vez que se abre
 // Fandango.
 function YourLinksBlock({ links }: { links: OwnLink[] }) {
+  const { t } = useI18n();
   if (links.length === 0) return null;
   return (
     <div style={{ marginTop: 14 }}>
@@ -446,7 +449,7 @@ function YourLinksBlock({ links }: { links: OwnLink[] }) {
           marginBottom: 8,
         }}
       >
-        YOUR LINKS
+        {t("fan.yourLinks")}
       </div>
       <div
         style={{
@@ -476,6 +479,7 @@ function YourLinksBlock({ links }: { links: OwnLink[] }) {
 // necesita estado de partida). Pedido de Federico: "pequeño evento
 // visual/sonoro satisfactorio."
 function LinkFormedFlash({ link }: { link: { numA: number; numB: number } }) {
+  const { t } = useI18n();
   return (
     <div
       style={{
@@ -487,7 +491,7 @@ function LinkFormedFlash({ link }: { link: { numA: number; numB: number } }) {
         textAlign: "center",
       }}
     >
-      LINK FORMED {link.numA} → {link.numB}
+      {t("fan.linkFormed", { a: String(link.numA), b: String(link.numB) })}
     </div>
   );
 }
@@ -526,6 +530,7 @@ function RivalHasWhatYouNeedBlock({
   onSendOffer: () => void;
   onCancelDeal: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <div style={{ marginTop: 14 }}>
       <div
@@ -537,10 +542,10 @@ function RivalHasWhatYouNeedBlock({
           marginBottom: 8,
         }}
       >
-        RIVAL HAS WHAT YOU NEED
+        {t("fan.rivalHas")}
       </div>
       {opportunities.length === 0 ? (
-        <EmptyNote>None yet.</EmptyNote>
+        <EmptyNote>{t("fan.none")}</EmptyNote>
       ) : (
         <div
           style={{
@@ -562,7 +567,7 @@ function RivalHasWhatYouNeedBlock({
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <MiniCoin nidana={op.need} />
                   <span style={{ fontSize: 13, color: "#f2d19a", opacity: 0.9 }}>
-                    completes {lo} – {hi}
+                    {t("fan.completes", { lo: String(lo), hi: String(hi) })}
                   </span>
                   {!disabled && (
                     <button
@@ -583,7 +588,7 @@ function RivalHasWhatYouNeedBlock({
                         cursor: "pointer",
                       }}
                     >
-                      {dealOpen ? "CANCEL" : "DEAL"}
+                      {dealOpen ? t("fan.cancel") : t("fan.deal")}
                     </button>
                   )}
                 </div>
@@ -602,10 +607,10 @@ function RivalHasWhatYouNeedBlock({
                     }}
                   >
                     <div style={{ fontSize: 11, letterSpacing: "0.04em", opacity: 0.7 }}>
-                      I WANT: <MiniCoin nidana={op.need} />
+                      {t("fan.iWant")} <MiniCoin nidana={op.need} />
                     </div>
                     <div style={{ fontSize: 11, letterSpacing: "0.04em", opacity: 0.7 }}>
-                      I OFFER:
+                      {t("fan.iOffer")}
                     </div>
                     <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8 }}>
                       {mine.map((e) => (
@@ -650,7 +655,7 @@ function RivalHasWhatYouNeedBlock({
                             cursor: "pointer",
                           }}
                         >
-                          SEND OFFER
+                          {t("fan.sendOffer")}
                         </button>
                       </>
                     )}
@@ -681,6 +686,7 @@ function TradeOfferPanel({
   onAccept: () => void;
   onRefuse: () => void;
 }) {
+  const { t } = useI18n();
   const incoming = pendingTrade.fromPlayer !== myPlayer;
   return (
     <div
@@ -702,12 +708,12 @@ function TradeOfferPanel({
           marginBottom: 8,
         }}
       >
-        {incoming ? "TRADE OFFER" : "OFFER SENT"}
+        {incoming ? t("fan.tradeOffer") : t("fan.offerSent")}
       </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13 }}>
-        {incoming ? "They offer" : "Your"} <MiniCoin nidana={pendingTrade.offer} />
+        {incoming ? t("fan.theyOffer") : t("fan.yourCoin")} <MiniCoin nidana={pendingTrade.offer} />
         <span style={{ opacity: 0.6 }}>⇄</span>
-        {incoming ? "your" : "their"} <MiniCoin nidana={pendingTrade.want} />
+        {incoming ? t("fan.forYour") : t("fan.forTheir")} <MiniCoin nidana={pendingTrade.want} />
       </div>
       {incoming ? (
         <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 12 }}>
@@ -726,7 +732,7 @@ function TradeOfferPanel({
               cursor: "pointer",
             }}
           >
-            ACCEPT
+            {t("fan.accept")}
           </button>
           <button
             onClick={onRefuse}
@@ -743,12 +749,12 @@ function TradeOfferPanel({
               cursor: "pointer",
             }}
           >
-            REFUSE
+            {t("fan.refuse")}
           </button>
         </div>
       ) : (
         <div style={{ marginTop: 8, fontSize: 12, opacity: 0.6, fontStyle: "italic" }}>
-          Waiting for reply.
+          {t("fan.waiting")}
         </div>
       )}
     </div>
@@ -779,6 +785,7 @@ export function FandangoWindow({
   tour = false,
   onTourDone,
 }: Props) {
+  const { t } = useI18n();
   const [tourIndex, setTourIndex] = useState<number | null>(null);
   useEffect(() => {
     setTourIndex(open && tour ? 0 : null);
@@ -918,7 +925,7 @@ export function FandangoWindow({
           CHAT FANDANGO™
         </div>
         <div style={{ fontSize: 13, opacity: 0.6, marginBottom: 22 }}>
-          Messages, suspicious offers, and karmic arrangements.
+          {t("fan.subtitle")}
         </div>
         {callout("welcome")}
 
@@ -993,7 +1000,7 @@ export function FandangoWindow({
             fontWeight: 700,
           }}
         >
-          Close
+          {t("fan.close")}
         </button>
       </div>
     </div>

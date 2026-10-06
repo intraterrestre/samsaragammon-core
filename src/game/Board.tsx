@@ -148,6 +148,9 @@ type Props = {
   // PLAY WITH BUDDHA (30 sept 2026): modo principiante. Solo cambia lo
   // que se ilumina en pantalla; nunca qué es legal.
   beginnerMode?: boolean;
+  // 6 oct 2026 — Avatar que pulsa en dorado (el que falta en la
+  // ceremonia del Buddha DJ). Mientras hay uno, no pulsa nada más.
+  highlightAvatar?: { player: "P1" | "P2"; kind: RealmPieceKind } | null;
   onHoverOption?: (option: MoveOption | null) => void;
 };
 // Era 1 (Ignorance) gate: only unlocked base pieces render on the board or
@@ -252,6 +255,7 @@ export function Board({
   onConsultBuda,
   budaConsultationActive = false,
   beginnerMode = false,
+  highlightAvatar = null,
   onHoverOption,
 }: Props){
 
@@ -266,7 +270,7 @@ export function Board({
       pieces: new Set<PieceKind>(),
     };
     if (!beginnerMode || !genesisComplete || state.winner) return empty;
-    if (budaConsultationActive) return empty;
+    if (budaConsultationActive || highlightAvatar) return empty;
 
     if (state.phase === "idle") return { ...empty, dice: true };
 
@@ -301,7 +305,7 @@ export function Board({
       };
     }
     return empty;
-  }, [beginnerMode, genesisComplete, budaConsultationActive, state, moveOptions]);
+  }, [beginnerMode, genesisComplete, budaConsultationActive, highlightAvatar, state, moveOptions]);
 
   const captureAudioWhite = useRef<HTMLAudioElement | null>(null);
   const captureAudioBlack = useRef<HTMLAudioElement | null>(null);
@@ -1101,6 +1105,10 @@ const carriedNidana = state.avatarNidana[player][piece.kind];
         }${
           player === state.turn && beginnerHints.pieces.has(piece.kind)
             ? " bwbPulsePiece"
+            : ""
+        }${
+          highlightAvatar?.player === player && highlightAvatar.kind === piece.kind
+            ? " bwbPulsePiece bwbPulseGold"
             : ""
         }`}
 style={{

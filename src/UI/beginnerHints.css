@@ -495,3 +495,24 @@ body.bwb-hl-options .moveOptionsPanel::after {
   backdrop-filter: blur(2px);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
 }
+
+/* El Avatar que falta (ceremonia del Buddha DJ): pulso dorado. */
+.bwbPulseGold::after {
+  border-color: rgba(255, 210, 74, 0.95);
+  box-shadow: 0 0 16px rgba(255, 210, 74, 0.9);
+  width: 150%;
+  height: 150%;
+}
+
+.bwbLessonCard.bwbLessonCardPlain {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: rgba(8, 14, 34, 0.66);
+}
+
+/* Móvil horizontal: óvalo más estrecho y moneda/ficha más pequeña, para
+   que el cartel no tape medio tablero. */
+@media (max-height: 480px) {
+  .bwbLessonCard { max-width: min(600px, 72vw); font-size: 18px; }
+  .bwbLessonCardIconImg.bwbLessonCardIconBig { width: 2.6em; height: 2.6em; }
+}

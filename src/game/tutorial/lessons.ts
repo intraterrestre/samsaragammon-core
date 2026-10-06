@@ -32,6 +32,9 @@ export type LessonId =
   // No es una lección del globo: marca el recorrido de Fandango ya hecho
   // (vive en el mismo contador, así se reinicia con cada partida).
   | "fandangoTour"
+  // Ceremonia del Buddha DJ ya hecha (completa / versión corta).
+  | "djFull"
+  | "djRival"
   | "threePoisons"
   | "sixRealms"
   | "brunoEra"

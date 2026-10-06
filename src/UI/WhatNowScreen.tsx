@@ -27,6 +27,7 @@
 //                       (Lobby.tsx) — no se inventa infraestructura de
 //                       backend nueva, se usan las APIs nativas del
 //                       navegador.
+import { useI18n } from "../i18n";
 import { useState } from "react";
 import uthingoImage from "../assets/intro/uthingo_what_now.webp";
 import type { FinalVestigium } from "../game/Vestigium";
@@ -45,6 +46,7 @@ function formatDuration(ms: number): string {
 }
 
 export function WhatNowScreen({ finalVestigium, onPlayAgain }: Props) {
+  const { t } = useI18n();
   const [view, setView] = useState<"menu" | "trace">("menu");
   const [inviteStatus, setInviteStatus] = useState<"idle" | "copied">("idle");
 
@@ -87,7 +89,7 @@ export function WhatNowScreen({ finalVestigium, onPlayAgain }: Props) {
       <div className="whatNowContent">
         {view === "menu" ? (
           <>
-            <div className="whatNowHeader">WHAT NOW?</div>
+            <div className="whatNowHeader">{t("what.title")}</div>
 
             <div className="whatNowOptions">
               <button
@@ -95,9 +97,9 @@ export function WhatNowScreen({ finalVestigium, onPlayAgain }: Props) {
                 className="whatNowOption"
                 onClick={onPlayAgain}
               >
-                <span className="whatNowOptionTitle">REINCARNATE</span>
+                <span className="whatNowOptionTitle">{t("what.reincarnate")}</span>
                 <span className="whatNowOptionSubtitle">
-                  Enter the wheel again.
+                  {t("what.reincarnateSub")}
                 </span>
               </button>
 
@@ -106,9 +108,9 @@ export function WhatNowScreen({ finalVestigium, onPlayAgain }: Props) {
                 className="whatNowOption whatNowOptionPrimary"
                 onClick={() => setView("trace")}
               >
-                <span className="whatNowOptionTitle">SEE YOUR TRACE</span>
+                <span className="whatNowOptionTitle">{t("what.trace")}</span>
                 <span className="whatNowOptionSubtitle">
-                  See what happened in this Samsara.
+                  {t("what.traceSub")}
                 </span>
               </button>
 
@@ -118,9 +120,9 @@ export function WhatNowScreen({ finalVestigium, onPlayAgain }: Props) {
                 rel="noopener noreferrer"
                 className="whatNowOption"
               >
-                <span className="whatNowOptionTitle">ENTER CURVISM</span>
+                <span className="whatNowOptionTitle">{t("what.curvism")}</span>
                 <span className="whatNowOptionSubtitle">
-                  Discover why the circle matters.
+                  {t("what.curvismSub")}
                 </span>
               </a>
             </div>
@@ -140,49 +142,49 @@ export function WhatNowScreen({ finalVestigium, onPlayAgain }: Props) {
           </>
         ) : (
           <div className="whatNowTrace">
-            <div className="whatNowHeader">YOUR TRACE</div>
+            <div className="whatNowHeader">{t("what.traceTitle")}</div>
 
             <div className="whatNowTraceGrid">
               <div className="whatNowTraceRow">
-                <span className="whatNowTraceLabel">Result</span>
+                <span className="whatNowTraceLabel">{t("what.result")}</span>
                 <span className="whatNowTraceValue">
                   {finalVestigium.result === "nirvano"
-                    ? "Nirvana reached"
-                    : "Not reached"}
+                    ? t("what.nirvana")
+                    : t("what.notReached")}
                 </span>
               </div>
               <div className="whatNowTraceRow">
-                <span className="whatNowTraceLabel">Rolls</span>
+                <span className="whatNowTraceLabel">{t("what.rolls")}</span>
                 <span className="whatNowTraceValue">
                   {finalVestigium.rolls}
                 </span>
               </div>
               <div className="whatNowTraceRow">
-                <span className="whatNowTraceLabel">Captures</span>
+                <span className="whatNowTraceLabel">{t("what.captures")}</span>
                 <span className="whatNowTraceValue">
                   {finalVestigium.captures}
                 </span>
               </div>
               <div className="whatNowTraceRow">
-                <span className="whatNowTraceLabel">Nidanas activated</span>
+                <span className="whatNowTraceLabel">{t("what.nidanas")}</span>
                 <span className="whatNowTraceValue">
                   {finalVestigium.nidanasActivated}
                 </span>
               </div>
               <div className="whatNowTraceRow">
-                <span className="whatNowTraceLabel">Visits to Mara</span>
+                <span className="whatNowTraceLabel">{t("what.mara")}</span>
                 <span className="whatNowTraceValue">
                   {finalVestigium.maraVisits}
                 </span>
               </div>
               <div className="whatNowTraceRow">
-                <span className="whatNowTraceLabel">Avatars in Humans</span>
+                <span className="whatNowTraceLabel">{t("what.humans")}</span>
                 <span className="whatNowTraceValue">
                   {finalVestigium.avatarsInHumans}/6
                 </span>
               </div>
               <div className="whatNowTraceRow">
-                <span className="whatNowTraceLabel">Duration</span>
+                <span className="whatNowTraceLabel">{t("what.duration")}</span>
                 <span className="whatNowTraceValue">
                   {formatDuration(finalVestigium.durationMs)}
                 </span>
@@ -194,7 +196,7 @@ export function WhatNowScreen({ finalVestigium, onPlayAgain }: Props) {
               className="whatNowBackButton"
               onClick={() => setView("menu")}
             >
-              BACK
+              {t("what.back")}
             </button>
           </div>
         )}

@@ -6,7 +6,8 @@ import { DicePopup } from "./DicePopup";
 import { VestigiumOverlay } from "./VestigiumOverlay";
 import { LedgerModal } from "./LedgerModal";
 
-import { Board } from "../game/Board";
+import { Board, REALM_TOKEN_MAP } from "../game/Board";
+import { canonicalRealmFromPos } from "./realm";
 import {
   getMoveOptionsForPlayer,
   getPigForcedAvatar,
@@ -466,24 +467,24 @@ const handleRollWithPopup = () => {
 };
 
 const [showWatcher, setShowWatcher] = React.useState(false);
-const [watcherLine, setWatcherLine] = React.useState("I see you.");
+const [watcherLine, setWatcherLine] = React.useState("");
 const [showRealmMedal, setShowRealmMedal] = React.useState(false);
 const [realmMedalKey, setRealmMedalKey] =
   React.useState<string | null>(null);
 
 const WATCHER_LINES = [
-  "I saw that.",
-  "Not random.",
-  "Again?",
-  "Careful.",
-  "You chose that.",
-  "I see you.",
-];
+  "watcher.1",
+  "watcher.2",
+  "watcher.3",
+  "watcher.4",
+  "watcher.5",
+  "watcher.6",
+] as const;
 
 const triggerWatcher = (forcedLine?: string) => {
   const line =
     forcedLine ??
-    WATCHER_LINES[Math.floor(Math.random() * WATCHER_LINES.length)];
+    t(WATCHER_LINES[Math.floor(Math.random() * WATCHER_LINES.length)]);
 
   setWatcherLine(line);
 
@@ -838,6 +839,49 @@ const diceFrozen = state.phase === "rolled";
 //      (victoria) NO pasa por acá — queda para el futuro evento de
 //      Nirvana, sin tocar la condición de victoria.
 const prevOriolEnteredRef = React.useRef(false);
+// 6 oct 2026 — ceremonia del Buddha DJ en JUEGA CON BUDDHA (ver el
+// efecto de "ONLY ONE MORE" más abajo). step 0 = DJ solo (1 s), 1 y 2 =
+// carteles que se cierran tocando. Mientras existe, el juego está en
+// pausa (capa que tapa el tablero) y no sale ninguna lección.
+const [djCeremony, setDjCeremony] = React.useState<{
+  player: PlayerId;
+  kind: RealmPieceKind;
+  mode: "full" | "rival";
+  step: 0 | 1 | 2;
+} | null>(null);
+const playDjScratch = () => {
+  const audio = scratchAudio.current;
+  if (!audio) return;
+  audio.currentTime = 0;
+  audio.play().catch(() => {
+    window.setTimeout(() => {
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+    }, 120);
+  });
+};
+// El cartel no debe tapar el Avatar que pulsa: si está en la mitad de
+// arriba de la pantalla, el cartel va abajo, y al revés.
+const [djCardPlacement, setDjCardPlacement] = React.useState<"top" | "bottom">("top");
+React.useEffect(() => {
+  if (!djCeremony || djCeremony.step === 0) return;
+  const el = document.querySelector(".bwbPulseGold");
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  setDjCardPlacement(r.top + r.height / 2 < window.innerHeight / 2 ? "bottom" : "top");
+}, [djCeremony]);
+const advanceDjCeremony = () => {
+  setDjCeremony((c) => {
+    if (!c || c.step === 0) return c;
+    if (c.mode === "full" && c.step === 1) return { ...c, step: 2 };
+    if (c.mode === "full") {
+      // Remate: la frase del DJ, ya con el juego libre.
+      window.setTimeout(() => fireDharmaEvent("ONLY ONE MORE.", true, true, 3000, false), 0);
+    }
+    return null;
+  });
+};
+
 const prevNearWinRef = React.useRef<{ P1: boolean; P2: boolean }>({
   P1: false,
   P2: false,
@@ -862,7 +906,10 @@ const fireDharmaEvent = React.useCallback(
     big: boolean,
     withDjBuddha: boolean = false,
     // 3 oct 2026 — las lecciones de Buddha piden más tiempo de lectura.
-    durationMs: number = 5000
+    durationMs: number = 5000,
+    // 6 oct 2026 — el remate "ONLY ONE MORE." de la ceremonia del DJ ya
+    // sonó al entrar: no repetir el scratch.
+    djSound: boolean = true
   ) => {
     if (dharmaHideTimerRef.current) window.clearTimeout(dharmaHideTimerRef.current);
     if (dharmaFadeTimerRef.current) window.clearTimeout(dharmaFadeTimerRef.current);
@@ -876,7 +923,7 @@ const fireDharmaEvent = React.useCallback(
     // audios solapados, buffer todavía cargando) y el .catch() vacío se
     // lo tragaba sin dejar rastro. Mismo arreglo: un reintento + aviso
     // en consola para diagnosticar si vuelve a pasar.
-    if (withDjBuddha && scratchAudio.current) {
+    if (withDjBuddha && djSound && scratchAudio.current) {
       const audio = scratchAudio.current;
       audio.currentTime = 0;
       audio.play().catch(() => {
@@ -1289,6 +1336,24 @@ React.useEffect(() => {
 // menos de un segundo". Si arranca el video de un Avatar con una lección
 // en pantalla, la lección se retira y se devuelve a la cola: vuelve a
 // salir entera cuando termina el video.
+// 6 oct 2026 — devuelve a la cola la lección que está en pantalla (sale
+// entera más tarde). La usan el video de un Avatar y el Buddha DJ: una
+// celebración nunca se come una enseñanza.
+const requeueShowingLesson = () => {
+  const showing = lessonShowingRef.current;
+  if (!showing || !transientDharma || transientDharma.message !== showing.message) return;
+  const seen = seenLessonsRef.current;
+  const n = seen.get(showing.id) ?? 0;
+  if (n <= 1) seen.delete(showing.id);
+  else seen.set(showing.id, n - 1);
+  saveSeenLessons(seen);
+  lessonKeysRef.current.delete(showing.id);
+  lessonShowingRef.current = null;
+  if (dharmaHideTimerRef.current) window.clearTimeout(dharmaHideTimerRef.current);
+  if (dharmaFadeTimerRef.current) window.clearTimeout(dharmaFadeTimerRef.current);
+  setTransientDharma(null);
+};
+
 React.useEffect(() => {
   if (!avatarVideoPlaying) return;
   const showing = lessonShowingRef.current;
@@ -1318,6 +1383,7 @@ React.useEffect(() => {
 React.useEffect(() => {
   if (!beginnerMode || !genesisComplete || state.winner) return;
   if (avatarVideoPlaying || budaConsultationActive || pendingDharmaChoice) return;
+  if (djCeremony) return;
 
   // 3 oct 2026 — playtest de Federico: la línea roja apuntaba a un rival
   // y la lección de captura no salió, porque el globo seguía ocupado con
@@ -1360,6 +1426,7 @@ React.useEffect(() => {
   avatarVideoPlaying,
   budaConsultationActive,
   pendingDharmaChoice,
+  djCeremony,
   state,
   fireDharmaEvent,
 ]);
@@ -1397,7 +1464,7 @@ React.useEffect(() => {
 
   if (oriolEntered && snakeStreakRef.current[player] >= 2) {
     snakeStreakRef.current[player] = 0;
-    triggerWatcher("Anger, again?");
+    triggerWatcher(t("watcher.anger"));
     return;
   }
 
@@ -1545,15 +1612,54 @@ React.useEffect(() => {
   const p1At5 = whitmanEntered && p1NearWin === 5;
   const p2At5 = whitmanEntered && p2NearWin === 5;
 
-  if (p1At5 && !prevNearWinRef.current.P1) {
-    fireDharmaEvent("WHITE: ONE MORE TO GET OUT.", true, true);
+  const reached: PlayerId | null =
+    p1At5 && !prevNearWinRef.current.P1
+      ? "P1"
+      : p2At5 && !prevNearWinRef.current.P2
+        ? "P2"
+        : null;
+  if (reached) {
     // v66 (27 agosto 2026) — mismo flanco de "ONLY ONE MORE": el mural
     // de fondo pasa directo a "7 nirvana dj.webp" (tablero ya
     // totalmente destapado, ver nirvanaMuralRevealed más arriba).
     setNirvanaMuralRevealed(true);
-  } else if (p2At5 && !prevNearWinRef.current.P2) {
-    fireDharmaEvent("BLACK: ONE MORE TO GET OUT.", true, true);
-    setNirvanaMuralRevealed(true);
+    // 6 oct 2026 — una lección abierta no se pierde: vuelve a la cola.
+    if (beginnerMode) requeueShowingLesson();
+
+    const seen = seenLessonsRef.current;
+    const firstEver = beginnerMode && !seen.has("djFull");
+    const firstForOther = beginnerMode && seen.has("djFull") && !seen.has("djRival");
+    if (firstEver || firstForOther) {
+      // JUEGA CON BUDDHA — ceremonia lenta (pausa el juego): 1 s de DJ
+      // solo, luego carteles que se cierran tocando, con el Avatar que
+      // falta pulsando en el tablero.
+      seen.set(firstEver ? "djFull" : "djRival", 1);
+      saveSeenLessons(seen);
+      const missing =
+        REALM_PIECE_ORDER.find((kind) => {
+          const p = state.realmPieces[reached]?.[kind];
+          return !(
+            p?.unlocked &&
+            !p.inLimbo &&
+            canonicalRealmFromPos(p.pos) === "humans" &&
+            state.consolidatedAvatars[reached]?.[kind]
+          );
+        }) ?? "deva";
+      playDjScratch();
+      setDjCeremony({ player: reached, kind: missing, mode: firstEver ? "full" : "rival", step: 0 });
+      window.setTimeout(
+        () => setDjCeremony((c) => (c && c.step === 0 ? { ...c, step: 1 } : c)),
+        1000
+      );
+    } else if (beginnerMode) {
+      fireDharmaEvent("ONLY ONE MORE.", true, true);
+    } else {
+      fireDharmaEvent(
+        t("nearWin.oneMore", { color: t(reached === "P1" ? "color.P1" : "color.P2").toUpperCase() }),
+        true,
+        true
+      );
+    }
   }
 
   prevNearWinRef.current = { P1: p1At5, P2: p2At5 };
@@ -1637,7 +1743,7 @@ const lessonNidanas = (() => {
 })();
 const isDharmaBig = transientDharma?.big ?? false;
 const isDharmaFading = transientDharma?.fading ?? false;
-const showDjBuddha = transientDharma?.withDjBuddha ?? false;
+const showDjBuddha = (transientDharma?.withDjBuddha ?? false) || !!djCeremony;
   
 return (
 
@@ -1678,7 +1784,7 @@ return (
 
   <div className="rotateHint">
     <span>↺</span>
-    Rotate your device to play
+    {t("rotate.hint")}
   </div>
 
   <div className="samsaraStage">
@@ -2022,7 +2128,7 @@ return (
             }}
           >
             <div style={{ fontSize: 13, letterSpacing: 2, opacity: 0.65 }}>
-              {beginnerMode ? t("dharma777.alreadyCaptured") : "A ese Avatar ya le duele Mara."}
+              {beginnerMode ? t("dharma777.alreadyCaptured") : t("d777.mara")}
             </div>
             <div style={{ display: "flex", gap: 12 }}>
               <button
@@ -2038,7 +2144,7 @@ return (
                   cursor: "pointer",
                 }}
               >
-                CAPTURE
+                {t("d777.capture")}
               </button>
               {pendingDharmaChoice.eligibleTargets.length === 1 ? (
                 <button
@@ -2068,7 +2174,7 @@ return (
                   }}
                 >
                   <div style={{ fontSize: 12, opacity: 0.7 }}>
-                    ○ ROUND DHARMA 777 — ¿cuál consolidas?
+                    {t("d777.which")}
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {pendingDharmaChoice.eligibleTargets.map((kind) => (
@@ -2132,6 +2238,44 @@ return (
             }
             iconLarge={lessonShowingRef.current?.id === "nidanaMirror"}
           />,
+          document.body
+        )}
+
+      {/* 6 oct 2026 — ceremonia del Buddha DJ (JUEGA CON BUDDHA, primera
+          vez): una capa transparente pausa el tablero; tocar en cualquier
+          sitio (o el cartel) avanza. */}
+      {djCeremony &&
+        createPortal(
+          <>
+            <div
+              onClick={advanceDjCeremony}
+              style={{ position: "fixed", inset: 0, zIndex: 999970, background: "rgba(0,0,0,0.12)" }}
+            />
+            {djCeremony.step > 0 && (
+              <LessonCard
+                message={t(
+                  djCeremony.mode === "rival"
+                    ? "dj.rival"
+                    : djCeremony.step === 1
+                      ? "dj.full1"
+                      : "dj.full2",
+                  {
+                    color: lang === "es"
+                      ? t(djCeremony.player === "P1" ? "color.P1" : "color.P2").toLowerCase()
+                      : t(djCeremony.player === "P1" ? "color.P1" : "color.P2"),
+                    name: REALM_AVATAR_NAME[djCeremony.kind],
+                  }
+                )}
+                fading={false}
+                onDismiss={advanceDjCeremony}
+                dismissLabel={t("lesson.dismiss")}
+                placement={djCardPlacement}
+                plain
+                icon={REALM_TOKEN_MAP[djCeremony.kind]?.[djCeremony.player]}
+                iconLarge
+              />
+            )}
+          </>,
           document.body
         )}
 
@@ -2432,6 +2576,11 @@ return (
       <div className="boardLayer" style={{ opacity: 1 }}>
         <Board
           state={state}
+          highlightAvatar={
+            djCeremony && djCeremony.step > 0
+              ? { player: djCeremony.player, kind: djCeremony.kind }
+              : null
+          }
           onSelectPiece={onSelectPiece}
           hoveredOption={hoveredOption}
           moveOptions={moveOptions}
@@ -2490,8 +2639,8 @@ return (
   rivalNidanas={
     state.avatarNidana[state.turn === "P1" ? "P2" : "P1"]
   }
-  myLabel={`YOUR NIDANAS (${state.turn})`}
-  rivalLabel={`RIVAL NIDANAS (${state.turn === "P1" ? "P2" : "P1"})`}
+  myLabel={t("fan.yourNidanas", { color: t(state.turn === "P1" ? "color.P1" : "color.P2") })}
+  rivalLabel={t("fan.rivalNidanas", { color: t(state.turn === "P1" ? "color.P2" : "color.P1") })}
   myFormedLinks={myFormedLinks}
   onFormLink={handleFormLink}
   myPlayer={state.turn}

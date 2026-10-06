@@ -1,4 +1,5 @@
 import "./fandango.css";
+import { useI18n } from "../i18n";
 import karmaChatFandango from "./karma-chat-fandango.webp";
 
 // v72 (28 agosto 2026) — pedido de Federico: activar Fandango de
@@ -29,6 +30,7 @@ type Props = {
 };
 
 export function FandangoKarma({ onOpen, hasNotification }: Props) {
+  const { t } = useI18n();
   return (
     <div className="fandangoRoot" onClick={onOpen}>
       <img
@@ -45,9 +47,7 @@ export function FandangoKarma({ onOpen, hasNotification }: Props) {
         <strong>CHAT FANDANGO™</strong>
 
         <div className="fandangoText">
-          Messages, suspicious offers,
-          <br />
-          and karmic arrangements.
+          {t("fan.subtitle")}
         </div>
       </div>
     </div>
