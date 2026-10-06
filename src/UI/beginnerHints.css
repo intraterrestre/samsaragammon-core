@@ -470,3 +470,28 @@ body.bwb-hl-options .moveOptionsPanel::after {
 
 /* Un poco más de aire abajo: la última línea no roza la curva. */
 .bwbLessonCard { padding-bottom: calc(1.1em + 4%); }
+
+/* 6 oct 2026 — Federico: los óvalos eran casi negros y pesaban mucho
+   en pantalla. Fondo translúcido (se ve el tablero detrás) con un leve
+   desenfoque y sombra en las letras para que se sigan leyendo. */
+.bwbLessonCard {
+  background: rgba(8, 14, 34, 0.5);
+  border-color: rgba(120, 180, 255, 0.6);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 10px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.35);
+}
+.bwbHumansTip,
+.evoClockTip {
+  background: rgba(20, 14, 2, 0.55);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+}
+.fandangoTourCallout {
+  background: rgba(31, 58, 114, 0.6);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}

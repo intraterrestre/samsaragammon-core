@@ -1812,7 +1812,9 @@ return (
             top: 96,
             transform: "translateX(-50%)",
             zIndex: 9500,
-            background: "rgba(20, 10, 0, 0.88)",
+            background: "rgba(20, 10, 0, 0.5)",
+            backdropFilter: "blur(2px)",
+            textShadow: "0 1px 3px rgba(0,0,0,0.9)",
             border: "1px solid rgba(255, 200, 80, 0.6)",
             borderRadius: "50%",
             padding: "12px 34px",
@@ -1846,7 +1848,9 @@ return (
             display: "flex",
             alignItems: "center",
             gap: 12,
-            background: "rgba(10, 12, 24, 0.9)",
+            background: "rgba(10, 12, 24, 0.5)",
+            backdropFilter: "blur(2px)",
+            textShadow: "0 1px 3px rgba(0,0,0,0.9)",
             border: "1px solid rgba(120, 190, 255, 0.6)",
             borderRadius: "50%",
             padding: "14px 30px",
@@ -1995,7 +1999,7 @@ return (
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "rgba(4,4,8,0.55)",
+            background: "rgba(4,4,8,0.3)",
           }}
         >
           <div
@@ -2004,7 +2008,9 @@ return (
               width: "min(420px, 90vw)",
               padding: "12% 14%",
               borderRadius: "50%",
-              background: "linear-gradient(180deg, #14100a 0%, #0a0805 100%)",
+              background: "rgba(20, 16, 10, 0.62)",
+              backdropFilter: "blur(3px)",
+              textShadow: "0 1px 3px rgba(0,0,0,0.9)",
               border: "1px solid rgba(216,196,138,0.28)",
               boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
               color: "#f2e8d4",
@@ -2139,7 +2145,7 @@ return (
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "rgba(4,6,14,0.6)",
+            background: "rgba(4,6,14,0.3)",
           }}
         >
           <div
@@ -2150,7 +2156,9 @@ return (
               overflowY: "auto",
               padding: "11% 15% 12%",
               borderRadius: "50%",
-              background: "linear-gradient(180deg, #0f1730 0%, #090d1c 100%)",
+              background: "rgba(15, 23, 48, 0.62)",
+              backdropFilter: "blur(3px)",
+              textShadow: "0 1px 3px rgba(0,0,0,0.9)",
               border: "1px solid rgba(120,170,255,0.4)",
               boxShadow: "0 14px 44px rgba(0,0,0,0.6)",
               color: "#e8eefc",
