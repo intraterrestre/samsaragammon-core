@@ -74,7 +74,7 @@ export const es: Dictionary = {
   "lesson.mara": "CAPTURA\nCuando te capturen una ficha, se retira del Samsara durante 6 lances de dados.\nDespués renacerá en uno de sus reinos.",
   "lesson.nidanaSpawn": "Esta es una de las 12 Nidanas.\nUn Avatar la recoge al caer sobre ella dentro de su propio reino.",
   "lesson.nidanaCarry": "¡Nidana recogida!\nProtege a este Avatar de una captura. Si lo atacan, la Nidana pasa al atacante.",
-  "lesson.nidanaMirror": "Esta moneda nombra un eslabón de tu karma. Buddha lo lee en tu forma de jugar.",
+  "lesson.nidanaMirror": "LA MONEDA DE BUDDHA\nEsta moneda grande la lanza Buddha: nombra un eslabón de tu karma que lee en tu forma de jugar.\nNo es de las que se recogen en el tablero.",
   "lesson.maraReturn": "Ha renacido. Para vencer al Samsara, más adelante tendrá que llegar al Reino de los Humanos.",
   "lesson.capture": "Línea roja: cae solo sobre un rival para capturarlo.",
   "lesson.nidanaCollect": "Un Avatar recoge una Nidana en su propio reino.",

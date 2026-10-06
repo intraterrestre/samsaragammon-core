@@ -1613,6 +1613,12 @@ const buddhaMessage = lessonOnScreen ? "" : transientDharma?.message ?? "";
 // bien". En las lecciones de Nidana, la tarjeta muestra las 12 monedas
 // numeradas (las mismas que se ven sobre las casillas) y resalta las que
 // están ahora en juego.
+// 6 oct 2026 — Federico: "esta moneda…" no decía CUÁL. La lección
+// nidanaMirror muestra dentro del cartel la misma cara de la moneda
+// grande que Buddha acaba de lanzar (la última cara frontal vista).
+const mirrorCoinRef = React.useRef<string | null>(null);
+if (nidanaCoinSrc && nidanaCoinSide !== "back") mirrorCoinRef.current = nidanaCoinSrc;
+
 const lessonNidanas = (() => {
   const id = lessonOnScreen ? lessonShowingRef.current?.id : undefined;
   if (id !== "nidanaSpawn" && id !== "nidanaCarry") return undefined;
@@ -2114,8 +2120,11 @@ return (
               lessonShowingRef.current?.id === "sealed" ||
               lessonShowingRef.current?.id === "whitman"
                 ? lotusSeal
-                : undefined
+                : lessonShowingRef.current?.id === "nidanaMirror"
+                  ? mirrorCoinRef.current ?? undefined
+                  : undefined
             }
+            iconLarge={lessonShowingRef.current?.id === "nidanaMirror"}
           />,
           document.body
         )}

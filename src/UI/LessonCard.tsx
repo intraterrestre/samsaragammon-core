@@ -19,11 +19,13 @@ type Props = {
   // "left": a la izquierda, centrada en vertical (no tapa la esquina
   // superior derecha, p. ej. el Reloj de la Evolución).
   placement?: "top" | "left" | "bottom";
+  // 6 oct 2026 — icono grande (la moneda de Buddha dentro del cartel).
+  iconLarge?: boolean;
 };
 
 const SWIPE_PX = 60;
 
-export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, icon, placement = "top" }: Props) {
+export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, icon, placement = "top", iconLarge = false }: Props) {
   const start = React.useRef<{ x: number; y: number } | null>(null);
   const [drag, setDrag] = React.useState({ x: 0, y: 0 });
 
@@ -80,7 +82,7 @@ export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, 
       }
     >
       {icon ? (
-        <img src={icon} alt="" aria-hidden="true" className="bwbLessonCardIconImg" draggable={false} />
+        <img src={icon} alt="" aria-hidden="true" className={`bwbLessonCardIconImg${iconLarge ? " bwbLessonCardIconBig" : ""}`} draggable={false} />
       ) : (
         <span className="bwbLessonCardIcon" aria-hidden="true">☸</span>
       )}

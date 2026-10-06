@@ -80,7 +80,7 @@ export const en = {
   "lesson.mara": "CAPTURE\nWhen one of your pieces is captured, it leaves the Samsara for 6 dice rolls.\nThen it is reborn in one of its realms.",
   "lesson.nidanaSpawn": "This is one of the 12 Nidanas.\nAn Avatar collects it by landing on it inside its own realm.",
   "lesson.nidanaCarry": "Nidana collected!\nIt shields this Avatar from one capture. If it is attacked, the Nidana goes to the attacker.",
-  "lesson.nidanaMirror": "This coin names a link of your karma. Buddha reads it from the way you play.",
+  "lesson.nidanaMirror": "BUDDHA'S COIN\nBuddha tosses this big coin: it names a link of your karma that he reads in the way you play.\nIt is not one of the coins you collect on the board.",
   "lesson.maraReturn": "It has been reborn. To defeat the Samsara, later on it will have to reach the Realm of Humans.",
   "lesson.capture": "Red line: land exactly on a rival to capture it.",
   "lesson.nidanaCollect": "An Avatar collects a Nidana in its own realm.",

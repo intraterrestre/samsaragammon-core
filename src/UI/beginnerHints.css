@@ -459,3 +459,14 @@ body.bwb-hl-options .moveOptionsPanel::after {
   padding: 22px 15%;
 }
 .fandangoZone { border-radius: 50%; }
+
+/* La moneda grande de Buddha dentro del cartel nidanaMirror. */
+.bwbLessonCardIconImg.bwbLessonCardIconBig {
+  width: 4.2em;
+  height: 4.2em;
+  border-radius: 50%;
+  filter: drop-shadow(0 0 10px rgba(240, 192, 96, 0.8));
+}
+
+/* Un poco más de aire abajo: la última línea no roza la curva. */
+.bwbLessonCard { padding-bottom: calc(1.1em + 4%); }
