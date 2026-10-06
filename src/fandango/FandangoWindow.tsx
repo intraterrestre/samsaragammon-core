@@ -179,15 +179,15 @@ function SquareKarma666Block({
 }) {
   const boxStyle: CSSProperties = {
     marginTop: 20,
-    padding: "14px 16px",
-    borderRadius: 14,
+    padding: "16px 12%",
+    borderRadius: "50%",
     border: "1px solid rgba(255,170,120,0.3)",
     background: "rgba(255,170,120,0.06)",
   };
   const buttonStyle: CSSProperties = {
     height: 34,
     padding: "0 14px",
-    borderRadius: 8,
+    borderRadius: "50%",
     border: "1px solid rgba(216,196,138,0.28)",
     background: "rgba(255,255,255,0.06)",
     color: "#f2e8d4",
@@ -407,7 +407,7 @@ function LinkAvailableBlock({
                   marginLeft: 4,
                   height: 26,
                   padding: "0 10px",
-                  borderRadius: 7,
+                  borderRadius: "50%",
                   border: "1px solid rgba(159,216,138,0.45)",
                   background: "rgba(159,216,138,0.12)",
                   color: "#c8ecb8",
@@ -571,7 +571,7 @@ function RivalHasWhatYouNeedBlock({
                         marginLeft: 4,
                         height: 24,
                         padding: "0 10px",
-                        borderRadius: 7,
+                        borderRadius: "50%",
                         border: "1px solid rgba(232,176,106,0.45)",
                         background: dealOpen
                           ? "rgba(232,176,106,0.22)"
@@ -593,8 +593,8 @@ function RivalHasWhatYouNeedBlock({
                     style={{
                       background: "rgba(255,255,255,0.04)",
                       border: "1px solid rgba(232,176,106,0.25)",
-                      borderRadius: 10,
-                      padding: "10px 14px",
+                      borderRadius: "50%",
+                      padding: "14px 12%",
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
@@ -614,7 +614,7 @@ function RivalHasWhatYouNeedBlock({
                           onClick={() => onSelectOffer(e.nidana)}
                           style={{
                             padding: 3,
-                            borderRadius: 8,
+                            borderRadius: "50%",
                             border:
                               selectedOffer === e.nidana
                                 ? "2px solid #e8b06a"
@@ -640,7 +640,7 @@ function RivalHasWhatYouNeedBlock({
                           style={{
                             height: 28,
                             padding: "0 14px",
-                            borderRadius: 7,
+                            borderRadius: "50%",
                             border: "1px solid rgba(232,176,106,0.6)",
                             background: "rgba(232,176,106,0.28)",
                             color: "#f2e8d4",
@@ -686,8 +686,8 @@ function TradeOfferPanel({
     <div
       style={{
         margin: "0 0 20px",
-        padding: "14px 16px",
-        borderRadius: 12,
+        padding: "16px 12%",
+        borderRadius: "50%",
         background: incoming ? "rgba(232,176,106,0.1)" : "rgba(255,255,255,0.04)",
         border: incoming
           ? "1px solid rgba(232,176,106,0.4)"
@@ -716,7 +716,7 @@ function TradeOfferPanel({
             style={{
               height: 30,
               padding: "0 16px",
-              borderRadius: 8,
+              borderRadius: "50%",
               border: "1px solid rgba(159,216,138,0.6)",
               background: "rgba(159,216,138,0.22)",
               color: "#c8ecb8",
@@ -733,7 +733,7 @@ function TradeOfferPanel({
             style={{
               height: 30,
               padding: "0 16px",
-              borderRadius: 8,
+              borderRadius: "50%",
               border: "1px solid rgba(255,255,255,0.2)",
               background: "rgba(255,255,255,0.06)",
               color: "#f2e8d4",
@@ -894,8 +894,8 @@ export function FandangoWindow({
           width: "min(560px, 92vw)",
           maxHeight: "82vh",
           overflowY: "auto",
-          padding: "24px 26px",
-          borderRadius: 16,
+          padding: "22% 12% 16%",
+          borderRadius: "50%",
           background: "linear-gradient(180deg, #14100a 0%, #0a0805 100%)",
           border: "1px solid rgba(216,196,138,0.28)",
           boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
@@ -983,7 +983,7 @@ export function FandangoWindow({
             marginTop: 26,
             height: 38,
             padding: "0 16px",
-            borderRadius: 10,
+            borderRadius: "50%",
             border: "1px solid rgba(216,196,138,0.28)",
             background: "rgba(255,255,255,0.06)",
             color: "#f2e8d4",

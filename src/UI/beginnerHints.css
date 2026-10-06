@@ -404,3 +404,58 @@ body.bwb-hl-options .moveOptionsPanel::after {
   letter-spacing: 0.1em;
   color: #c8a84b;
 }
+
+/* ===================================================================
+   6 oct 2026 — CURVISMO en los carteles (pedido de Federico): nada de
+   rectángulos. Los carteles de frases son óvalos (border-radius 50%),
+   con el texto centrado y relleno suficiente para que las líneas caigan
+   dentro de la curva (la del medio, la más ancha; título arriba, corto).
+   =================================================================== */
+.bwbLessonCard {
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  border-radius: 50%;
+  box-sizing: border-box;
+  padding: calc(0.75em + 3%) calc(1.2em + 8%);
+  max-width: min(820px, calc(100vw - 36px));
+}
+@media (max-width: 520px) {
+  .bwbLessonCard {
+    width: calc(100vw - 36px);
+    padding: calc(0.9em + 5%) calc(0.6em + 9%);
+  }
+}
+.bwbLessonCard > span:not(.bwbLessonCardIcon) { display: block; }
+.bwbLessonCardIcon,
+.bwbLessonCardIconImg { margin-bottom: -2px; }
+.bwbLessonNidanas { margin-left: auto; margin-right: auto; }
+/* El ✕ cuelga del borde derecho del óvalo, como una cuenta. */
+.bwbLessonCardClose {
+  position: absolute;
+  top: 50%;
+  right: -12px;
+  margin: 0;
+  transform: translateY(-50%);
+  background: rgba(8, 14, 34, 0.95);
+}
+@media (max-height: 480px) {
+  .bwbLessonCard {
+    border-radius: 50%;
+    padding: calc(0.55em + 2%) calc(1em + 7%);
+  }
+}
+
+.bwbHumansTip,
+.evoClockTip {
+  border-radius: 50%;
+  padding: 18px 30px;
+  text-align: center;
+}
+
+.fandangoTourCallout {
+  border-radius: 50%;
+  padding: 22px 15%;
+}
+.fandangoZone { border-radius: 50%; }

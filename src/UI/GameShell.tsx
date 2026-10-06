@@ -1808,8 +1808,8 @@ return (
             zIndex: 9500,
             background: "rgba(20, 10, 0, 0.88)",
             border: "1px solid rgba(255, 200, 80, 0.6)",
-            borderRadius: 12,
-            padding: "8px 16px",
+            borderRadius: "50%",
+            padding: "12px 34px",
             color: "#ffe9a8",
             fontFamily: "Georgia, 'Times New Roman', serif",
             fontSize: 13,
@@ -1842,8 +1842,8 @@ return (
             gap: 12,
             background: "rgba(10, 12, 24, 0.9)",
             border: "1px solid rgba(120, 190, 255, 0.6)",
-            borderRadius: 999,
-            padding: "8px 10px 8px 18px",
+            borderRadius: "50%",
+            padding: "14px 30px",
             color: "#e8f1ff",
             fontFamily: "Georgia, 'Times New Roman', serif",
             fontSize: 14,
@@ -1996,8 +1996,8 @@ return (
             onClick={(e) => e.stopPropagation()}
             style={{
               width: "min(420px, 90vw)",
-              padding: "34px 46px",
-              borderRadius: "50% / 14%",
+              padding: "12% 14%",
+              borderRadius: "50%",
               background: "linear-gradient(180deg, #14100a 0%, #0a0805 100%)",
               border: "1px solid rgba(216,196,138,0.28)",
               boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
@@ -2018,7 +2018,7 @@ return (
                 onClick={confirmDharmaCapture}
                 style={{
                   padding: "10px 20px",
-                  borderRadius: 10,
+                  borderRadius: "50%",
                   border: "2px solid rgba(216,196,138,0.5)",
                   background: "rgba(255,255,255,0.06)",
                   color: "#f2e8d4",
@@ -2036,7 +2036,7 @@ return (
                   }
                   style={{
                     padding: "10px 20px",
-                    borderRadius: 10,
+                    borderRadius: "50%",
                     border: "2px solid rgba(150,200,255,0.6)",
                     background: "rgba(150,200,255,0.08)",
                     color: "#f2e8d4",
@@ -2066,7 +2066,7 @@ return (
                         onClick={() => confirmDharmaSpare(kind)}
                         style={{
                           padding: "8px 14px",
-                          borderRadius: 10,
+                          borderRadius: "50%",
                           border: "2px solid rgba(150,200,255,0.6)",
                           background: "rgba(150,200,255,0.08)",
                           color: "#f2e8d4",
@@ -2139,8 +2139,8 @@ return (
               width: "min(520px, 92vw)",
               maxHeight: "84vh",
               overflowY: "auto",
-              padding: "30px 36px 26px",
-              borderRadius: "48px",
+              padding: "11% 15% 12%",
+              borderRadius: "50%",
               background: "linear-gradient(180deg, #0f1730 0%, #090d1c 100%)",
               border: "1px solid rgba(120,170,255,0.4)",
               boxShadow: "0 14px 44px rgba(0,0,0,0.6)",

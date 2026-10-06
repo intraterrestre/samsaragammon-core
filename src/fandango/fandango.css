@@ -31,8 +31,9 @@
   left: 70px;
   top: -20px;
   width: 260px;
-  padding: 16px 18px;
-  border-radius: 12px;
+  padding: 22px 34px;
+  border-radius: 50%;
+  text-align: center;
   background: rgba(0, 0, 0, 0.68);
   border: 1px solid rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(8px);
