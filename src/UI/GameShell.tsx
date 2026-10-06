@@ -28,8 +28,8 @@ import { MaraPanel } from "./MaraPanel";
 // Fase 2B — Buda Azul (7 septiembre 2026): función canónica única del
 // Oracle (mismo consumidor que getGameDerivedState.ts) y explainPattern
 // canónico (NO la función duplicada de explain.ts — ver auditoría previa).
-import { getOracleReading } from "../game/Karma/getOracleReading";
-import { explainPattern } from "../game/behavior/patternCopy";
+import { getOracleKeys, getMirrorKey } from "../game/Karma/oracleKeys";
+import { BuddhaSpeech } from "./BuddhaSpeech";
 import { SamsaraStage } from "../samsara/SamsaraStage";
 
 import watcherVideo from "../assets/video/jesus_watch.mp4";
@@ -1100,7 +1100,6 @@ const [budaConsultingPlayer, setBudaConsultingPlayer] =
 // (ORACLE/MIRROR) sigue abierto después de que el splash desaparece. Un
 // único setTimeout pasa de uno a otro (ver handleConsultBuda) para no
 // tener dos timers independientes que puedan desincronizarse.
-const [budaPanelOpen, setBudaPanelOpen] = React.useState(false);
 
 // Verdadero durante TODA la consulta (splash + panel) — es el gate real
 // que bloquea dado/movimiento/nueva consulta (ver moveOptions más abajo
@@ -1136,60 +1135,88 @@ const noLegalMove =
 // a 1800ms (pedido de Federico, para poder testear el flujo completo
 // sin esperar) y, al vencer, en vez de simplemente cerrar, abre el
 // panel provisional — sigue siendo UN solo timer, no dos.
-const handleConsultBuda = (player: PlayerId) => {
+// 6 oct 2026 — Federico + ChatGPT: la consulta deja de ser un panel de
+// diagnóstico. Secuencia: Buddha Azul → THE BIG HEAD SCHOOL™ (la
+// primera vez espera un toque: "Big Head no te dará respuestas. Te dará
+// pistas.") → Buddha HABLA desde su sitio: lo que acabas de hacer
+// (Oracle) → lo que el Espejo empieza a ver (Mirror) → vuelve el juego.
+// Cada lectura espera un toque; mientras tanto la partida está en pausa
+// (budaConsultationActive). Si no hay ni Oracle ni Mirror, no se abre
+// nada ni se gasta la mirada: Buddha dice que todavía está aprendiendo.
+// Solo presentación: lee el estado, no cambia nada del juego.
+type BudaSpeechStep = { title?: string; text: string };
+const [budaSpeech, setBudaSpeech] = React.useState<{ steps: BudaSpeechStep[]; index: number } | null>(null);
+const [bigHeadIntro, setBigHeadIntro] = React.useState(false);
+
+const budaReadingSteps = (player: PlayerId): BudaSpeechStep[] => {
+  const oracle = getOracleKeys(
+    state.lastMoveByPlayer?.[player] ?? null,
+    state.lastKarmaByPlayer?.[player] ?? null
+  );
+  const mirror = getMirrorKey(state.behavior?.stablePattern?.[player]);
+  const steps: BudaSpeechStep[] = [];
+  if (oracle) {
+    steps.push({
+      title: t("consult.oracleTitle"),
+      text: oracle.tail ? `${t(oracle.main)}\n${t(oracle.tail)}` : t(oracle.main),
+    });
+  }
+  steps.push({
+    title: t("consult.mirrorTitle"),
+    text: mirror ? t(mirror) : t("consult.mirrorLearning"),
+  });
+  return steps;
+};
+
+const finishBigHeadSplash = (steps: BudaSpeechStep[]) => {
+  setBigHeadIntro(false);
+  setBudaConsultationOpenBy(null);
+  onClearBudaSplash();
+  setBudaSpeech({ steps, index: 0 });
+};
+const pendingBudaStepsRef = React.useRef<BudaSpeechStep[]>([]);
+
+const startBudaConsultation = (player: PlayerId, free: boolean) => {
   if (budaConsultationActive) return; // ya hay una consulta en curso
-  if ((state.consultationsRemaining?.[player] ?? 0) <= 0) return;
-  onUseBudaConsultation(player);
+  if (!free && (state.consultationsRemaining?.[player] ?? 0) <= 0) return;
+  const oracle = getOracleKeys(
+    state.lastMoveByPlayer?.[player] ?? null,
+    state.lastKarmaByPlayer?.[player] ?? null
+  );
+  const mirror = getMirrorKey(state.behavior?.stablePattern?.[player]);
+  // Una lección abierta vuelve a la cola: no compite con Buddha.
+  if (beginnerMode) requeueShowingLesson();
   setBudaConsultingPlayer(player);
+  if (!oracle && !mirror) {
+    // Nada que mostrar: ni Big Head School ni gasto.
+    setBudaSpeech({ steps: [{ text: t("consult.nothing") }], index: 0 });
+    return;
+  }
+  if (free) onUseFreeBudaLook(player);
+  else onUseBudaConsultation(player);
   setBudaConsultationOpenBy(player === "P1" ? "white" : "black");
-  setTimeout(() => {
-    setBudaConsultationOpenBy(null);
-    setBudaPanelOpen(true);
-    onClearBudaSplash();
-  }, 1800);
+  const steps = budaReadingSteps(player);
+  pendingBudaStepsRef.current = steps;
+  const seen = seenLessonsRef.current;
+  if (!seen.has("bigHeadIntro")) {
+    seen.set("bigHeadIntro", 1);
+    saveSeenLessons(seen);
+    setBigHeadIntro(true);
+    return;
+  }
+  setTimeout(() => finishBigHeadSplash(steps), 1800);
 };
 
-// CLOSE: solo cierra el panel — la consulta ya se consumió al abrir
-// (ver handleConsultBuda), cerrar NO la devuelve.
-const handleCloseBudaPanel = () => {
-  setBudaPanelOpen(false);
-  setBudaConsultingPlayer(null);
+const handleConsultBuda = (player: PlayerId) => startBudaConsultation(player, false);
+
+const advanceBudaSpeech = () => {
+  setBudaSpeech((cur) => {
+    if (!cur) return cur;
+    if (cur.index + 1 < cur.steps.length) return { ...cur, index: cur.index + 1 };
+    setBudaConsultingPlayer(null);
+    return null;
+  });
 };
-
-// Fase 2B — lectura provisional (diagnóstica, no copy final) para el
-// jugador que está consultando ahora mismo. Oracle vía la función
-// canónica getOracleReading (memoria PERSONAL, nunca state.lastMove/
-// state.lastKarma globales); Mirror vía state.behavior.stablePattern
-// exclusivamente (NO state.pattern, NO mirrorData, NO history, NO
-// computePattern, NO decisionSignature — ver auditoría previa a esta
-// fase). stablePattern === null significa "todavía no hay ni un ciclo
-// completado" — no se fabrica ninguna clasificación para eso.
-const budaOracleText = budaConsultingPlayer
-  ? getOracleReading(
-      state.lastMoveByPlayer?.[budaConsultingPlayer] ?? null,
-      state.lastKarmaByPlayer?.[budaConsultingPlayer] ?? null
-    )
-  : null;
-
-const budaStablePattern: string | null = budaConsultingPlayer
-  ? state.behavior?.stablePattern?.[budaConsultingPlayer] ?? null
-  : null;
-
-const budaMirrorLines: string[] | null = budaStablePattern
-  ? explainPattern(budaStablePattern as any, "B")
-  : null;
-
-const budaStableStreak = budaConsultingPlayer
-  ? state.behavior?.stableStreak?.[budaConsultingPlayer] ?? 0
-  : 0;
-
-const budaLifeStabilized = budaConsultingPlayer
-  ? state.behavior?.lifeStabilized?.[budaConsultingPlayer] ?? false
-  : false;
-
-const budaConsultationsLeft = budaConsultingPlayer
-  ? state.consultationsRemaining?.[budaConsultingPlayer] ?? 0
-  : 0;
 
 // Fase 2D — Buda Azul (7 septiembre 2026), pedido de Federico: la foto
 // del splash para el RIVAL (Fase 2C) queda RETIRADA acá — Federico
@@ -1208,19 +1235,10 @@ const budaConsultationsLeft = budaConsultingPlayer
 // experiencia — salvo que dispatchea USE_FREE_BUDA_LOOK (que no
 // descuenta consultationsRemaining) en vez de USE_BUDA_CONSULTATION.
 const handleUseFreeBudaLook = () => {
-  if (budaConsultationActive) return; // ya hay una consulta/mirada abierta
   const offer = state.budaFreeLookOffer;
   if (!offer) return;
-  if (Date.now() > offer.expiresAt) return; // ya venció — defensa en profundidad, el reducer también lo valida
-  const player = offer.offeredTo;
-  onUseFreeBudaLook(player);
-  setBudaConsultingPlayer(player);
-  setBudaConsultationOpenBy(player === "P1" ? "white" : "black");
-  setTimeout(() => {
-    setBudaConsultationOpenBy(null);
-    setBudaPanelOpen(true);
-    onClearBudaSplash();
-  }, 1800);
+  if (Date.now() > offer.expiresAt) return; // ya venció — el reducer también lo valida
+  startBudaConsultation(offer.offeredTo, true);
 };
 
 // Fase 2D — la oferta vive en GameState con una expiración absoluta
@@ -1247,7 +1265,10 @@ React.useEffect(() => {
 // evita superponerse con el panel de quien acaba de consultar; en
 // multijugador real, budaConsultationActive de mi lado nunca es true
 // por la consulta ajena, así que aparece enseguida).
+// 6 oct 2026 — en JUEGA CON BUDDHA (dos personas, una pantalla) no hay
+// mirada gratis: el otro acaba de ver la consulta. Online se conserva.
 const budaFreeLookOfferVisible =
+  !beginnerMode &&
   !!state.budaFreeLookOffer &&
   Date.now() <= state.budaFreeLookOffer.expiresAt &&
   !budaConsultationActive;
@@ -2390,96 +2411,35 @@ return (
         </div>
       )}
 
-      {budaPanelOpen && budaConsultingPlayer && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 1000000,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "rgba(4,4,10,0.75)",
-          }}
-        >
-          <div
-            style={{
-              width: "min(460px, 92vw)",
-              maxHeight: "82vh",
-              overflowY: "auto",
-              padding: "24px 28px",
-              borderRadius: 12,
-              background: "#0c0e16",
-              border: "1px solid rgba(120,160,255,0.35)",
-              boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
-              color: "#e8ecf8",
-              fontFamily: "monospace",
-              fontSize: 14,
-              lineHeight: 1.5,
-              textAlign: "left",
-            }}
-          >
-            <div style={{ fontSize: 12, letterSpacing: 3, opacity: 0.55, marginBottom: 4 }}>
-              PROVISIONAL — FASE 2B
-            </div>
-            <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: 2, marginBottom: 10 }}>
-              BLUE BUDDHA
-            </div>
-            <div style={{ opacity: 0.85, marginBottom: 4 }}>
-              PLAYER: {budaConsultingPlayer}
-            </div>
-            <div style={{ opacity: 0.85, marginBottom: 16 }}>
-              CONSULTATIONS LEFT: {budaConsultationsLeft}
-            </div>
+      {/* 6 oct 2026 — primera entrada a THE BIG HEAD SCHOOL™: la foto se
+          queda hasta que la toques, con el contrato de Big Head. */}
+      {bigHeadIntro &&
+        createPortal(
+          <>
+            <div
+              onClick={() => finishBigHeadSplash(pendingBudaStepsRef.current)}
+              style={{ position: "fixed", inset: 0, zIndex: 999970 }}
+            />
+            <LessonCard
+              message={t("bighead.clues")}
+              fading={false}
+              onDismiss={() => finishBigHeadSplash(pendingBudaStepsRef.current)}
+              dismissLabel={t("lesson.dismiss")}
+              placement="bottom"
+              plain
+            />
+          </>,
+          document.body
+        )}
 
-            <div style={{ fontWeight: 800, letterSpacing: 2, opacity: 0.7, marginBottom: 4 }}>
-              ORACLE
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              {budaOracleText ?? "No personal reading yet."}
-            </div>
-
-            <div style={{ fontWeight: 800, letterSpacing: 2, opacity: 0.7, marginBottom: 4 }}>
-              MIRROR
-            </div>
-            {budaStablePattern && budaMirrorLines ? (
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontWeight: 700, marginBottom: 4 }}>{budaStablePattern}</div>
-                {budaMirrorLines.map((line, i) => (
-                  <div key={i}>{line}</div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ marginBottom: 16 }}>No completed cycle yet.</div>
-            )}
-
-            <div style={{ fontWeight: 800, letterSpacing: 2, opacity: 0.5, marginBottom: 4 }}>
-              DEBUG
-            </div>
-            <div style={{ opacity: 0.7, marginBottom: 20 }}>
-              stableStreak: {budaStableStreak}
-              <br />
-              lifeStabilized: {String(budaLifeStabilized)}
-            </div>
-
-            <button
-              type="button"
-              onClick={handleCloseBudaPanel}
-              style={{
-                padding: "10px 24px",
-                borderRadius: 8,
-                border: "2px solid rgba(120,160,255,0.5)",
-                background: "rgba(120,160,255,0.1)",
-                color: "#e8ecf8",
-                fontWeight: 800,
-                cursor: "pointer",
-                letterSpacing: 1,
-              }}
-            >
-              CLOSE
-            </button>
-          </div>
-        </div>
+      {/* 6 oct 2026 — el Buddha Azul dice la lectura desde su sitio. */}
+      {budaSpeech && (
+        <BuddhaSpeech
+          title={budaSpeech.steps[budaSpeech.index]?.title}
+          text={budaSpeech.steps[budaSpeech.index]?.text ?? ""}
+          hint={t(budaSpeech.index + 1 < budaSpeech.steps.length ? "fandangoTour.next" : "consult.back")}
+          onTap={advanceBudaSpeech}
+        />
       )}
 
       {/* Fase 2D — Buda Azul (7 septiembre 2026), pedido de Federico:
@@ -2498,49 +2458,46 @@ return (
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "rgba(4,4,10,0.7)",
+            background: "rgba(4,4,10,0.35)",
           }}
         >
           <div
             style={{
               width: "min(380px, 90vw)",
-              padding: "26px 30px",
-              borderRadius: 12,
-              background: "#0c0e16",
+              padding: "12% 14%",
+              borderRadius: "50%",
+              background: "rgba(12, 14, 22, 0.66)",
+              backdropFilter: "blur(3px)",
               border: "1px solid rgba(120,160,255,0.35)",
               boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
               color: "#e8ecf8",
-              fontFamily: "monospace",
+              fontFamily: "Georgia, 'Times New Roman', serif",
               fontSize: 14,
               lineHeight: 1.5,
               textAlign: "center",
             }}
           >
-            <div style={{ fontSize: 12, letterSpacing: 3, opacity: 0.55, marginBottom: 10 }}>
-              PROVISIONAL — FASE 2D
+            <div style={{ marginBottom: 10, fontWeight: 700 }}>
+              {t("freeLook.title")}
             </div>
-            <div style={{ marginBottom: 8 }}>
-              YOUR OPPONENT IS CONSULTING THE BLUE BUDDHA.
-            </div>
-            <div style={{ marginBottom: 20, opacity: 0.85 }}>
-              You ({state.budaFreeLookOffer.offeredTo}) can look at your own
-              notes too — free, no consultation spent.
+            <div style={{ marginBottom: 18, opacity: 0.9 }}>
+              {t("freeLook.body")}
             </div>
             <button
               type="button"
               onClick={handleUseFreeBudaLook}
               style={{
                 padding: "10px 22px",
-                borderRadius: 8,
-                border: "2px solid rgba(120,160,255,0.5)",
-                background: "rgba(120,160,255,0.1)",
-                color: "#e8ecf8",
+                borderRadius: "50%",
+                border: "1px solid rgba(160,200,255,0.6)",
+                background: "rgba(120,170,255,0.15)",
+                color: "#e8eefc",
                 fontWeight: 800,
+                letterSpacing: "0.08em",
                 cursor: "pointer",
-                letterSpacing: 1,
               }}
             >
-              LOOK FOR FREE
+              {t("freeLook.button")}
             </button>
           </div>
         </div>
@@ -2576,6 +2533,7 @@ return (
       <div className="boardLayer" style={{ opacity: 1 }}>
         <Board
           state={state}
+          pulseBuddha={lessonOnScreen && lessonShowingRef.current?.id === "mirrorTouch"}
           highlightAvatar={
             djCeremony && djCeremony.step > 0
               ? { player: djCeremony.player, kind: djCeremony.kind }

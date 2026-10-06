@@ -151,6 +151,8 @@ type Props = {
   // 6 oct 2026 — Avatar que pulsa en dorado (el que falta en la
   // ceremonia del Buddha DJ). Mientras hay uno, no pulsa nada más.
   highlightAvatar?: { player: "P1" | "P2"; kind: RealmPieceKind } | null;
+  // 6 oct 2026 — el Buddha Azul pulsa (EL ESPEJO SE ABRE: "tócalo").
+  pulseBuddha?: boolean;
   onHoverOption?: (option: MoveOption | null) => void;
 };
 // Era 1 (Ignorance) gate: only unlocked base pieces render on the board or
@@ -256,6 +258,7 @@ export function Board({
   budaConsultationActive = false,
   beginnerMode = false,
   highlightAvatar = null,
+  pulseBuddha = false,
   onHoverOption,
 }: Props){
 
@@ -771,6 +774,7 @@ top: stackedPosition.top,
 >
   <img
 src={budaKarmaER}
+className={`budaKarmaImg${pulseBuddha ? " budaPulse" : ""}`}
 onClick={() => {
   onConsultBuda?.();
 }}

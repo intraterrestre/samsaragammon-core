@@ -516,3 +516,76 @@ body.bwb-hl-options .moveOptionsPanel::after {
   .bwbLessonCard { max-width: min(600px, 72vw); font-size: 18px; }
   .bwbLessonCardIconImg.bwbLessonCardIconBig { width: 2.6em; height: 2.6em; }
 }
+
+/* ===== 6 oct 2026 — el Buddha Azul habla (Oracle / Mirror) ===== */
+.buddhaSpeechVeil {
+  position: fixed;
+  inset: 0;
+  z-index: 999960;
+  background: rgba(0, 0, 0, 0.12);
+}
+.buddhaSpeechCord {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 999965;
+  pointer-events: none;
+}
+.buddhaSpeechCord path {
+  fill: none;
+  stroke: rgba(170, 210, 255, 0.95);
+  stroke-width: 3.5;
+  filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.8));
+}
+.buddhaSpeechCord circle { fill: #ffd24a; }
+.buddhaSpeech {
+  position: fixed;
+  z-index: 999975;
+  box-sizing: border-box;
+  max-height: calc(100vh - 24px);
+  padding: calc(0.9em + 4%) calc(1em + 9%) calc(1em + 4%);
+  border-radius: 50%;
+  background: rgba(8, 14, 34, 0.6);
+  border: 2px solid rgba(120, 180, 255, 0.6);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.35);
+  color: #f4f7ff;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(18px, 1.6vw + 10px, 26px);
+  line-height: 1.3;
+  text-align: center;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 10px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  animation: buddhaSpeechIn 320ms ease-out;
+}
+.buddhaSpeechTitle {
+  font-size: 0.68em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9cc4ff;
+  margin-bottom: 6px;
+}
+.buddhaSpeechLead { font-weight: 700; }
+.buddhaSpeechQuestion { font-style: italic; margin-top: 8px; color: #ffe9a8; }
+.buddhaSpeechHint {
+  margin-top: 10px;
+  font-size: 0.55em;
+  letter-spacing: 0.14em;
+  color: #c8a84b;
+  text-transform: uppercase;
+}
+@keyframes buddhaSpeechIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-height: 480px) {
+  .buddhaSpeech { font-size: 17px; padding: calc(0.6em + 3%) calc(0.8em + 8%) calc(0.7em + 3%); }
+}
+
+/* El Buddha Azul pulsa mientras Buddha explica que se le puede tocar. */
+.budaKarmaImg.budaPulse { animation: budaGlow 1.2s ease-in-out infinite; }
+@keyframes budaGlow {
+  0%, 100% { filter: drop-shadow(0 0 7px rgba(255, 255, 255, 0.95)); }
+  50% { filter: drop-shadow(0 0 22px rgba(120, 190, 255, 1)) drop-shadow(0 0 8px #ffd24a); }
+}

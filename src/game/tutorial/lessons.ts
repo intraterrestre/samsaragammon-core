@@ -35,6 +35,9 @@ export type LessonId =
   // Ceremonia del Buddha DJ ya hecha (completa / versión corta).
   | "djFull"
   | "djRival"
+  // Primera entrada a THE BIG HEAD SCHOOL™ ya hecha.
+  | "bigHeadIntro"
+  | "mirrorTouch"
   | "threePoisons"
   | "sixRealms"
   | "brunoEra"
@@ -288,6 +291,13 @@ export const LESSONS: Lesson[] = [
   {
     id: "mirror",
     holds: (s) => oriolEntered(s),
+  },
+  // 6 oct 2026 — segunda tarjeta del Espejo, justo después: dónde se
+  // toca (el Buddha Azul pulsa mientras está en pantalla).
+  {
+    id: "mirrorTouch",
+    holds: (s) => oriolEntered(s),
+    after: "mirror",
   },
   // Una pieza acaba de ser capturada (esta jugada exacta). Se repite
   // 4 veces: "al comerte una ficha se va a Mara" tiene que grabarse.
