@@ -1,4 +1,5 @@
 // src/game/state/reducer.ts
+import { humansRevealed, revealHumansLotuses } from "../rules/humansReveal";
 import type {
   BasePieceKind,
   GameState,
@@ -422,7 +423,14 @@ function applyCollapseIfNeeded(
   return { pieces: nextPieces, collapsedCounts };
 }
 
+// 6 oct 2026 — ver rules/humansReveal.ts: al destaparse Humanos
+// (llega Marino) florecen los lotos pendientes, sea cual sea la acción
+// que cambió la era (jugada real, saltos de prueba, atajos dev).
 export function reducer(state: GameState, action: Action): GameState {
+  return revealHumansLotuses(state, reducerCore(state, action));
+}
+
+function reducerCore(state: GameState, action: Action): GameState {
   switch (action.type) {
     case "SET_MULTIPLAYER_STATE":
       return action.state;
@@ -807,6 +815,7 @@ export function reducer(state: GameState, action: Action): GameState {
       const piece = state.realmPieces[player]?.[targetAvatar];
       if (!piece || piece.inLimbo || !piece.unlocked) return state;
       if (canonicalRealmFromPos(piece.pos) !== "humans") return state;
+      if (!humansRevealed(state)) return state;
       if (state.consolidatedAvatars[player]?.[targetAvatar]) return state;
 
       // El apostador necesita al menos 2 Nidanas propias en juego
@@ -1969,7 +1978,9 @@ if (isBasePiece) {
   // "camino de revancha" en vez de volverlas irrelevantes.
   if (
     canonicalRealmFromPos(finalToPos) === "humans" &&
-    !realmPiece.everCaptured
+    !realmPiece.everCaptured &&
+    // 6 oct 2026 — sin loto mientras Humanos no está destapado (Marino).
+    humansRevealed(state)
   ) {
     autoConsolidatedThisMove = activeRealmPiece;
   }

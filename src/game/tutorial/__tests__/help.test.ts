@@ -77,6 +77,7 @@ describe("ayuda de Buddha", () => {
   it("cómo ganar: cuenta lotos y explica cada Avatar", () => {
     const s = {
       ...initialState,
+      cosmicClock: { era: "marino", progress: 0, transitionSequence: 4 },
       realmPieces: {
         P1: {
           hungry_ghost: avatar("hungry_ghost", 22),

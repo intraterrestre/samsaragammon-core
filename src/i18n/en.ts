@@ -152,6 +152,7 @@ export const en = {
   "win.sealedHere": "{name}: lotus, in Humans",
   "win.sealedAway": "{name}: lotus, must return to Humans",
   "win.hereUnsealed": "{name}: in Humans, no lotus (needs 666 or 777)",
+  "win.waitsReveal": "{name}: in Humans; lotuses bloom once Humans is revealed (when Marino arrives)",
   "win.willNeed": "{name}: will need 666 or 777 for its lotus",
   "win.onWay": "{name}: on its way",
 

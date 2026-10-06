@@ -3,6 +3,7 @@
 // Federico/Chat. Hermana de Snake Bet (666), pero instantánea y sin
 // estado persistente: en vez de "apuesto que voy a morder", es "podía
 // morder y decidí no hacerlo". Ver reducer.ts, case DECLARE_DHARMA_777.
+import { humansRevealed } from "./rules/humansReveal";
 import type { GameState, MoveOption, PlayerId, RealmPieceKind } from "./types";
 import { REALM_PIECE_ORDER } from "./types";
 import { realmFromPos } from "../UI/realm";
@@ -56,6 +57,8 @@ export function getDharma777EligibleTargets(
   state: GameState,
   player: PlayerId
 ): RealmPieceKind[] {
+  // 6 oct 2026 — sin lotos mientras Humanos no está destapado (Marino).
+  if (!humansRevealed(state)) return [];
   return REALM_PIECE_ORDER.filter((kind) => {
     const piece = state.realmPieces[player]?.[kind];
     if (!piece || !piece.unlocked || piece.inLimbo) return false;

@@ -11,6 +11,7 @@
 // Multilingüe: los textos viven en src/i18n (en.ts, es.ts); aquí solo se
 // eligen las claves y se rellenan los datos.
 
+import { humansRevealed } from "../rules/humansReveal";
 import type { BasePieceKind, GameState, PieceKind, PlayerId, RealmPieceKind } from "../types";
 import { REALM_PIECE_ORDER } from "../types";
 import { REALM_AVATAR_NAME } from "../realmAvatarNames";
@@ -120,6 +121,7 @@ function howDoIWin(state: GameState, player: PlayerId, lang: Lang): string[] {
     const here = canonicalRealmFromPos(p.pos) === "humans";
     if (sealed && here) lines.push(t("win.sealedHere", { name }));
     else if (sealed) lines.push(t("win.sealedAway", { name }));
+    else if (here && !humansRevealed(state)) lines.push(t("win.waitsReveal", { name }));
     else if (here) lines.push(t("win.hereUnsealed", { name }));
     else if (p.everCaptured) lines.push(t("win.willNeed", { name }));
     else lines.push(t("win.onWay", { name }));

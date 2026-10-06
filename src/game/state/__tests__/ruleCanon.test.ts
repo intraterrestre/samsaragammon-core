@@ -22,6 +22,8 @@ import { getAllLegalMoves, hasAnyLegalMove } from "../../rules/legalMoves";
 import { canonicalRealmFromPos } from "../../../UI/realm";
 import { NIDANA_LIST } from "../../nidanas";
 import type { GameState, MoveOption, PlayerId, RealmPieceKind } from "../../types";
+import { getDharma777EligibleTargets } from "../../dharma777";
+import { revealHumansLotuses } from "../../rules/humansReveal";
 
 beforeAll(() => {
   vi.spyOn(console, "log").mockImplementation(() => {});
@@ -126,6 +128,8 @@ describe("Mara: 6 lances y renacimiento al azar fuera de Humans", () => {
 // lo que se mide es cuántos turnos dura.
 function betState(): GameState {
   return base({
+    // Humanos ya destapado (Marino): sin eso no hay lotos ni 666.
+    cosmicClock: { era: "marino", progress: 0, transitionSequence: 4 },
     turn: "P1",
     pieces: {
       P1: { pig: venom(3), snake: venom(4), rooster: venom(5) },
@@ -354,5 +358,25 @@ describe("saltos de prueba (4 oct 2026)", () => {
       expect(Object.values(s.realmPieces[pl]).filter((p) => p?.unlocked).length).toBe(3);
       expect(s.realmProgress[pl].currentRealmStep).toBe(3);
     }
+  });
+});
+
+describe("Lotos: solo cuando Humanos se destapa (Marino)", () => {
+  const inHumans = (extra = {}) => avatar("hell", 22, extra);
+  it("antes de Marino no hay loto; al llegar Marino florecen los limpios", () => {
+    const before = base({
+      cosmicClock: { era: "margot", progress: 0, transitionSequence: 2 },
+      realmPieces: {
+        P1: { hell: inHumans(), hungry_ghost: avatar("hungry_ghost", 23, { everCaptured: true }) },
+        P2: {},
+      },
+    });
+    expect(getDharma777EligibleTargets(before, "P1")).toEqual([]);
+    const after = revealHumansLotuses(before, {
+      ...before,
+      cosmicClock: { era: "marino", progress: 0, transitionSequence: 3 },
+    });
+    expect(after.consolidatedAvatars.P1?.hell).toBe(true);
+    expect(after.consolidatedAvatars.P1?.hungry_ghost).toBeFalsy();
   });
 });

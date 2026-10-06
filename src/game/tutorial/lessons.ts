@@ -11,6 +11,7 @@
 //
 // Todo son lecturas del GameState: ninguna lección cambia el juego.
 
+import { humansRevealed } from "../rules/humansReveal";
 import type { GameState, PlayerId, RealmPieceKind } from "../types";
 import { REALM_PIECE_ORDER } from "../types";
 import { canonicalRealmFromPos } from "../../UI/realm";
@@ -200,6 +201,8 @@ function unsealedArrival(state: GameState): RealmPieceKind | null {
   const piece = state.realmPieces[m.player]?.[kind];
   if (!piece || piece.inLimbo || piece.pos !== m.toPos || !inHumans(m.toPos)) return null;
   if (!piece.everCaptured || state.consolidatedAvatars[m.player]?.[kind]) return null;
+  // 6 oct 2026 — de lotos no se habla hasta que Humanos se destapa.
+  if (!humansRevealed(state)) return null;
   return kind;
 }
 

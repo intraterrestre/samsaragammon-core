@@ -143,6 +143,7 @@ export const es: Dictionary = {
   "win.sealedHere": "{name}: con loto, en Humanos",
   "win.sealedAway": "{name}: con loto, tiene que volver a Humanos",
   "win.hereUnsealed": "{name}: en Humanos, sin loto (necesita 666 o 777)",
+  "win.waitsReveal": "{name}: en Humanos; los lotos florecen cuando Humanos se destapa (llega Marino)",
   "win.willNeed": "{name}: necesitará 666 o 777 para su loto",
   "win.onWay": "{name}: en camino",
 

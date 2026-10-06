@@ -249,13 +249,14 @@ describe("no florece el loto", () => {
     const s = {
       ...initialState,
       brunoRevealed: true,
+      cosmicClock: { era: "marino", progress: 0, transitionSequence: 4 },
       lastMove: { player: "P1", pieceKind: "hell", toPos: 0, didCapture: false, capturedPieceKind: null },
       realmPieces: {
         P1: { hell: { id: "h", kind: "hell", pos: 0, inLimbo: false, maraLevel: null, unlocked: true, everCaptured: true } },
         P2: {},
       },
     } as unknown as GameState;
-    const seen = new Set<LessonId>(["brunoEra", "evoClock", "secondAvatar"]);
+    const seen = new Map<LessonId, number>(LESSONS.filter((l) => l.id !== "unsealed").map((l) => [l.id, 9]));
     const l = pickLesson(s, "P2", seen);
     expect(l?.id).toBe("unsealed");
     expect(l!.vars!(s, "P2", (k) => k).name).toBe("Margot");
@@ -267,10 +268,11 @@ describe("pssss pssss", () => {
     const s = {
       ...initialState,
       brunoRevealed: true,
+      cosmicClock: { era: "marino", progress: 0, transitionSequence: 4 },
       lastMove: { player: "P1", pieceKind: "hell", toPos: 0, didCapture: false, capturedPieceKind: null },
       realmPieces: { P1: { hell: { id: "h", kind: "hell", pos: 0, inLimbo: false, maraLevel: null, unlocked: true, everCaptured: true } }, P2: {} },
     } as unknown as GameState;
-    const l = pickLesson(s, "P2", new Set<LessonId>(["brunoEra", "evoClock", "secondAvatar"]));
+    const l = pickLesson(s, "P2", new Map<LessonId, number>(LESSONS.filter((l) => l.id !== "unsealed").map((l) => [l.id, 9])));
     expect(l!.vars!(s, "P2", (k) => k).captured).toBe("lesson.capturedF");
   });
   it("sale el primer llamado de Fandango con una oferta entrante", () => {
@@ -307,5 +309,20 @@ describe("Mara: experiencia → misterio → nombre → significado", () => {
     expect(pickLesson(s, "P1", all)?.id).toBe("mara");
     all.set("rebirth", 1);
     expect(pickLesson(s, "P1", all)?.id).toBe("maraRepeat");
+  });
+});
+
+describe("lotos solo con Humanos destapado (Marino)", () => {
+  it("antes de Marino no sale NO FLORECE EL LOTO", () => {
+    const s = {
+      ...initialState,
+      brunoRevealed: true,
+      cosmicClock: { era: "margot", progress: 0, transitionSequence: 2 },
+      lastMove: { player: "P1", pieceKind: "hell", toPos: 0, didCapture: false, capturedPieceKind: null },
+      realmPieces: { P1: { hell: { id: "h", kind: "hell", pos: 0, inLimbo: false, maraLevel: null, unlocked: true, everCaptured: true } }, P2: {} },
+    } as unknown as GameState;
+    const all = new Map<LessonId, number>(LESSONS.map((l) => [l.id, 9]));
+    all.delete("unsealed");
+    expect(pickLesson(s, "P2", all)?.id).not.toBe("unsealed");
   });
 });
