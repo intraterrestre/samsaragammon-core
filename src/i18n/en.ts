@@ -59,7 +59,7 @@ export const en = {
   "lesson.phase2": "MOVE BRUNO\nFirst tap Bruno.\nThen choose Pig, Rooster or Snake.\nThey drive Bruno around the Wheel of Samsara.",
   "lesson.whitman": "SIX AVATARS. SIX LOTUSES.\nGather them in Humans.\nAnd break the Wheel.",
   "lesson.sealed": "A LOTUS BLOOMS!\n{name} has received its lotus, and it is theirs forever.\nAn Avatar blooms when it reaches Humans without ever being captured.",
-  "lesson.unsealed": "NO LOTUS BLOOMS\n{name} reached Humans, but was {captured} once.\nOnly an Avatar that was never captured blooms on arrival.",
+  "lesson.unsealed": "NO LOTUS BLOOMS\n{name} reached Humans, but was {captured} once.\nOnly an Avatar that was never captured blooms on arrival.\nYou will have to negotiate a Fandango.",
   "lesson.capturedM": "captured",
   "lesson.capturedF": "captured",
   "lesson.fandango": "PSSSS… PSSSS… 👀\nKarma Chat Fandango is calling.\nThere’s an offer waiting for you.\nGo check it out.",

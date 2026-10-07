@@ -53,7 +53,7 @@ export const es: Dictionary = {
   "lesson.phase2": "MUEVE A BRUNO\nPrimero toca a Bruno.\nLuego elige Cerdo, Gallo o Serpiente.\nEllos impulsan a Bruno por la Rueda del Samsara.",
   "lesson.whitman": "SEIS AVATARES. SEIS LOTOS.\nReúnelos en Humanos.\nY rompe la Rueda.",
   "lesson.sealed": "¡FLORECE UN LOTO!\n{name} recibió su loto, y es suyo para siempre.\nUn Avatar florece cuando llega a Humanos sin haber sido capturado nunca.",
-  "lesson.unsealed": "NO FLORECE EL LOTO\n{name} llegó a Humanos, pero antes fue {captured}.\nSolo florece quien llega sin haber sido capturado nunca.",
+  "lesson.unsealed": "NO FLORECE EL LOTO\n{name} llegó a Humanos, pero antes fue {captured}.\nSolo florece quien llega sin haber sido capturado nunca.\nTendrás que negociar un Fandango.",
   "lesson.capturedM": "capturado",
   "lesson.capturedF": "capturada",
   "lesson.fandango": "PSSSS… PSSSS… 👀\nTe llaman del Karma Chat Fandango.\nHay una propuesta esperándote.\nVe a verla.",
