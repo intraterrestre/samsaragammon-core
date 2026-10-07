@@ -54,7 +54,7 @@ export const en = {
 
   // ---- lecciones (Buddha las dice una vez, en mayúsculas)
   "lesson.noMove": "No path this roll. Pass, and the wheel turns.",
-  "lesson.firstAvatar": "Bruno is your first Avatar. He moves through ignorance, impulse or anger.",
+  "lesson.firstAvatar": "BRUNO, YOUR FIRST AVATAR\nHe moves through ignorance, impulse or anger.\nThere are 6 Avatars, and each one has its own realm of 4 squares.",
   "lesson.secondAvatar": "MARGOT HAS ARRIVED\nSometimes we learn through curiosity.\nSometimes, because it hurts.\nLiving things learn to bend.",
   "lesson.phase2": "MOVE BRUNO\nFirst tap Bruno.\nThen choose Pig, Rooster or Snake.\nThey drive Bruno around the Wheel of Samsara.",
   "lesson.whitman": "SIX AVATARS. SIX LOTUSES.\nGather them in Humans.\nAnd break the Wheel.",
@@ -197,7 +197,9 @@ export const en = {
   "moveopt.risk": "Risk",
   "moveopt.safe": "Safe",
   "moveopt.stays": "Stays",
-  "lesson.rivalAvatar": "WELCOME, {name}!\n{color} now have their own {name} too.",
+  "lesson.rivalAvatar": "{welcome}, {name}!\n{color} now have their own {name} too.",
+  "lesson.welcomeM": "WELCOME",
+  "lesson.welcomeF": "WELCOME",
   "lesson.howToMove": "HOW DO I MOVE MY AVATARS?\nTap an Avatar and look at the arrows: each animal shows you its destinations.",
   "lesson.roll": "Your turn. Roll the stones.",
 

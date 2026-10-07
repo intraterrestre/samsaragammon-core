@@ -240,7 +240,7 @@ describe("bienvenida al Avatar del adversario", () => {
     const seen = new Set<LessonId>(["brunoEra", "evoClock", "firstAvatar", "secondAvatar"]);
     const l = pickLesson(s, "P1", seen);
     expect(l?.id).toBe("rivalAvatar");
-    expect(l!.vars!(s, "P1", (k) => (k === "color.P2" ? "Negras" : k))).toEqual({ name: "Margot", color: "Negras" });
+    expect(l!.vars!(s, "P1", (k) => (k === "color.P2" ? "Negras" : k))).toEqual({ name: "Margot", color: "Negras", welcome: "lesson.welcomeF" });
   });
 });
 
@@ -324,5 +324,19 @@ describe("lotos solo con Humanos destapado (Marino)", () => {
     const all = new Map<LessonId, number>(LESSONS.map((l) => [l.id, 9]));
     all.delete("unsealed");
     expect(pickLesson(s, "P2", all)?.id).not.toBe("unsealed");
+  });
+});
+
+describe("bienvenida al Avatar del rival", () => {
+  it("Margot: BIENVENIDA", () => {
+    const l = LESSONS.find((x) => x.id === "rivalAvatar")!;
+    const s = {
+      ...initialState,
+      realmPieces: {
+        P1: { hell: { id: "a", kind: "hell", pos: 3, inLimbo: false, maraLevel: null, unlocked: true } },
+        P2: { hell: { id: "b", kind: "hell", pos: 9, inLimbo: false, maraLevel: null, unlocked: true } },
+      },
+    } as unknown as GameState;
+    expect(l.vars!(s, "P1", (k) => k).welcome).toBe("lesson.welcomeF");
   });
 });

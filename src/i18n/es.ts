@@ -48,7 +48,7 @@ export const es: Dictionary = {
   "ask.close": "CERRAR",
 
   "lesson.noMove": "No hay camino en esta tirada. Pasa, y la rueda gira.",
-  "lesson.firstAvatar": "Bruno es tu primer Avatar. Se mueve por ignorancia, impulsividad o rabia.",
+  "lesson.firstAvatar": "BRUNO, TU PRIMER AVATAR\nSe mueve por ignorancia, impulsividad o rabia.\nSon 6 Avatares, y cada uno tiene su propio reino de 4 casillas.",
   "lesson.secondAvatar": "MARGOT HA LLEGADO\nA veces aprendemos por curiosidad.\nA veces, porque duele.\nLo vivo aprende a curvarse.",
   "lesson.phase2": "MUEVE A BRUNO\nPrimero toca a Bruno.\nLuego elige Cerdo, Gallo o Serpiente.\nEllos impulsan a Bruno por la Rueda del Samsara.",
   "lesson.whitman": "SEIS AVATARES. SEIS LOTOS.\nReúnelos en Humanos.\nY rompe la Rueda.",
@@ -191,7 +191,9 @@ export const es: Dictionary = {
   "moveopt.risk": "Riesgo",
   "moveopt.safe": "Seguro",
   "moveopt.stays": "Se queda",
-  "lesson.rivalAvatar": "¡BIENVENIDO, {name}!\nAhora las {color} también tienen su {name}.",
+  "lesson.rivalAvatar": "¡{welcome}, {name}!\nAhora las {color} también tienen su {name}.",
+  "lesson.welcomeM": "BIENVENIDO",
+  "lesson.welcomeF": "BIENVENIDA",
   "lesson.howToMove": "¿CÓMO MUEVO MIS AVATARES?\nPulsa un Avatar y mira las flechas: cada animal te muestra sus destinos.",
   "lesson.roll": "Tu turno. Tira las piedras.",
 

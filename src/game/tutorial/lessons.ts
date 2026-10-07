@@ -371,6 +371,8 @@ export const LESSONS: Lesson[] = [
       return {
         name: kind ? REALM_AVATAR_NAME[kind] : "",
         color: t(`color.${second}` as MessageKey),
+        // 7 oct 2026 — Federico: "¡BIENVENIDA, MARGOT!" (femenino).
+        welcome: t(kind && FEMININE_AVATARS.has(kind) ? "lesson.welcomeF" : "lesson.welcomeM"),
       };
     },
   },
