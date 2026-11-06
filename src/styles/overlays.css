@@ -631,3 +631,57 @@
   opacity: 0;
   transition: transform 700ms ease, opacity 700ms ease;
 }
+
+/* =========================
+   SEÑALES DEL CIELO (nov 2026)
+   ========================= */
+
+.skySignOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000001;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.55);
+  animation: skySignFade 5.6s ease-out forwards;
+  cursor: pointer;
+}
+
+.skySignVideo {
+  width: min(560px, 88vw);
+  border-radius: 50% / 18%;
+  box-shadow: 0 0 60px rgba(170, 160, 255, 0.45);
+}
+
+.skySignText {
+  padding: 0 16px;
+  font-weight: 900;
+  font-size: clamp(18px, 4vw, 30px);
+  letter-spacing: 0.05em;
+  color: #fff;
+  text-align: center;
+  text-shadow: 0 0 14px rgba(0, 0, 0, 1), 0 0 24px rgba(150, 140, 255, 0.7);
+}
+
+@keyframes skySignFade {
+  0% { opacity: 0; }
+  8% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Jesús FBI (watcher) en pantallas estrechas: antes quedaba 220px a la
+   izquierda de la rueda, fuera de la pantalla del móvil. */
+@media (max-width: 900px) {
+  .watcherOverlay {
+    position: fixed;
+    left: 50%;
+    top: 32%;
+  }
+  .watcherTextTop {
+    font-size: 20px;
+  }
+}

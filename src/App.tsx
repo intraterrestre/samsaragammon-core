@@ -1351,7 +1351,7 @@ nidanaCoinSide={nidanaSide}
         dispatch({ type: "SEND_TRADE_OFFER", player, offer, want })
       }
       onAcceptTrade={() => dispatch({ type: "ACCEPT_TRADE_OFFER" })}
-      onRefuseTrade={() => dispatch({ type: "REFUSE_TRADE_OFFER" })}
+      onRefuseTrade={(skySign?: boolean) => dispatch({ type: "REFUSE_TRADE_OFFER", skySign })}
       // v84 (4 septiembre 2026) — Square Karma 666 (Snake Bet) y Round
       // Dharma 777, pedido de Federico. Ver reducer.ts
       // (REQUEST_SNAKE_BET/ACCEPT_SNAKE_BET/REFUSE_SNAKE_BET/
@@ -1360,7 +1360,7 @@ nidanaCoinSide={nidanaSide}
         dispatch({ type: "REQUEST_SNAKE_BET", player, targetAvatar })
       }
       onAcceptSnakeBet={() => dispatch({ type: "ACCEPT_SNAKE_BET" })}
-      onRefuseSnakeBet={() => dispatch({ type: "REFUSE_SNAKE_BET" })}
+      onRefuseSnakeBet={(skySign?: boolean) => dispatch({ type: "REFUSE_SNAKE_BET", skySign })}
       onDeclareDharma777={(player, option, allOptions, targetAvatar) =>
         dispatch({
           type: "DECLARE_DHARMA_777",

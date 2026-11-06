@@ -92,7 +92,7 @@ type Action =
   | { type: "FORM_LINK"; player: PlayerId; low: number }
   | { type: "REQUEST_SNAKE_BET"; player: PlayerId; targetAvatar: RealmPieceKind }
   | { type: "ACCEPT_SNAKE_BET" }
-  | { type: "REFUSE_SNAKE_BET" }
+  | { type: "REFUSE_SNAKE_BET"; skySign?: boolean }
   | {
       type: "DECLARE_DHARMA_777";
       player: PlayerId;
@@ -109,7 +109,7 @@ type Action =
   // ya usa FandangoWindow para decidir de quién son "YOUR NIDANAS").
   | { type: "SEND_TRADE_OFFER"; player: PlayerId; offer: NidanaId; want: NidanaId }
   | { type: "ACCEPT_TRADE_OFFER" }
-  | { type: "REFUSE_TRADE_OFFER" }
+  | { type: "REFUSE_TRADE_OFFER"; skySign?: boolean }
   // Fase 1 — Buda Azul (6 septiembre 2026), pedido de Federico: consumir
   // una consulta. "player" viaja EXPLÍCITO en la acción a propósito — el
   // reducer no lee state.turn para esto. Motivo: a futuro (fase
@@ -142,6 +142,24 @@ type Action =
   | { type: "PASS_NO_MOVES"; player: PlayerId };
 
 const otherPlayer = (p: PlayerId): PlayerId => (p === "P1" ? "P2" : "P1");
+
+// Nov 2026 — SEÑALES DEL CIELO: rechazar una oferta "con señal del
+// cielo". Solo se registra si se pidió y si ese jugador todavía no la
+// gastó en esta partida (una por jugador). Si ya la gastó, el rechazo
+// sigue siendo válido, simplemente sin señal.
+function withSkySign(
+  next: GameState,
+  refuser: PlayerId,
+  wanted: boolean | undefined,
+): GameState {
+  const used = next.skySignsUsed ?? [];
+  if (!wanted || used.includes(refuser)) return next;
+  return {
+    ...next,
+    skySign: { by: refuser, at: Date.now() },
+    skySignsUsed: [...used, refuser],
+  };
+}
 const rollDie = () => 1 + Math.floor(Math.random() * 6);
 
 // v77 (28 agosto 2026) — pedido de Federico tras verlo en partida real:
@@ -882,7 +900,7 @@ function reducerCore(state: GameState, action: Action): GameState {
       if (!state.pendingSnakeBet) return state;
       const rival = otherPlayer(state.pendingSnakeBet.byPlayer);
       if (state.turn !== rival) return state;
-      return { ...state, pendingSnakeBet: null };
+      return withSkySign({ ...state, pendingSnakeBet: null }, rival, action.skySign);
     }
 
     // v83 (1 septiembre 2026) — "☸ ROUND DHARMA 777" (nombre visible al
@@ -1056,7 +1074,7 @@ function reducerCore(state: GameState, action: Action): GameState {
       if (!trade) return state;
       const toPlayer = otherPlayer(trade.fromPlayer);
       if (state.turn !== toPlayer) return state;
-      return { ...state, pendingTrade: null };
+      return withSkySign({ ...state, pendingTrade: null }, toPlayer, action.skySign);
     }
 
     // Fase 1 — Buda Azul (6 septiembre 2026): consumir una consulta.

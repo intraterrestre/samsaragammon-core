@@ -79,7 +79,7 @@ type Props = {
   pendingTrade: PendingTrade | null;
   onSendTradeOffer: (offer: NidanaId, want: NidanaId) => void;
   onAcceptTrade: () => void;
-  onRefuseTrade: () => void;
+  onRefuseTrade: (skySign?: boolean) => void;
 
   // v84 (4 septiembre 2026) — Square Karma 666 (Snake Bet), pedido de
   // Federico. Nombre interno del reducer sigue siendo "snake bet" —
@@ -96,7 +96,10 @@ type Props = {
   } | null;
   onRequestSnakeBet: (targetAvatar: RealmPieceKind) => void;
   onAcceptSnakeBet: () => void;
-  onRefuseSnakeBet: () => void;
+  onRefuseSnakeBet: (skySign?: boolean) => void;
+  // Nov 2026 — Señales del cielo: true si a este jugador todavía le
+  // queda su única señal de la partida (ver reducer.ts, withSkySign).
+  skySignAvailable?: boolean;
 
   // 4 oct 2026 — JUEGA CON BUDDHA: la primera vez que se abre Fandango,
   // Buddha recorre los tres pisos (lo tuyo / lo del rival → trato /
@@ -163,6 +166,7 @@ function SquareKarma666Block({
   onRequest,
   onAccept,
   onRefuse,
+  onRefuseSky,
 }: {
   myPlayer: PlayerId;
   eligibleTargets: RealmPieceKind[];
@@ -176,6 +180,7 @@ function SquareKarma666Block({
   onRequest: (targetAvatar: RealmPieceKind) => void;
   onAccept: () => void;
   onRefuse: () => void;
+  onRefuseSky?: () => void;
 }) {
   const { t } = useI18n();
   const boxStyle: CSSProperties = {
@@ -231,6 +236,11 @@ function SquareKarma666Block({
           <button type="button" onClick={onRefuse} style={buttonStyle}>
             {t("fan.refuse")}
           </button>
+          {onRefuseSky && (
+            <button type="button" onClick={onRefuseSky} style={buttonStyle} title={t("sky.hint")}>
+              {t("sky.refuse")}
+            </button>
+          )}
         </div>
       </div>
     );
@@ -680,11 +690,13 @@ function TradeOfferPanel({
   myPlayer,
   onAccept,
   onRefuse,
+  onRefuseSky,
 }: {
   pendingTrade: PendingTrade;
   myPlayer: PlayerId;
   onAccept: () => void;
   onRefuse: () => void;
+  onRefuseSky?: () => void;
 }) {
   const { t } = useI18n();
   const incoming = pendingTrade.fromPlayer !== myPlayer;
@@ -751,6 +763,26 @@ function TradeOfferPanel({
           >
             {t("fan.refuse")}
           </button>
+          {onRefuseSky && (
+            <button
+              onClick={onRefuseSky}
+              title={t("sky.hint")}
+              style={{
+                height: 30,
+                padding: "0 16px",
+                borderRadius: "50%",
+                border: "1px solid rgba(190,180,255,0.45)",
+                background: "rgba(150,140,255,0.12)",
+                color: "#e4e0ff",
+                fontWeight: 700,
+                fontSize: 12,
+                letterSpacing: "0.04em",
+                cursor: "pointer",
+              }}
+            >
+              {t("sky.refuse")}
+            </button>
+          )}
         </div>
       ) : (
         <div style={{ marginTop: 8, fontSize: 12, opacity: 0.6, fontStyle: "italic" }}>
@@ -782,6 +814,7 @@ export function FandangoWindow({
   onRequestSnakeBet,
   onAcceptSnakeBet,
   onRefuseSnakeBet,
+  skySignAvailable = false,
   tour = false,
   onTourDone,
 }: Props) {
@@ -935,7 +968,8 @@ export function FandangoWindow({
             pendingTrade={pendingTrade}
             myPlayer={myPlayer}
             onAccept={onAcceptTrade}
-            onRefuse={onRefuseTrade}
+            onRefuse={() => onRefuseTrade()}
+            onRefuseSky={skySignAvailable ? () => onRefuseTrade(true) : undefined}
           />
         )}
 
@@ -981,7 +1015,8 @@ export function FandangoWindow({
           activeSnakeBet={activeSnakeBet}
           onRequest={onRequestSnakeBet}
           onAccept={onAcceptSnakeBet}
-          onRefuse={onRefuseSnakeBet}
+          onRefuse={() => onRefuseSnakeBet()}
+          onRefuseSky={skySignAvailable ? () => onRefuseSnakeBet(true) : undefined}
         />
         </div>
         {callout("bet")}

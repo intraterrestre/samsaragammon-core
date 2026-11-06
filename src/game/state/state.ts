@@ -180,6 +180,10 @@ actors: {
     P2: [],
   },
   pendingTrade: null,
+  // Señales del cielo (nov 2026) — campos de nivel superior, cubiertos
+  // por el spread de makeInitialState, sin bloque de merge aparte.
+  skySign: null,
+  skySignsUsed: [],
 
   lastMove: null,
   lastKarma: null,

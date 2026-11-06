@@ -33,6 +33,7 @@ import { BuddhaSpeech } from "./BuddhaSpeech";
 import { SamsaraStage } from "../samsara/SamsaraStage";
 
 import watcherVideo from "../assets/video/jesus_watch.mp4";
+import skySignVideo from "../assets/video/sky-signals.mp4";
 import type { MoveOption, PieceKind, PlayerId, RealmPieceKind } from "../game/types";
 import { REALM_PIECE_ORDER } from "../game/types";
 import { AVATAR_ORDER } from "../game/historicalClock";
@@ -227,7 +228,7 @@ nidanaCoinSide: "front" | "back";
   // y FandangoWindow.tsx.
   onSendTradeOffer: (player: PlayerId, offer: NidanaId, want: NidanaId) => void;
   onAcceptTrade: () => void;
-  onRefuseTrade: () => void;
+  onRefuseTrade: (skySign?: boolean) => void;
 
   // v84 (4 septiembre 2026) — interfaz real de Square Karma 666 (Snake
   // Bet) y Round Dharma 777, pedido de Federico. Mismo criterio que
@@ -236,7 +237,7 @@ nidanaCoinSide: "front" | "back";
   // DECLARE_DHARMA_777).
   onRequestSnakeBet: (player: PlayerId, targetAvatar: RealmPieceKind) => void;
   onAcceptSnakeBet: () => void;
-  onRefuseSnakeBet: () => void;
+  onRefuseSnakeBet: (skySign?: boolean) => void;
   onDeclareDharma777: (
     player: PlayerId,
     option: MoveOption,
@@ -491,6 +492,21 @@ const triggerWatcher = (forcedLine?: string) => {
   setShowWatcher(true);
   window.setTimeout(() => setShowWatcher(false), 1800);
 };
+
+// Nov 2026 — SEÑALES DEL CIELO: cuando alguien rechaza una oferta "con
+// señal del cielo", state.skySign cambia (nuevo "at") y AMBAS pantallas
+// muestran el video — así lo ve quien hizo la oferta. Se compara contra
+// el último "at" visto para no repetirlo al recargar la misma partida.
+const [skySignShowing, setSkySignShowing] = React.useState<PlayerId | null>(null);
+const lastSkySignAtRef = React.useRef<number | null>(state.skySign?.at ?? null);
+React.useEffect(() => {
+  const sign = state.skySign;
+  if (!sign || sign.at === lastSkySignAtRef.current) return;
+  lastSkySignAtRef.current = sign.at;
+  setSkySignShowing(sign.by);
+  const id = window.setTimeout(() => setSkySignShowing(null), 5600);
+  return () => window.clearTimeout(id);
+}, [state.skySign]);
 const [, setShowNidanaSpinner] = React.useState(false);
 const [, setVisibleNidana] = React.useState<string | null>(null);
 const nidanaTimerRef = React.useRef<number | null>(null);
@@ -1489,12 +1505,9 @@ React.useEffect(() => {
     return;
   }
 
+  // Nov 2026 — pedido de Federico: quitado el 35% al azar. Jesús FBI
+  // sale solo cuando debe: captura, o Serpiente 2 veces seguidas (arriba).
   if (state.lastMove.didCapture) {
-    triggerWatcher();
-    return;
-  }
-
-  if (Math.random() < 0.35) {
     triggerWatcher();
   }
 }, [state.lastMove, oriolEntered]);
@@ -1789,6 +1802,30 @@ return (
       muted
       playsInline
       className="watcherVideo"
+    />
+  </div>
+)}
+
+{skySignShowing && (
+  <div className="skySignOverlay" onClick={() => setSkySignShowing(null)}>
+    <div className="skySignText">
+      {t("sky.refused", { color: t(skySignShowing === "P1" ? "color.P1" : "color.P2") })}
+    </div>
+    <video
+      src={skySignVideo}
+      playsInline
+      className="skySignVideo"
+      ref={(v) => {
+        // Intenta con sonido; si el navegador lo bloquea (pantalla del
+        // rival, sin clic reciente), cae a mudo para que igual se vea.
+        if (!v || v.dataset.started) return;
+        v.dataset.started = "1";
+        v.muted = false;
+        v.play().catch(() => {
+          v.muted = true;
+          v.play().catch(() => {});
+        });
+      }}
     />
   </div>
 )}
@@ -2621,6 +2658,7 @@ return (
     onAcceptSnakeBet();
   }}
   onRefuseSnakeBet={onRefuseSnakeBet}
+  skySignAvailable={!(state.skySignsUsed ?? []).includes(state.turn)}
   tour={beginnerMode && !seenLessonsRef.current.has("fandangoTour")}
   onTourDone={() => {
     seenLessonsRef.current.set("fandangoTour", 1);

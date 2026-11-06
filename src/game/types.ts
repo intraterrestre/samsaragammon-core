@@ -446,6 +446,16 @@ export type GameState = {
   // ACCEPT_TRADE_OFFER / REFUSE_TRADE_OFFER).
   pendingTrade: PendingTrade | null;
 
+  // Nov 2026 — SEÑALES DEL CIELO, pedido de Federico: al RECHAZAR una
+  // oferta (trade de Fandango o Square Karma 666) el jugador puede
+  // rechazarla "con señal del cielo" (video del rayo). Una vez por
+  // partida y jugador. Vive en GameState (no en UI local) para que el
+  // rival que hizo la oferta también lo vea en su pantalla en partidas
+  // en línea. skySign = la última señal enviada (GameShell la detecta
+  // por cambio de "at"); skySignsUsed = quién ya la gastó.
+  skySign: { by: PlayerId; at: number } | null;
+  skySignsUsed: PlayerId[];
+
   lastMove: LastMove | null;
 
   lastKarma: KarmaBreakdown | null;
