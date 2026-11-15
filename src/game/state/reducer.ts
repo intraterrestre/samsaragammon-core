@@ -234,9 +234,19 @@ function playerHasActivePiece(state: GameState, player: PlayerId): boolean {
 // casilla libre (sin ningún Veneno ni ficha de reino de NINGÚN jugador)
 // empezando en preferredPos, igual que ya hace el retorno de Mara más
 // abajo para no repetir ese mismo problema.
+// 15 nov 2026 — "hacia adelante" depende del color: las blancas (P1) giran
+// en sentido horario (+1) y las negras (P2) en sentido antihorario (−1),
+// igual que getPlayerDirection en rules/getMoveOptionsForPlayer.ts.
+const forwardStep = (player: PlayerId): 1 | -1 => (player === "P1" ? 1 : -1);
+
+// `step` = sentido de la búsqueda de casilla libre. Por defecto +1 (como
+// siempre) para los usos que no son "de un jugador" (nacimientos fijos,
+// Nidanas del tablero…). Las recolocaciones tras una captura pasan el
+// sentido de giro del dueño de la pieza (ver forwardStep).
 function findEmptySpawnPos(
   state: GameState,
-  preferredPos: number
+  preferredPos: number,
+  step: 1 | -1 = 1
 ): number {
   const isOccupied = (pos: number): boolean => {
     for (const player of ["P1", "P2"] as PlayerId[]) {
@@ -271,7 +281,7 @@ function findEmptySpawnPos(
   // Nirvana. Normalizando el modulo para que nunca de negativo.
   for (let offset = 0; offset < state.trackSize; offset++) {
     const candidate =
-      (((preferredPos + offset) % state.trackSize) + state.trackSize) %
+      (((preferredPos + step * offset) % state.trackSize) + state.trackSize) %
       state.trackSize;
     if (!isOccupied(candidate)) return candidate;
   }
@@ -2070,6 +2080,15 @@ if (isBasePiece) {
 // se reubica solo a la casilla vacia mas cercana (mismo criterio de
 // busqueda que findEmptySpawnPos: hacia adelante desde su posicion,
 // dando la vuelta al tablero si hace falta).
+//
+// 15 nov 2026 — bug de simetría (encontrado con el simulador, ver
+// tools/lab/mirrorCheck.ts): "hacia adelante" se calculaba siempre en
+// sentido horario, que para las negras es HACIA ATRÁS. Una misma captura
+// dejaba a cada color en una situación distinta y daba ~62 % de victorias
+// a las negras entre dos Buddha iguales. Ahora cada pieza se recoloca
+// hacia adelante según el sentido de giro de SU color (forwardStep(opp)),
+// tanto el Veneno como el Avatar salvado por una Nidana (Paso 2 abajo).
+// Prueba: src/game/state/__tests__/symmetry.test.ts.
 if (capturedAvatarVacatedPos !== null) {
   const vacatedPos = capturedAvatarVacatedPos;
   for (const kind of BASE_PIECES) {
@@ -2081,7 +2100,8 @@ if (capturedAvatarVacatedPos !== null) {
           realmPieces: nextPiecesRealm,
           trackSize: state.trackSize,
         } as GameState,
-        vacatedPos
+        vacatedPos,
+        forwardStep(opp)
       );
       if (relocatedPos !== vacatedPos) {
         nextPieces[opp][kind] = {
@@ -2106,7 +2126,8 @@ if (capturedAvatarVacatedPos !== null) {
         realmPieces: nextPiecesRealm,
         trackSize: state.trackSize,
       } as GameState,
-      vacatedPos
+      vacatedPos,
+      forwardStep(opp)
     );
     nextPiecesRealm[opp][survivorKind] = {
       ...survivor,
