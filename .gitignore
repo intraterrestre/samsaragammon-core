@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Archivos temporales / para borrar (no subir a GitHub)
+_to_delete/
