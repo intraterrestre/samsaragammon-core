@@ -1,0 +1,126 @@
+From 06d9223fa36601f0ffc1702a782cb1f706733f6f Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 6 Oct 2026 13:06:40 +0100
+Subject: [PATCH] =?UTF-8?q?Lecci=C3=B3n=20de=20la=20moneda=20de=20Buddha:?=
+ =?UTF-8?q?=20muestra=20la=20moneda=20dentro=20del=20cartel=20y=20aclara?=
+ =?UTF-8?q?=20que=20no=20se=20recoge?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_0193QqW5YW1Vjzy3eRnNdAST
+---
+ src/UI/GameShell.tsx     | 11 ++++++++++-
+ src/UI/LessonCard.tsx    |  6 ++++--
+ src/UI/beginnerHints.css | 11 +++++++++++
+ src/i18n/en.ts           |  2 +-
+ src/i18n/es.ts           |  2 +-
+ 5 files changed, 27 insertions(+), 5 deletions(-)
+
+diff --git a/src/UI/GameShell.tsx b/src/UI/GameShell.tsx
+index 11a8150..5519313 100644
+--- a/src/UI/GameShell.tsx
++++ b/src/UI/GameShell.tsx
+@@ -1613,6 +1613,12 @@ const buddhaMessage = lessonOnScreen ? "" : transientDharma?.message ?? "";
+ // bien". En las lecciones de Nidana, la tarjeta muestra las 12 monedas
+ // numeradas (las mismas que se ven sobre las casillas) y resalta las que
+ // están ahora en juego.
++// 6 oct 2026 — Federico: "esta moneda…" no decía CUÁL. La lección
++// nidanaMirror muestra dentro del cartel la misma cara de la moneda
++// grande que Buddha acaba de lanzar (la última cara frontal vista).
++const mirrorCoinRef = React.useRef<string | null>(null);
++if (nidanaCoinSrc && nidanaCoinSide !== "back") mirrorCoinRef.current = nidanaCoinSrc;
++
+ const lessonNidanas = (() => {
+   const id = lessonOnScreen ? lessonShowingRef.current?.id : undefined;
+   if (id !== "nidanaSpawn" && id !== "nidanaCarry") return undefined;
+@@ -2114,8 +2120,11 @@ return (
+               lessonShowingRef.current?.id === "sealed" ||
+               lessonShowingRef.current?.id === "whitman"
+                 ? lotusSeal
+-                : undefined
++                : lessonShowingRef.current?.id === "nidanaMirror"
++                  ? mirrorCoinRef.current ?? undefined
++                  : undefined
+             }
++            iconLarge={lessonShowingRef.current?.id === "nidanaMirror"}
+           />,
+           document.body
+         )}
+diff --git a/src/UI/LessonCard.tsx b/src/UI/LessonCard.tsx
+index 70a5650..1d482ec 100644
+--- a/src/UI/LessonCard.tsx
++++ b/src/UI/LessonCard.tsx
+@@ -19,11 +19,13 @@ type Props = {
+   // "left": a la izquierda, centrada en vertical (no tapa la esquina
+   // superior derecha, p. ej. el Reloj de la Evolución).
+   placement?: "top" | "left" | "bottom";
++  // 6 oct 2026 — icono grande (la moneda de Buddha dentro del cartel).
++  iconLarge?: boolean;
+ };
+ 
+ const SWIPE_PX = 60;
+ 
+-export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, icon, placement = "top" }: Props) {
++export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, icon, placement = "top", iconLarge = false }: Props) {
+   const start = React.useRef<{ x: number; y: number } | null>(null);
+   const [drag, setDrag] = React.useState({ x: 0, y: 0 });
+ 
+@@ -80,7 +82,7 @@ export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas,
+       }
+     >
+       {icon ? (
+-        <img src={icon} alt="" aria-hidden="true" className="bwbLessonCardIconImg" draggable={false} />
++        <img src={icon} alt="" aria-hidden="true" className={`bwbLessonCardIconImg${iconLarge ? " bwbLessonCardIconBig" : ""}`} draggable={false} />
+       ) : (
+         <span className="bwbLessonCardIcon" aria-hidden="true">☸</span>
+       )}
+diff --git a/src/UI/beginnerHints.css b/src/UI/beginnerHints.css
+index a163c68..2eef682 100644
+--- a/src/UI/beginnerHints.css
++++ b/src/UI/beginnerHints.css
+@@ -459,3 +459,14 @@ body.bwb-hl-options .moveOptionsPanel::after {
+   padding: 22px 15%;
+ }
+ .fandangoZone { border-radius: 50%; }
++
++/* La moneda grande de Buddha dentro del cartel nidanaMirror. */
++.bwbLessonCardIconImg.bwbLessonCardIconBig {
++  width: 4.2em;
++  height: 4.2em;
++  border-radius: 50%;
++  filter: drop-shadow(0 0 10px rgba(240, 192, 96, 0.8));
++}
++
++/* Un poco más de aire abajo: la última línea no roza la curva. */
++.bwbLessonCard { padding-bottom: calc(1.1em + 4%); }
+diff --git a/src/i18n/en.ts b/src/i18n/en.ts
+index 6ded3dc..d2436c0 100644
+--- a/src/i18n/en.ts
++++ b/src/i18n/en.ts
+@@ -80,7 +80,7 @@ export const en = {
+   "lesson.mara": "CAPTURE\nWhen one of your pieces is captured, it leaves the Samsara for 6 dice rolls.\nThen it is reborn in one of its realms.",
+   "lesson.nidanaSpawn": "This is one of the 12 Nidanas.\nAn Avatar collects it by landing on it inside its own realm.",
+   "lesson.nidanaCarry": "Nidana collected!\nIt shields this Avatar from one capture. If it is attacked, the Nidana goes to the attacker.",
+-  "lesson.nidanaMirror": "This coin names a link of your karma. Buddha reads it from the way you play.",
++  "lesson.nidanaMirror": "BUDDHA'S COIN\nBuddha tosses this big coin: it names a link of your karma that he reads in the way you play.\nIt is not one of the coins you collect on the board.",
+   "lesson.maraReturn": "It has been reborn. To defeat the Samsara, later on it will have to reach the Realm of Humans.",
+   "lesson.capture": "Red line: land exactly on a rival to capture it.",
+   "lesson.nidanaCollect": "An Avatar collects a Nidana in its own realm.",
+diff --git a/src/i18n/es.ts b/src/i18n/es.ts
+index 8c280af..344eaec 100644
+--- a/src/i18n/es.ts
++++ b/src/i18n/es.ts
+@@ -74,7 +74,7 @@ export const es: Dictionary = {
+   "lesson.mara": "CAPTURA\nCuando te capturen una ficha, se retira del Samsara durante 6 lances de dados.\nDespués renacerá en uno de sus reinos.",
+   "lesson.nidanaSpawn": "Esta es una de las 12 Nidanas.\nUn Avatar la recoge al caer sobre ella dentro de su propio reino.",
+   "lesson.nidanaCarry": "¡Nidana recogida!\nProtege a este Avatar de una captura. Si lo atacan, la Nidana pasa al atacante.",
+-  "lesson.nidanaMirror": "Esta moneda nombra un eslabón de tu karma. Buddha lo lee en tu forma de jugar.",
++  "lesson.nidanaMirror": "LA MONEDA DE BUDDHA\nEsta moneda grande la lanza Buddha: nombra un eslabón de tu karma que lee en tu forma de jugar.\nNo es de las que se recogen en el tablero.",
+   "lesson.maraReturn": "Ha renacido. Para vencer al Samsara, más adelante tendrá que llegar al Reino de los Humanos.",
+   "lesson.capture": "Línea roja: cae solo sobre un rival para capturarlo.",
+   "lesson.nidanaCollect": "Un Avatar recoge una Nidana en su propio reino.",
+-- 
+2.43.0
+

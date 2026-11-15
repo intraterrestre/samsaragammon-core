@@ -1,0 +1,337 @@
+From ca7f70dcf472c92ae44788bf0a2d1b1895051aa0 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 6 Oct 2026 12:53:38 +0100
+Subject: [PATCH] =?UTF-8?q?Curvismo:=20los=20carteles=20pasan=20de=20rect?=
+ =?UTF-8?q?=C3=A1ngulos=20a=20=C3=B3valos?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_0193QqW5YW1Vjzy3eRnNdAST
+---
+ src/UI/GameShell.tsx            | 22 ++++++-------
+ src/UI/MoveOptionsPanel.tsx     |  8 ++---
+ src/UI/VenomBanner.css          |  4 +--
+ src/UI/beginnerHints.css        | 55 +++++++++++++++++++++++++++++++++
+ src/fandango/FandangoWindow.tsx | 32 +++++++++----------
+ src/fandango/fandango.css       |  5 +--
+ 6 files changed, 91 insertions(+), 35 deletions(-)
+
+diff --git a/src/UI/GameShell.tsx b/src/UI/GameShell.tsx
+index 882a82e..11a8150 100644
+--- a/src/UI/GameShell.tsx
++++ b/src/UI/GameShell.tsx
+@@ -1808,8 +1808,8 @@ return (
+             zIndex: 9500,
+             background: "rgba(20, 10, 0, 0.88)",
+             border: "1px solid rgba(255, 200, 80, 0.6)",
+-            borderRadius: 12,
+-            padding: "8px 16px",
++            borderRadius: "50%",
++            padding: "12px 34px",
+             color: "#ffe9a8",
+             fontFamily: "Georgia, 'Times New Roman', serif",
+             fontSize: 13,
+@@ -1842,8 +1842,8 @@ return (
+             gap: 12,
+             background: "rgba(10, 12, 24, 0.9)",
+             border: "1px solid rgba(120, 190, 255, 0.6)",
+-            borderRadius: 999,
+-            padding: "8px 10px 8px 18px",
++            borderRadius: "50%",
++            padding: "14px 30px",
+             color: "#e8f1ff",
+             fontFamily: "Georgia, 'Times New Roman', serif",
+             fontSize: 14,
+@@ -1996,8 +1996,8 @@ return (
+             onClick={(e) => e.stopPropagation()}
+             style={{
+               width: "min(420px, 90vw)",
+-              padding: "34px 46px",
+-              borderRadius: "50% / 14%",
++              padding: "12% 14%",
++              borderRadius: "50%",
+               background: "linear-gradient(180deg, #14100a 0%, #0a0805 100%)",
+               border: "1px solid rgba(216,196,138,0.28)",
+               boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+@@ -2018,7 +2018,7 @@ return (
+                 onClick={confirmDharmaCapture}
+                 style={{
+                   padding: "10px 20px",
+-                  borderRadius: 10,
++                  borderRadius: "50%",
+                   border: "2px solid rgba(216,196,138,0.5)",
+                   background: "rgba(255,255,255,0.06)",
+                   color: "#f2e8d4",
+@@ -2036,7 +2036,7 @@ return (
+                   }
+                   style={{
+                     padding: "10px 20px",
+-                    borderRadius: 10,
++                    borderRadius: "50%",
+                     border: "2px solid rgba(150,200,255,0.6)",
+                     background: "rgba(150,200,255,0.08)",
+                     color: "#f2e8d4",
+@@ -2066,7 +2066,7 @@ return (
+                         onClick={() => confirmDharmaSpare(kind)}
+                         style={{
+                           padding: "8px 14px",
+-                          borderRadius: 10,
++                          borderRadius: "50%",
+                           border: "2px solid rgba(150,200,255,0.6)",
+                           background: "rgba(150,200,255,0.08)",
+                           color: "#f2e8d4",
+@@ -2139,8 +2139,8 @@ return (
+               width: "min(520px, 92vw)",
+               maxHeight: "84vh",
+               overflowY: "auto",
+-              padding: "30px 36px 26px",
+-              borderRadius: "48px",
++              padding: "11% 15% 12%",
++              borderRadius: "50%",
+               background: "linear-gradient(180deg, #0f1730 0%, #090d1c 100%)",
+               border: "1px solid rgba(120,170,255,0.4)",
+               boxShadow: "0 14px 44px rgba(0,0,0,0.6)",
+diff --git a/src/UI/MoveOptionsPanel.tsx b/src/UI/MoveOptionsPanel.tsx
+index 9f8ed0e..9783473 100644
+--- a/src/UI/MoveOptionsPanel.tsx
++++ b/src/UI/MoveOptionsPanel.tsx
+@@ -105,8 +105,8 @@ export function MoveOptionsPanel({ options, onChoose }: Props) {
+         justifyContent: "flex-start",
+         gap: 8,
+         maxWidth: "min(92vw, 260px)",
+-        padding: "8px 10px",
+-        borderRadius: 14,
++        padding: "14px 22px",
++        borderRadius: "50%",
+         background: "rgba(10, 10, 14, 0.82)",
+         border: "1px solid rgba(255,255,255,0.18)",
+         boxShadow: "0 6px 24px rgba(0,0,0,0.55)",
+@@ -130,8 +130,8 @@ export function MoveOptionsPanel({ options, onChoose }: Props) {
+               justifyContent: "center",
+               minWidth: 76,
+               minHeight: 52,
+-              padding: "8px 12px",
+-              borderRadius: 10,
++              padding: "10px 16px",
++              borderRadius: "50%",
+               border: `2px solid ${color}`,
+               background: "rgba(255,255,255,0.06)",
+               color: "white",
+diff --git a/src/UI/VenomBanner.css b/src/UI/VenomBanner.css
+index d4a9e1a..17011d6 100644
+--- a/src/UI/VenomBanner.css
++++ b/src/UI/VenomBanner.css
+@@ -8,8 +8,8 @@
+   display: flex;
+   align-items: center;
+   gap: 10px;
+-  padding: 8px 18px;
+-  border-radius: 999px;
++  padding: 12px 34px;
++  border-radius: 50%;
+   background: rgba(0, 0, 0, 0.55);
+   border: 1px solid rgba(255, 255, 255, 0.25);
+   backdrop-filter: blur(2px);
+diff --git a/src/UI/beginnerHints.css b/src/UI/beginnerHints.css
+index 719c2ac..a163c68 100644
+--- a/src/UI/beginnerHints.css
++++ b/src/UI/beginnerHints.css
+@@ -404,3 +404,58 @@ body.bwb-hl-options .moveOptionsPanel::after {
+   letter-spacing: 0.1em;
+   color: #c8a84b;
+ }
++
++/* ===================================================================
++   6 oct 2026 — CURVISMO en los carteles (pedido de Federico): nada de
++   rectángulos. Los carteles de frases son óvalos (border-radius 50%),
++   con el texto centrado y relleno suficiente para que las líneas caigan
++   dentro de la curva (la del medio, la más ancha; título arriba, corto).
++   =================================================================== */
++.bwbLessonCard {
++  flex-direction: column;
++  align-items: center;
++  gap: 6px;
++  text-align: center;
++  border-radius: 50%;
++  box-sizing: border-box;
++  padding: calc(0.75em + 3%) calc(1.2em + 8%);
++  max-width: min(820px, calc(100vw - 36px));
++}
++@media (max-width: 520px) {
++  .bwbLessonCard {
++    width: calc(100vw - 36px);
++    padding: calc(0.9em + 5%) calc(0.6em + 9%);
++  }
++}
++.bwbLessonCard > span:not(.bwbLessonCardIcon) { display: block; }
++.bwbLessonCardIcon,
++.bwbLessonCardIconImg { margin-bottom: -2px; }
++.bwbLessonNidanas { margin-left: auto; margin-right: auto; }
++/* El ✕ cuelga del borde derecho del óvalo, como una cuenta. */
++.bwbLessonCardClose {
++  position: absolute;
++  top: 50%;
++  right: -12px;
++  margin: 0;
++  transform: translateY(-50%);
++  background: rgba(8, 14, 34, 0.95);
++}
++@media (max-height: 480px) {
++  .bwbLessonCard {
++    border-radius: 50%;
++    padding: calc(0.55em + 2%) calc(1em + 7%);
++  }
++}
++
++.bwbHumansTip,
++.evoClockTip {
++  border-radius: 50%;
++  padding: 18px 30px;
++  text-align: center;
++}
++
++.fandangoTourCallout {
++  border-radius: 50%;
++  padding: 22px 15%;
++}
++.fandangoZone { border-radius: 50%; }
+diff --git a/src/fandango/FandangoWindow.tsx b/src/fandango/FandangoWindow.tsx
+index b183f15..e216b7a 100644
+--- a/src/fandango/FandangoWindow.tsx
++++ b/src/fandango/FandangoWindow.tsx
+@@ -179,15 +179,15 @@ function SquareKarma666Block({
+ }) {
+   const boxStyle: CSSProperties = {
+     marginTop: 20,
+-    padding: "14px 16px",
+-    borderRadius: 14,
++    padding: "16px 12%",
++    borderRadius: "50%",
+     border: "1px solid rgba(255,170,120,0.3)",
+     background: "rgba(255,170,120,0.06)",
+   };
+   const buttonStyle: CSSProperties = {
+     height: 34,
+     padding: "0 14px",
+-    borderRadius: 8,
++    borderRadius: "50%",
+     border: "1px solid rgba(216,196,138,0.28)",
+     background: "rgba(255,255,255,0.06)",
+     color: "#f2e8d4",
+@@ -407,7 +407,7 @@ function LinkAvailableBlock({
+                   marginLeft: 4,
+                   height: 26,
+                   padding: "0 10px",
+-                  borderRadius: 7,
++                  borderRadius: "50%",
+                   border: "1px solid rgba(159,216,138,0.45)",
+                   background: "rgba(159,216,138,0.12)",
+                   color: "#c8ecb8",
+@@ -571,7 +571,7 @@ function RivalHasWhatYouNeedBlock({
+                         marginLeft: 4,
+                         height: 24,
+                         padding: "0 10px",
+-                        borderRadius: 7,
++                        borderRadius: "50%",
+                         border: "1px solid rgba(232,176,106,0.45)",
+                         background: dealOpen
+                           ? "rgba(232,176,106,0.22)"
+@@ -593,8 +593,8 @@ function RivalHasWhatYouNeedBlock({
+                     style={{
+                       background: "rgba(255,255,255,0.04)",
+                       border: "1px solid rgba(232,176,106,0.25)",
+-                      borderRadius: 10,
+-                      padding: "10px 14px",
++                      borderRadius: "50%",
++                      padding: "14px 12%",
+                       display: "flex",
+                       flexDirection: "column",
+                       alignItems: "center",
+@@ -614,7 +614,7 @@ function RivalHasWhatYouNeedBlock({
+                           onClick={() => onSelectOffer(e.nidana)}
+                           style={{
+                             padding: 3,
+-                            borderRadius: 8,
++                            borderRadius: "50%",
+                             border:
+                               selectedOffer === e.nidana
+                                 ? "2px solid #e8b06a"
+@@ -640,7 +640,7 @@ function RivalHasWhatYouNeedBlock({
+                           style={{
+                             height: 28,
+                             padding: "0 14px",
+-                            borderRadius: 7,
++                            borderRadius: "50%",
+                             border: "1px solid rgba(232,176,106,0.6)",
+                             background: "rgba(232,176,106,0.28)",
+                             color: "#f2e8d4",
+@@ -686,8 +686,8 @@ function TradeOfferPanel({
+     <div
+       style={{
+         margin: "0 0 20px",
+-        padding: "14px 16px",
+-        borderRadius: 12,
++        padding: "16px 12%",
++        borderRadius: "50%",
+         background: incoming ? "rgba(232,176,106,0.1)" : "rgba(255,255,255,0.04)",
+         border: incoming
+           ? "1px solid rgba(232,176,106,0.4)"
+@@ -716,7 +716,7 @@ function TradeOfferPanel({
+             style={{
+               height: 30,
+               padding: "0 16px",
+-              borderRadius: 8,
++              borderRadius: "50%",
+               border: "1px solid rgba(159,216,138,0.6)",
+               background: "rgba(159,216,138,0.22)",
+               color: "#c8ecb8",
+@@ -733,7 +733,7 @@ function TradeOfferPanel({
+             style={{
+               height: 30,
+               padding: "0 16px",
+-              borderRadius: 8,
++              borderRadius: "50%",
+               border: "1px solid rgba(255,255,255,0.2)",
+               background: "rgba(255,255,255,0.06)",
+               color: "#f2e8d4",
+@@ -894,8 +894,8 @@ export function FandangoWindow({
+           width: "min(560px, 92vw)",
+           maxHeight: "82vh",
+           overflowY: "auto",
+-          padding: "24px 26px",
+-          borderRadius: 16,
++          padding: "22% 12% 16%",
++          borderRadius: "50%",
+           background: "linear-gradient(180deg, #14100a 0%, #0a0805 100%)",
+           border: "1px solid rgba(216,196,138,0.28)",
+           boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+@@ -983,7 +983,7 @@ export function FandangoWindow({
+             marginTop: 26,
+             height: 38,
+             padding: "0 16px",
+-            borderRadius: 10,
++            borderRadius: "50%",
+             border: "1px solid rgba(216,196,138,0.28)",
+             background: "rgba(255,255,255,0.06)",
+             color: "#f2e8d4",
+diff --git a/src/fandango/fandango.css b/src/fandango/fandango.css
+index 8a2bf70..9ef5046 100644
+--- a/src/fandango/fandango.css
++++ b/src/fandango/fandango.css
+@@ -31,8 +31,9 @@
+   left: 70px;
+   top: -20px;
+   width: 260px;
+-  padding: 16px 18px;
+-  border-radius: 12px;
++  padding: 22px 34px;
++  border-radius: 50%;
++  text-align: center;
+   background: rgba(0, 0, 0, 0.68);
+   border: 1px solid rgba(255, 255, 255, 0.12);
+   backdrop-filter: blur(8px);
+-- 
+2.43.0
+

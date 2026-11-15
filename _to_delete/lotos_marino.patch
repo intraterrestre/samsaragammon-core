@@ -1,0 +1,313 @@
+From a4a80369709c23e367b2072bc73ac1153c485a4a Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 6 Oct 2026 12:58:57 +0100
+Subject: [PATCH] Lotos solo con Humanos destapado (Marino): al destaparse
+ florecen los que ya estaban
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_0193QqW5YW1Vjzy3eRnNdAST
+---
+ src/game/dharma777.ts                       |  3 ++
+ src/game/rules/humansReveal.ts              | 42 +++++++++++++++++++++
+ src/game/state/__tests__/ruleCanon.test.ts  | 24 ++++++++++++
+ src/game/state/reducer.ts                   | 13 ++++++-
+ src/game/tutorial/__tests__/help.test.ts    |  1 +
+ src/game/tutorial/__tests__/lessons.test.ts | 21 ++++++++++-
+ src/game/tutorial/help.ts                   |  2 +
+ src/game/tutorial/lessons.ts                |  3 ++
+ src/i18n/en.ts                              |  1 +
+ src/i18n/es.ts                              |  1 +
+ 10 files changed, 108 insertions(+), 3 deletions(-)
+ create mode 100644 src/game/rules/humansReveal.ts
+
+diff --git a/src/game/dharma777.ts b/src/game/dharma777.ts
+index 4dfa6b7..3a664b4 100644
+--- a/src/game/dharma777.ts
++++ b/src/game/dharma777.ts
+@@ -3,6 +3,7 @@
+ // Federico/Chat. Hermana de Snake Bet (666), pero instantánea y sin
+ // estado persistente: en vez de "apuesto que voy a morder", es "podía
+ // morder y decidí no hacerlo". Ver reducer.ts, case DECLARE_DHARMA_777.
++import { humansRevealed } from "./rules/humansReveal";
+ import type { GameState, MoveOption, PlayerId, RealmPieceKind } from "./types";
+ import { REALM_PIECE_ORDER } from "./types";
+ import { realmFromPos } from "../UI/realm";
+@@ -56,6 +57,8 @@ export function getDharma777EligibleTargets(
+   state: GameState,
+   player: PlayerId
+ ): RealmPieceKind[] {
++  // 6 oct 2026 — sin lotos mientras Humanos no está destapado (Marino).
++  if (!humansRevealed(state)) return [];
+   return REALM_PIECE_ORDER.filter((kind) => {
+     const piece = state.realmPieces[player]?.[kind];
+     if (!piece || !piece.unlocked || piece.inLimbo) return false;
+diff --git a/src/game/rules/humansReveal.ts b/src/game/rules/humansReveal.ts
+new file mode 100644
+index 0000000..5879b9e
+--- /dev/null
++++ b/src/game/rules/humansReveal.ts
+@@ -0,0 +1,42 @@
++// src/game/rules/humansReveal.ts
++//
++// 6 oct 2026 — Federico: las 4 casillas de Humanos no están pintadas
++// (destapadas) en el mural hasta que llega Marino. Antes de eso nadie
++// puede ganar un loto: ni por llegada limpia, ni por 666, ni por 777.
++// Cuando Humanos se destapa, florecen los Avatares que ya estaban ahí
++// sin haber sido capturados nunca (ver revealHumansLotuses).
++
++import type { GameState, PlayerId, RealmPieceKind } from "../types";
++import { REALM_PIECE_ORDER } from "../types";
++import { canonicalRealmFromPos } from "../../UI/realm";
++
++const HUMANS_OPEN_ERAS = ["marino", "rufus", "whitman"];
++
++export function humansRevealed(state: GameState): boolean {
++  return (
++    state.cosmicClock.transitionSequence > 0 &&
++    HUMANS_OPEN_ERAS.includes(state.cosmicClock.era as string)
++  );
++}
++
++// En el instante en que Humanos se destapa: loto para cada Avatar que
++// ya está en Humanos sin haber sido capturado nunca.
++export function revealHumansLotuses(prev: GameState, next: GameState): GameState {
++  if (humansRevealed(prev) || !humansRevealed(next)) return next;
++  let consolidated = next.consolidatedAvatars;
++  for (const player of ["P1", "P2"] as PlayerId[]) {
++    for (const kind of REALM_PIECE_ORDER as readonly RealmPieceKind[]) {
++      const piece = next.realmPieces[player]?.[kind];
++      if (!piece?.unlocked || piece.inLimbo || piece.everCaptured) continue;
++      if (canonicalRealmFromPos(piece.pos) !== "humans") continue;
++      if (consolidated[player]?.[kind]) continue;
++      consolidated = {
++        ...consolidated,
++        [player]: { ...consolidated[player], [kind]: true },
++      };
++    }
++  }
++  return consolidated === next.consolidatedAvatars
++    ? next
++    : { ...next, consolidatedAvatars: consolidated };
++}
+diff --git a/src/game/state/__tests__/ruleCanon.test.ts b/src/game/state/__tests__/ruleCanon.test.ts
+index 566569e..81dfd0e 100644
+--- a/src/game/state/__tests__/ruleCanon.test.ts
++++ b/src/game/state/__tests__/ruleCanon.test.ts
+@@ -22,6 +22,8 @@ import { getAllLegalMoves, hasAnyLegalMove } from "../../rules/legalMoves";
+ import { canonicalRealmFromPos } from "../../../UI/realm";
+ import { NIDANA_LIST } from "../../nidanas";
+ import type { GameState, MoveOption, PlayerId, RealmPieceKind } from "../../types";
++import { getDharma777EligibleTargets } from "../../dharma777";
++import { revealHumansLotuses } from "../../rules/humansReveal";
+ 
+ beforeAll(() => {
+   vi.spyOn(console, "log").mockImplementation(() => {});
+@@ -126,6 +128,8 @@ describe("Mara: 6 lances y renacimiento al azar fuera de Humans", () => {
+ // lo que se mide es cuántos turnos dura.
+ function betState(): GameState {
+   return base({
++    // Humanos ya destapado (Marino): sin eso no hay lotos ni 666.
++    cosmicClock: { era: "marino", progress: 0, transitionSequence: 4 },
+     turn: "P1",
+     pieces: {
+       P1: { pig: venom(3), snake: venom(4), rooster: venom(5) },
+@@ -356,3 +360,23 @@ describe("saltos de prueba (4 oct 2026)", () => {
+     }
+   });
+ });
++
++describe("Lotos: solo cuando Humanos se destapa (Marino)", () => {
++  const inHumans = (extra = {}) => avatar("hell", 22, extra);
++  it("antes de Marino no hay loto; al llegar Marino florecen los limpios", () => {
++    const before = base({
++      cosmicClock: { era: "margot", progress: 0, transitionSequence: 2 },
++      realmPieces: {
++        P1: { hell: inHumans(), hungry_ghost: avatar("hungry_ghost", 23, { everCaptured: true }) },
++        P2: {},
++      },
++    });
++    expect(getDharma777EligibleTargets(before, "P1")).toEqual([]);
++    const after = revealHumansLotuses(before, {
++      ...before,
++      cosmicClock: { era: "marino", progress: 0, transitionSequence: 3 },
++    });
++    expect(after.consolidatedAvatars.P1?.hell).toBe(true);
++    expect(after.consolidatedAvatars.P1?.hungry_ghost).toBeFalsy();
++  });
++});
+diff --git a/src/game/state/reducer.ts b/src/game/state/reducer.ts
+index 0825d87..b3f5f69 100644
+--- a/src/game/state/reducer.ts
++++ b/src/game/state/reducer.ts
+@@ -1,4 +1,5 @@
+ // src/game/state/reducer.ts
++import { humansRevealed, revealHumansLotuses } from "../rules/humansReveal";
+ import type {
+   BasePieceKind,
+   GameState,
+@@ -422,7 +423,14 @@ function applyCollapseIfNeeded(
+   return { pieces: nextPieces, collapsedCounts };
+ }
+ 
++// 6 oct 2026 — ver rules/humansReveal.ts: al destaparse Humanos
++// (llega Marino) florecen los lotos pendientes, sea cual sea la acción
++// que cambió la era (jugada real, saltos de prueba, atajos dev).
+ export function reducer(state: GameState, action: Action): GameState {
++  return revealHumansLotuses(state, reducerCore(state, action));
++}
++
++function reducerCore(state: GameState, action: Action): GameState {
+   switch (action.type) {
+     case "SET_MULTIPLAYER_STATE":
+       return action.state;
+@@ -807,6 +815,7 @@ export function reducer(state: GameState, action: Action): GameState {
+       const piece = state.realmPieces[player]?.[targetAvatar];
+       if (!piece || piece.inLimbo || !piece.unlocked) return state;
+       if (canonicalRealmFromPos(piece.pos) !== "humans") return state;
++      if (!humansRevealed(state)) return state;
+       if (state.consolidatedAvatars[player]?.[targetAvatar]) return state;
+ 
+       // El apostador necesita al menos 2 Nidanas propias en juego
+@@ -1969,7 +1978,9 @@ if (isBasePiece) {
+   // "camino de revancha" en vez de volverlas irrelevantes.
+   if (
+     canonicalRealmFromPos(finalToPos) === "humans" &&
+-    !realmPiece.everCaptured
++    !realmPiece.everCaptured &&
++    // 6 oct 2026 — sin loto mientras Humanos no está destapado (Marino).
++    humansRevealed(state)
+   ) {
+     autoConsolidatedThisMove = activeRealmPiece;
+   }
+diff --git a/src/game/tutorial/__tests__/help.test.ts b/src/game/tutorial/__tests__/help.test.ts
+index 56ad1dc..fdbf47d 100644
+--- a/src/game/tutorial/__tests__/help.test.ts
++++ b/src/game/tutorial/__tests__/help.test.ts
+@@ -77,6 +77,7 @@ describe("ayuda de Buddha", () => {
+   it("cómo ganar: cuenta lotos y explica cada Avatar", () => {
+     const s = {
+       ...initialState,
++      cosmicClock: { era: "marino", progress: 0, transitionSequence: 4 },
+       realmPieces: {
+         P1: {
+           hungry_ghost: avatar("hungry_ghost", 22),
+diff --git a/src/game/tutorial/__tests__/lessons.test.ts b/src/game/tutorial/__tests__/lessons.test.ts
+index 236fa00..7e1981e 100644
+--- a/src/game/tutorial/__tests__/lessons.test.ts
++++ b/src/game/tutorial/__tests__/lessons.test.ts
+@@ -249,13 +249,14 @@ describe("no florece el loto", () => {
+     const s = {
+       ...initialState,
+       brunoRevealed: true,
++      cosmicClock: { era: "marino", progress: 0, transitionSequence: 4 },
+       lastMove: { player: "P1", pieceKind: "hell", toPos: 0, didCapture: false, capturedPieceKind: null },
+       realmPieces: {
+         P1: { hell: { id: "h", kind: "hell", pos: 0, inLimbo: false, maraLevel: null, unlocked: true, everCaptured: true } },
+         P2: {},
+       },
+     } as unknown as GameState;
+-    const seen = new Set<LessonId>(["brunoEra", "evoClock", "secondAvatar"]);
++    const seen = new Map<LessonId, number>(LESSONS.filter((l) => l.id !== "unsealed").map((l) => [l.id, 9]));
+     const l = pickLesson(s, "P2", seen);
+     expect(l?.id).toBe("unsealed");
+     expect(l!.vars!(s, "P2", (k) => k).name).toBe("Margot");
+@@ -267,10 +268,11 @@ describe("pssss pssss", () => {
+     const s = {
+       ...initialState,
+       brunoRevealed: true,
++      cosmicClock: { era: "marino", progress: 0, transitionSequence: 4 },
+       lastMove: { player: "P1", pieceKind: "hell", toPos: 0, didCapture: false, capturedPieceKind: null },
+       realmPieces: { P1: { hell: { id: "h", kind: "hell", pos: 0, inLimbo: false, maraLevel: null, unlocked: true, everCaptured: true } }, P2: {} },
+     } as unknown as GameState;
+-    const l = pickLesson(s, "P2", new Set<LessonId>(["brunoEra", "evoClock", "secondAvatar"]));
++    const l = pickLesson(s, "P2", new Map<LessonId, number>(LESSONS.filter((l) => l.id !== "unsealed").map((l) => [l.id, 9])));
+     expect(l!.vars!(s, "P2", (k) => k).captured).toBe("lesson.capturedF");
+   });
+   it("sale el primer llamado de Fandango con una oferta entrante", () => {
+@@ -309,3 +311,18 @@ describe("Mara: experiencia → misterio → nombre → significado", () => {
+     expect(pickLesson(s, "P1", all)?.id).toBe("maraRepeat");
+   });
+ });
++
++describe("lotos solo con Humanos destapado (Marino)", () => {
++  it("antes de Marino no sale NO FLORECE EL LOTO", () => {
++    const s = {
++      ...initialState,
++      brunoRevealed: true,
++      cosmicClock: { era: "margot", progress: 0, transitionSequence: 2 },
++      lastMove: { player: "P1", pieceKind: "hell", toPos: 0, didCapture: false, capturedPieceKind: null },
++      realmPieces: { P1: { hell: { id: "h", kind: "hell", pos: 0, inLimbo: false, maraLevel: null, unlocked: true, everCaptured: true } }, P2: {} },
++    } as unknown as GameState;
++    const all = new Map<LessonId, number>(LESSONS.map((l) => [l.id, 9]));
++    all.delete("unsealed");
++    expect(pickLesson(s, "P2", all)?.id).not.toBe("unsealed");
++  });
++});
+diff --git a/src/game/tutorial/help.ts b/src/game/tutorial/help.ts
+index 8d159d8..38df9e1 100644
+--- a/src/game/tutorial/help.ts
++++ b/src/game/tutorial/help.ts
+@@ -11,6 +11,7 @@
+ // Multilingüe: los textos viven en src/i18n (en.ts, es.ts); aquí solo se
+ // eligen las claves y se rellenan los datos.
+ 
++import { humansRevealed } from "../rules/humansReveal";
+ import type { BasePieceKind, GameState, PieceKind, PlayerId, RealmPieceKind } from "../types";
+ import { REALM_PIECE_ORDER } from "../types";
+ import { REALM_AVATAR_NAME } from "../realmAvatarNames";
+@@ -120,6 +121,7 @@ function howDoIWin(state: GameState, player: PlayerId, lang: Lang): string[] {
+     const here = canonicalRealmFromPos(p.pos) === "humans";
+     if (sealed && here) lines.push(t("win.sealedHere", { name }));
+     else if (sealed) lines.push(t("win.sealedAway", { name }));
++    else if (here && !humansRevealed(state)) lines.push(t("win.waitsReveal", { name }));
+     else if (here) lines.push(t("win.hereUnsealed", { name }));
+     else if (p.everCaptured) lines.push(t("win.willNeed", { name }));
+     else lines.push(t("win.onWay", { name }));
+diff --git a/src/game/tutorial/lessons.ts b/src/game/tutorial/lessons.ts
+index 70a1774..33f7456 100644
+--- a/src/game/tutorial/lessons.ts
++++ b/src/game/tutorial/lessons.ts
+@@ -11,6 +11,7 @@
+ //
+ // Todo son lecturas del GameState: ninguna lección cambia el juego.
+ 
++import { humansRevealed } from "../rules/humansReveal";
+ import type { GameState, PlayerId, RealmPieceKind } from "../types";
+ import { REALM_PIECE_ORDER } from "../types";
+ import { canonicalRealmFromPos } from "../../UI/realm";
+@@ -200,6 +201,8 @@ function unsealedArrival(state: GameState): RealmPieceKind | null {
+   const piece = state.realmPieces[m.player]?.[kind];
+   if (!piece || piece.inLimbo || piece.pos !== m.toPos || !inHumans(m.toPos)) return null;
+   if (!piece.everCaptured || state.consolidatedAvatars[m.player]?.[kind]) return null;
++  // 6 oct 2026 — de lotos no se habla hasta que Humanos se destapa.
++  if (!humansRevealed(state)) return null;
+   return kind;
+ }
+ 
+diff --git a/src/i18n/en.ts b/src/i18n/en.ts
+index 3e06a5c..6ded3dc 100644
+--- a/src/i18n/en.ts
++++ b/src/i18n/en.ts
+@@ -152,6 +152,7 @@ export const en = {
+   "win.sealedHere": "{name}: lotus, in Humans",
+   "win.sealedAway": "{name}: lotus, must return to Humans",
+   "win.hereUnsealed": "{name}: in Humans, no lotus (needs 666 or 777)",
++  "win.waitsReveal": "{name}: in Humans; lotuses bloom once Humans is revealed (when Marino arrives)",
+   "win.willNeed": "{name}: will need 666 or 777 for its lotus",
+   "win.onWay": "{name}: on its way",
+ 
+diff --git a/src/i18n/es.ts b/src/i18n/es.ts
+index 43ef1e1..8c280af 100644
+--- a/src/i18n/es.ts
++++ b/src/i18n/es.ts
+@@ -143,6 +143,7 @@ export const es: Dictionary = {
+   "win.sealedHere": "{name}: con loto, en Humanos",
+   "win.sealedAway": "{name}: con loto, tiene que volver a Humanos",
+   "win.hereUnsealed": "{name}: en Humanos, sin loto (necesita 666 o 777)",
++  "win.waitsReveal": "{name}: en Humanos; los lotos florecen cuando Humanos se destapa (llega Marino)",
+   "win.willNeed": "{name}: necesitará 666 o 777 para su loto",
+   "win.onWay": "{name}: en camino",
+ 
+-- 
+2.43.0
+

@@ -1,0 +1,1118 @@
+From edca5b57983d56aa9e08e3ceeeafc97f833b819b Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 6 Oct 2026 14:29:24 +0100
+Subject: [PATCH] =?UTF-8?q?Buddha=20DJ:=20ceremonia=20lenta=20la=20primera?=
+ =?UTF-8?q?=20vez=20en=20JUEGA=20CON=20BUDDHA=20(pausa,=20Avatar=20que=20f?=
+ =?UTF-8?q?alta,=20versi=C3=B3n=20corta=20para=20el=20rival);=20no=20borra?=
+ =?UTF-8?q?=20lecciones;=20textos=20traducidos=20al=20espa=C3=B1ol?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_0193QqW5YW1Vjzy3eRnNdAST
+---
+ src/UI/GameShell.tsx            | 199 ++++++++++++++++++++++++++++----
+ src/UI/LessonCard.tsx           |   6 +-
+ src/UI/VenomBanner.tsx          |   5 +-
+ src/UI/WhatNowScreen.tsx        |  38 +++---
+ src/UI/beginnerHints.css        |  21 ++++
+ src/fandango/FandangoKarma.tsx  |   6 +-
+ src/fandango/FandangoWindow.tsx |  71 +++++++-----
+ src/game/Board.tsx              |  12 +-
+ src/game/tutorial/lessons.ts    |   3 +
+ src/i18n/en.ts                  |  68 +++++++++++
+ src/i18n/es.ts                  |  68 +++++++++++
+ 11 files changed, 414 insertions(+), 83 deletions(-)
+
+diff --git a/src/UI/GameShell.tsx b/src/UI/GameShell.tsx
+index 3a9edeb..c68bea3 100644
+--- a/src/UI/GameShell.tsx
++++ b/src/UI/GameShell.tsx
+@@ -6,7 +6,8 @@ import { DicePopup } from "./DicePopup";
+ import { VestigiumOverlay } from "./VestigiumOverlay";
+ import { LedgerModal } from "./LedgerModal";
+ 
+-import { Board } from "../game/Board";
++import { Board, REALM_TOKEN_MAP } from "../game/Board";
++import { canonicalRealmFromPos } from "./realm";
+ import {
+   getMoveOptionsForPlayer,
+   getPigForcedAvatar,
+@@ -466,24 +467,24 @@ const handleRollWithPopup = () => {
+ };
+ 
+ const [showWatcher, setShowWatcher] = React.useState(false);
+-const [watcherLine, setWatcherLine] = React.useState("I see you.");
++const [watcherLine, setWatcherLine] = React.useState("");
+ const [showRealmMedal, setShowRealmMedal] = React.useState(false);
+ const [realmMedalKey, setRealmMedalKey] =
+   React.useState<string | null>(null);
+ 
+ const WATCHER_LINES = [
+-  "I saw that.",
+-  "Not random.",
+-  "Again?",
+-  "Careful.",
+-  "You chose that.",
+-  "I see you.",
+-];
++  "watcher.1",
++  "watcher.2",
++  "watcher.3",
++  "watcher.4",
++  "watcher.5",
++  "watcher.6",
++] as const;
+ 
+ const triggerWatcher = (forcedLine?: string) => {
+   const line =
+     forcedLine ??
+-    WATCHER_LINES[Math.floor(Math.random() * WATCHER_LINES.length)];
++    t(WATCHER_LINES[Math.floor(Math.random() * WATCHER_LINES.length)]);
+ 
+   setWatcherLine(line);
+ 
+@@ -838,6 +839,49 @@ const diceFrozen = state.phase === "rolled";
+ //      (victoria) NO pasa por acá — queda para el futuro evento de
+ //      Nirvana, sin tocar la condición de victoria.
+ const prevOriolEnteredRef = React.useRef(false);
++// 6 oct 2026 — ceremonia del Buddha DJ en JUEGA CON BUDDHA (ver el
++// efecto de "ONLY ONE MORE" más abajo). step 0 = DJ solo (1 s), 1 y 2 =
++// carteles que se cierran tocando. Mientras existe, el juego está en
++// pausa (capa que tapa el tablero) y no sale ninguna lección.
++const [djCeremony, setDjCeremony] = React.useState<{
++  player: PlayerId;
++  kind: RealmPieceKind;
++  mode: "full" | "rival";
++  step: 0 | 1 | 2;
++} | null>(null);
++const playDjScratch = () => {
++  const audio = scratchAudio.current;
++  if (!audio) return;
++  audio.currentTime = 0;
++  audio.play().catch(() => {
++    window.setTimeout(() => {
++      audio.currentTime = 0;
++      audio.play().catch(() => {});
++    }, 120);
++  });
++};
++// El cartel no debe tapar el Avatar que pulsa: si está en la mitad de
++// arriba de la pantalla, el cartel va abajo, y al revés.
++const [djCardPlacement, setDjCardPlacement] = React.useState<"top" | "bottom">("top");
++React.useEffect(() => {
++  if (!djCeremony || djCeremony.step === 0) return;
++  const el = document.querySelector(".bwbPulseGold");
++  if (!el) return;
++  const r = el.getBoundingClientRect();
++  setDjCardPlacement(r.top + r.height / 2 < window.innerHeight / 2 ? "bottom" : "top");
++}, [djCeremony]);
++const advanceDjCeremony = () => {
++  setDjCeremony((c) => {
++    if (!c || c.step === 0) return c;
++    if (c.mode === "full" && c.step === 1) return { ...c, step: 2 };
++    if (c.mode === "full") {
++      // Remate: la frase del DJ, ya con el juego libre.
++      window.setTimeout(() => fireDharmaEvent("ONLY ONE MORE.", true, true, 3000, false), 0);
++    }
++    return null;
++  });
++};
++
+ const prevNearWinRef = React.useRef<{ P1: boolean; P2: boolean }>({
+   P1: false,
+   P2: false,
+@@ -862,7 +906,10 @@ const fireDharmaEvent = React.useCallback(
+     big: boolean,
+     withDjBuddha: boolean = false,
+     // 3 oct 2026 — las lecciones de Buddha piden más tiempo de lectura.
+-    durationMs: number = 5000
++    durationMs: number = 5000,
++    // 6 oct 2026 — el remate "ONLY ONE MORE." de la ceremonia del DJ ya
++    // sonó al entrar: no repetir el scratch.
++    djSound: boolean = true
+   ) => {
+     if (dharmaHideTimerRef.current) window.clearTimeout(dharmaHideTimerRef.current);
+     if (dharmaFadeTimerRef.current) window.clearTimeout(dharmaFadeTimerRef.current);
+@@ -876,7 +923,7 @@ const fireDharmaEvent = React.useCallback(
+     // audios solapados, buffer todavía cargando) y el .catch() vacío se
+     // lo tragaba sin dejar rastro. Mismo arreglo: un reintento + aviso
+     // en consola para diagnosticar si vuelve a pasar.
+-    if (withDjBuddha && scratchAudio.current) {
++    if (withDjBuddha && djSound && scratchAudio.current) {
+       const audio = scratchAudio.current;
+       audio.currentTime = 0;
+       audio.play().catch(() => {
+@@ -1289,6 +1336,24 @@ React.useEffect(() => {
+ // menos de un segundo". Si arranca el video de un Avatar con una lección
+ // en pantalla, la lección se retira y se devuelve a la cola: vuelve a
+ // salir entera cuando termina el video.
++// 6 oct 2026 — devuelve a la cola la lección que está en pantalla (sale
++// entera más tarde). La usan el video de un Avatar y el Buddha DJ: una
++// celebración nunca se come una enseñanza.
++const requeueShowingLesson = () => {
++  const showing = lessonShowingRef.current;
++  if (!showing || !transientDharma || transientDharma.message !== showing.message) return;
++  const seen = seenLessonsRef.current;
++  const n = seen.get(showing.id) ?? 0;
++  if (n <= 1) seen.delete(showing.id);
++  else seen.set(showing.id, n - 1);
++  saveSeenLessons(seen);
++  lessonKeysRef.current.delete(showing.id);
++  lessonShowingRef.current = null;
++  if (dharmaHideTimerRef.current) window.clearTimeout(dharmaHideTimerRef.current);
++  if (dharmaFadeTimerRef.current) window.clearTimeout(dharmaFadeTimerRef.current);
++  setTransientDharma(null);
++};
++
+ React.useEffect(() => {
+   if (!avatarVideoPlaying) return;
+   const showing = lessonShowingRef.current;
+@@ -1318,6 +1383,7 @@ React.useEffect(() => {
+ React.useEffect(() => {
+   if (!beginnerMode || !genesisComplete || state.winner) return;
+   if (avatarVideoPlaying || budaConsultationActive || pendingDharmaChoice) return;
++  if (djCeremony) return;
+ 
+   // 3 oct 2026 — playtest de Federico: la línea roja apuntaba a un rival
+   // y la lección de captura no salió, porque el globo seguía ocupado con
+@@ -1360,6 +1426,7 @@ React.useEffect(() => {
+   avatarVideoPlaying,
+   budaConsultationActive,
+   pendingDharmaChoice,
++  djCeremony,
+   state,
+   fireDharmaEvent,
+ ]);
+@@ -1397,7 +1464,7 @@ React.useEffect(() => {
+ 
+   if (oriolEntered && snakeStreakRef.current[player] >= 2) {
+     snakeStreakRef.current[player] = 0;
+-    triggerWatcher("Anger, again?");
++    triggerWatcher(t("watcher.anger"));
+     return;
+   }
+ 
+@@ -1545,15 +1612,54 @@ React.useEffect(() => {
+   const p1At5 = whitmanEntered && p1NearWin === 5;
+   const p2At5 = whitmanEntered && p2NearWin === 5;
+ 
+-  if (p1At5 && !prevNearWinRef.current.P1) {
+-    fireDharmaEvent("WHITE: ONE MORE TO GET OUT.", true, true);
++  const reached: PlayerId | null =
++    p1At5 && !prevNearWinRef.current.P1
++      ? "P1"
++      : p2At5 && !prevNearWinRef.current.P2
++        ? "P2"
++        : null;
++  if (reached) {
+     // v66 (27 agosto 2026) — mismo flanco de "ONLY ONE MORE": el mural
+     // de fondo pasa directo a "7 nirvana dj.webp" (tablero ya
+     // totalmente destapado, ver nirvanaMuralRevealed más arriba).
+     setNirvanaMuralRevealed(true);
+-  } else if (p2At5 && !prevNearWinRef.current.P2) {
+-    fireDharmaEvent("BLACK: ONE MORE TO GET OUT.", true, true);
+-    setNirvanaMuralRevealed(true);
++    // 6 oct 2026 — una lección abierta no se pierde: vuelve a la cola.
++    if (beginnerMode) requeueShowingLesson();
++
++    const seen = seenLessonsRef.current;
++    const firstEver = beginnerMode && !seen.has("djFull");
++    const firstForOther = beginnerMode && seen.has("djFull") && !seen.has("djRival");
++    if (firstEver || firstForOther) {
++      // JUEGA CON BUDDHA — ceremonia lenta (pausa el juego): 1 s de DJ
++      // solo, luego carteles que se cierran tocando, con el Avatar que
++      // falta pulsando en el tablero.
++      seen.set(firstEver ? "djFull" : "djRival", 1);
++      saveSeenLessons(seen);
++      const missing =
++        REALM_PIECE_ORDER.find((kind) => {
++          const p = state.realmPieces[reached]?.[kind];
++          return !(
++            p?.unlocked &&
++            !p.inLimbo &&
++            canonicalRealmFromPos(p.pos) === "humans" &&
++            state.consolidatedAvatars[reached]?.[kind]
++          );
++        }) ?? "deva";
++      playDjScratch();
++      setDjCeremony({ player: reached, kind: missing, mode: firstEver ? "full" : "rival", step: 0 });
++      window.setTimeout(
++        () => setDjCeremony((c) => (c && c.step === 0 ? { ...c, step: 1 } : c)),
++        1000
++      );
++    } else if (beginnerMode) {
++      fireDharmaEvent("ONLY ONE MORE.", true, true);
++    } else {
++      fireDharmaEvent(
++        t("nearWin.oneMore", { color: t(reached === "P1" ? "color.P1" : "color.P2").toUpperCase() }),
++        true,
++        true
++      );
++    }
+   }
+ 
+   prevNearWinRef.current = { P1: p1At5, P2: p2At5 };
+@@ -1637,7 +1743,7 @@ const lessonNidanas = (() => {
+ })();
+ const isDharmaBig = transientDharma?.big ?? false;
+ const isDharmaFading = transientDharma?.fading ?? false;
+-const showDjBuddha = transientDharma?.withDjBuddha ?? false;
++const showDjBuddha = (transientDharma?.withDjBuddha ?? false) || !!djCeremony;
+   
+ return (
+ 
+@@ -1678,7 +1784,7 @@ return (
+ 
+   <div className="rotateHint">
+     <span>↺</span>
+-    Rotate your device to play
++    {t("rotate.hint")}
+   </div>
+ 
+   <div className="samsaraStage">
+@@ -2022,7 +2128,7 @@ return (
+             }}
+           >
+             <div style={{ fontSize: 13, letterSpacing: 2, opacity: 0.65 }}>
+-              {beginnerMode ? t("dharma777.alreadyCaptured") : "A ese Avatar ya le duele Mara."}
++              {beginnerMode ? t("dharma777.alreadyCaptured") : t("d777.mara")}
+             </div>
+             <div style={{ display: "flex", gap: 12 }}>
+               <button
+@@ -2038,7 +2144,7 @@ return (
+                   cursor: "pointer",
+                 }}
+               >
+-                CAPTURE
++                {t("d777.capture")}
+               </button>
+               {pendingDharmaChoice.eligibleTargets.length === 1 ? (
+                 <button
+@@ -2068,7 +2174,7 @@ return (
+                   }}
+                 >
+                   <div style={{ fontSize: 12, opacity: 0.7 }}>
+-                    ○ ROUND DHARMA 777 — ¿cuál consolidas?
++                    {t("d777.which")}
+                   </div>
+                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                     {pendingDharmaChoice.eligibleTargets.map((kind) => (
+@@ -2135,6 +2241,44 @@ return (
+           document.body
+         )}
+ 
++      {/* 6 oct 2026 — ceremonia del Buddha DJ (JUEGA CON BUDDHA, primera
++          vez): una capa transparente pausa el tablero; tocar en cualquier
++          sitio (o el cartel) avanza. */}
++      {djCeremony &&
++        createPortal(
++          <>
++            <div
++              onClick={advanceDjCeremony}
++              style={{ position: "fixed", inset: 0, zIndex: 999970, background: "rgba(0,0,0,0.12)" }}
++            />
++            {djCeremony.step > 0 && (
++              <LessonCard
++                message={t(
++                  djCeremony.mode === "rival"
++                    ? "dj.rival"
++                    : djCeremony.step === 1
++                      ? "dj.full1"
++                      : "dj.full2",
++                  {
++                    color: lang === "es"
++                      ? t(djCeremony.player === "P1" ? "color.P1" : "color.P2").toLowerCase()
++                      : t(djCeremony.player === "P1" ? "color.P1" : "color.P2"),
++                    name: REALM_AVATAR_NAME[djCeremony.kind],
++                  }
++                )}
++                fading={false}
++                onDismiss={advanceDjCeremony}
++                dismissLabel={t("lesson.dismiss")}
++                placement={djCardPlacement}
++                plain
++                icon={REALM_TOKEN_MAP[djCeremony.kind]?.[djCeremony.player]}
++                iconLarge
++              />
++            )}
++          </>,
++          document.body
++        )}
++
+       {buddhaHelpOpen && (
+         <div
+           onClick={() => setBuddhaHelpOpen(false)}
+@@ -2432,6 +2576,11 @@ return (
+       <div className="boardLayer" style={{ opacity: 1 }}>
+         <Board
+           state={state}
++          highlightAvatar={
++            djCeremony && djCeremony.step > 0
++              ? { player: djCeremony.player, kind: djCeremony.kind }
++              : null
++          }
+           onSelectPiece={onSelectPiece}
+           hoveredOption={hoveredOption}
+           moveOptions={moveOptions}
+@@ -2490,8 +2639,8 @@ return (
+   rivalNidanas={
+     state.avatarNidana[state.turn === "P1" ? "P2" : "P1"]
+   }
+-  myLabel={`YOUR NIDANAS (${state.turn})`}
+-  rivalLabel={`RIVAL NIDANAS (${state.turn === "P1" ? "P2" : "P1"})`}
++  myLabel={t("fan.yourNidanas", { color: t(state.turn === "P1" ? "color.P1" : "color.P2") })}
++  rivalLabel={t("fan.rivalNidanas", { color: t(state.turn === "P1" ? "color.P2" : "color.P1") })}
+   myFormedLinks={myFormedLinks}
+   onFormLink={handleFormLink}
+   myPlayer={state.turn}
+diff --git a/src/UI/LessonCard.tsx b/src/UI/LessonCard.tsx
+index 1d482ec..bf4e7e1 100644
+--- a/src/UI/LessonCard.tsx
++++ b/src/UI/LessonCard.tsx
+@@ -21,11 +21,13 @@ type Props = {
+   placement?: "top" | "left" | "bottom";
+   // 6 oct 2026 — icono grande (la moneda de Buddha dentro del cartel).
+   iconLarge?: boolean;
++  // Sin desenfoque de fondo (deja ver el tablero nítido).
++  plain?: boolean;
+ };
+ 
+ const SWIPE_PX = 60;
+ 
+-export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, icon, placement = "top", iconLarge = false }: Props) {
++export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, icon, placement = "top", iconLarge = false, plain = false }: Props) {
+   const start = React.useRef<{ x: number; y: number } | null>(null);
+   const [drag, setDrag] = React.useState({ x: 0, y: 0 });
+ 
+@@ -58,7 +60,7 @@ export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas,
+ 
+   return (
+     <div
+-      className={`bwbLessonCard${placement === "left" ? " bwbLessonCardLeft" : placement === "bottom" ? " bwbLessonCardBottom" : ""}${fading ? " bwbLessonCardFading" : ""}`}
++      className={`bwbLessonCard${placement === "left" ? " bwbLessonCardLeft" : placement === "bottom" ? " bwbLessonCardBottom" : ""}${fading ? " bwbLessonCardFading" : ""}${plain ? " bwbLessonCardPlain" : ""}`}
+       role="status"
+       aria-live="polite"
+       onPointerDown={onPointerDown}
+diff --git a/src/UI/VenomBanner.tsx b/src/UI/VenomBanner.tsx
+index 19678d6..1163a6f 100644
+--- a/src/UI/VenomBanner.tsx
++++ b/src/UI/VenomBanner.tsx
+@@ -1,4 +1,6 @@
+ import "./VenomBanner.css";
++import { useI18n } from "../i18n";
++import type { MessageKey } from "../i18n/en";
+ import { POISON_META } from "../game/poisonMeta";
+ import type { BasePieceKind } from "../game/types";
+ 
+@@ -29,6 +31,7 @@ function isEmoji(icon: string): boolean {
+ }
+ 
+ export function VenomBanner({ kind, fading }: VenomBannerProps) {
++  const { t } = useI18n();
+   if (!kind) return null;
+   const meta = POISON_META[kind];
+ 
+@@ -41,7 +44,7 @@ export function VenomBanner({ kind, fading }: VenomBannerProps) {
+       ) : (
+         <img src={meta.icon} alt="" className="venom-banner-icon" />
+       )}
+-      <div className="venom-banner-label">{meta.label}</div>
++      <div className="venom-banner-label">{t(`venomBanner.${kind}` as MessageKey)}</div>
+     </div>
+   );
+ }
+diff --git a/src/UI/WhatNowScreen.tsx b/src/UI/WhatNowScreen.tsx
+index f435756..c4fccaf 100644
+--- a/src/UI/WhatNowScreen.tsx
++++ b/src/UI/WhatNowScreen.tsx
+@@ -27,6 +27,7 @@
+ //                       (Lobby.tsx) — no se inventa infraestructura de
+ //                       backend nueva, se usan las APIs nativas del
+ //                       navegador.
++import { useI18n } from "../i18n";
+ import { useState } from "react";
+ import uthingoImage from "../assets/intro/uthingo_what_now.webp";
+ import type { FinalVestigium } from "../game/Vestigium";
+@@ -45,6 +46,7 @@ function formatDuration(ms: number): string {
+ }
+ 
+ export function WhatNowScreen({ finalVestigium, onPlayAgain }: Props) {
++  const { t } = useI18n();
+   const [view, setView] = useState<"menu" | "trace">("menu");
+   const [inviteStatus, setInviteStatus] = useState<"idle" | "copied">("idle");
+ 
+@@ -87,7 +89,7 @@ export function WhatNowScreen({ finalVestigium, onPlayAgain }: Props) {
+       <div className="whatNowContent">
+         {view === "menu" ? (
+           <>
+-            <div className="whatNowHeader">WHAT NOW?</div>
++            <div className="whatNowHeader">{t("what.title")}</div>
+ 
+             <div className="whatNowOptions">
+               <button
+@@ -95,9 +97,9 @@ export function WhatNowScreen({ finalVestigium, onPlayAgain }: Props) {
+                 className="whatNowOption"
+                 onClick={onPlayAgain}
+               >
+-                <span className="whatNowOptionTitle">REINCARNATE</span>
++                <span className="whatNowOptionTitle">{t("what.reincarnate")}</span>
+                 <span className="whatNowOptionSubtitle">
+-                  Enter the wheel again.
++                  {t("what.reincarnateSub")}
+                 </span>
+               </button>
+ 
+@@ -106,9 +108,9 @@ export function WhatNowScreen({ finalVestigium, onPlayAgain }: Props) {
+                 className="whatNowOption whatNowOptionPrimary"
+                 onClick={() => setView("trace")}
+               >
+-                <span className="whatNowOptionTitle">SEE YOUR TRACE</span>
++                <span className="whatNowOptionTitle">{t("what.trace")}</span>
+                 <span className="whatNowOptionSubtitle">
+-                  See what happened in this Samsara.
++                  {t("what.traceSub")}
+                 </span>
+               </button>
+ 
+@@ -118,9 +120,9 @@ export function WhatNowScreen({ finalVestigium, onPlayAgain }: Props) {
+                 rel="noopener noreferrer"
+                 className="whatNowOption"
+               >
+-                <span className="whatNowOptionTitle">ENTER CURVISM</span>
++                <span className="whatNowOptionTitle">{t("what.curvism")}</span>
+                 <span className="whatNowOptionSubtitle">
+-                  Discover why the circle matters.
++                  {t("what.curvismSub")}
+                 </span>
+               </a>
+             </div>
+@@ -140,49 +142,49 @@ export function WhatNowScreen({ finalVestigium, onPlayAgain }: Props) {
+           </>
+         ) : (
+           <div className="whatNowTrace">
+-            <div className="whatNowHeader">YOUR TRACE</div>
++            <div className="whatNowHeader">{t("what.traceTitle")}</div>
+ 
+             <div className="whatNowTraceGrid">
+               <div className="whatNowTraceRow">
+-                <span className="whatNowTraceLabel">Result</span>
++                <span className="whatNowTraceLabel">{t("what.result")}</span>
+                 <span className="whatNowTraceValue">
+                   {finalVestigium.result === "nirvano"
+-                    ? "Nirvana reached"
+-                    : "Not reached"}
++                    ? t("what.nirvana")
++                    : t("what.notReached")}
+                 </span>
+               </div>
+               <div className="whatNowTraceRow">
+-                <span className="whatNowTraceLabel">Rolls</span>
++                <span className="whatNowTraceLabel">{t("what.rolls")}</span>
+                 <span className="whatNowTraceValue">
+                   {finalVestigium.rolls}
+                 </span>
+               </div>
+               <div className="whatNowTraceRow">
+-                <span className="whatNowTraceLabel">Captures</span>
++                <span className="whatNowTraceLabel">{t("what.captures")}</span>
+                 <span className="whatNowTraceValue">
+                   {finalVestigium.captures}
+                 </span>
+               </div>
+               <div className="whatNowTraceRow">
+-                <span className="whatNowTraceLabel">Nidanas activated</span>
++                <span className="whatNowTraceLabel">{t("what.nidanas")}</span>
+                 <span className="whatNowTraceValue">
+                   {finalVestigium.nidanasActivated}
+                 </span>
+               </div>
+               <div className="whatNowTraceRow">
+-                <span className="whatNowTraceLabel">Visits to Mara</span>
++                <span className="whatNowTraceLabel">{t("what.mara")}</span>
+                 <span className="whatNowTraceValue">
+                   {finalVestigium.maraVisits}
+                 </span>
+               </div>
+               <div className="whatNowTraceRow">
+-                <span className="whatNowTraceLabel">Avatars in Humans</span>
++                <span className="whatNowTraceLabel">{t("what.humans")}</span>
+                 <span className="whatNowTraceValue">
+                   {finalVestigium.avatarsInHumans}/6
+                 </span>
+               </div>
+               <div className="whatNowTraceRow">
+-                <span className="whatNowTraceLabel">Duration</span>
++                <span className="whatNowTraceLabel">{t("what.duration")}</span>
+                 <span className="whatNowTraceValue">
+                   {formatDuration(finalVestigium.durationMs)}
+                 </span>
+@@ -194,7 +196,7 @@ export function WhatNowScreen({ finalVestigium, onPlayAgain }: Props) {
+               className="whatNowBackButton"
+               onClick={() => setView("menu")}
+             >
+-              BACK
++              {t("what.back")}
+             </button>
+           </div>
+         )}
+diff --git a/src/UI/beginnerHints.css b/src/UI/beginnerHints.css
+index e8f0af0..ffe7d03 100644
+--- a/src/UI/beginnerHints.css
++++ b/src/UI/beginnerHints.css
+@@ -495,3 +495,24 @@ body.bwb-hl-options .moveOptionsPanel::after {
+   backdrop-filter: blur(2px);
+   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+ }
++
++/* El Avatar que falta (ceremonia del Buddha DJ): pulso dorado. */
++.bwbPulseGold::after {
++  border-color: rgba(255, 210, 74, 0.95);
++  box-shadow: 0 0 16px rgba(255, 210, 74, 0.9);
++  width: 150%;
++  height: 150%;
++}
++
++.bwbLessonCard.bwbLessonCardPlain {
++  -webkit-backdrop-filter: none;
++  backdrop-filter: none;
++  background: rgba(8, 14, 34, 0.66);
++}
++
++/* Móvil horizontal: óvalo más estrecho y moneda/ficha más pequeña, para
++   que el cartel no tape medio tablero. */
++@media (max-height: 480px) {
++  .bwbLessonCard { max-width: min(600px, 72vw); font-size: 18px; }
++  .bwbLessonCardIconImg.bwbLessonCardIconBig { width: 2.6em; height: 2.6em; }
++}
+diff --git a/src/fandango/FandangoKarma.tsx b/src/fandango/FandangoKarma.tsx
+index ba6401a..25cf8f4 100644
+--- a/src/fandango/FandangoKarma.tsx
++++ b/src/fandango/FandangoKarma.tsx
+@@ -1,4 +1,5 @@
+ import "./fandango.css";
++import { useI18n } from "../i18n";
+ import karmaChatFandango from "./karma-chat-fandango.webp";
+ 
+ // v72 (28 agosto 2026) — pedido de Federico: activar Fandango de
+@@ -29,6 +30,7 @@ type Props = {
+ };
+ 
+ export function FandangoKarma({ onOpen, hasNotification }: Props) {
++  const { t } = useI18n();
+   return (
+     <div className="fandangoRoot" onClick={onOpen}>
+       <img
+@@ -45,9 +47,7 @@ export function FandangoKarma({ onOpen, hasNotification }: Props) {
+         <strong>CHAT FANDANGO™</strong>
+ 
+         <div className="fandangoText">
+-          Messages, suspicious offers,
+-          <br />
+-          and karmic arrangements.
++          {t("fan.subtitle")}
+         </div>
+       </div>
+     </div>
+diff --git a/src/fandango/FandangoWindow.tsx b/src/fandango/FandangoWindow.tsx
+index 8ed377f..9b6ace9 100644
+--- a/src/fandango/FandangoWindow.tsx
++++ b/src/fandango/FandangoWindow.tsx
+@@ -177,6 +177,7 @@ function SquareKarma666Block({
+   onAccept: () => void;
+   onRefuse: () => void;
+ }) {
++  const { t } = useI18n();
+   const boxStyle: CSSProperties = {
+     marginTop: 20,
+     padding: "16px 12%",
+@@ -200,9 +201,11 @@ function SquareKarma666Block({
+     const isMine = activeSnakeBet.byPlayer === myPlayer;
+     return (
+       <div style={boxStyle}>
+-        🐍 SQUARE KARMA 666 {isMine ? "— yours" : "— rival's"} on{" "}
+-        {REALM_AVATAR_NAME[activeSnakeBet.targetAvatar]} —{" "}
+-        {activeSnakeBet.roundsLeft} TURN{activeSnakeBet.roundsLeft === 1 ? "" : "S"} LEFT
++        {t("fan.betActive", {
++          who: t(isMine ? "fan.betYours" : "fan.betRivals"),
++          name: REALM_AVATAR_NAME[activeSnakeBet.targetAvatar],
++          n: String(activeSnakeBet.roundsLeft),
++        })}
+       </div>
+     );
+   }
+@@ -212,24 +215,21 @@ function SquareKarma666Block({
+     if (isMine) {
+       return (
+         <div style={boxStyle}>
+-          🐍 SQUARE KARMA 666 proposed on{" "}
+-          {REALM_AVATAR_NAME[pendingSnakeBet.targetAvatar]} — waiting for rival's
+-          response.
++          {t("fan.betProposed", { name: REALM_AVATAR_NAME[pendingSnakeBet.targetAvatar] })}
+         </div>
+       );
+     }
+     return (
+       <div style={boxStyle}>
+         <div style={{ marginBottom: 8 }}>
+-          🐍 Rival proposes SQUARE KARMA 666 on your{" "}
+-          {REALM_AVATAR_NAME[pendingSnakeBet.targetAvatar]}.
++          {t("fan.betIncoming", { name: REALM_AVATAR_NAME[pendingSnakeBet.targetAvatar] })}
+         </div>
+         <div style={{ display: "flex", gap: 8 }}>
+           <button type="button" onClick={onAccept} style={buttonStyle}>
+-            ACCEPT
++            {t("fan.accept")}
+           </button>
+           <button type="button" onClick={onRefuse} style={buttonStyle}>
+-            REFUSE
++            {t("fan.refuse")}
+           </button>
+         </div>
+       </div>
+@@ -240,7 +240,7 @@ function SquareKarma666Block({
+ 
+   return (
+     <div style={boxStyle}>
+-      <div style={{ marginBottom: 8 }}>🐍 SQUARE KARMA 666 — propose bet:</div>
++      <div style={{ marginBottom: 8 }}>{t("fan.betPropose")}</div>
+       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+         {eligibleTargets.map((kind) => (
+           <button
+@@ -322,8 +322,9 @@ function Coin({ entry }: { entry: CarriedNidana }) {
+ }
+ 
+ function CoinRow({ entries }: { entries: CarriedNidana[] }) {
++  const { t } = useI18n();
+   if (entries.length === 0) {
+-    return <EmptyNote>No Nidanas carried yet.</EmptyNote>;
++    return <EmptyNote>{t("fan.noNidanas")}</EmptyNote>;
+   }
+   return (
+     <div
+@@ -369,6 +370,7 @@ function LinkAvailableBlock({
+   links: OwnLink[];
+   onFormLink: (link: OwnLink) => void;
+ }) {
++  const { t } = useI18n();
+   return (
+     <div style={{ marginTop: 14 }}>
+       <div
+@@ -380,10 +382,10 @@ function LinkAvailableBlock({
+           marginBottom: 8,
+         }}
+       >
+-        LINK AVAILABLE
++        {t("fan.linkAvailable")}
+       </div>
+       {links.length === 0 ? (
+-        <EmptyNote>None yet.</EmptyNote>
++        <EmptyNote>{t("fan.none")}</EmptyNote>
+       ) : (
+         <div
+           style={{
+@@ -417,7 +419,7 @@ function LinkAvailableBlock({
+                   cursor: "pointer",
+                 }}
+               >
+-                FORM LINK
++                {t("fan.formLink")}
+               </button>
+             </div>
+           ))}
+@@ -433,6 +435,7 @@ function LinkAvailableBlock({
+ // arriba con algo que todavía no aplica la primera vez que se abre
+ // Fandango.
+ function YourLinksBlock({ links }: { links: OwnLink[] }) {
++  const { t } = useI18n();
+   if (links.length === 0) return null;
+   return (
+     <div style={{ marginTop: 14 }}>
+@@ -446,7 +449,7 @@ function YourLinksBlock({ links }: { links: OwnLink[] }) {
+           marginBottom: 8,
+         }}
+       >
+-        YOUR LINKS
++        {t("fan.yourLinks")}
+       </div>
+       <div
+         style={{
+@@ -476,6 +479,7 @@ function YourLinksBlock({ links }: { links: OwnLink[] }) {
+ // necesita estado de partida). Pedido de Federico: "pequeño evento
+ // visual/sonoro satisfactorio."
+ function LinkFormedFlash({ link }: { link: { numA: number; numB: number } }) {
++  const { t } = useI18n();
+   return (
+     <div
+       style={{
+@@ -487,7 +491,7 @@ function LinkFormedFlash({ link }: { link: { numA: number; numB: number } }) {
+         textAlign: "center",
+       }}
+     >
+-      LINK FORMED {link.numA} → {link.numB}
++      {t("fan.linkFormed", { a: String(link.numA), b: String(link.numB) })}
+     </div>
+   );
+ }
+@@ -526,6 +530,7 @@ function RivalHasWhatYouNeedBlock({
+   onSendOffer: () => void;
+   onCancelDeal: () => void;
+ }) {
++  const { t } = useI18n();
+   return (
+     <div style={{ marginTop: 14 }}>
+       <div
+@@ -537,10 +542,10 @@ function RivalHasWhatYouNeedBlock({
+           marginBottom: 8,
+         }}
+       >
+-        RIVAL HAS WHAT YOU NEED
++        {t("fan.rivalHas")}
+       </div>
+       {opportunities.length === 0 ? (
+-        <EmptyNote>None yet.</EmptyNote>
++        <EmptyNote>{t("fan.none")}</EmptyNote>
+       ) : (
+         <div
+           style={{
+@@ -562,7 +567,7 @@ function RivalHasWhatYouNeedBlock({
+                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                   <MiniCoin nidana={op.need} />
+                   <span style={{ fontSize: 13, color: "#f2d19a", opacity: 0.9 }}>
+-                    completes {lo} – {hi}
++                    {t("fan.completes", { lo: String(lo), hi: String(hi) })}
+                   </span>
+                   {!disabled && (
+                     <button
+@@ -583,7 +588,7 @@ function RivalHasWhatYouNeedBlock({
+                         cursor: "pointer",
+                       }}
+                     >
+-                      {dealOpen ? "CANCEL" : "DEAL"}
++                      {dealOpen ? t("fan.cancel") : t("fan.deal")}
+                     </button>
+                   )}
+                 </div>
+@@ -602,10 +607,10 @@ function RivalHasWhatYouNeedBlock({
+                     }}
+                   >
+                     <div style={{ fontSize: 11, letterSpacing: "0.04em", opacity: 0.7 }}>
+-                      I WANT: <MiniCoin nidana={op.need} />
++                      {t("fan.iWant")} <MiniCoin nidana={op.need} />
+                     </div>
+                     <div style={{ fontSize: 11, letterSpacing: "0.04em", opacity: 0.7 }}>
+-                      I OFFER:
++                      {t("fan.iOffer")}
+                     </div>
+                     <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8 }}>
+                       {mine.map((e) => (
+@@ -650,7 +655,7 @@ function RivalHasWhatYouNeedBlock({
+                             cursor: "pointer",
+                           }}
+                         >
+-                          SEND OFFER
++                          {t("fan.sendOffer")}
+                         </button>
+                       </>
+                     )}
+@@ -681,6 +686,7 @@ function TradeOfferPanel({
+   onAccept: () => void;
+   onRefuse: () => void;
+ }) {
++  const { t } = useI18n();
+   const incoming = pendingTrade.fromPlayer !== myPlayer;
+   return (
+     <div
+@@ -702,12 +708,12 @@ function TradeOfferPanel({
+           marginBottom: 8,
+         }}
+       >
+-        {incoming ? "TRADE OFFER" : "OFFER SENT"}
++        {incoming ? t("fan.tradeOffer") : t("fan.offerSent")}
+       </div>
+       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13 }}>
+-        {incoming ? "They offer" : "Your"} <MiniCoin nidana={pendingTrade.offer} />
++        {incoming ? t("fan.theyOffer") : t("fan.yourCoin")} <MiniCoin nidana={pendingTrade.offer} />
+         <span style={{ opacity: 0.6 }}>⇄</span>
+-        {incoming ? "your" : "their"} <MiniCoin nidana={pendingTrade.want} />
++        {incoming ? t("fan.forYour") : t("fan.forTheir")} <MiniCoin nidana={pendingTrade.want} />
+       </div>
+       {incoming ? (
+         <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 12 }}>
+@@ -726,7 +732,7 @@ function TradeOfferPanel({
+               cursor: "pointer",
+             }}
+           >
+-            ACCEPT
++            {t("fan.accept")}
+           </button>
+           <button
+             onClick={onRefuse}
+@@ -743,12 +749,12 @@ function TradeOfferPanel({
+               cursor: "pointer",
+             }}
+           >
+-            REFUSE
++            {t("fan.refuse")}
+           </button>
+         </div>
+       ) : (
+         <div style={{ marginTop: 8, fontSize: 12, opacity: 0.6, fontStyle: "italic" }}>
+-          Waiting for reply.
++          {t("fan.waiting")}
+         </div>
+       )}
+     </div>
+@@ -779,6 +785,7 @@ export function FandangoWindow({
+   tour = false,
+   onTourDone,
+ }: Props) {
++  const { t } = useI18n();
+   const [tourIndex, setTourIndex] = useState<number | null>(null);
+   useEffect(() => {
+     setTourIndex(open && tour ? 0 : null);
+@@ -918,7 +925,7 @@ export function FandangoWindow({
+           CHAT FANDANGO™
+         </div>
+         <div style={{ fontSize: 13, opacity: 0.6, marginBottom: 22 }}>
+-          Messages, suspicious offers, and karmic arrangements.
++          {t("fan.subtitle")}
+         </div>
+         {callout("welcome")}
+ 
+@@ -993,7 +1000,7 @@ export function FandangoWindow({
+             fontWeight: 700,
+           }}
+         >
+-          Close
++          {t("fan.close")}
+         </button>
+       </div>
+     </div>
+diff --git a/src/game/Board.tsx b/src/game/Board.tsx
+index 1ea50ac..32f05de 100644
+--- a/src/game/Board.tsx
++++ b/src/game/Board.tsx
+@@ -148,6 +148,9 @@ type Props = {
+   // PLAY WITH BUDDHA (30 sept 2026): modo principiante. Solo cambia lo
+   // que se ilumina en pantalla; nunca qué es legal.
+   beginnerMode?: boolean;
++  // 6 oct 2026 — Avatar que pulsa en dorado (el que falta en la
++  // ceremonia del Buddha DJ). Mientras hay uno, no pulsa nada más.
++  highlightAvatar?: { player: "P1" | "P2"; kind: RealmPieceKind } | null;
+   onHoverOption?: (option: MoveOption | null) => void;
+ };
+ // Era 1 (Ignorance) gate: only unlocked base pieces render on the board or
+@@ -252,6 +255,7 @@ export function Board({
+   onConsultBuda,
+   budaConsultationActive = false,
+   beginnerMode = false,
++  highlightAvatar = null,
+   onHoverOption,
+ }: Props){
+ 
+@@ -266,7 +270,7 @@ export function Board({
+       pieces: new Set<PieceKind>(),
+     };
+     if (!beginnerMode || !genesisComplete || state.winner) return empty;
+-    if (budaConsultationActive) return empty;
++    if (budaConsultationActive || highlightAvatar) return empty;
+ 
+     if (state.phase === "idle") return { ...empty, dice: true };
+ 
+@@ -301,7 +305,7 @@ export function Board({
+       };
+     }
+     return empty;
+-  }, [beginnerMode, genesisComplete, budaConsultationActive, state, moveOptions]);
++  }, [beginnerMode, genesisComplete, budaConsultationActive, highlightAvatar, state, moveOptions]);
+ 
+   const captureAudioWhite = useRef<HTMLAudioElement | null>(null);
+   const captureAudioBlack = useRef<HTMLAudioElement | null>(null);
+@@ -1102,6 +1106,10 @@ const carriedNidana = state.avatarNidana[player][piece.kind];
+           player === state.turn && beginnerHints.pieces.has(piece.kind)
+             ? " bwbPulsePiece"
+             : ""
++        }${
++          highlightAvatar?.player === player && highlightAvatar.kind === piece.kind
++            ? " bwbPulsePiece bwbPulseGold"
++            : ""
+         }`}
+ style={{
+   left: stackedPosition.left,
+diff --git a/src/game/tutorial/lessons.ts b/src/game/tutorial/lessons.ts
+index 33f7456..19a4ea4 100644
+--- a/src/game/tutorial/lessons.ts
++++ b/src/game/tutorial/lessons.ts
+@@ -32,6 +32,9 @@ export type LessonId =
+   // No es una lección del globo: marca el recorrido de Fandango ya hecho
+   // (vive en el mismo contador, así se reinicia con cada partida).
+   | "fandangoTour"
++  // Ceremonia del Buddha DJ ya hecha (completa / versión corta).
++  | "djFull"
++  | "djRival"
+   | "threePoisons"
+   | "sixRealms"
+   | "brunoEra"
+diff --git a/src/i18n/en.ts b/src/i18n/en.ts
+index d2436c0..39161b3 100644
+--- a/src/i18n/en.ts
++++ b/src/i18n/en.ts
+@@ -63,6 +63,74 @@ export const en = {
+   "lesson.capturedM": "captured",
+   "lesson.capturedF": "captured",
+   "lesson.fandango": "PSSSS… PSSSS… 👀\nKarma Chat Fandango is calling.\nThere’s an offer waiting for you.\nGo check it out.",
++  "fan.betActive": "🐍 SQUARE KARMA 666 ({who}) on {name}: {n} turns left",
++  "fan.betYours": "yours",
++  "fan.betRivals": "rival's",
++  "fan.betProposed": "🐍 SQUARE KARMA 666 proposed on {name}: waiting for the rival's reply.",
++  "fan.betIncoming": "🐍 Rival proposes SQUARE KARMA 666 on your {name}.",
++  "fan.accept": "ACCEPT",
++  "fan.refuse": "REFUSE",
++  "fan.betPropose": "🐍 SQUARE KARMA 666 — propose bet:",
++  "fan.noNidanas": "No Nidanas carried yet.",
++  "fan.none": "None yet.",
++  "fan.linkAvailable": "LINK AVAILABLE",
++  "fan.formLink": "FORM LINK",
++  "fan.yourLinks": "YOUR LINKS",
++  "fan.linkFormed": "LINK FORMED {a} → {b}",
++  "fan.rivalHas": "RIVAL HAS WHAT YOU NEED",
++  "fan.completes": "completes {lo} – {hi}",
++  "fan.cancel": "CANCEL",
++  "fan.deal": "DEAL",
++  "fan.iWant": "I WANT:",
++  "fan.iOffer": "I OFFER:",
++  "fan.sendOffer": "SEND OFFER",
++  "fan.tradeOffer": "TRADE OFFER",
++  "fan.offerSent": "OFFER SENT",
++  "fan.theyOffer": "They offer",
++  "fan.yourCoin": "Your",
++  "fan.forYour": "your",
++  "fan.forTheir": "their",
++  "fan.waiting": "Waiting for reply.",
++  "fan.subtitle": "Messages, suspicious offers, and karmic arrangements.",
++  "fan.close": "Close",
++  "fan.yourNidanas": "YOUR NIDANAS ({color})",
++  "fan.rivalNidanas": "RIVAL NIDANAS ({color})",
++  "d777.capture": "CAPTURE",
++  "d777.which": "○ ROUND DHARMA 777 — which one gets the lotus?",
++  "d777.mara": "Mara already hurts that Avatar.",
++  "rotate.hint": "Rotate your device to play",
++  "watcher.1": "I saw that.",
++  "watcher.2": "Not random.",
++  "watcher.3": "Again?",
++  "watcher.4": "Careful.",
++  "watcher.5": "You chose that.",
++  "watcher.6": "I see you.",
++  "watcher.anger": "Anger, again?",
++  "venomBanner.pig": "IGNORANCE",
++  "venomBanner.snake": "ANGER",
++  "venomBanner.rooster": "IMPULSE",
++  "what.title": "WHAT NOW?",
++  "what.reincarnate": "REINCARNATE",
++  "what.reincarnateSub": "Enter the wheel again.",
++  "what.trace": "SEE YOUR TRACE",
++  "what.traceSub": "See what happened in this Samsara.",
++  "what.curvism": "ENTER CURVISM",
++  "what.curvismSub": "Discover why the circle matters.",
++  "what.traceTitle": "YOUR TRACE",
++  "what.result": "Result",
++  "what.rolls": "Rolls",
++  "what.captures": "Captures",
++  "what.nidanas": "Nidanas activated",
++  "what.mara": "Visits to Mara",
++  "what.humans": "Avatars in Humans",
++  "what.duration": "Duration",
++  "what.back": "BACK",
++  "what.nirvana": "Nirvana reached",
++  "what.notReached": "Not reached",
++  "dj.full1": "ONLY ONE TO GO\n{color} have gathered 5 of their 6 Avatars in Humans.",
++  "dj.full2": "ABOUT TO LEAVE THE WHEEL\n{color} are missing {name}.\nBring it to Humans.",
++  "dj.rival": "{color} TOO\nThey already have 5 of their 6 Avatars in Humans.\nThey are missing {name}.",
++  "nearWin.oneMore": "{color}: ONE MORE TO GET OUT.",
+   "lesson.maraClue": "SOMETHING INSIDE YOU IS WATCHING YOU\nIt reveals itself with each Avatar.",
+   "lesson.maraName": "NOW YOU KNOW MARA\nIt has been there from the beginning.\nMara watches the Wheel with its 7 pairs of eyes.",
+   "lesson.maraHolds": "MARA HOLDS YOU\nWhen a piece is captured, Mara keeps it outside the Samsara.\nAfter 6 rolls, it is reborn.",
+diff --git a/src/i18n/es.ts b/src/i18n/es.ts
+index 344eaec..4cfc529 100644
+--- a/src/i18n/es.ts
++++ b/src/i18n/es.ts
+@@ -57,6 +57,74 @@ export const es: Dictionary = {
+   "lesson.capturedM": "capturado",
+   "lesson.capturedF": "capturada",
+   "lesson.fandango": "PSSSS… PSSSS… 👀\nTe llaman del Karma Chat Fandango.\nHay una propuesta esperándote.\nVe a verla.",
++  "fan.betActive": "🐍 SQUARE KARMA 666 ({who}) sobre {name}: quedan {n} turnos",
++  "fan.betYours": "tuya",
++  "fan.betRivals": "del rival",
++  "fan.betProposed": "🐍 SQUARE KARMA 666 propuesta sobre {name}: esperando la respuesta del rival.",
++  "fan.betIncoming": "🐍 El rival propone SQUARE KARMA 666 sobre tu {name}.",
++  "fan.accept": "ACEPTAR",
++  "fan.refuse": "RECHAZAR",
++  "fan.betPropose": "🐍 SQUARE KARMA 666 — proponer apuesta:",
++  "fan.noNidanas": "Todavía no lleva Nidanas.",
++  "fan.none": "Ninguno todavía.",
++  "fan.linkAvailable": "ENLACE DISPONIBLE",
++  "fan.formLink": "FORMAR ENLACE",
++  "fan.yourLinks": "TUS ENLACES",
++  "fan.linkFormed": "ENLACE FORMADO {a} → {b}",
++  "fan.rivalHas": "EL RIVAL TIENE LO QUE NECESITAS",
++  "fan.completes": "completa {lo} – {hi}",
++  "fan.cancel": "CANCELAR",
++  "fan.deal": "TRATO",
++  "fan.iWant": "QUIERO:",
++  "fan.iOffer": "OFREZCO:",
++  "fan.sendOffer": "ENVIAR OFERTA",
++  "fan.tradeOffer": "OFERTA DE TRATO",
++  "fan.offerSent": "OFERTA ENVIADA",
++  "fan.theyOffer": "Te ofrecen",
++  "fan.yourCoin": "Tu",
++  "fan.forYour": "por tu",
++  "fan.forTheir": "por su",
++  "fan.waiting": "Esperando respuesta.",
++  "fan.subtitle": "Mensajes, ofertas sospechosas y arreglos kármicos.",
++  "fan.close": "Cerrar",
++  "fan.yourNidanas": "TUS NIDANAS ({color})",
++  "fan.rivalNidanas": "NIDANAS DEL RIVAL ({color})",
++  "d777.capture": "CAPTURAR",
++  "d777.which": "○ ROUND DHARMA 777 — ¿a cuál le das el loto?",
++  "d777.mara": "A ese Avatar ya le duele Mara.",
++  "rotate.hint": "Gira el dispositivo para jugar",
++  "watcher.1": "Lo vi.",
++  "watcher.2": "No es azar.",
++  "watcher.3": "¿Otra vez?",
++  "watcher.4": "Cuidado.",
++  "watcher.5": "Tú elegiste eso.",
++  "watcher.6": "Te veo.",
++  "watcher.anger": "¿Ira, otra vez?",
++  "venomBanner.pig": "IGNORANCIA",
++  "venomBanner.snake": "IRA",
++  "venomBanner.rooster": "IMPULSO",
++  "what.title": "¿Y AHORA?",
++  "what.reincarnate": "REENCARNAR",
++  "what.reincarnateSub": "Vuelve a entrar en la Rueda.",
++  "what.trace": "VER TU HUELLA",
++  "what.traceSub": "Mira lo que pasó en este Samsara.",
++  "what.curvism": "ENTRA EN EL CURVISMO",
++  "what.curvismSub": "Descubre por qué importa el círculo.",
++  "what.traceTitle": "TU HUELLA",
++  "what.result": "Resultado",
++  "what.rolls": "Tiradas",
++  "what.captures": "Capturas",
++  "what.nidanas": "Nidanas activadas",
++  "what.mara": "Visitas a Mara",
++  "what.humans": "Avatares en Humanos",
++  "what.duration": "Duración",
++  "what.back": "VOLVER",
++  "what.nirvana": "Nirvana alcanzado",
++  "what.notReached": "No alcanzado",
++  "dj.full1": "SOLO FALTA UNO\nLas {color} han reunido 5 de sus 6 Avatares en Humanos.",
++  "dj.full2": "A PUNTO DE SALIR DE LA RUEDA\nA las {color} les falta {name}.\nLlévenlo a Humanos.",
++  "dj.rival": "LAS {color} TAMBIÉN\nYa tienen 5 de sus 6 Avatares en Humanos.\nLes falta {name}.",
++  "nearWin.oneMore": "{color}: SOLO FALTA UNO PARA SALIR.",
+   "lesson.maraClue": "ALGO DENTRO DE TI TE ESTÁ MIRANDO\nSe revela con cada Avatar.",
+   "lesson.maraName": "AHORA CONOCES A MARA\nHa estado ahí desde el principio.\nMara observa la Rueda con sus 7 pares de ojos.",
+   "lesson.maraHolds": "MARA TE ATRAPA\nCuando una ficha es capturada, Mara la retiene fuera del Samsara.\nDespués de 6 lances, vuelve a renacer.",
+-- 
+2.43.0
+

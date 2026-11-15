@@ -1,0 +1,22 @@
+import { it, beforeAll, vi } from "vitest";
+import { reducer } from "../../state/reducer";
+import { initialState } from "../../state/state";
+import { chooseBotMove, applyBotAction } from "../buddhaBot";
+import { realmFromPos } from "../../../UI/realm";
+import { REALM_PIECE_ORDER, type GameState } from "../../types";
+beforeAll(() => { vi.spyOn(console, "log").mockImplementation(() => {}); vi.spyOn(console, "warn").mockImplementation(() => {}); });
+it("diag", () => {
+  let s = { ...initialState, gameStartedAt: 1, gameId: "d" } as GameState;
+  s = reducer(s, { type: "SET_TUTORIAL_MODE", on: true } as never);
+  s = reducer(s, { type: "SET_GENESIS_UI_COMPLETE" } as never);
+  for (let t = 0; t < 600 && !s.winner; t++) {
+    const p = s.turn;
+    s = reducer({ ...s, phase: "idle", rollOptions: null } as GameState, { type: "ROLL" } as never);
+    const c = chooseBotMove(s, p, "normal");
+    s = c ? applyBotAction(s, p, c.action) : reducer(s, { type: "PASS_NO_MOVES", player: p } as never);
+    if (t % 75 === 0 || t === 599) {
+      const line = (["P1","P2"] as const).map(pl => pl + ":" + REALM_PIECE_ORDER.map(k => { const a = s.realmPieces[pl]?.[k]; if (!a || !a.unlocked) return "-"; return (a.inLimbo ? "M" : a.pos) + (realmFromPos(a.pos)==="HUMAN"?"H":"") + (s.consolidatedAvatars[pl]?.[k] ? "*" : "") + (a.everCaptured?"x":""); }).join(",")).join("  ");
+      process.stdout.write(`t${t} step ${s.realmProgress.P1.currentRealmStep}/${s.realmProgress.P2.currentRealmStep} ${line}\n`);
+    }
+  }
+}, 120000);
