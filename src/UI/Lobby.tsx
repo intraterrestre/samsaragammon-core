@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import introImage from "../assets/intro/intro_samsaragammon.webp";
 import { useI18n } from "../i18n";
 import { LanguageSwitch } from "./LanguageSwitch";
+import { BOT_LEVELS, type BotLevel } from "../game/bot/buddhaBot";
 
 type Props = {
   userId: string;
@@ -9,6 +10,9 @@ type Props = {
   onJoinGame: (code: string) => Promise<void>;
   onPlayLocal: () => void;
   onPlayWithBuddha?: () => void;
+  // 15 nov 2026 — nivel del bot Buddha (juega con negras en JUEGA CON BUDDHA).
+  botLevel?: BotLevel;
+  onBotLevel?: (level: BotLevel) => void;
   // 3 oct 2026 — sin sesión, el lobby igual se muestra (Buddha y local
   // son libres); crear/unirse piden antes el correo vía onSignIn.
   signedIn?: boolean;
@@ -23,6 +27,8 @@ export function Lobby({
   onJoinGame,
   onPlayLocal,
   onPlayWithBuddha,
+  botLevel = "normal",
+  onBotLevel,
   signedIn = true,
   onSignIn,
   createdCode,
@@ -113,6 +119,40 @@ export function Lobby({
               {t("lobby.playWithBuddhaSub")}
             </span>
           </button>
+        )}
+
+        {/* 15 nov 2026 — Buddha juega con negras: elige su nivel. */}
+        {onPlayWithBuddha && onBotLevel && (
+          <div
+            role="radiogroup"
+            aria-label={t("lobby.buddhaLevel")}
+            style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: -4 }}
+          >
+            {BOT_LEVELS.map((level) => {
+              const on = level === botLevel;
+              return (
+                <button
+                  key={level}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => onBotLevel(level)}
+                  style={{
+                    padding: "6px 16px",
+                    borderRadius: 999,
+                    border: `1px solid ${on ? "#9cc4ff" : "rgba(156,196,255,0.35)"}`,
+                    background: on ? "rgba(63,111,216,0.55)" : "transparent",
+                    color: on ? "#f4f7ff" : "rgba(244,247,255,0.7)",
+                    fontSize: 13,
+                    fontWeight: on ? 700 : 500,
+                    cursor: "pointer",
+                  }}
+                >
+                  {t(`bot.${level}`)}
+                </button>
+              );
+            })}
+          </div>
         )}
 
         {!signedIn ? (

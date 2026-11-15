@@ -27,7 +27,41 @@ type Props = {
 
 const SWIPE_PX = 60;
 
-export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, icon, placement = "top", iconLarge = false, plain = false }: Props) {
+// 15 nov 2026 — Federico: los carteles tapaban demasiado tablero. Ahora
+// todos viven en la columna izquierda de la escena (el muro / la pintura de
+// Mara), debajo del panel de destinos y a la izquierda del dado, sin óvalo
+// ni fondo. Se mide .samsaraScene (que se escala y centra distinto en cada
+// pantalla) para quedar pegados al lienzo y no a la ventana.
+const COL = { left: 0.02, top: 0.25, width: 0.195, height: 0.68 };
+
+function useSceneColumn() {
+  const [rect, setRect] = React.useState<DOMRect | null>(null);
+  React.useLayoutEffect(() => {
+    const measure = () => {
+      const el = document.querySelector(".samsaraScene");
+      setRect(el ? el.getBoundingClientRect() : null);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("orientationchange", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", measure);
+    };
+  }, []);
+  if (!rect) return undefined;
+  return {
+    left: rect.left + rect.width * COL.left,
+    top: rect.top + rect.height * COL.top,
+    width: rect.width * COL.width,
+    maxHeight: rect.height * COL.height,
+  } as React.CSSProperties;
+}
+
+export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, icon, iconLarge = false }: Props) {
+  // `placement` y `plain` se siguen aceptando (no rompen a quien los pasa)
+  // pero ya no cambian nada: todos los carteles van a la columna izquierda.
+  const column = useSceneColumn();
   const start = React.useRef<{ x: number; y: number } | null>(null);
   const [drag, setDrag] = React.useState({ x: 0, y: 0 });
 
@@ -60,7 +94,7 @@ export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, 
 
   return (
     <div
-      className={`bwbLessonCard${placement === "left" ? " bwbLessonCardLeft" : placement === "bottom" ? " bwbLessonCardBottom" : ""}${fading ? " bwbLessonCardFading" : ""}${plain ? " bwbLessonCardPlain" : ""}`}
+      className={`bwbLessonCard bwbLessonSide${fading ? " bwbLessonCardFading" : ""}`}
       role="status"
       aria-live="polite"
       onPointerDown={onPointerDown}
@@ -70,18 +104,16 @@ export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, 
         start.current = null;
         setDrag({ x: 0, y: 0 });
       }}
-      style={
-        dragging
+      style={{
+        ...column,
+        ...(dragging
           ? {
-              transform:
-                placement === "left"
-                  ? `translate(${drag.x}px, calc(-50% + ${drag.y}px))`
-                  : `translate(calc(-50% + ${drag.x}px), ${drag.y}px)`,
+              transform: `translate(${drag.x}px, ${drag.y}px)`,
               opacity: Math.max(0.15, 1 - away),
               transition: "none",
             }
-          : undefined
-      }
+          : null),
+      }}
     >
       {icon ? (
         <img src={icon} alt="" aria-hidden="true" className={`bwbLessonCardIconImg${iconLarge ? " bwbLessonCardIconBig" : ""}`} draggable={false} />

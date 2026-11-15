@@ -23,6 +23,7 @@ import { GameShell } from "./UI/GameShell";
 import { LoginScreen } from "./UI/LoginScreen";
 import { resetSeenLessons } from "./game/tutorial/lessons";
 import { Lobby } from "./UI/Lobby";
+import type { BotLevel } from "./game/bot/buddhaBot";
 import { useGameController } from "./game/hooks/useGameController";
 import {
   createGame,
@@ -363,6 +364,28 @@ const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
   // GameState se sincroniza entero a Supabase y se reinicia en RESET, y
   // nada de la ayuda debe viajar ni alterar las reglas.
   const [beginnerMode, setBeginnerMode] = useState(false);
+  // 15 nov 2026 — en JUEGA CON BUDDHA, Buddha (bot) juega las negras.
+  // El nivel se recuerda en este navegador.
+  const [botLevel, setBotLevelState] = useState<BotLevel>(() => {
+    try {
+      const v = localStorage.getItem("sg.botLevel");
+      return v === "easy" || v === "hard" ? v : "normal";
+    } catch {
+      return "normal";
+    }
+  });
+  const setBotLevel = (level: BotLevel) => {
+    setBotLevelState(level);
+    try { localStorage.setItem("sg.botLevel", level); } catch {}
+  };
+  // true solo mientras el propio bot dispara una acción (ver onBotAct):
+  // así los clics humanos en el turno de Buddha no hacen nada.
+  const botActingRef = React.useRef(false);
+  const botPlayer: "P1" | "P2" | null =
+    beginnerMode && gameMode === "local" ? "P2" : null;
+  // ¿Es turno de Buddha y quien llama NO es el bot? Entonces se ignora.
+  const botBlocks = () =>
+    botPlayer !== null && state.turn === botPlayer && !botActingRef.current;
   // 3 oct 2026 — pedido de Federico: JUEGA CON BUDDHA (y el local) son
   // libres, sin correo. El correo solo se pide para jugar en línea con
   // otra persona: showLogin abre la pantalla de login desde el lobby.
@@ -1199,6 +1222,8 @@ useEffect(() => {
         setBeginnerMode(false);
         setGameMode("local");
       }}
+      botLevel={botLevel}
+      onBotLevel={setBotLevel}
       onPlayWithBuddha={() => {
         // 3 oct 2026 — Federico: "no están saliendo los carteles". Cada
         // lección salía una sola vez POR DISPOSITIVO, así que en la
@@ -1290,6 +1315,16 @@ useEffect(() => {
       // intactos por si algún consumidor futuro los necesita.
       avatarVideoPlaying={activeRealmIntro !== null}
       beginnerMode={beginnerMode}
+      botPlayer={botPlayer}
+      botLevel={botLevel}
+      onBotAct={(fn: () => void) => {
+        botActingRef.current = true;
+        try {
+          fn();
+        } finally {
+          botActingRef.current = false;
+        }
+      }}
       activeRealmData={activeRealmData}
       activeEra={activeEra}
       oracleText={oracleText}
@@ -1342,27 +1377,27 @@ nidanaCoinSide={nidanaSide}
       // "FORM_LINK"). GameShell arma "player" con state.turn antes de
       // llamar acá (ver GameShell.tsx, handleFormLink).
       onFormLink={(player, low) =>
-        dispatch({ type: "FORM_LINK", player, low })
+        !botBlocks() && dispatch({ type: "FORM_LINK", player, low })
       }
       // v77 (28 agosto 2026) — Fandango: FORM DEAL, pedido de Federico.
       // Ver reducer.ts (SEND_TRADE_OFFER/ACCEPT_TRADE_OFFER/
       // REFUSE_TRADE_OFFER) y FandangoWindow.tsx.
       onSendTradeOffer={(player, offer, want) =>
-        dispatch({ type: "SEND_TRADE_OFFER", player, offer, want })
+        !botBlocks() && dispatch({ type: "SEND_TRADE_OFFER", player, offer, want })
       }
-      onAcceptTrade={() => dispatch({ type: "ACCEPT_TRADE_OFFER" })}
-      onRefuseTrade={(skySign?: boolean) => dispatch({ type: "REFUSE_TRADE_OFFER", skySign })}
+      onAcceptTrade={() => { if (botBlocks()) return; dispatch({ type: "ACCEPT_TRADE_OFFER" }); }}
+      onRefuseTrade={(skySign?: boolean) => { if (botBlocks()) return; dispatch({ type: "REFUSE_TRADE_OFFER", skySign }); }}
       // v84 (4 septiembre 2026) — Square Karma 666 (Snake Bet) y Round
       // Dharma 777, pedido de Federico. Ver reducer.ts
       // (REQUEST_SNAKE_BET/ACCEPT_SNAKE_BET/REFUSE_SNAKE_BET/
       // DECLARE_DHARMA_777).
       onRequestSnakeBet={(player, targetAvatar) =>
-        dispatch({ type: "REQUEST_SNAKE_BET", player, targetAvatar })
+        !botBlocks() && dispatch({ type: "REQUEST_SNAKE_BET", player, targetAvatar })
       }
-      onAcceptSnakeBet={() => dispatch({ type: "ACCEPT_SNAKE_BET" })}
-      onRefuseSnakeBet={(skySign?: boolean) => dispatch({ type: "REFUSE_SNAKE_BET", skySign })}
+      onAcceptSnakeBet={() => { if (botBlocks()) return; dispatch({ type: "ACCEPT_SNAKE_BET" }); }}
+      onRefuseSnakeBet={(skySign?: boolean) => { if (botBlocks()) return; dispatch({ type: "REFUSE_SNAKE_BET", skySign }); }}
       onDeclareDharma777={(player, option, allOptions, targetAvatar) =>
-        dispatch({
+        !botBlocks() && dispatch({
           type: "DECLARE_DHARMA_777",
           player,
           option,
@@ -1402,6 +1437,7 @@ nidanaCoinSide={nidanaSide}
 onRoll={() => {
   // En multiplayer, solo puede tirar el jugador activo
   if (gameMode === "multiplayer" && myRole !== state.turn) return;
+  if (botBlocks()) return;
   playDiceSound(state.turn);
 
 // Antes esto disparaba la moneda-Nidana + un efecto CLARITY/DISTORTION/
@@ -1457,11 +1493,13 @@ onPass={() => {
   // legal. Mismo guard de turno que onRoll/onConsciousMove; el reducer
   // vuelve a comprobar que de verdad no hay jugada.
   if (gameMode === "multiplayer" && myRole !== state.turn) return;
+  if (botBlocks()) return;
   dispatch({ type: "PASS_NO_MOVES", player: state.turn });
 }}
 
 onConsciousMove={(option, allOptions) => {
   if (gameMode === "multiplayer" && myRole !== state.turn) return;
+  if (botBlocks()) return;
   dispatch({
     type: "CONSCIOUS_MOVE",
     option,
@@ -1475,6 +1513,7 @@ onSelectPiece={(piece: PieceKind) => {
   // cualquiera de los dos navegadores podia elegir Avatar+Veneno sin
   // importar de quien fuera el turno.
   if (gameMode === "multiplayer" && myRole !== state.turn) return;
+  if (botBlocks()) return;
   dispatch({ type: "SELECT_PIECE", player: state.turn, piece });
 }}
 

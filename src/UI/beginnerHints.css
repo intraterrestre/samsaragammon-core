@@ -589,3 +589,133 @@ body.bwb-hl-options .moveOptionsPanel::after {
   0%, 100% { filter: drop-shadow(0 0 7px rgba(255, 255, 255, 0.95)); }
   50% { filter: drop-shadow(0 0 22px rgba(120, 190, 255, 1)) drop-shadow(0 0 8px #ffd24a); }
 }
+
+
+/* ===================================================================
+   15 nov 2026 — Federico: "los carteles de instrucciones son muy
+   invasivos". Todos los LessonCard van a la columna izquierda de la
+   escena (posición calculada en LessonCard.tsx), letra más pequeña, SIN
+   óvalo ni fondo: solo texto claro con contorno oscuro, para que se lea
+   igual sobre el muro blanco que sobre la pintura de Mara. Lo que haya
+   que señalar se señala con flechas que se mueven (ver más abajo).
+   Este bloque va al final a propósito: pisa las reglas de arriba.
+   =================================================================== */
+.bwbLessonCard.bwbLessonSide {
+  position: fixed;
+  /* Por si .samsaraScene no existe: columna izquierda de la ventana. */
+  left: 16px;
+  top: 25vh;
+  width: 20vw;
+  max-width: none;
+  max-height: 68vh;
+  overflow: hidden;
+  transform: none;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 2px 22px 2px 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+  color: #ffffff;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(12px, 0.75vw + 6px, 17px);
+  font-weight: 700;
+  line-height: 1.32;
+  text-align: left;
+  text-shadow:
+    0 0 2px #000, 0 0 2px #000,
+    1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000,
+    0 2px 8px rgba(0, 0, 0, 0.85);
+  animation: bwbSideIn 300ms ease-out;
+}
+@keyframes bwbSideIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bwbLessonCard.bwbLessonSide { animation: none; }
+}
+.bwbLessonCard.bwbLessonSide.bwbLessonCardFading { opacity: 0; }
+@media (max-width: 520px), (max-height: 480px) {
+  .bwbLessonCard.bwbLessonSide {
+    width: 20vw;
+    padding: 0 20px 0 0;
+    border-radius: 0;
+    font-size: clamp(11px, 0.75vw + 6px, 17px);
+  }
+}
+.bwbLessonSide .bwbLessonCardTitle {
+  font-size: 0.82em;
+  letter-spacing: 0.06em;
+  color: #ffd98a;
+  margin-bottom: 2px;
+}
+.bwbLessonSide .bwbLessonCardIcon {
+  font-size: 1em;
+  color: #9cc4ff;
+  margin: 0;
+}
+.bwbLessonSide .bwbLessonCardIconImg { width: 1.4em; height: 1.4em; margin: 0; }
+.bwbLessonSide .bwbLessonCardIconImg.bwbLessonCardIconBig { width: 2.6em; height: 2.6em; }
+.bwbLessonSide .bwbLessonNidanas {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 3px;
+  margin: 6px 0 0;
+  max-width: 100%;
+}
+.bwbLessonSide .bwbLessonNidanas img.bwbLessonNidanaOn {
+  box-shadow: 0 0 0 2px #f0c060, 0 0 8px rgba(240, 192, 96, 0.8);
+  transform: scale(1.08);
+}
+/* ✕ discreta arriba a la derecha del texto (tocar el texto también cierra). */
+.bwbLessonSide .bwbLessonCardClose {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: auto;
+  transform: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 13px;
+  text-shadow: 0 0 3px #000, 0 0 3px #000;
+}
+
+/* Flechas que señalan: más pequeñas que antes, siempre en movimiento. */
+.evoClockArrow { font-size: 30px; }
+body.bwb-hl-options .moveOptionsPanel::after { font-size: 30px; }
+
+
+/* 15 nov 2026 — turno del bot Buddha: aviso pequeño arriba al centro. */
+.botThinking {
+  position: fixed;
+  top: max(8px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999970;
+  pointer-events: none;
+  color: #cfe0ff;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(12px, 0.6vw + 7px, 15px);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 2px #000, 0 0 2px #000, 0 2px 6px rgba(0, 0, 0, 0.9);
+  animation: botThinkingPulse 1.6s ease-in-out infinite;
+}
+@keyframes botThinkingPulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .botThinking { animation: none; }
+}

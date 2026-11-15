@@ -31,11 +31,14 @@ import { MaraPanel } from "./MaraPanel";
 import { getOracleKeys, getMirrorKey } from "../game/Karma/oracleKeys";
 import { BuddhaSpeech } from "./BuddhaSpeech";
 import { SamsaraStage } from "../samsara/SamsaraStage";
+import { ReadySplash } from "./ReadySplash";
+import { readySplashDone } from "./readySplashState";
 
 import watcherVideo from "../assets/video/jesus_watch.mp4";
 import skySignVideo from "../assets/video/sky-signals.mp4";
 import type { MoveOption, PieceKind, PlayerId, RealmPieceKind } from "../game/types";
 import { REALM_PIECE_ORDER } from "../game/types";
+import { chooseBotMove, botAnswersSnakeBet, botAnswersTrade, type BotLevel } from "../game/bot/buddhaBot";
 import { AVATAR_ORDER } from "../game/historicalClock";
 import { ACTOR_PROFILES } from "../game/actors/actorProfiles";
 
@@ -250,6 +253,11 @@ nidanaCoinSide: "front" | "back";
   beginnerMode?: boolean;
   // Rule Canon Repair (30 sept 2026): terminar el turno sin jugada legal.
   onPass?: () => void;
+  // 15 nov 2026 — bot Buddha: color que juega (null = nadie), su nivel, y
+  // el envoltorio que marca sus acciones como "del bot" (ver App.tsx).
+  botPlayer?: PlayerId | null;
+  botLevel?: BotLevel;
+  onBotAct?: (fn: () => void) => void;
 };
 
 export function GameShell({
@@ -288,6 +296,9 @@ export function GameShell({
   avatarVideoPlaying = false,
   beginnerMode = false,
   onPass,
+  botPlayer = null,
+  botLevel = "normal",
+  onBotAct,
   onUseBudaConsultation,
   onClearBudaSplash,
   onUseFreeBudaLook,
@@ -788,8 +799,18 @@ React.useEffect(() => {
 // uno revela los Venenos del jugador blanco, el siguiente los del
 // jugador negro. genesisComplete (que gatea el resto — anillo, chat,
 // buda, yin-yang) ya no es un estado propio: es "ambos ya revelados".
-const [casillasFinished, setCasillasFinished] = React.useState(false);
-const [introSkipped, setIntroSkipped] = React.useState(false);
+// 15 nov 2026 — Federico: "primero juegas". El Genesis (genesis_dados.mp4
+// + casillas verdes + 2 clics de Venenos) ya no es la entrada obligatoria:
+// la partida arranca como si se hubiera pulsado SKIP INTRO. El video se
+// conserva para tutoriales/YouTube. Poner en true para recuperarlo.
+const SHOW_GENESIS_INTRO = false;
+const [casillasFinished, setCasillasFinished] = React.useState(!SHOW_GENESIS_INTRO);
+const [introSkipped, setIntroSkipped] = React.useState(!SHOW_GENESIS_INTRO);
+// Mientras el cartel READY TO PLAY está en pantalla, Buddha no da lecciones
+// (si no, la primera salía tapada y su temporizador corría sin que se viera).
+const [splashOpen, setSplashOpen] = React.useState(
+  () => !SHOW_GENESIS_INTRO && !readySplashDone()
+);
 const p1VenomsRevealed =
   introSkipped || (casillasFinished && genesisClickCount >= 1);
 const p2VenomsRevealed =
@@ -1164,6 +1185,108 @@ type BudaSpeechStep = { title?: string; text: string };
 const [budaSpeech, setBudaSpeech] = React.useState<{ steps: BudaSpeechStep[]; index: number } | null>(null);
 const [bigHeadIntro, setBigHeadIntro] = React.useState(false);
 
+// ===================================================================
+// 15 nov 2026 — BOT BUDDHA. En JUEGA CON BUDDHA, Buddha juega las negras.
+// Hace lo mismo que haría una persona, con pausas para que se vea:
+//   1. si le espera una apuesta Square Karma o un trato del Fandango, responde;
+//   2. tira las piedras (mismo botón/animación que tú);
+//   3. elige Avatar, luego Veneno (se ven sus líneas) y juega — o Dharma 777,
+//      o PASS si no hay jugada.
+// Espera mientras haya vídeos, ceremonias, consultas o el cartel inicial.
+// Cada paso pasa por onBotAct para que App sepa que es el bot (tus clics
+// en su turno se ignoran). El cerebro está en src/game/bot/buddhaBot.ts.
+// ===================================================================
+const botStateRef = React.useRef(state);
+botStateRef.current = state;
+const botTimersRef = React.useRef<number[]>([]);
+const botScheduledKeyRef = React.useRef<string | null>(null);
+React.useEffect(() => () => botTimersRef.current.forEach((id) => window.clearTimeout(id)), []);
+const botLater = (ms: number, fn: () => void) => {
+  botTimersRef.current.push(window.setTimeout(() => onBotAct?.(fn), ms));
+};
+const isBotTurn = !!botPlayer && state.turn === botPlayer && !state.winner;
+const botPaused =
+  !genesisComplete ||
+  splashOpen ||
+  avatarVideoPlaying ||
+  budaConsultationActive ||
+  !!pendingDharmaChoice ||
+  !!djCeremony ||
+  bigHeadIntro;
+
+React.useEffect(() => {
+  if (!isBotTurn || botPaused || !onBotAct || !botPlayer) return;
+  const me = botPlayer;
+  const key = `${state.turnIndex}|${state.phase}|${state.globalRollCount}|${!!state.pendingSnakeBet}|${!!state.pendingTrade}`;
+  if (botScheduledKeyRef.current === key) return;
+  botScheduledKeyRef.current = key;
+
+  // 1. Respuestas pendientes dirigidas a Buddha.
+  if (state.pendingSnakeBet && state.pendingSnakeBet.byPlayer !== me) {
+    botLater(1200, () => {
+      if (botAnswersSnakeBet() === "accept") onAcceptSnakeBet();
+      else onRefuseSnakeBet(false);
+    });
+    return;
+  }
+  if (state.pendingTrade && state.pendingTrade.fromPlayer !== me) {
+    botLater(1200, () => {
+      if (botAnswersTrade(botLevel) === "accept") onAcceptTrade();
+      else onRefuseTrade(false);
+    });
+    return;
+  }
+
+  // 2. Tirar.
+  if (state.phase === "idle") {
+    botLater(1100, () => handleRollWithPopup());
+    return;
+  }
+
+  // 3. Jugar (tras ver los dados).
+  if (state.phase === "rolled") {
+    botLater(2500, () => {
+      const s = botStateRef.current;
+      if (s.turn !== me || s.phase !== "rolled") return;
+      const choice = chooseBotMove(s, me, botLevel);
+      if (!choice) {
+        onPass?.();
+        return;
+      }
+      const { action } = choice;
+      const m = action.move;
+      // Mostrar la selección como lo haría una persona.
+      onSelectPiece(m.avatar ?? m.option.pieceKind);
+      const finish = () => {
+        const now = botStateRef.current;
+        if (now.turn !== me || now.phase !== "rolled") return;
+        const allOptions = getMoveOptionsForPlayer(now, me);
+        if (action.kind === "dharma777") {
+          onDeclareDharma777(me, m.option, allOptions, action.target);
+        } else {
+          onConsciousMove(m.option, allOptions);
+        }
+      };
+      const phase2 = s.realmProgress[me].currentRealmStep >= 3;
+      if (phase2 && m.avatar && m.venom) {
+        botLater(600, () => {
+          onSelectPiece(m.venom!);
+          botLater(900, finish);
+        });
+      } else {
+        botLater(900, finish);
+      }
+    });
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [isBotTurn, botPaused, state.turnIndex, state.phase, state.globalRollCount, state.pendingSnakeBet, state.pendingTrade]);
+
+// Si algo pausa al bot a mitad de un turno (un vídeo de Avatar, p. ej.),
+// al reanudar vuelve a mirar el estado desde cero.
+React.useEffect(() => {
+  if (botPaused) botScheduledKeyRef.current = null;
+}, [botPaused]);
+
 const budaReadingSteps = (player: PlayerId): BudaSpeechStep[] => {
   const oracle = getOracleKeys(
     state.lastMoveByPlayer?.[player] ?? null,
@@ -1419,6 +1542,9 @@ React.useEffect(() => {
 
 React.useEffect(() => {
   if (!beginnerMode || !genesisComplete || state.winner) return;
+  if (splashOpen) return;
+  // Las lecciones son para ti: en el turno de Buddha no habla el maestro.
+  if (botPlayer && state.turn === botPlayer) return;
   if (avatarVideoPlaying || budaConsultationActive || pendingDharmaChoice) return;
   if (djCeremony) return;
 
@@ -1458,6 +1584,8 @@ React.useEffect(() => {
 }, [
   beginnerMode,
   genesisComplete,
+  splashOpen,
+  botPlayer,
   lessonSlotReady,
   transientDharma,
   avatarVideoPlaying,
@@ -1782,6 +1910,8 @@ const showDjBuddha = (transientDharma?.withDjBuddha ?? false) || !!djCeremony;
 return (
 
   <>
+
+    {!SHOW_GENESIS_INTRO && <ReadySplash onDone={() => setSplashOpen(false)} />}
 
     {/* <TopBar onLogout={onLogout} /> */}
 
@@ -2271,6 +2401,13 @@ return (
           problema de containing block) — es un overlay propio, mismo
           patrón que ya usa pendingDharmaChoice arriba (position: fixed,
           centrado, zIndex por encima de todo). */}
+      {/* 15 nov 2026 — aviso discreto: es el turno de Buddha (tus clics esperan). */}
+      {isBotTurn && !botPaused &&
+        createPortal(
+          <div className="botThinking" aria-live="polite">☸ {t("bot.thinking")}</div>,
+          document.body
+        )}
+
       {lessonOnScreen &&
         createPortal(
           <LessonCard
@@ -2602,6 +2739,7 @@ return (
               : handleConsultBuda(state.turn)
           }
           beginnerMode={beginnerMode}
+          botTurn={isBotTurn}
           // PLAY WITH BUDDHA: el hover de las líneas (etiqueta de la
           // jugada sobre la casilla destino) existía pero nunca se
           // conectó. Se conecta solo en modo principiante para no cambiar

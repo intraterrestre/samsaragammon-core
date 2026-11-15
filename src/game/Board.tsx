@@ -122,6 +122,8 @@ type Props = {
   // COMPLETE). Controla cuándo arranca la animación de giro del dado y
   // cuándo se muestra el hint de "toca aquí".
   genesisVideoDone?: boolean;
+  // 15 nov 2026 — turno del bot Buddha: sin pulsos de ayuda (no son para ti).
+  botTurn?: boolean;
   // clics del dado durante Genesis (antes de genesisComplete). Se usa
   // para ocultar el hint de mano apenas el jugador toca el dado una vez.
   genesisClickCount?: number;
@@ -249,6 +251,7 @@ export function Board({
   // variable sin usar.
   genesisComplete = false,
   genesisVideoDone = false,
+  botTurn = false,
   genesisClickCount = 0,
   p1VenomsRevealed = false,
   p2VenomsRevealed = false,
@@ -272,7 +275,7 @@ export function Board({
       dice: false,
       pieces: new Set<PieceKind>(),
     };
-    if (!beginnerMode || !genesisComplete || state.winner) return empty;
+    if (!beginnerMode || !genesisComplete || state.winner || botTurn) return empty;
     if (budaConsultationActive || highlightAvatar) return empty;
 
     if (state.phase === "idle") return { ...empty, dice: true };
@@ -308,7 +311,7 @@ export function Board({
       };
     }
     return empty;
-  }, [beginnerMode, genesisComplete, budaConsultationActive, highlightAvatar, state, moveOptions]);
+  }, [beginnerMode, genesisComplete, budaConsultationActive, highlightAvatar, state, moveOptions, botTurn]);
 
   const captureAudioWhite = useRef<HTMLAudioElement | null>(null);
   const captureAudioBlack = useRef<HTMLAudioElement | null>(null);
