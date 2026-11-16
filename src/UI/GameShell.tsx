@@ -2492,28 +2492,46 @@ return (
           problema de containing block) — es un overlay propio, mismo
           patrón que ya usa pendingDharmaChoice arriba (position: fixed,
           centrado, zIndex por encima de todo). */}
-      {/* 16 nov 2026 — partida a distancia: tu color y de quién es el turno. */}
-      {isOnline && onlineRole &&
-        createPortal(
-          <div
-            className={`onlineBadge${isMyOnlineTurn ? " onlineBadgeMine" : ""}`}
-            aria-live="polite"
-          >
-            <span className={`onlineDot ${onlineRole === "P1" ? "onlineDotWhite" : "onlineDotBlack"}`} aria-hidden="true" />
-            <span className="onlineBadgeRole">
-              {t(onlineRole === "P1" ? "online.youWhite" : "online.youBlack")}
-            </span>
-            <span className="onlineBadgeSep" aria-hidden="true">·</span>
-            <span className="onlineBadgeTurn">
-              {state.winner
-                ? ""
-                : isMyOnlineTurn
-                  ? t(state.phase === "rolled" ? "online.yourMove" : "online.yourRoll")
-                  : t(state.turn === "P1" ? "online.waitWhite" : "online.waitBlack")}
-            </span>
+      {/* 16 nov 2026 — cartel de arriba: tu color y de quién es el turno
+          (partida a distancia) y, en cualquier modo, qué hacer durante la
+          consulta al Buda Azul (pedido de Federico: un novato no intuía
+          que había que tocar la foto y luego cada cartel). */}
+      {(() => {
+        const rivalColorKey = rivalBudaSplash === "white" ? "online.colorWhite" : "online.colorBlack";
+        const buddhaHint = budaSpeech
+          ? budaSpeech.index + 1 < budaSpeech.steps.length
+            ? t("hint.tapCard", { n: budaSpeech.index + 1, total: budaSpeech.steps.length })
+            : t("hint.tapCardLast")
+          : bigHeadIntro
+            ? t("hint.tapPhoto")
+            : budaConsultationOpenBy
+              ? t("hint.reading")
+              : rivalBudaSplash
+                ? t("hint.rivalConsults", { color: t(rivalColorKey) })
+                : null;
+        if (!buddhaHint && !(isOnline && onlineRole)) return null;
+        const turnText = state.winner
+          ? ""
+          : isMyOnlineTurn
+            ? t(state.phase === "rolled" ? "online.yourMove" : "online.yourRoll")
+            : t(state.turn === "P1" ? "online.waitWhite" : "online.waitBlack");
+        const mine = !!buddhaHint || isMyOnlineTurn;
+        return createPortal(
+          <div className={`onlineBadge${mine ? " onlineBadgeMine" : ""}`} aria-live="polite">
+            {isOnline && onlineRole && (
+              <>
+                <span className={`onlineDot ${onlineRole === "P1" ? "onlineDotWhite" : "onlineDotBlack"}`} aria-hidden="true" />
+                <span className="onlineBadgeRole">
+                  {t(onlineRole === "P1" ? "online.youWhite" : "online.youBlack")}
+                </span>
+                <span className="onlineBadgeSep" aria-hidden="true">·</span>
+              </>
+            )}
+            <span className="onlineBadgeTurn">{buddhaHint ?? turnText}</span>
           </div>,
           document.body
-        )}
+        );
+      })()}
       {isOnline && onlineToast &&
         createPortal(<div className="onlineToast" role="status">{onlineToast}</div>, document.body)}
 
