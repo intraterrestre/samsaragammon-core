@@ -787,3 +787,23 @@ body.bwb-hl-options .moveOptionsPanel::after { font-size: 30px; }
 @media (prefers-reduced-motion: reduce) {
   .onlineBadgeMine { animation: none; }
 }
+
+
+/* 16 nov 2026 — enlace "No mostrar más ayudas" dentro del cartel lateral. */
+.bwbLessonSide .bwbLessonDisableHelps {
+  margin-top: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #ffe7a8;
+  font-family: inherit;
+  font-size: 0.85em;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-shadow:
+    0 0 2px #000, 0 0 2px #000,
+    1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+  cursor: pointer;
+  align-self: flex-start;
+}

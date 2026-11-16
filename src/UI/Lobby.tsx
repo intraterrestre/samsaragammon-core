@@ -13,6 +13,9 @@ type Props = {
   // 15 nov 2026 — nivel del bot Buddha (juega con negras en JUEGA CON BUDDHA).
   botLevel?: BotLevel;
   onBotLevel?: (level: BotLevel) => void;
+  // 16 nov 2026 — interruptor "Ayudas" (ver UI/helpsPref.ts).
+  helpsOff?: boolean;
+  onHelpsOff?: (off: boolean) => void;
   // 3 oct 2026 — sin sesión, el lobby igual se muestra (Buddha y local
   // son libres). 16 nov 2026: jugar a distancia ya no pide correo
   // (acceso anónimo en App.tsx); signedIn/onSignIn quedan sin uso aquí.
@@ -32,6 +35,8 @@ export function Lobby({
   onPlayWithBuddha,
   botLevel = "normal",
   onBotLevel,
+  helpsOff = false,
+  onHelpsOff,
   createdCode,
   busyText,
   isLoading,
@@ -160,6 +165,28 @@ export function Lobby({
               );
             })}
           </div>
+        )}
+
+        {onHelpsOff && (
+          <button
+            type="button"
+            role="switch"
+            aria-checked={!helpsOff}
+            onClick={() => onHelpsOff(!helpsOff)}
+            style={{
+              alignSelf: "center",
+              marginTop: -12,
+              padding: "4px 12px",
+              borderRadius: 999,
+              border: "1px solid rgba(232,220,200,0.25)",
+              background: "transparent",
+              color: "rgba(232,220,200,0.75)",
+              fontSize: 12,
+              cursor: "pointer",
+            }}
+          >
+            {helpsOff ? t("helps.lobbyOff") : t("helps.lobbyOn")}
+          </button>
         )}
 
         {/* 16 nov 2026 — jugar a distancia sin correo: un botón crea la

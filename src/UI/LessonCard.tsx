@@ -23,6 +23,9 @@ type Props = {
   iconLarge?: boolean;
   // Sin desenfoque de fondo (deja ver el tablero nítido).
   plain?: boolean;
+  // 16 nov 2026 — enlace "No mostrar más ayudas" (jugadores expertos).
+  onDisableHelps?: () => void;
+  disableHelpsLabel?: string;
 };
 
 const SWIPE_PX = 60;
@@ -58,7 +61,7 @@ function useSceneColumn() {
   } as React.CSSProperties;
 }
 
-export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, icon, iconLarge = false }: Props) {
+export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, icon, iconLarge = false, onDisableHelps, disableHelpsLabel }: Props) {
   // `placement` y `plain` se siguen aceptando (no rompen a quien los pasa)
   // pero ya no cambian nada: todos los carteles van a la columna izquierda.
   const column = useSceneColumn();
@@ -144,6 +147,20 @@ export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, 
           </span>
         )}
       </span>
+      {onDisableHelps && disableHelpsLabel && (
+        <button
+          type="button"
+          className="bwbLessonDisableHelps"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDisableHelps();
+            onDismiss();
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          {disableHelpsLabel}
+        </button>
+      )}
       <button
         type="button"
         className="bwbLessonCardClose"

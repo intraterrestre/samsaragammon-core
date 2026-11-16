@@ -24,6 +24,7 @@ import { LoginScreen } from "./UI/LoginScreen";
 import { resetSeenLessons } from "./game/tutorial/lessons";
 import { Lobby } from "./UI/Lobby";
 import { useI18n } from "./i18n";
+import { loadHelpsOff, saveHelpsOff } from "./UI/helpsPref";
 import type { BotLevel } from "./game/bot/buddhaBot";
 import { useGameController } from "./game/hooks/useGameController";
 import {
@@ -382,6 +383,12 @@ const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
   };
   // true solo mientras el propio bot dispara una acción (ver onBotAct):
   // así los clics humanos en el turno de Buddha no hacen nada.
+  // 16 nov 2026 — "Ayudas" (lecciones, pulsos, instrucciones del Buda Azul).
+  const [helpsOff, setHelpsOffState] = useState<boolean>(() => loadHelpsOff());
+  const setHelpsOff = (off: boolean) => {
+    setHelpsOffState(off);
+    saveHelpsOff(off);
+  };
   const botActingRef = React.useRef(false);
   const botPlayer: "P1" | "P2" | null =
     beginnerMode && gameMode === "local" ? "P2" : null;
@@ -1284,6 +1291,8 @@ useEffect(() => {
       botLevel={botLevel}
       onBotLevel={setBotLevel}
       busyText={joiningInvite ? t("lobby.joining") : null}
+      helpsOff={helpsOff}
+      onHelpsOff={setHelpsOff}
       onPlayWithBuddha={() => {
         // 3 oct 2026 — Federico: "no están saliendo los carteles". Cada
         // lección salía una sola vez POR DISPOSITIVO, así que en la
@@ -1360,6 +1369,8 @@ useEffect(() => {
       beginnerMode={beginnerMode}
       botPlayer={botPlayer}
       onlineRole={gameMode === "multiplayer" ? myRole : null}
+      helpsOff={helpsOff}
+      onDisableHelps={() => setHelpsOff(true)}
       botLevel={botLevel}
       onBotAct={(fn: () => void) => {
         botActingRef.current = true;

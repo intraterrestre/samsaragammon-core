@@ -264,6 +264,9 @@ nidanaCoinSide: "front" | "back";
   // (null fuera del modo en línea). Solo presentación: avisos de color,
   // turno, dados y jugada del rival.
   onlineRole?: PlayerId | null;
+  // 16 nov 2026 — "Ayudas" apagadas (ver UI/helpsPref.ts).
+  helpsOff?: boolean;
+  onDisableHelps?: () => void;
 };
 
 export function GameShell({
@@ -306,6 +309,8 @@ export function GameShell({
   botLevel = "normal",
   onBotAct,
   onlineRole = null,
+  helpsOff = false,
+  onDisableHelps,
   onUseBudaConsultation,
   onClearBudaSplash,
   onUseFreeBudaLook,
@@ -1639,6 +1644,8 @@ React.useEffect(() => {
 React.useEffect(() => {
   if (!beginnerMode || !genesisComplete || state.winner) return;
   if (splashOpen) return;
+  // Ayudas apagadas: Buddha no da lecciones.
+  if (helpsOff) return;
   // Las lecciones son para ti: en el turno de Buddha no habla el maestro.
   if (botPlayer && state.turn === botPlayer) return;
   if (avatarVideoPlaying || budaConsultationActive || pendingDharmaChoice) return;
@@ -1681,6 +1688,7 @@ React.useEffect(() => {
   beginnerMode,
   genesisComplete,
   splashOpen,
+  helpsOff,
   botPlayer,
   lessonSlotReady,
   transientDharma,
@@ -2503,7 +2511,9 @@ return (
           que había que tocar la foto y luego cada cartel). */}
       {(() => {
         const rivalColorKey = rivalBudaSplash === "white" ? "online.colorWhite" : "online.colorBlack";
-        const buddhaHint = budaSpeech
+        const buddhaHint = helpsOff
+          ? null
+          : budaSpeech
           ? budaSpeech.index + 1 < budaSpeech.steps.length
             ? t("hint.tapCard", { n: budaSpeech.index + 1, total: budaSpeech.steps.length })
             : t("hint.tapCardLast")
@@ -2559,6 +2569,8 @@ return (
             onDismiss={dismissDharma}
             dismissLabel={t("lesson.dismiss")}
             nidanas={lessonNidanas}
+            onDisableHelps={onDisableHelps}
+            disableHelpsLabel={t("helps.disable")}
             placement={
               lessonShowingRef.current?.id === "evoClock"
                 ? "left"
@@ -2944,7 +2956,8 @@ return (
             else handleConsultBuda(onlineRole ?? state.turn);
           }}
           beginnerMode={beginnerMode}
-          botTurn={isBotTurn}
+          // Sin pulsos de ayuda en el turno del bot o con las ayudas apagadas.
+          botTurn={isBotTurn || helpsOff}
           // PLAY WITH BUDDHA: el hover de las líneas (etiqueta de la
           // jugada sobre la casilla destino) existía pero nunca se
           // conectó. Se conecta solo en modo principiante para no cambiar
