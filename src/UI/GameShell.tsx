@@ -1299,7 +1299,7 @@ const isMyOnlineTurn = isOnline && state.turn === onlineRole && !state.winner;
 const colorName = (p: PlayerId) => t(p === "P1" ? "online.colorWhite" : "online.colorBlack");
 const [onlineToast, setOnlineToast] = React.useState<string | null>(null);
 const onlineToastTimer = React.useRef<number | null>(null);
-const showOnlineToast = (msg: string, ms = 3200) => {
+const showOnlineToast = (msg: string, ms = 4500) => {
   setOnlineToast(msg);
   if (onlineToastTimer.current) window.clearTimeout(onlineToastTimer.current);
   onlineToastTimer.current = window.setTimeout(() => setOnlineToast(null), ms);

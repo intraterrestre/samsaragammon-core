@@ -34,7 +34,7 @@ export const en = {
   "online.colorBlack": "Black",
   "online.colorWhite": "White",
   "online.rivalRolled": "{color} rolled {a} and {b}",
-  "online.rivalMoved": "{color} have played. Your turn!",
+  "online.rivalMoved": "{color} played. Your turn!",
   "online.waitBlack": "Black's turn…",
   "online.waitWhite": "White's turn…",
   "online.yourMove": "Your turn: move",

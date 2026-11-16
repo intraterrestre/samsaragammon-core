@@ -728,7 +728,8 @@ body.bwb-hl-options .moveOptionsPanel::after { font-size: 30px; }
   top: max(8px, env(safe-area-inset-top));
   left: 50%;
   transform: translateX(-50%);
-  z-index: 999970;
+  /* Por encima del cartel READY TO PLAY (1000002): quien entra ve su color ya. */
+  z-index: 1000003;
   pointer-events: none;
   display: flex;
   align-items: center;
@@ -769,7 +770,8 @@ body.bwb-hl-options .moveOptionsPanel::after { font-size: 30px; }
   top: calc(max(8px, env(safe-area-inset-top)) + 40px);
   left: 50%;
   transform: translateX(-50%);
-  z-index: 999970;
+  /* Por encima del cartel READY TO PLAY (1000002): quien entra ve su color ya. */
+  z-index: 1000003;
   pointer-events: none;
   padding: 6px 14px;
   border-radius: 999px;
