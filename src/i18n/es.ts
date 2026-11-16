@@ -38,6 +38,7 @@ export const es: Dictionary = {
   "online.yourRoll": "Te toca: tira las piedras",
   "online.youBlack": "Juegas con NEGRAS",
   "online.youWhite": "Juegas con BLANCAS",
+  "online.buddhaOnlyYourTurn": "El Buda Azul responde en tu turno.",
   "lobby.joining": "Entrando en la partida…",
   "lobby.haveCode": "¿Te pasaron un código?",
   "lobby.orCode": "o dale este código:",

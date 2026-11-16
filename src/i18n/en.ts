@@ -41,6 +41,7 @@ export const en = {
   "online.yourRoll": "Your turn: roll the stones",
   "online.youBlack": "You play BLACK",
   "online.youWhite": "You play WHITE",
+  "online.buddhaOnlyYourTurn": "Blue Buddha answers on your turn.",
   "lobby.joining": "Joining the game…",
   "lobby.haveCode": "Got a code?",
   "lobby.orCode": "or give them this code:",

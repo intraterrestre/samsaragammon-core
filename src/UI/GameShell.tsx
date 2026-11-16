@@ -1397,8 +1397,18 @@ const startBudaConsultation = (player: PlayerId, free: boolean) => {
   }
   if (free) onUseFreeBudaLook(player);
   else onUseBudaConsultation(player);
-  setBudaConsultationOpenBy(player === "P1" ? "white" : "black");
   const steps = budaReadingSteps(player);
+  // 16 nov 2026 — partida a distancia (pedido de Federico): quien consulta
+  // va DIRECTO al menú informativo; la foto de la Big Head School con su
+  // peón la ve el RIVAL en su pantalla (budaConsultationInProgress viaja
+  // sincronizado; ver rivalBudaSplash). El aviso se limpia a los 3,5 s
+  // para que la otra pantalla alcance a recibirlo.
+  if (onlineRole) {
+    setBudaSpeech({ steps, index: 0 });
+    window.setTimeout(() => onClearBudaSplash(), 3500);
+    return;
+  }
+  setBudaConsultationOpenBy(player === "P1" ? "white" : "black");
   pendingBudaStepsRef.current = steps;
   const seen = seenLessonsRef.current;
   if (!seen.has("bigHeadIntro")) {
@@ -1470,7 +1480,24 @@ React.useEffect(() => {
 // por la consulta ajena, así que aparece enseguida).
 // 6 oct 2026 — en JUEGA CON BUDDHA (dos personas, una pantalla) no hay
 // mirada gratis: el otro acaba de ver la consulta. Online se conserva.
+// 16 nov 2026 — partida a distancia: cuando el RIVAL consulta al Buda
+// Azul, esta pantalla ve 3 s la foto de la Big Head School con el peón
+// de su color, y después (si aplica) el cartel de mirada gratis.
+const [rivalBudaSplash, setRivalBudaSplash] = React.useState<"white" | "black" | null>(null);
+const prevBudaInProgress = React.useRef(state.budaConsultationInProgress);
+const rivalBudaSplashTimer = React.useRef<number | null>(null);
+React.useEffect(() => {
+  const cur = state.budaConsultationInProgress;
+  const prev = prevBudaInProgress.current;
+  prevBudaInProgress.current = cur;
+  if (!onlineRole || !cur || cur === prev || cur === onlineRole) return;
+  setRivalBudaSplash(cur === "P1" ? "white" : "black");
+  if (rivalBudaSplashTimer.current) window.clearTimeout(rivalBudaSplashTimer.current);
+  rivalBudaSplashTimer.current = window.setTimeout(() => setRivalBudaSplash(null), 3000);
+}, [state.budaConsultationInProgress, onlineRole]);
+
 const budaFreeLookOfferVisible =
+  !rivalBudaSplash &&
   !beginnerMode &&
   !!state.budaFreeLookOffer &&
   Date.now() <= state.budaFreeLookOffer.expiresAt &&
@@ -2817,16 +2844,24 @@ return (
           p1VenomsRevealed={p1VenomsRevealed}
           p2VenomsRevealed={p2VenomsRevealed}
           oriolEntered={oriolEntered}
-          budaConsultationOpenBy={budaConsultationOpenBy}
+          budaConsultationOpenBy={budaConsultationOpenBy ?? rivalBudaSplash}
           budaConsultationActive={budaConsultationActive}
           // PLAY WITH BUDDHA: en modo principiante, tocar a Buddha abre
           // primero la ayuda gratuita; el Mirror de pago es un botón
           // aparte dentro de ella (ver buddhaHelpOpen).
-          onConsultBuda={() =>
-            beginnerMode
-              ? setBuddhaHelpOpen(true)
-              : handleConsultBuda(state.turn)
-          }
+          onConsultBuda={() => {
+            // 16 nov 2026 — el Buda Azul responde a quien juega ahora:
+            // en el turno del bot Buddha no hace nada, y en una partida a
+            // distancia solo en tu turno (consulta para TU color, antes
+            // gastaba la consulta de quien tuviera el turno).
+            if (botPlayer && state.turn === botPlayer) return;
+            if (onlineRole && state.turn !== onlineRole) {
+              showOnlineToast(t("online.buddhaOnlyYourTurn"), 2500);
+              return;
+            }
+            if (beginnerMode) setBuddhaHelpOpen(true);
+            else handleConsultBuda(onlineRole ?? state.turn);
+          }}
           beginnerMode={beginnerMode}
           botTurn={isBotTurn}
           // PLAY WITH BUDDHA: el hover de las líneas (etiqueta de la
