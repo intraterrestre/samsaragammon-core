@@ -23,6 +23,7 @@ import { GameShell } from "./UI/GameShell";
 import { LoginScreen } from "./UI/LoginScreen";
 import { resetSeenLessons } from "./game/tutorial/lessons";
 import { Lobby } from "./UI/Lobby";
+import { useI18n } from "./i18n";
 import type { BotLevel } from "./game/bot/buddhaBot";
 import { useGameController } from "./game/hooks/useGameController";
 import {
@@ -203,6 +204,7 @@ type RunExport = {
 };
 
 export default function App() {
+  const { t } = useI18n();
   const { handleLogin } = useGameController();
   // v68 (27 agosto 2026) — inicializador perezoso: initialState es
   // estático (se evalúa una sola vez al cargar el módulo), así que sin
@@ -1136,6 +1138,63 @@ useEffect(() => {
     return unsubscribe;
   }, [gameMode, multiplayerGame?.id]);
 
+  /** =========================
+   *  16 nov 2026 — Jugar a distancia sin correo
+   *  =========================
+   *  Si no hay sesión, se entra con acceso anónimo de Supabase (requiere
+   *  "Allow anonymous sign-ins" activado en Supabase). Las reglas RLS se
+   *  basan en auth.uid(), que el usuario anónimo también tiene. Si el
+   *  acceso anónimo falla, se vuelve al login por correo de siempre.
+   */
+  const ensureOnlineSession = async () => {
+    if (session?.user) return session;
+    const { data: current } = await supabase.auth.getSession();
+    if (current.session?.user) return current.session;
+    const { data, error } = await supabase.auth.signInAnonymously();
+    if (error || !data.session) return null;
+    setSession(data.session);
+    return data.session;
+  };
+
+  const handleJoinGame = async (code: string) => {
+    setLobbyLoading(true);
+    setLobbyError(null);
+    const sess = await ensureOnlineSession();
+    if (!sess) {
+      setLobbyLoading(false);
+      setShowLogin(true);
+      return;
+    }
+    try {
+      const game = await joinGame(code, sess.user.id);
+      setMultiplayerGame(game);
+      setMyRole("P2");
+      lastSyncedVersion.current = game.version;
+      lastPushedState.current = game.state;
+      dispatchBase({ type: "SET_MULTIPLAYER_STATE", state: game.state });
+      setGameMode("multiplayer");
+    } catch (e: any) {
+      setLobbyError(e.message ?? "Invalid code or game not found");
+    } finally {
+      setLobbyLoading(false);
+    }
+  };
+
+  // Enlace de invitación: ?partida=CÓDIGO → unirse solo, una vez, y limpiar
+  // la dirección para que recargar no intente unirse de nuevo.
+  const inviteHandledRef = useRef(false);
+  const [joiningInvite, setJoiningInvite] = useState(false);
+  useEffect(() => {
+    if (inviteHandledRef.current) return;
+    const code = new URLSearchParams(window.location.search).get("partida");
+    if (!code) return;
+    inviteHandledRef.current = true;
+    window.history.replaceState(null, "", window.location.pathname);
+    setJoiningInvite(true);
+    void handleJoinGame(code).finally(() => setJoiningInvite(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
   <ErrorBoundary>
 {activeRealmIntro && (
@@ -1224,6 +1283,7 @@ useEffect(() => {
       }}
       botLevel={botLevel}
       onBotLevel={setBotLevel}
+      busyText={joiningInvite ? t("lobby.joining") : null}
       onPlayWithBuddha={() => {
         // 3 oct 2026 — Federico: "no están saliendo los carteles". Cada
         // lección salía una sola vez POR DISPOSITIVO, así que en la
@@ -1236,14 +1296,17 @@ useEffect(() => {
         setGameMode("local");
       }}
       onCreateGame={async () => {
-        if (!session) {
+        setLobbyLoading(true);
+        setLobbyError(null);
+        // 16 nov 2026 — sin correo: si no hay sesión, acceso anónimo.
+        const sess = await ensureOnlineSession();
+        if (!sess) {
+          setLobbyLoading(false);
           setShowLogin(true);
           return;
         }
-        setLobbyLoading(true);
-        setLobbyError(null);
         try {
-          const game = await createGame(session.user.id, state);
+          const game = await createGame(sess.user.id, state);
           setMultiplayerGame(game);
           setMyRole("P1");
           setLobbyCode(game.code);
@@ -1275,27 +1338,7 @@ useEffect(() => {
           setLobbyLoading(false);
         }
       }}
-      onJoinGame={async (code) => {
-        if (!session) {
-          setShowLogin(true);
-          return;
-        }
-        setLobbyLoading(true);
-        setLobbyError(null);
-        try {
-          const game = await joinGame(code, session.user.id);
-          setMultiplayerGame(game);
-          setMyRole("P2");
-          lastSyncedVersion.current = game.version;
-          lastPushedState.current = game.state;
-          dispatchBase({ type: "SET_MULTIPLAYER_STATE", state: game.state });
-          setGameMode("multiplayer");
-        } catch (e: any) {
-          setLobbyError(e.message ?? "Invalid code or game not found");
-        } finally {
-          setLobbyLoading(false);
-        }
-      }}
+      onJoinGame={handleJoinGame}
     />
   ) : (
     <>
@@ -1316,6 +1359,7 @@ useEffect(() => {
       avatarVideoPlaying={activeRealmIntro !== null}
       beginnerMode={beginnerMode}
       botPlayer={botPlayer}
+      onlineRole={gameMode === "multiplayer" ? myRole : null}
       botLevel={botLevel}
       onBotAct={(fn: () => void) => {
         botActingRef.current = true;

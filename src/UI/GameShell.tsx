@@ -258,6 +258,10 @@ nidanaCoinSide: "front" | "back";
   botPlayer?: PlayerId | null;
   botLevel?: BotLevel;
   onBotAct?: (fn: () => void) => void;
+  // 16 nov 2026 — partida a distancia: qué color juega ESTA pantalla
+  // (null fuera del modo en línea). Solo presentación: avisos de color,
+  // turno, dados y jugada del rival.
+  onlineRole?: PlayerId | null;
 };
 
 export function GameShell({
@@ -299,6 +303,7 @@ export function GameShell({
   botPlayer = null,
   botLevel = "normal",
   onBotAct,
+  onlineRole = null,
   onUseBudaConsultation,
   onClearBudaSplash,
   onUseFreeBudaLook,
@@ -1280,6 +1285,65 @@ React.useEffect(() => {
   }
   // eslint-disable-next-line react-hooks/exhaustive-deps
 }, [isBotTurn, botPaused, state.turnIndex, state.phase, state.globalRollCount, state.pendingSnakeBet, state.pendingTrade]);
+
+// ===================================================================
+// 16 nov 2026 — PARTIDA A DISTANCIA: pistas para cada pantalla.
+//   · Distintivo fijo: "Juegas con BLANCAS/NEGRAS" + de quién es el turno.
+//   · Cuando el rival tira, esta pantalla también ve sus dados.
+//   · Cuando el rival termina, aviso "Ya jugaron. ¡Te toca!" + sonido
+//     suave y vibración (donde el móvil lo permita).
+// Solo presentación: no cambia el estado del juego.
+// ===================================================================
+const isOnline = !!onlineRole;
+const isMyOnlineTurn = isOnline && state.turn === onlineRole && !state.winner;
+const colorName = (p: PlayerId) => t(p === "P1" ? "online.colorWhite" : "online.colorBlack");
+const [onlineToast, setOnlineToast] = React.useState<string | null>(null);
+const onlineToastTimer = React.useRef<number | null>(null);
+const showOnlineToast = (msg: string, ms = 3200) => {
+  setOnlineToast(msg);
+  if (onlineToastTimer.current) window.clearTimeout(onlineToastTimer.current);
+  onlineToastTimer.current = window.setTimeout(() => setOnlineToast(null), ms);
+};
+const yourTurnAudio = React.useRef<HTMLAudioElement | null>(null);
+const prevOnline = React.useRef<{ turn: PlayerId; phase: string; roll: string } | null>(null);
+React.useEffect(() => {
+  if (!isOnline || !onlineRole) return;
+  const roll = state.rollOptions ? state.rollOptions.join("-") : "";
+  const prev = prevOnline.current;
+  prevOnline.current = { turn: state.turn, phase: state.phase, roll };
+  if (!prev) return; // primera vez: solo memorizar
+  const rival = onlineRole === "P1" ? "P2" : "P1";
+  // El rival acaba de tirar: mostrar sus dados aquí también.
+  if (state.turn === rival && state.phase === "rolled" && (prev.phase !== "rolled" || prev.roll !== roll)) {
+    setDicePopupVisible(true);
+    setDiceRolling(true);
+    playDiceSound?.(rival);
+    window.setTimeout(() => setDiceRolling(false), 900);
+    if (state.rollOptions) {
+      showOnlineToast(t("online.rivalRolled", { color: colorName(rival), a: state.rollOptions[0], b: state.rollOptions[1] }), 2400);
+    }
+  }
+  // El rival terminó su turno: ahora me toca.
+  if (prev.turn === rival && state.turn === onlineRole && !state.winner) {
+    showOnlineToast(t("online.rivalMoved", { color: colorName(rival) }));
+    try {
+      if (!yourTurnAudio.current) {
+        yourTurnAudio.current = new Audio(claritySound);
+        yourTurnAudio.current.volume = 0.35;
+      }
+      yourTurnAudio.current.currentTime = 0;
+      void yourTurnAudio.current.play().catch(() => undefined);
+    } catch {
+      // sin sonido: no pasa nada
+    }
+    try {
+      navigator.vibrate?.(120);
+    } catch {
+      // iPhone no vibra desde la web: no pasa nada
+    }
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [isOnline, onlineRole, state.turn, state.phase, state.rollOptions, state.winner]);
 
 // Si algo pausa al bot a mitad de un turno (un vídeo de Avatar, p. ej.),
 // al reanudar vuelve a mirar el estado desde cero.
@@ -2401,6 +2465,31 @@ return (
           problema de containing block) — es un overlay propio, mismo
           patrón que ya usa pendingDharmaChoice arriba (position: fixed,
           centrado, zIndex por encima de todo). */}
+      {/* 16 nov 2026 — partida a distancia: tu color y de quién es el turno. */}
+      {isOnline && onlineRole &&
+        createPortal(
+          <div
+            className={`onlineBadge${isMyOnlineTurn ? " onlineBadgeMine" : ""}`}
+            aria-live="polite"
+          >
+            <span className={`onlineDot ${onlineRole === "P1" ? "onlineDotWhite" : "onlineDotBlack"}`} aria-hidden="true" />
+            <span className="onlineBadgeRole">
+              {t(onlineRole === "P1" ? "online.youWhite" : "online.youBlack")}
+            </span>
+            <span className="onlineBadgeSep" aria-hidden="true">·</span>
+            <span className="onlineBadgeTurn">
+              {state.winner
+                ? ""
+                : isMyOnlineTurn
+                  ? t(state.phase === "rolled" ? "online.yourMove" : "online.yourRoll")
+                  : t(state.turn === "P1" ? "online.waitWhite" : "online.waitBlack")}
+            </span>
+          </div>,
+          document.body
+        )}
+      {isOnline && onlineToast &&
+        createPortal(<div className="onlineToast" role="status">{onlineToast}</div>, document.body)}
+
       {/* 15 nov 2026 — aviso discreto: es el turno de Buddha (tus clics esperan). */}
       {isBotTurn && !botPaused &&
         createPortal(

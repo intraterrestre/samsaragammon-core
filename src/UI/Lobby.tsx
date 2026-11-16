@@ -14,10 +14,13 @@ type Props = {
   botLevel?: BotLevel;
   onBotLevel?: (level: BotLevel) => void;
   // 3 oct 2026 — sin sesión, el lobby igual se muestra (Buddha y local
-  // son libres); crear/unirse piden antes el correo vía onSignIn.
+  // son libres). 16 nov 2026: jugar a distancia ya no pide correo
+  // (acceso anónimo en App.tsx); signedIn/onSignIn quedan sin uso aquí.
   signedIn?: boolean;
   onSignIn?: () => void;
   createdCode?: string | null;
+  // Texto mientras se entra por un enlace de invitación.
+  busyText?: string | null;
   isLoading?: boolean;
   error?: string | null;
 };
@@ -29,9 +32,8 @@ export function Lobby({
   onPlayWithBuddha,
   botLevel = "normal",
   onBotLevel,
-  signedIn = true,
-  onSignIn,
   createdCode,
+  busyText,
   isLoading,
   error,
 }: Props) {
@@ -155,9 +157,14 @@ export function Lobby({
           </div>
         )}
 
-        {!signedIn ? (
+        {/* 16 nov 2026 — jugar a distancia sin correo: un botón crea la
+            partida (acceso anónimo en App.tsx) y da un ENLACE para invitar.
+            Quien lo toca entra directo (?partida=CÓDIGO). El código sigue
+            visible por si alguien prefiere dictarlo. */}
+        {!createdCode && (
           <button
-            onClick={onSignIn}
+            onClick={onCreateGame}
+            disabled={isLoading}
             style={{
               ...btnStyle("primary"),
               display: "flex",
@@ -166,101 +173,60 @@ export function Lobby({
               gap: 2,
             }}
           >
-            <span>{t("lobby.playOnline")}</span>
-            <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.8 }}>
-              {t("lobby.playOnlineSub")}
-            </span>
+            <span>{isLoading ? busyText ?? t("lobby.creating") : t("lobby.playOnline")}</span>
+            {!isLoading && (
+              <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.8 }}>
+                {t("lobby.playOnlineSub")}
+              </span>
+            )}
           </button>
-        ) : (
-        <>
-        {/* Crear partida */}
-        <button
-          onClick={onCreateGame}
-          disabled={isLoading}
-          style={btnStyle("primary")}
-        >
-          {isLoading ? t("lobby.creating") : t("lobby.createGame")}
-        </button>
-
-        {createdCode && (
-          <div
-            style={{
-              background: "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: 12,
-              padding: 16,
-              textAlign: "center",
-            }}
-          >
-            <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 6 }}>
-              {t("lobby.shareCode")}
-            </div>
-            <div
-              style={{
-                fontSize: 28,
-                fontWeight: 900,
-                letterSpacing: 3,
-                color: "#f0c060",
-              }}
-            >
-              {createdCode}
-            </div>
-            <button
-              onClick={() => navigator.clipboard?.writeText(createdCode)}
-              style={{
-                marginTop: 10,
-                background: "none",
-                border: "1px solid rgba(255,255,255,0.2)",
-                color: "#e8dcc8",
-                borderRadius: 8,
-                padding: "4px 12px",
-                fontSize: 12,
-                cursor: "pointer",
-              }}
-            >
-              {t("lobby.copyCode")}
-            </button>
-            <div style={{ fontSize: 11, opacity: 0.4, marginTop: 8 }}>
-              {t("lobby.waiting")}
-            </div>
-          </div>
         )}
 
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            alignItems: "center",
-          }}
-        >
-          <input
-            type="text"
-            placeholder={t("lobby.codePlaceholder")}
-            value={joinCode}
-            onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-            onKeyDown={(e) => e.key === "Enter" && handleJoin()}
-            style={{
-              flex: 1,
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.15)",
-              borderRadius: 10,
-              padding: "10px 14px",
-              color: "#e8dcc8",
-              fontSize: 14,
-              fontFamily: "monospace",
-              outline: "none",
-            }}
-          />
-          <button
-            onClick={handleJoin}
-            disabled={isLoading || !joinCode.trim()}
-            style={btnStyle("secondary")}
-          >
-            {t("lobby.join")}
-          </button>
-        </div>
+        {createdCode && (
+          <InvitePanel code={createdCode} />
+        )}
 
-        </>
+        {!createdCode && (
+          <details style={{ fontSize: 13, opacity: 0.85 }}>
+            <summary style={{ cursor: "pointer", textAlign: "center", listStyle: "none" }}>
+              {t("lobby.haveCode")}
+            </summary>
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                alignItems: "center",
+                marginTop: 10,
+              }}
+            >
+              <input
+                type="text"
+                placeholder={t("lobby.codePlaceholder")}
+                value={joinCode}
+                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                onKeyDown={(e) => e.key === "Enter" && handleJoin()}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  borderRadius: 10,
+                  padding: "10px 14px",
+                  color: "#e8dcc8",
+                  fontSize: 14,
+                  fontFamily: "monospace",
+                  outline: "none",
+                }}
+              />
+              <button
+                onClick={handleJoin}
+                disabled={isLoading || !joinCode.trim()}
+                style={btnStyle("secondary")}
+              >
+                {t("lobby.join")}
+              </button>
+            </div>
+          </details>
         )}
 
         <div
@@ -274,6 +240,70 @@ export function Lobby({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Invitación a una partida a distancia: compartir enlace (menú del móvil) o copiarlo. */
+function InvitePanel({ code }: { code: string }) {
+  const { t } = useI18n();
+  const [copied, setCopied] = useState(false);
+  const url =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/?partida=${encodeURIComponent(code)}`
+      : `/?partida=${code}`;
+  const text = t("lobby.inviteText");
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(`${text} ${url}`);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2200);
+    } catch {
+      window.prompt(t("lobby.inviteCopy"), url);
+    }
+  };
+  const share = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Samsaragammon", text, url });
+        return;
+      } catch {
+        // cancelado por el usuario: no hacemos nada
+        return;
+      }
+    }
+    await copy();
+  };
+
+  return (
+    <div
+      style={{
+        background: "rgba(255,255,255,0.05)",
+        border: "1px solid rgba(240,192,96,0.35)",
+        borderRadius: 16,
+        padding: 18,
+        textAlign: "center",
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+      }}
+    >
+      <div style={{ fontSize: 15, fontWeight: 700, color: "#f0c060" }}>{t("lobby.inviteTitle")}</div>
+      <button onClick={share} style={btnStyle("primary")}>
+        {t("lobby.inviteShare")} ↗
+      </button>
+      <button onClick={copy} style={{ ...btnStyle("ghost"), padding: "8px 14px", fontSize: 13 }}>
+        {copied ? t("lobby.inviteCopied") : t("lobby.inviteCopy")}
+      </button>
+      <div style={{ fontSize: 12, opacity: 0.6 }}>
+        {t("lobby.orCode")}{" "}
+        <span style={{ fontFamily: "monospace", fontWeight: 900, letterSpacing: 2, color: "#f0c060", fontSize: 15 }}>
+          {code}
+        </span>
+      </div>
+      <div style={{ fontSize: 13, opacity: 0.85 }}>{t("lobby.youAreWhite")}</div>
+      <div style={{ fontSize: 12, opacity: 0.5 }}>{t("lobby.waiting")}</div>
     </div>
   );
 }
