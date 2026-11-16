@@ -1,0 +1,39 @@
+# Mantiene despierto el proyecto de Supabase (plan gratis).
+#
+# Supabase pausa los proyectos gratuitos tras ~7 días sin actividad, y
+# entonces el juego en línea deja de funcionar hasta restaurarlo a mano.
+# Esta tarea hace cada 3 días una consulta mínima a la base de datos
+# (las reglas RLS no devuelven ningún dato a esta clave), suficiente para
+# que cuente como actividad.
+#
+# - La clave es la "publishable" del proyecto: es pública por diseño (ya va
+#   dentro de la web del juego), así que puede vivir aquí.
+# - Si la consulta falla (p. ej. el proyecto ya estaba pausado), la tarea
+#   falla y GitHub te avisa por correo.
+# - Se puede lanzar a mano: GitHub → Actions → "Supabase keep-alive" →
+#   "Run workflow".
+# - GitHub desactiva las tareas programadas de un repo tras 60 días sin
+#   commits; avisa por correo antes y se reactiva con un clic.
+
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: "17 6 */3 * *" # cada 3 días, 06:17 UTC
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Consulta mínima a Supabase
+        env:
+          SUPABASE_URL: https://zxvyijkosmuggstvbhws.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: sb_publishable__7UlzPCwo1RvhDn6S8JETw_uCqYYhgr
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 \
+            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+            "$SUPABASE_URL/rest/v1/games?select=id&limit=1")
+          echo "Supabase respondió HTTP $status"
+          test "$status" = "200"
