@@ -51,17 +51,15 @@ type Props = {
 export function EvolutionClockIndicator({ state, highlight = false }: Props) {
   const { t } = useI18n();
   const [tipOpen, setTipOpen] = React.useState(false);
-  const timer = React.useRef<number | null>(null);
   const p1 = getEvolutionClockDisplay(state, "P1");
   const p2 = getEvolutionClockDisplay(state, "P2");
 
   if (!p1 && !p2) return null;
 
-  const showTip = (ms?: number) => {
-    if (timer.current) window.clearTimeout(timer.current);
-    setTipOpen(true);
-    if (ms) timer.current = window.setTimeout(() => setTipOpen(false), ms);
-  };
+  // 16 nov 2026 — Federico: un "?" visible abre la explicación completa
+  // de los números (antes la ayuda solo salía tocando el reloj y nadie
+  // lo sabía). Se queda abierta hasta que se toca otra vez: es larga.
+  const toggleTip = () => setTipOpen((v) => !v);
 
   const dot = (color: "white" | "black") => (
     <span
@@ -100,9 +98,13 @@ export function EvolutionClockIndicator({ state, highlight = false }: Props) {
         tabIndex={0}
         aria-label={t("evo.tip")}
         title={t("evo.tip")}
-        onMouseEnter={() => showTip()}
-        onMouseLeave={() => setTipOpen(false)}
-        onClick={() => showTip(5000)}
+        onClick={toggleTip}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            toggleTip();
+          }
+        }}
         style={{
           position: "relative",
           display: "flex",
@@ -123,6 +125,9 @@ export function EvolutionClockIndicator({ state, highlight = false }: Props) {
           boxShadow: highlight ? "0 0 16px rgba(255,210,74,0.8)" : "none",
         }}
       >
+        <span className="evoClockHelpBtn" aria-hidden="true">
+          ?
+        </span>
         {p1 && (
           <span>
             {dot("white")}
@@ -136,8 +141,15 @@ export function EvolutionClockIndicator({ state, highlight = false }: Props) {
           </span>
         )}
         {tipOpen && (
-          <div className="evoClockTip" onClick={(e) => { e.stopPropagation(); setTipOpen(false); }}>
-            {t("evo.tip")}
+          <div
+            className="evoClockTip evoClockHelp"
+            onClick={(e) => {
+              e.stopPropagation();
+              setTipOpen(false);
+            }}
+          >
+            {t("evo.help")}
+            <span className="evoClockHelpClose">{t("evo.helpClose")}</span>
           </div>
         )}
       </div>
