@@ -47,6 +47,51 @@ export async function createGame(
   return data as Game;
 }
 
+// 16 nov 2026 — volver a una partida tras cerrar la ventana, reiniciar o
+// un apagón. La partida vive en Supabase (no en el navegador) y la policy
+// "Players can view their games" deja leer las propias, así que basta con
+// buscar la más reciente en la que este usuario es P1 o P2 y que no haya
+// terminado. Solo funciona con la misma sesión (mismo navegador, sin
+// borrar datos): la sesión anónima se guarda en el navegador.
+const RESUME_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
+
+export function roleInGame(game: Game, userId: string): "P1" | "P2" | null {
+  if (game.player1_id === userId) return "P1";
+  if (game.player2_id === userId) return "P2";
+  return null;
+}
+
+function isOpen(game: Game): boolean {
+  return game.status !== "finished" && !game.state?.winner;
+}
+
+export async function findMyOpenGame(userId: string): Promise<Game | null> {
+  const since = new Date(Date.now() - RESUME_WINDOW_MS).toISOString();
+  const { data, error } = await supabase
+    .from("games")
+    .select("*")
+    .or(`player1_id.eq.${userId},player2_id.eq.${userId}`)
+    .in("status", ["waiting", "active", "paused"])
+    .gte("updated_at", since)
+    .order("updated_at", { ascending: false })
+    .limit(5);
+  if (error || !data) return null;
+  return (data as Game[]).find(isOpen) ?? null;
+}
+
+// Si ya soy jugador de la partida con ese código, la devuelve (para
+// reengancharse escribiendo el código o tocando otra vez el enlace).
+async function findMyGameByCode(code: string, userId: string): Promise<Game | null> {
+  const { data, error } = await supabase
+    .from("games")
+    .select("*")
+    .eq("code", code.toUpperCase())
+    .limit(1);
+  if (error || !data?.length) return null;
+  const game = data[0] as Game;
+  return roleInGame(game, userId) ? game : null;
+}
+
 // Unirse a una partida por código (el que llama es P2)
 // Va por un RPC (SECURITY DEFINER) porque la policy de SELECT normal
 // ("Players can view their games") solo deja ver la fila a quien YA es
@@ -55,8 +100,11 @@ export async function createGame(
 // aunque el código sea correcto y la partida exista.
 export async function joinGame(
   code: string,
-  _userId: string
+  userId: string
 ): Promise<Game> {
+  const mine = await findMyGameByCode(code, userId);
+  if (mine) return mine;
+
   const { data, error } = await supabase.rpc("join_game_by_code", {
     p_code: code.toUpperCase(),
   });

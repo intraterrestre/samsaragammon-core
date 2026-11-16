@@ -30,6 +30,8 @@ import { useGameController } from "./game/hooks/useGameController";
 import {
   createGame,
   joinGame,
+  findMyOpenGame,
+  roleInGame,
   updateGameState,
   subscribeToGame,
   getGame,
@@ -1163,6 +1165,63 @@ useEffect(() => {
     return data.session;
   };
 
+  // 16 nov 2026 — entrar (o volver) a una partida online con el rol que
+  // de verdad tengo en ella. P1 que aún espera rival vuelve a la pantalla
+  // de invitación.
+  const waitForP2 = (game: Game) => {
+    const unsubscribeWaitingForP2 = subscribeToGame(game.id, (updated) => {
+      if (updated.player2_id && updated.status === "active") {
+        unsubscribeWaitingForP2();
+        lastSyncedVersion.current = updated.version;
+        lastPushedState.current = updated.state;
+        dispatchBase({ type: "SET_MULTIPLAYER_STATE", state: updated.state });
+        setMultiplayerGame(updated);
+        setGameMode("multiplayer");
+      }
+    });
+  };
+
+  const enterOnlineGame = (game: Game, role: "P1" | "P2") => {
+    setMultiplayerGame(game);
+    setMyRole(role);
+    setResumable(null);
+    lastSyncedVersion.current = game.version;
+    lastPushedState.current = game.state;
+    if (game.status === "waiting" && role === "P1") {
+      setLobbyCode(game.code);
+      waitForP2(game);
+      return;
+    }
+    dispatchBase({ type: "SET_MULTIPLAYER_STATE", state: game.state });
+    setGameMode("multiplayer");
+  };
+
+  // Al llegar al lobby con sesión: ¿hay una partida mía sin terminar?
+  const [resumable, setResumable] = useState<{ game: Game; role: "P1" | "P2" } | null>(null);
+  useEffect(() => {
+    if (gameMode !== "lobby" || !session?.user || lobbyCode) return;
+    let cancelled = false;
+    const uid = session.user.id;
+    findMyOpenGame(uid).then((game) => {
+      if (cancelled) return;
+      const role = game ? roleInGame(game, uid) : null;
+      setResumable(game && role ? { game, role } : null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [gameMode, session?.user?.id, lobbyCode]);
+
+  const handleResume = async () => {
+    if (!resumable || !session?.user) return;
+    setLobbyLoading(true);
+    setLobbyError(null);
+    // estado más reciente del servidor (puede haber avanzado en el otro equipo)
+    const fresh = (await getGame(resumable.game.id)) ?? resumable.game;
+    setLobbyLoading(false);
+    enterOnlineGame(fresh, resumable.role);
+  };
+
   const handleJoinGame = async (code: string) => {
     setLobbyLoading(true);
     setLobbyError(null);
@@ -1174,12 +1233,7 @@ useEffect(() => {
     }
     try {
       const game = await joinGame(code, sess.user.id);
-      setMultiplayerGame(game);
-      setMyRole("P2");
-      lastSyncedVersion.current = game.version;
-      lastPushedState.current = game.state;
-      dispatchBase({ type: "SET_MULTIPLAYER_STATE", state: game.state });
-      setGameMode("multiplayer");
+      enterOnlineGame(game, roleInGame(game, sess.user.id) ?? "P2");
     } catch (e: any) {
       setLobbyError(e.message ?? "Invalid code or game not found");
     } finally {
@@ -1332,15 +1386,7 @@ useEffect(() => {
           // capturar ("cannot add postgres_changes callbacks... after
           // subscribe()") que rompia el render de P1 (pantalla negra) justo
           // al unirse P2. Se cierra explicitamente apenas cumple su proposito.
-          const unsubscribeWaitingForP2 = subscribeToGame(game.id, (updated) => {
-            if (updated.player2_id && updated.status === "active") {
-              unsubscribeWaitingForP2();
-              lastSyncedVersion.current = updated.version;
-              lastPushedState.current = updated.state;
-              setMultiplayerGame(updated);
-              setGameMode("multiplayer");
-            }
-          });
+          waitForP2(game);
         } catch (e: any) {
           setLobbyError(e.message ?? "Error creating game");
         } finally {
@@ -1348,6 +1394,12 @@ useEffect(() => {
         }
       }}
       onJoinGame={handleJoinGame}
+      resume={
+        resumable
+          ? { code: resumable.game.code, role: resumable.role, waiting: resumable.game.status === "waiting" }
+          : null
+      }
+      onResume={handleResume}
     />
   ) : (
     <>

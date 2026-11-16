@@ -26,6 +26,9 @@ type Props = {
   busyText?: string | null;
   isLoading?: boolean;
   error?: string | null;
+  // 16 nov 2026 — partida online sin terminar a la que se puede volver.
+  resume?: { code: string; role: "P1" | "P2"; waiting: boolean } | null;
+  onResume?: () => void;
 };
 
 export function Lobby({
@@ -41,6 +44,8 @@ export function Lobby({
   busyText,
   isLoading,
   error,
+  resume,
+  onResume,
 }: Props) {
   const [joinCode, setJoinCode] = useState("");
   const { t } = useI18n();
@@ -109,6 +114,30 @@ export function Lobby({
           maxWidth: 340,
         }}
       >
+        {resume && onResume && !createdCode && (
+          <button
+            onClick={onResume}
+            disabled={isLoading}
+            style={{
+              ...btnStyle("primary"),
+              background: "#d9a521",
+              color: "#1a1204",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
+            <span>{t("lobby.resume")}</span>
+            <span style={{ fontSize: 12, fontWeight: 600, opacity: 0.85 }}>
+              {t(resume.waiting ? "lobby.resumeWaiting" : "lobby.resumeSub", {
+                code: resume.code,
+                color: t(resume.role === "P1" ? "lobby.colorWhite" : "lobby.colorBlack"),
+              })}
+            </span>
+          </button>
+        )}
+
         {/* PLAY WITH BUDDHA (30 sept 2026) — modo principiante: partida
             local donde el tablero ilumina qué se puede tocar. Solo se
             muestra si App.tsx pasa el callback. */}
