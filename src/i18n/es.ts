@@ -110,6 +110,7 @@ export const es: Dictionary = {
   "freeLook.title": "TU RIVAL ESTÁ CONSULTANDO AL BUDDHA AZUL.",
   "freeLook.body": "Tú también puedes mirarte ahora, gratis: no gastas ninguna mirada.",
   "freeLook.button": "MIRAR GRATIS",
+  "freeLook.notNow": "Ahora no",
   "fan.betActive": "🐍 SQUARE KARMA 666 ({who}) sobre {name}: quedan {n} turnos",
   "fan.betYours": "tuya",
   "fan.betRivals": "del rival",

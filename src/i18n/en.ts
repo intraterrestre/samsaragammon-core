@@ -116,6 +116,7 @@ export const en = {
   "freeLook.title": "YOUR RIVAL IS CONSULTING THE BLUE BUDDHA.",
   "freeLook.body": "You can look at yourself now too, for free: no look is spent.",
   "freeLook.button": "LOOK FOR FREE",
+  "freeLook.notNow": "Not now",
   "fan.betActive": "🐍 SQUARE KARMA 666 ({who}) on {name}: {n} turns left",
   "fan.betYours": "yours",
   "fan.betRivals": "rival's",

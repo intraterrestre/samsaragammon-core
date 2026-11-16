@@ -38,6 +38,8 @@ import watcherVideo from "../assets/video/jesus_watch.mp4";
 import skySignVideo from "../assets/video/sky-signals.mp4";
 import type { MoveOption, PieceKind, PlayerId, RealmPieceKind } from "../game/types";
 import { REALM_PIECE_ORDER } from "../game/types";
+import bigHeadWhite from "../assets/master/bighead-school/bighead-school-white.png";
+import bigHeadBlack from "../assets/master/bighead-school/bighead-school-black.png";
 import { chooseBotMove, botAnswersSnakeBet, botAnswersTrade, type BotLevel } from "../game/bot/buddhaBot";
 import { AVATAR_ORDER } from "../game/historicalClock";
 import { ACTOR_PROFILES } from "../game/actors/actorProfiles";
@@ -1496,9 +1498,12 @@ React.useEffect(() => {
   rivalBudaSplashTimer.current = window.setTimeout(() => setRivalBudaSplash(null), 3000);
 }, [state.budaConsultationInProgress, onlineRole]);
 
+// "Ahora no": cierra la oferta en esta pantalla (sin tocar el estado
+// sincronizado; caduca sola a los 15 s igual que antes).
+const [dismissedFreeLookAt, setDismissedFreeLookAt] = React.useState<number | null>(null);
 const budaFreeLookOfferVisible =
-  !rivalBudaSplash &&
   !beginnerMode &&
+  state.budaFreeLookOffer?.expiresAt !== dismissedFreeLookAt &&
   !!state.budaFreeLookOffer &&
   Date.now() <= state.budaFreeLookOffer.expiresAt &&
   !budaConsultationActive;
@@ -2508,7 +2513,11 @@ return (
               ? t("hint.reading")
               : rivalBudaSplash
                 ? t("hint.rivalConsults", { color: t(rivalColorKey) })
-                : null;
+                : budaFreeLookOfferVisible && state.budaFreeLookOffer
+                  ? t("hint.rivalConsults", {
+                      color: t(state.budaFreeLookOffer.offeredTo === "P1" ? "online.colorBlack" : "online.colorWhite"),
+                    })
+                  : null;
         if (!buddhaHint && !(isOnline && onlineRole)) return null;
         const turnText = state.winner
           ? ""
@@ -2757,6 +2766,10 @@ return (
           botón, con ventana fija de 15s. Mismo patrón visual que el
           panel de arriba (position: fixed, propio, sin depender de
           .bighead-overlay). */}
+      {/* 16 nov 2026 — pedido de Federico: la mirada gratis va SOBRE la
+          foto de la Big Head School con el peón de quien consulta (si
+          consultan las blancas, el peón blanco aprendiendo). Así se queda
+          en pantalla mientras dura la oferta y da tiempo a digerirla. */}
       {budaFreeLookOfferVisible && state.budaFreeLookOffer && (
         <div
           style={{
@@ -2766,48 +2779,98 @@ return (
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "rgba(4,4,10,0.35)",
+            background: "rgba(4,4,10,0.45)",
           }}
         >
+          {(() => {
+            // Pantalla baja (móvil en horizontal): el cartel va superpuesto a
+            // la DERECHA de la foto, para no tapar el peón; si hay altura,
+            // abajo, como una peana.
+            const shortScreen = typeof window !== "undefined" && window.innerHeight < 520;
+            return (
           <div
             style={{
-              width: "min(380px, 90vw)",
-              padding: "12% 14%",
-              borderRadius: "50%",
-              background: "rgba(12, 14, 22, 0.66)",
-              backdropFilter: "blur(3px)",
-              border: "1px solid rgba(120,160,255,0.35)",
-              boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
-              color: "#e8ecf8",
-              fontFamily: "Georgia, 'Times New Roman', serif",
-              fontSize: 14,
-              lineHeight: 1.5,
-              textAlign: "center",
+              position: "relative",
+              width: "min(460px, 88vw, 78vh)",
+              aspectRatio: "1 / 1",
+              transform: shortScreen ? "translateX(-30%)" : undefined,
             }}
           >
-            <div style={{ marginBottom: 10, fontWeight: 700 }}>
-              {t("freeLook.title")}
-            </div>
-            <div style={{ marginBottom: 18, opacity: 0.9 }}>
-              {t("freeLook.body")}
-            </div>
-            <button
-              type="button"
-              onClick={handleUseFreeBudaLook}
+            <img
+              src={state.budaFreeLookOffer.offeredTo === "P1" ? bigHeadBlack : bigHeadWhite}
+              alt="The Big Head School"
+              draggable={false}
               style={{
-                padding: "10px 22px",
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
                 borderRadius: "50%",
-                border: "1px solid rgba(160,200,255,0.6)",
-                background: "rgba(120,170,255,0.15)",
-                color: "#e8eefc",
-                fontWeight: 800,
-                letterSpacing: "0.08em",
-                cursor: "pointer",
+                filter: "drop-shadow(0 0 28px rgba(255,230,160,.28)) drop-shadow(0 22px 45px rgba(0,0,0,.55))",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                ...(shortScreen
+                  ? { left: "72%", top: "50%", transform: "translateY(-50%)", width: "95%" }
+                  : { left: "50%", bottom: "-6%", transform: "translateX(-50%)", width: "86%" }),
+                padding: "5% 9% 6%",
+                borderRadius: "50%",
+                background: "rgba(12, 14, 22, 0.78)",
+                backdropFilter: "blur(3px)",
+                border: "1px solid rgba(120,160,255,0.45)",
+                boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+                color: "#e8ecf8",
+                fontFamily: "Georgia, 'Times New Roman', serif",
+                fontSize: "clamp(12px, 1.6vh + 4px, 15px)",
+                lineHeight: 1.45,
+                textAlign: "center",
+                boxSizing: "border-box",
               }}
             >
-              {t("freeLook.button")}
-            </button>
+              <div style={{ marginBottom: 6, fontWeight: 700 }}>
+                {t("freeLook.title")}
+              </div>
+              <div style={{ marginBottom: 12, opacity: 0.9 }}>
+                {t("freeLook.body")}
+              </div>
+              <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  onClick={handleUseFreeBudaLook}
+                  style={{
+                    padding: "9px 20px",
+                    borderRadius: 999,
+                    border: "1px solid rgba(160,200,255,0.7)",
+                    background: "rgba(120,170,255,0.2)",
+                    color: "#e8eefc",
+                    fontWeight: 800,
+                    letterSpacing: "0.08em",
+                    cursor: "pointer",
+                  }}
+                >
+                  {t("freeLook.button")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDismissedFreeLookAt(state.budaFreeLookOffer?.expiresAt ?? null)}
+                  style={{
+                    padding: "9px 16px",
+                    borderRadius: 999,
+                    border: "1px solid rgba(255,255,255,0.25)",
+                    background: "transparent",
+                    color: "rgba(232,236,248,0.8)",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  {t("freeLook.notNow")}
+                </button>
+              </div>
+            </div>
           </div>
+            );
+          })()}
         </div>
       )}
 
@@ -2862,7 +2925,7 @@ return (
           p1VenomsRevealed={p1VenomsRevealed}
           p2VenomsRevealed={p2VenomsRevealed}
           oriolEntered={oriolEntered}
-          budaConsultationOpenBy={budaConsultationOpenBy ?? rivalBudaSplash}
+          budaConsultationOpenBy={budaConsultationOpenBy}
           budaConsultationActive={budaConsultationActive}
           // PLAY WITH BUDDHA: en modo principiante, tocar a Buddha abre
           // primero la ayuda gratuita; el Mirror de pago es un botón
