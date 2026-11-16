@@ -81,14 +81,19 @@ export function LoginScreen({ onLogin, onBack }: LoginScreenProps) {
     }
   };
 
+  // 16 nov 2026 — html/body tienen overflow:hidden (lo necesita el tablero),
+  // así que esta pantalla hace su propio scroll: en el iPhone no se llegaba
+  // al botón de abajo. El div de dentro sigue centrando cuando hay sitio.
   return (
+    <div style={{ height: "100dvh", overflowY: "auto", WebkitOverflowScrolling: "touch", background: "#000" }}>
     <div
       style={{
         padding: 24,
         color: "white",
         fontFamily: "Cinzel, serif",
         textAlign: "center",
-        minHeight: "100dvh",
+        minHeight: "100%",
+        boxSizing: "border-box",
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
@@ -101,7 +106,7 @@ export function LoginScreen({ onLogin, onBack }: LoginScreenProps) {
         alt="Samsaragammon"
         style={{
           maxWidth: "90vw",
-          maxHeight: "50vh",
+          maxHeight: "38vh",
           objectFit: "contain",
           marginBottom: 24,
         }}
@@ -204,6 +209,7 @@ export function LoginScreen({ onLogin, onBack }: LoginScreenProps) {
           {t("login.back")}
         </button>
       )}
+    </div>
     </div>
   );
 }

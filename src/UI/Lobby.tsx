@@ -45,10 +45,15 @@ export function Lobby({
     await onJoinGame(joinCode.trim());
   };
 
+  // 16 nov 2026 — html/body tienen overflow:hidden (lo necesita el tablero),
+  // así que esta pantalla hace su propio scroll: en el iPhone no se llegaba
+  // al botón de abajo. El div de dentro sigue centrando cuando hay sitio.
   return (
+    <div style={{ height: "100dvh", overflowY: "auto", WebkitOverflowScrolling: "touch", background: "#000" }}>
     <div
       style={{
-        minHeight: "100dvh",
+        minHeight: "100%",
+        boxSizing: "border-box",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -240,6 +245,7 @@ export function Lobby({
           </button>
         </div>
       </div>
+    </div>
     </div>
   );
 }
