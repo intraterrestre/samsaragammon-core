@@ -864,3 +864,19 @@ body.bwb-hl-options .moveOptionsPanel::after { font-size: 30px; }
   opacity: 0.75;
   text-align: right;
 }
+
+/* 18 nov 2026 — Buddha narrador (ver UI/narrator.ts). En modo VOZ el
+   texto del cartel se sustituye por este botón de repetir. */
+.bwbLessonSide .bwbNarratorRepeat {
+  border: 1px solid rgba(156, 196, 255, 0.45);
+  border-radius: 999px;
+  background: rgba(8, 14, 34, 0.55);
+  color: #ffffff;
+  font: inherit;
+  font-size: 1.1em;
+  line-height: 1;
+  padding: 8px 14px;
+  min-height: 36px;
+  cursor: pointer;
+  text-shadow: none;
+}

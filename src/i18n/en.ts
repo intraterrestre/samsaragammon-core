@@ -89,6 +89,12 @@ export const en = {
   "ask.happened": "WHAT JUST HAPPENED?",
   "ask.mirror": "LOOK IN THE MIRROR ({n} LEFT)",
   "ask.close": "CLOSE",
+  // ---- narrador (voz del teléfono, ver src/UI/narrator.ts)
+  "narrator.label": "Buddha's voice",
+  "narrator.voice": "VOICE",
+  "narrator.text": "TEXT",
+  "narrator.both": "BOTH",
+  "narrator.repeat": "Repeat",
 
   // ---- lecciones (Buddha las dice una vez, en mayúsculas)
   "lesson.noMove": "No path this roll. Pass, and the wheel turns.",

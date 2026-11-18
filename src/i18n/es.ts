@@ -84,6 +84,12 @@ export const es: Dictionary = {
   "ask.happened": "¿QUÉ ACABA DE PASAR?",
   "ask.mirror": "MIRAR EN EL ESPEJO (QUEDAN {n})",
   "ask.close": "CERRAR",
+  // ---- narrador (voz del teléfono, ver src/UI/narrator.ts)
+  "narrator.label": "Voz de Buddha",
+  "narrator.voice": "VOZ",
+  "narrator.text": "TEXTO",
+  "narrator.both": "AMBOS",
+  "narrator.repeat": "Repetir",
 
   "lesson.noMove": "No hay camino en esta tirada. Pasa, y la rueda gira.",
   "lesson.firstAvatar": "BRUNO, TU PRIMER AVATAR\nSe mueve por ignorancia, impulsividad o rabia.\nSon 6 Avatares, y cada uno tiene su propio reino de 4 casillas.",

@@ -6,6 +6,8 @@
 // se arrastra, la tarjeta sigue al dedo y se va desvaneciendo.
 
 import React from "react";
+import { useI18n } from "../i18n";
+import { narrate, useNarration, useNarrator } from "./narrator";
 
 type Props = {
   message: string;
@@ -92,6 +94,13 @@ export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, 
     setDrag({ x: 0, y: 0 });
   };
 
+  // 18 nov 2026 — Buddha narrador (ver narrator.ts): cada cartel nuevo se
+  // dice en voz alta y se calla al cerrarse. En modo VOZ el texto se
+  // reduce a un botón de repetir; si la voz falla, el texto vuelve solo.
+  const { t } = useI18n();
+  useNarration(message, { source: "lesson" });
+  const voiceOnly = useNarrator().effective === "voice";
+
   const dragging = drag.x !== 0 || drag.y !== 0;
   const away = Math.max(Math.abs(drag.x) / 160, Math.abs(drag.y) / 80);
 
@@ -123,6 +132,21 @@ export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, 
       ) : (
         <span className="bwbLessonCardIcon" aria-hidden="true">☸</span>
       )}
+      {voiceOnly ? (
+        <button
+          type="button"
+          className="bwbNarratorRepeat"
+          aria-label={t("narrator.repeat")}
+          title={t("narrator.repeat")}
+          onClick={(e) => {
+            e.stopPropagation();
+            narrate(message, { source: "lesson", force: true });
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          🔊 ⟳
+        </button>
+      ) : (
       <span>
         {/* Si la lección trae título (primera línea), va destacado. */}
         {message.includes("\n") ? (
@@ -147,7 +171,8 @@ export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, 
           </span>
         )}
       </span>
-      {onDisableHelps && disableHelpsLabel && (
+      )}
+      {!voiceOnly && onDisableHelps && disableHelpsLabel && (
         <button
           type="button"
           className="bwbLessonDisableHelps"

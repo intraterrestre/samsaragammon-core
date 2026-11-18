@@ -124,6 +124,7 @@ import { hasAnyLegalMove } from "../game/rules/legalMoves";
 import { getBuddhaHelp, type HelpTopic } from "../game/tutorial/help";
 import { useI18n, translate } from "../i18n";
 import { LanguageSwitch } from "./LanguageSwitch";
+import { Narrate, NarratorSwitch } from "./NarratorSwitch";
 import { LessonCard } from "./LessonCard";
 import lotusSeal from "../assets/lotus_seal.webp";
 import {
@@ -2663,8 +2664,9 @@ return (
             <div style={{ fontSize: 13, letterSpacing: 4, opacity: 0.7, marginBottom: 14 }}>
               {t("ask.title")}
             </div>
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+            <div style={{ display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
               <LanguageSwitch />
+              <NarratorSwitch />
             </div>
             <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 18 }}>
               {([
@@ -2693,6 +2695,8 @@ return (
               ))}
             </div>
             <div style={{ textAlign: "left", fontSize: 16, lineHeight: 1.5, marginBottom: 22 }}>
+              {/* 18 nov 2026 — Buddha dice en voz alta la respuesta elegida. */}
+              <Narrate text={getBuddhaHelp(state, state.turn, buddhaHelpTopic, lang).join("\n")} source="help" />
               {getBuddhaHelp(state, state.turn, buddhaHelpTopic, lang).map((line, i) => (
                 <div key={i} style={{ marginBottom: 6 }}>
                   {line}

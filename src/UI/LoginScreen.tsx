@@ -3,6 +3,7 @@ import introImage from "../assets/intro/intro_samsaragammon.webp";
 import { supabase } from "../lib/supabaseClient";
 import { useI18n } from "../i18n";
 import { LanguageSwitch } from "./LanguageSwitch";
+import { NarratorSwitch } from "./NarratorSwitch";
 
 type LoginScreenProps = {
   onLogin: () => void | Promise<void>;
@@ -112,7 +113,10 @@ export function LoginScreen({ onLogin, onBack }: LoginScreenProps) {
         }}
       />
 
-      <LanguageSwitch />
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+        <LanguageSwitch />
+        <NarratorSwitch />
+      </div>
 
       <div style={{ marginTop: 8, maxWidth: 500 }}>
         <div style={{ opacity: 0.95, fontSize: 22, fontWeight: 700, letterSpacing: 0.5 }}>

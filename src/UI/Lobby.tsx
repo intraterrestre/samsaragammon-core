@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import introImage from "../assets/intro/intro_samsaragammon.webp";
 import { useI18n } from "../i18n";
 import { LanguageSwitch } from "./LanguageSwitch";
+import { NarratorSwitch } from "./NarratorSwitch";
 import { BOT_LEVELS, type BotLevel } from "../game/bot/buddhaBot";
 
 type Props = {
@@ -88,7 +89,10 @@ export function Lobby({
         />
       </div>
 
-      <LanguageSwitch />
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+        <LanguageSwitch />
+        <NarratorSwitch />
+      </div>
 
       {error && (
         <div

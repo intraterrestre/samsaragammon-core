@@ -8,6 +8,7 @@
 
 import React from "react";
 import { createPortal } from "react-dom";
+import { useNarration } from "./narrator";
 
 type Props = {
   title?: string;
@@ -23,6 +24,9 @@ type Geo = {
 };
 
 export function BuddhaSpeech({ title, text, hint, onTap }: Props) {
+  // 18 nov 2026 — Buddha dice su lectura en voz alta (ver narrator.ts).
+  // El texto sigue visible: es una consulta pedida y se avanza tocándolo.
+  useNarration(title ? `${title}\n${text}` : text, { source: "buddha" });
   const ovalRef = React.useRef<HTMLDivElement | null>(null);
   const [geo, setGeo] = React.useState<Geo>({ bx: 0, by: 0, ok: false });
   const [oval, setOval] = React.useState<DOMRect | null>(null);
