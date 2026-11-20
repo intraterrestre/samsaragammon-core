@@ -344,12 +344,11 @@ export const LESSONS: Lesson[] = [
     // siempre por la jugada de Buddha, pero el texto decía "tu forma de
     // jugar") y que no se recoge ni cambia nada. Quién: turnIndex par =
     // Blancas, impar = Negras (cada turno suma uno, empieza Blancas).
-    holds: (s) =>
-      oriolEntered(s) &&
-      !!s.currentNidana &&
-      s.turnIndex - s.lastNidanaAtTurn <= 2,
-    repeat: 2,
-    eventKey: (s) => String(s.lastNidanaAtTurn),
+    // 20 nov 2026 (ANTIZOMBIES, Federico): ya NO sale sola. La moneda
+    // sigue cambiando como siempre; la explicación aparece solo si el
+    // jugador TOCA la moneda (GameShell, showMirrorExplanation), que usa
+    // `vars` de aquí para decir qué se vio y de quién.
+    holds: () => false,
     vars: (s, p, t) => {
       const id = s.currentNidana as NidanaId;
       const mover: PlayerId = s.lastNidanaAtTurn % 2 === 0 ? "P1" : "P2";

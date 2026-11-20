@@ -115,6 +115,8 @@ type Props = {
   onSendEmoji?: (emoji: string) => void;
   onRoll?: () => void;
   nidanaCoinSrc?: string | null;
+  // 20 nov 2026 — tocar la moneda grande (espejo) pide su explicación breve.
+  onNidanaCoinTap?: () => void;
   nidanaCoinSide?: "front" | "back";
   nidanaCoinId?: number | null;
   genesisComplete?: boolean;
@@ -246,6 +248,7 @@ export function Board({
   onChooseMove,
   onRoll,
   nidanaCoinSrc,
+  onNidanaCoinTap,
   nidanaCoinSide,
   // nidanaCoinId?: number | null — sigue en el tipo Props (el padre
   // puede seguir mandandolo, App.tsx lo usa para calcular
@@ -929,6 +932,8 @@ display: oriolEntered || (beginnerMode && genesisComplete) ? "block" : "none"
     }}
   >
     <img
+    onClick={onNidanaCoinTap}
+    role={onNidanaCoinTap ? "button" : undefined}
     key={`${nidanaCoinSrc}-${nidanaCoinSide}`}
       src={nidanaCoinSrc}
       className={`nidanaCoinImage ${
@@ -938,6 +943,8 @@ display: oriolEntered || (beginnerMode && genesisComplete) ? "block" : "none"
         width: 220,
         height: "auto",
         borderRadius: "50%",
+        pointerEvents: onNidanaCoinTap ? "auto" : "none",
+        cursor: onNidanaCoinTap ? "pointer" : undefined,
 animation: "nidanaReveal 2.6s cubic-bezier(.16,1.25,.32,1) both",
       }}
     />

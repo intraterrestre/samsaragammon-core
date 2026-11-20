@@ -192,6 +192,8 @@ export const en = {
   "mirror.why.BIRTH.rival": "Buddha has noticed something in the way of playing.",
   "mirror.why.DEATH.me": "You have just sent one of Buddha's Avatars to Mara.",
   "mirror.why.DEATH.rival": "Buddha has just sent one of your Avatars to Mara.",
+  "mirror.tap.buddha": "THIS COIN IS A MIRROR\nIt watches how you and Buddha play. You don't have to do anything with it.\n{why}\nTo learn more, ask the Blue Buddha.",
+  "mirror.tap.rival": "THIS COIN IS A MIRROR\nIt watches how you and your rival play. You don't have to do anything with it.\n{why}\nTo learn more, ask the Blue Buddha.",
   "fan.betStake": "At stake:",
   "fan.betProposed": "🐍 SQUARE KARMA 666 proposed on {name}: waiting for the rival's reply.",
   "fan.betIncoming": "🐍 Rival proposes SQUARE KARMA 666 on your {name}.",

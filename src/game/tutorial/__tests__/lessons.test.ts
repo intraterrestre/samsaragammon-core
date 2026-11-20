@@ -405,3 +405,12 @@ describe("cartel de la moneda grande (espejo)", () => {
     expect(mirror.vars!(at(4), "P1", tk as never).n).toBe("8");
   });
 });
+
+describe("moneda grande: la explicación ya no sale sola (ANTIZOMBIES)", () => {
+  it("nidanaMirror nunca se elige automáticamente", () => {
+    const s = { ...initialState, brunoRevealed: true, currentNidana: "CRAVING", lastNidanaAtTurn: 4, turnIndex: 5 } as unknown as GameState;
+    const seenAllButMirror = new Map<LessonId, number>(LESSONS.filter((l) => l.id !== "nidanaMirror").map((l) => [l.id, 9]));
+    expect(pickLesson(s, "P1", seenAllButMirror)?.id).not.toBe("nidanaMirror");
+    expect(LESSONS.find((l) => l.id === "nidanaMirror")!.holds(s, "P1")).toBe(false);
+  });
+});

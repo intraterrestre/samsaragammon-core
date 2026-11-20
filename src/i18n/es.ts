@@ -186,6 +186,8 @@ export const es: Dictionary = {
   "mirror.why.BIRTH.rival": "Buddha ha visto algo en la forma de jugar.",
   "mirror.why.DEATH.me": "Acabas de enviar un Avatar de Buddha a Mara.",
   "mirror.why.DEATH.rival": "Buddha acaba de enviar uno de tus Avatares a Mara.",
+  "mirror.tap.buddha": "ESTA MONEDA ES UN ESPEJO\nObserva cómo jugáis tú y Buddha. No tienes que hacer nada con ella.\n{why}\nSi quieres saber más, pregunta al Buda Azul.",
+  "mirror.tap.rival": "ESTA MONEDA ES UN ESPEJO\nObserva cómo jugáis tú y tu rival. No tienes que hacer nada con ella.\n{why}\nSi quieres saber más, pregunta al Buda Azul.",
   "fan.betStake": "En juego:",
   "fan.betProposed": "🐍 SQUARE KARMA 666 propuesta sobre {name}: esperando la respuesta del rival.",
   "fan.betIncoming": "🐍 El rival propone SQUARE KARMA 666 sobre tu {name}.",

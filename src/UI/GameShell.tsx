@@ -122,6 +122,7 @@ import { hasAnyLegalMove } from "../game/rules/legalMoves";
 import { getBuddhaHelp, type HelpTopic } from "../game/tutorial/help";
 import { useI18n, translate } from "../i18n";
 import { LanguageSwitch } from "./LanguageSwitch";
+import type { MessageKey } from "../i18n/en";
 import { Narrate, NarratorSwitch } from "./NarratorSwitch";
 import { isNarrating, narrate, getNarratorMode } from "./narrator";
 import { markBrunoEraDone, resetLessonGate, isVideoPending } from "./lessonGate";
@@ -129,6 +130,7 @@ import { LessonCard } from "./LessonCard";
 import lotusSeal from "../assets/lotus_seal.webp";
 import {
   lessonKey,
+  LESSONS,
   pickLesson,
   loadSeenLessons,
   saveSeenLessons,
@@ -2098,6 +2100,19 @@ const lessonOnScreen =
   !!transientDharma &&
   lessonShowingRef.current?.message === transientDharma.message;
 
+// 20 nov 2026 — ANTIZOMBIES: la moneda grande (espejo) ya no se explica
+// sola; al tocarla, un cartel breve: qué es, qué acaba de ver y de quién
+// (vars de la lección nidanaMirror), y que los detalles están en el Buda
+// Azul. Si ya hay otro cartel en pantalla, no lo pisa.
+const showMirrorExplanation = () => {
+  if (transientDharma || !state.currentNidana) return;
+  const lesson = LESSONS.find((l) => l.id === "nidanaMirror");
+  const v = lesson?.vars?.(state, state.turn, (k: MessageKey) => t(k)) ?? {};
+  const message = t(botPlayer ? "mirror.tap.buddha" : "mirror.tap.rival", { why: v.why ?? "" });
+  lessonShowingRef.current = { id: "nidanaMirror", message, urgent: true };
+  fireDharmaEvent(message, false, false, LESSON_MS);
+};
+
 // Vuelve a mostrar (y a decir, si la voz está activa) la última explicación.
 const replayLastLesson = () => {
   if (!lastLesson || transientDharma) return;
@@ -3100,6 +3115,7 @@ return (
           onSendEmoji={onSendEmoji}
           onRoll={handleRollWithPopup}
           nidanaCoinSrc={genesisComplete ? nidanaCoinSrc : null}
+          onNidanaCoinTap={showMirrorExplanation}
           nidanaCoinSide={nidanaCoinSide}
           nidanaCoinId={genesisComplete ? nidanaCoinId : null}
           genesisComplete={genesisComplete}
