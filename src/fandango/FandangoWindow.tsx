@@ -39,6 +39,8 @@ import { NIDANAS } from "../game/nidanas";
 import type { PendingTrade, PlayerId, RealmPieceKind } from "../game/types";
 import { NIDANA_NUMBER_IMAGE } from "../game/nidanaNumberAssets";
 import { REALM_AVATAR_NAME } from "../game/realmAvatarNames";
+import { nidanaLinkLows, nidanaNumber } from "../game/rules/nidanaLink";
+import { narrate, getNarratorMode } from "../UI/narrator";
 import {
   listCarriedNidanas,
   computeOwnLinks,
@@ -77,14 +79,14 @@ type Props = {
   // consolidated) — mismo dato, dos usos distintos.
   mySnakeBetEligibleTargets: RealmPieceKind[];
   myCarriedNidanaCount: number;
-  pendingSnakeBet: { byPlayer: PlayerId; targetAvatar: RealmPieceKind } | null;
+  pendingSnakeBet: { byPlayer: PlayerId; targetAvatar: RealmPieceKind; stake?: readonly NidanaId[] } | null;
   activeSnakeBet: {
     byPlayer: PlayerId;
     targetAvatar: RealmPieceKind;
     roundsLeft: number;
     stake?: readonly NidanaId[];
   } | null;
-  onRequestSnakeBet: (targetAvatar: RealmPieceKind) => void;
+  onRequestSnakeBet: (targetAvatar: RealmPieceKind, stake: [NidanaId, NidanaId]) => void;
   onAcceptSnakeBet: () => void;
   onRefuseSnakeBet: (skySign?: boolean) => void;
   // Nov 2026 — Señales del cielo: true si a este jugador todavía le
@@ -153,6 +155,7 @@ function SquareKarma666Block({
   carriedNidanaCount,
   pendingSnakeBet,
   activeSnakeBet,
+  myCarried,
   onRequest,
   onAccept,
   onRefuse,
@@ -161,19 +164,49 @@ function SquareKarma666Block({
   myPlayer: PlayerId;
   eligibleTargets: RealmPieceKind[];
   carriedNidanaCount: number;
-  pendingSnakeBet: { byPlayer: PlayerId; targetAvatar: RealmPieceKind } | null;
+  pendingSnakeBet: { byPlayer: PlayerId; targetAvatar: RealmPieceKind; stake?: readonly NidanaId[] } | null;
   activeSnakeBet: {
     byPlayer: PlayerId;
     targetAvatar: RealmPieceKind;
     roundsLeft: number;
     stake?: readonly NidanaId[];
   } | null;
-  onRequest: (targetAvatar: RealmPieceKind) => void;
+  myCarried: CarriedNidana[];
+  onRequest: (targetAvatar: RealmPieceKind, stake: [NidanaId, NidanaId]) => void;
   onAccept: () => void;
   onRefuse: () => void;
   onRefuseSky?: () => void;
 }) {
   const { t } = useI18n();
+  // 20 nov 2026 — el apostador elige el Avatar y sus 2 Nidanas.
+  const [target, setTarget] = useState<RealmPieceKind | null>(null);
+  const [picks, setPicks] = useState<NidanaId[]>([]);
+  const togglePick = (id: NidanaId) =>
+    setPicks((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : cur.length >= 2 ? cur : [...cur, id]));
+  const myIds = myCarried.map((c) => c.nidana);
+  const linkLowsNow = nidanaLinkLows(Object.fromEntries(myCarried.map((c) => [c.realm, c.nidana])));
+  const inLink = (id: NidanaId) => {
+    const n = nidanaNumber(id);
+    return linkLowsNow.some((low) => n === low || n === low + 1);
+  };
+  // Enlaces que se romperían si se pierden las 2 elegidas.
+  const brokenLinks =
+    picks.length === 2
+      ? (() => {
+          const rest = Object.fromEntries(
+            myCarried.filter((c) => !picks.includes(c.nidana)).map((c) => [c.realm, c.nidana])
+          );
+          const after = new Set(nidanaLinkLows(rest));
+          return linkLowsNow.filter((low) => !after.has(low));
+        })()
+      : [];
+  const warning =
+    brokenLinks.length > 0
+      ? t("fan.betLinkWarn", { links: brokenLinks.map((l) => `${l}–${l + 1}`).join(", ") })
+      : null;
+  useEffect(() => {
+    if (warning && getNarratorMode() !== "text") narrate(warning, { source: "fandango", priority: 2 });
+  }, [warning]);
   const boxStyle: CSSProperties = {
     marginTop: 20,
     padding: "16px 12%",
@@ -221,6 +254,14 @@ function SquareKarma666Block({
       return (
         <div style={boxStyle}>
           {t("fan.betProposed", { name: REALM_AVATAR_NAME[pendingSnakeBet.targetAvatar] })}
+          {pendingSnakeBet.stake && (
+            <div style={{ marginTop: 6, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+              <span style={{ fontSize: 12, opacity: 0.85 }}>{t("fan.betStake")}</span>
+              {pendingSnakeBet.stake.map((id) => (
+                <MiniCoin key={id} nidana={id} />
+              ))}
+            </div>
+          )}
         </div>
       );
     }
@@ -253,18 +294,77 @@ function SquareKarma666Block({
     <div style={boxStyle}>
       <div style={{ marginBottom: 4 }}>{t("fan.betPropose")}</div>
       <div style={{ marginBottom: 8, fontSize: 12, opacity: 0.85 }}>{t("fan.betRule")}</div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <div style={{ marginBottom: 6, fontSize: 12 }}>{t("fan.betPickAvatar")}</div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
         {eligibleTargets.map((kind) => (
           <button
             key={kind}
             type="button"
-            onClick={() => onRequest(kind)}
-            style={buttonStyle}
+            aria-pressed={target === kind}
+            onClick={() => setTarget(kind)}
+            style={{
+              ...buttonStyle,
+              background: target === kind ? "rgba(255,170,120,0.35)" : buttonStyle.background,
+              border: target === kind ? "1px solid #ffb07a" : buttonStyle.border,
+            }}
           >
             {REALM_AVATAR_NAME[kind]}
           </button>
         ))}
       </div>
+      {target && (
+        <>
+          <div style={{ margin: "12px 0 6px", fontSize: 12 }}>{t("fan.betPickNidanas")}</div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+            {myIds.map((id) => {
+              const on = picks.includes(id);
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => togglePick(id)}
+                  title={NIDANAS[id].label}
+                  style={{
+                    position: "relative",
+                    padding: 4,
+                    borderRadius: "50%",
+                    border: on ? "2px solid #ffb07a" : "2px solid transparent",
+                    background: on ? "rgba(255,170,120,0.25)" : "transparent",
+                    cursor: "pointer",
+                    opacity: !on && picks.length >= 2 ? 0.45 : 1,
+                  }}
+                >
+                  <MiniCoin nidana={id} />
+                  {inLink(id) && (
+                    <span style={{ position: "absolute", right: -4, top: -4, fontSize: 12 }}>🔗</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          {warning && (
+            <div style={{ marginTop: 10, fontSize: 12, color: "#ffd7a8", fontWeight: 600 }}>{warning}</div>
+          )}
+          <button
+            type="button"
+            disabled={picks.length !== 2}
+            onClick={() => {
+              if (picks.length === 2) onRequest(target, [picks[0], picks[1]]);
+              setTarget(null);
+              setPicks([]);
+            }}
+            style={{
+              ...buttonStyle,
+              marginTop: 12,
+              opacity: picks.length === 2 ? 1 : 0.4,
+              cursor: picks.length === 2 ? "pointer" : "default",
+            }}
+          >
+            {t("fan.betConfirm")}
+          </button>
+        </>
+      )}
     </div>
   );
 }
@@ -755,7 +855,7 @@ export function FandangoWindow({
   // 20 nov 2026 — las Nidanas apostadas en Square Karma 666 no se pueden
   // ofrecer ni pedir mientras dure la apuesta (el reducer también lo
   // impide; aquí solo se dejan de ofrecer).
-  const staked = new Set<NidanaId>(activeSnakeBet?.stake ?? []);
+  const staked = new Set<NidanaId>([...(activeSnakeBet?.stake ?? []), ...(pendingSnakeBet?.stake ?? [])]);
   const tradeMine = mine.filter((e) => !staked.has(e.nidana));
   const tradeOpportunities = rivalOpportunities.filter((o) => !staked.has(o.need));
 
@@ -900,6 +1000,7 @@ export function FandangoWindow({
           carriedNidanaCount={myCarriedNidanaCount}
           pendingSnakeBet={pendingSnakeBet}
           activeSnakeBet={activeSnakeBet}
+          myCarried={mine}
           onRequest={onRequestSnakeBet}
           onAccept={onAcceptSnakeBet}
           onRefuse={() => onRefuseSnakeBet()}

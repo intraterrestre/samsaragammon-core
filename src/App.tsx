@@ -1525,8 +1525,8 @@ nidanaCoinSide={nidanaSide}
       // Dharma 777, pedido de Federico. Ver reducer.ts
       // (REQUEST_SNAKE_BET/ACCEPT_SNAKE_BET/REFUSE_SNAKE_BET/
       // DECLARE_DHARMA_777).
-      onRequestSnakeBet={(player, targetAvatar) =>
-        !botBlocks() && dispatch({ type: "REQUEST_SNAKE_BET", player, targetAvatar })
+      onRequestSnakeBet={(player, targetAvatar, stake) =>
+        !botBlocks() && dispatch({ type: "REQUEST_SNAKE_BET", player, targetAvatar, stake })
       }
       onAcceptSnakeBet={() => { if (botBlocks()) return; dispatch({ type: "ACCEPT_SNAKE_BET" }); }}
       onRefuseSnakeBet={(skySign?: boolean) => { if (botBlocks()) return; dispatch({ type: "REFUSE_SNAKE_BET", skySign }); }}

@@ -234,7 +234,7 @@ nidanaCoinSide: "front" | "back";
   // onSendTradeOffer arriba: siempre pasadas, no opcionales.
   // Ver reducer.ts (REQUEST_SNAKE_BET/ACCEPT_SNAKE_BET/REFUSE_SNAKE_BET/
   // DECLARE_DHARMA_777).
-  onRequestSnakeBet: (player: PlayerId, targetAvatar: RealmPieceKind) => void;
+  onRequestSnakeBet: (player: PlayerId, targetAvatar: RealmPieceKind, stake: [NidanaId, NidanaId]) => void;
   onAcceptSnakeBet: () => void;
   onRefuseSnakeBet: (skySign?: boolean) => void;
   onDeclareDharma777: (
@@ -3114,8 +3114,8 @@ return (
   }
   pendingSnakeBet={state.pendingSnakeBet}
   activeSnakeBet={state.snakeBet}
-  onRequestSnakeBet={(targetAvatar) => {
-    onRequestSnakeBet(state.turn, targetAvatar);
+  onRequestSnakeBet={(targetAvatar, stake) => {
+    onRequestSnakeBet(state.turn, targetAvatar, stake);
   }}
   onAcceptSnakeBet={() => {
     onAcceptSnakeBet();
