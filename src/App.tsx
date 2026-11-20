@@ -1,4 +1,6 @@
 // src/App.tsx
+import { isBrunoEraDone } from "./UI/lessonGate";
+import { isNarrating } from "./UI/narrator";
 import React, {
   useCallback,
   useEffect,
@@ -620,9 +622,32 @@ useEffect(() => {
   // segundos con el cartel en pantalla antes de arrancar.
   const introDelayMs =
     beginnerMode && realmKey === "hungry_ghost" ? 9000 : 800;
-  window.setTimeout(() => {
+  const startIntro = () => {
     setRealmIntroMuted(false);
     setActiveRealmIntro(introSrc);
+  };
+  // 20 nov 2026 — Federico: "otra vez el video de Bruno se disparó antes
+  // de que terminara la explicación de Buddha". Los 9 s no bastaban si el
+  // cartel salía tarde (turno de Buddha, otro cartel hablando) o si la voz
+  // tardaba más. Ahora, en JUEGA CON BUDDHA con ayudas, después de esos
+  // 9 s el video espera a que el cartel de Bruno haya salido y Buddha haya
+  // terminado de hablar (máximo 60 s, por si algo falla).
+  const waitForBuddha = beginnerMode && !helpsOff && realmKey === "hungry_ghost";
+  window.setTimeout(() => {
+    if (!waitForBuddha) return startIntro();
+    const startedAt = Date.now();
+    let idleSince = 0;
+    const poll = () => {
+      const idle = isBrunoEraDone() && !isNarrating();
+      if (idle) idleSince = idleSince || Date.now();
+      else idleSince = 0;
+      if ((idle && Date.now() - idleSince >= 800) || Date.now() - startedAt > 60_000) {
+        startIntro();
+      } else {
+        window.setTimeout(poll, 400);
+      }
+    };
+    poll();
   }, introDelayMs);
 
 }, [state.realmAscension]);

@@ -128,7 +128,8 @@ import { getBuddhaHelp, type HelpTopic } from "../game/tutorial/help";
 import { useI18n, translate } from "../i18n";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { Narrate, NarratorSwitch } from "./NarratorSwitch";
-import { isNarrating, narrate } from "./narrator";
+import { isNarrating, narrate, getNarratorMode } from "./narrator";
+import { markBrunoEraDone, resetLessonGate } from "./lessonGate";
 import { LessonCard } from "./LessonCard";
 import lotusSeal from "../assets/lotus_seal.webp";
 import {
@@ -1646,6 +1647,16 @@ const [lessonSlotReady, setLessonSlotReady] = React.useState(false);
 // Lección que está ahora en el globo (mensaje + si es urgente), para
 // saber si una urgente puede interrumpirla.
 const lessonShowingRef = React.useRef<{ id: LessonId; message: string; urgent: boolean } | null>(null);
+// 20 nov 2026 — última explicación de Buddha, para el botón fijo
+// "Repetir explicación" (el 🔊 ⟳ del cartel desaparecía con el cartel).
+const [lastLesson, setLastLesson] = React.useState<{ id: LessonId; message: string } | null>(null);
+// Señal para App: el video de Bruno espera a que termine la explicación.
+React.useEffect(() => {
+  resetLessonGate();
+}, []);
+React.useEffect(() => {
+  if (!transientDharma && lastLesson?.id === "brunoEra") markBrunoEraDone();
+}, [transientDharma, lastLesson]);
 
 // 4 oct 2026 — resalta el panel de destinos mientras Buddha lo explica.
 const optionsLessonOn =
@@ -1752,6 +1763,7 @@ React.useEffect(() => {
     lesson.vars?.(state, state.turn, (k) => t(k))
   );
   lessonShowingRef.current = { id: lesson.id, message, urgent: !!lesson.urgent || !!lesson.steady };
+  setLastLesson({ id: lesson.id, message });
   fireDharmaEvent(message, false, false, LESSON_MS);
 }, [
   beginnerMode,
@@ -2048,6 +2060,21 @@ React.useEffect(() => {
 const lessonOnScreen =
   !!transientDharma &&
   lessonShowingRef.current?.message === transientDharma.message;
+
+// Vuelve a mostrar (y a decir, si la voz está activa) la última explicación.
+const replayLastLesson = () => {
+  if (!lastLesson || transientDharma) return;
+  lessonShowingRef.current = { id: lastLesson.id, message: lastLesson.message, urgent: true };
+  if (getNarratorMode() !== "text") narrate(lastLesson.message, { source: "lesson", force: true });
+  fireDharmaEvent(lastLesson.message, false, false, LESSON_MS);
+};
+const showReplayButton =
+  beginnerMode &&
+  !helpsOff &&
+  !!lastLesson &&
+  !transientDharma &&
+  !avatarVideoPlaying &&
+  !state.winner;
 const buddhaMessage = lessonOnScreen ? "" : transientDharma?.message ?? "";
 
 // 3 oct 2026 — pedido de Federico: el cartel de Nidanas "no se entiende
@@ -2627,6 +2654,19 @@ return (
       {isBotTurn && !botPaused &&
         createPortal(
           <div className="botThinking" aria-live="polite">☸ {t("bot.thinking")}</div>,
+          document.body
+        )}
+
+      {showReplayButton &&
+        createPortal(
+          <button
+            type="button"
+            className="bwbReplayLesson"
+            onClick={replayLastLesson}
+            aria-label={t("lesson.replay")}
+          >
+            🔊 {t("lesson.replay")}
+          </button>,
           document.body
         )}
 

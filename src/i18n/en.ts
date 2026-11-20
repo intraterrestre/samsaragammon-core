@@ -134,6 +134,7 @@ export const en = {
   "fan.betActive": "🐍 SQUARE KARMA 666 ({who}) on {name}: {n} turns left",
   "fan.betYours": "yours",
   "fan.betRivals": "rival's",
+  "lesson.replay": "Repeat explanation",
   "narr.yourTurn": "Your turn.",
   "fan.betStake": "At stake:",
   "fan.betProposed": "🐍 SQUARE KARMA 666 proposed on {name}: waiting for the rival's reply.",

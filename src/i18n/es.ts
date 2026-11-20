@@ -128,6 +128,7 @@ export const es: Dictionary = {
   "fan.betActive": "🐍 SQUARE KARMA 666 ({who}) sobre {name}: quedan {n} turnos",
   "fan.betYours": "tuya",
   "fan.betRivals": "del rival",
+  "lesson.replay": "Repetir explicación",
   "narr.yourTurn": "Tu turno.",
   "fan.betStake": "En juego:",
   "fan.betProposed": "🐍 SQUARE KARMA 666 propuesta sobre {name}: esperando la respuesta del rival.",
