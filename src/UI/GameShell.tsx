@@ -125,6 +125,7 @@ import { getBuddhaHelp, type HelpTopic } from "../game/tutorial/help";
 import { useI18n, translate } from "../i18n";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { Narrate, NarratorSwitch } from "./NarratorSwitch";
+import { isNarrating } from "./narrator";
 import { LessonCard } from "./LessonCard";
 import lotusSeal from "../assets/lotus_seal.webp";
 import {
@@ -987,13 +988,31 @@ const fireDharmaEvent = React.useCallback(
       });
     }
 
-    dharmaHideTimerRef.current = window.setTimeout(() => {
+    // 20 nov 2026 — si Buddha sigue leyendo el cartel en voz alta cuando
+    // se acaba el tiempo, el cartel espera a que termine (ver narrator.ts).
+    const fadeOut = () => {
       setTransientDharma((cur) => (cur ? { ...cur, fading: true } : cur));
 
       dharmaFadeTimerRef.current = window.setTimeout(() => {
         setTransientDharma(null);
       }, 700);
-    }, durationMs);
+    };
+    const waitVoiceThenFade = () => {
+      if (!isNarrating()) {
+        fadeOut();
+        return;
+      }
+      const startedAt = Date.now();
+      const poll = () => {
+        if (isNarrating() && Date.now() - startedAt < 25_000) {
+          dharmaHideTimerRef.current = window.setTimeout(poll, 400);
+        } else {
+          dharmaHideTimerRef.current = window.setTimeout(fadeOut, 1_200);
+        }
+      };
+      poll();
+    };
+    dharmaHideTimerRef.current = window.setTimeout(waitVoiceThenFade, durationMs);
   },
   []
 );
@@ -1658,12 +1677,17 @@ React.useEffect(() => {
   // Una lección urgente ahora interrumpe a una lección NO urgente; nunca
   // a los demás mensajes del juego.
   const showing = lessonShowingRef.current;
+  // 20 nov 2026 — Federico: "sigue cortando al narrador en medio de una
+  // explicación". Jerarquía: mientras Buddha está leyendo un cartel en voz
+  // alta, ninguna lección lo reemplaza (ni las urgentes). La siguiente
+  // espera en la cola y sale cuando la voz termina y el cartel se retira.
   const canInterrupt =
     !!transientDharma &&
     !transientDharma.fading &&
     !!showing &&
     !showing.urgent &&
-    transientDharma.message === showing.message;
+    transientDharma.message === showing.message &&
+    !isNarrating();
   if (!canInterrupt && (!lessonSlotReady || transientDharma)) return;
 
   const lesson = pickLesson(

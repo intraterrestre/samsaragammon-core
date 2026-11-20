@@ -266,6 +266,12 @@ export function narrate(text: string, opts: NarrateOptions): number | null {
   return id;
 }
 
+// ¿Está Buddha hablando (o a punto de hablar)? GameShell lo usa para no
+// retirar un cartel mientras se está leyendo (20 nov 2026).
+export function isNarrating(): boolean {
+  return isBusy();
+}
+
 // Calla. Con id, solo si lo que suena es eso (un cartel que se cierra no
 // debe callar una lectura de Buddha que empezó después).
 export function stopNarration(id?: number | null): void {

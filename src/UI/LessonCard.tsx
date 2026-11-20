@@ -7,7 +7,7 @@
 
 import React from "react";
 import { useI18n } from "../i18n";
-import { narrate, useNarration, useNarrator } from "./narrator";
+import { narrate, stopNarration, useNarration, useNarrator } from "./narrator";
 
 type Props = {
   message: string;
@@ -99,7 +99,28 @@ export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, 
   // reduce a un botón de repetir; si la voz falla, el texto vuelve solo.
   const { t } = useI18n();
   useNarration(message, { source: "lesson" });
-  const voiceOnly = useNarrator().effective === "voice";
+  const narrator = useNarrator();
+  const voiceOnly = narrator.effective === "voice";
+  // 20 nov 2026 — botón "repetir" también en AMBOS (si alguien se distrae).
+  const showRepeat = narrator.effective !== "text" && narrator.available;
+  // Lo repetido también se calla si el cartel se cierra.
+  const repeatIdRef = React.useRef<number | null>(null);
+  React.useEffect(() => () => stopNarration(repeatIdRef.current), []);
+  const repeatButton = showRepeat ? (
+    <button
+      type="button"
+      className="bwbNarratorRepeat"
+      aria-label={t("narrator.repeat")}
+      title={t("narrator.repeat")}
+      onClick={(e) => {
+        e.stopPropagation();
+        repeatIdRef.current = narrate(message, { source: "lesson", force: true });
+      }}
+      onPointerDown={(e) => e.stopPropagation()}
+    >
+      🔊 ⟳
+    </button>
+  ) : null;
 
   const dragging = drag.x !== 0 || drag.y !== 0;
   const away = Math.max(Math.abs(drag.x) / 160, Math.abs(drag.y) / 80);
@@ -133,19 +154,7 @@ export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, 
         <span className="bwbLessonCardIcon" aria-hidden="true">☸</span>
       )}
       {voiceOnly ? (
-        <button
-          type="button"
-          className="bwbNarratorRepeat"
-          aria-label={t("narrator.repeat")}
-          title={t("narrator.repeat")}
-          onClick={(e) => {
-            e.stopPropagation();
-            narrate(message, { source: "lesson", force: true });
-          }}
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          🔊 ⟳
-        </button>
+        repeatButton
       ) : (
       <span>
         {/* Si la lección trae título (primera línea), va destacado. */}
@@ -172,6 +181,7 @@ export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, 
         )}
       </span>
       )}
+      {!voiceOnly && repeatButton}
       {!voiceOnly && onDisableHelps && disableHelpsLabel && (
         <button
           type="button"
