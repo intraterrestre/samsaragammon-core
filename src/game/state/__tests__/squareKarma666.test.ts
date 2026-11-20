@@ -1,7 +1,8 @@
 // 20 nov 2026 — Cierre de Square Karma 666 (aprobado por Federico).
 //
-//   · Ganar: sin cambios (captura con la Serpiente en uno de los 3 turnos
-//     propios del apostador → el Avatar objetivo recibe su loto).
+//   · Ganar: capturar con la Serpiente un AVATAR rival, en cualquier reino,
+//     en uno de los 3 turnos propios del apostador → el Avatar objetivo
+//     recibe su loto. Capturar un Veneno no basta.
 //   · Perder: las Nidanas apostadas que el apostador TODAVÍA porta vuelven
 //     al tablero, a casillas sin pieza y sin otra Nidana. No pasan al rival.
 //   · Las Nidanas apostadas no se pueden intercambiar en Fandango.
@@ -254,12 +255,11 @@ for (const bettor of ["P1", "P2"] as PlayerId[]) {
       expect(onBoard(end).filter((x) => x === N1 || x === N2).length).toBe(2);
     });
 
-    it("GANAR: captura con la Serpiente → loto para el objetivo; conserva sus Nidanas", () => {
-      let s = accepted(bettor);
-      s = quiet(s); // turno del rival
+    /** Turno del apostador con Margot y Oriol apilados (impulso Gallo,
+     *  pueden capturar) y una pieza rival delante de su Serpiente. */
+    function snakeShot(put: (s: GameState, target: number) => GameState): { s: GameState; m: LegalMove; target: number } | null {
+      let s = quiet(accepted(bettor)); // turno del rival → turno del apostador
       expect(s.turn).toBe(bettor);
-      // Desde Oriol solo captura un Avatar que empieza el turno apilado con
-      // otro propio: Margot y Oriol del apostador juntos en la casilla 8.
       const stackPos = bettor === "P1" ? 8 : R(8);
       s = {
         ...s,
@@ -272,30 +272,44 @@ for (const bettor of ["P1", "P2"] as PlayerId[]) {
           },
         },
       } as GameState;
-      let won: GameState | null = null;
       const snakePos = s.pieces[bettor].snake.pos;
       const step = bettor === "P1" ? 1 : -1;
-      for (let d = 1; d <= 6 && !won; d++) {
+      for (let d = 1; d <= 6; d++) {
         const target = (((snakePos + step * d) % 24) + 24) % 24;
-        if (pieceAt(s, target)) continue;
-        const t = {
-          ...s,
-          phase: "rolled",
-          rollOptions: [d, d === 6 ? 5 : 6],
-          realmPieces: {
-            ...s.realmPieces,
-            [rival]: { ...s.realmPieces[rival], hungry_ghost: avatar("hungry_ghost", target) },
-          },
-        } as GameState;
+        if (pieceAt(s, target) || canonicalRealmFromPos(target) === "humans") continue;
+        const t = put({ ...s, phase: "rolled", rollOptions: [d, d === 6 ? 5 : 6] } as GameState, target);
         const m = getAllLegalMoves(t, bettor).find(
-          (x) => x.option.meaning === "IMPACT" && (x.venom === "snake" || x.option.pieceKind === "snake")
+          (x) => x.option.meaning === "IMPACT" && x.option.toPos === target && (x.venom === "snake" || x.option.pieceKind === "snake")
         );
-        if (m) won = applyMove(t, bettor, m);
+        if (m) return { s: t, m, target };
       }
-      expect(won, "no se encontró ninguna captura con Serpiente de prueba").not.toBeNull();
-      expect(won!.snakeBet).toBeNull();
-      expect(won!.consolidatedAvatars[bettor].hungry_ghost).toBe(true);
-      expect(carried(won!, bettor)).toEqual(expect.arrayContaining([N1, N2]));
+      return null;
+    }
+
+    it("GANAR: la Serpiente captura un Avatar rival FUERA de Humanos → loto; conserva sus Nidanas", () => {
+      const shot = snakeShot((t, target) => ({
+        ...t,
+        realmPieces: { ...t.realmPieces, [rival]: { ...t.realmPieces[rival], hungry_ghost: avatar("hungry_ghost", target) } },
+      } as GameState));
+      expect(shot, "no se encontró ninguna captura con Serpiente de prueba").not.toBeNull();
+      expect(canonicalRealmFromPos(shot!.target)).not.toBe("humans");
+      const won = applyMove(shot!.s, bettor, shot!.m);
+      expect(won.snakeBet).toBeNull();
+      expect(won.consolidatedAvatars[bettor].hungry_ghost).toBe(true);
+      expect(carried(won, bettor)).toEqual(expect.arrayContaining([N1, N2]));
+    });
+
+    it("NO GANA: la Serpiente captura un Veneno rival → la apuesta sigue y gasta el turno", () => {
+      const shot = snakeShot((t, target) => ({
+        ...t,
+        pieces: { ...t.pieces, [rival]: { ...t.pieces[rival], pig: venom(target) } },
+      } as GameState));
+      expect(shot, "no se encontró ninguna captura de Veneno de prueba").not.toBeNull();
+      const before = shot!.s.snakeBet!.roundsLeft;
+      const after = applyMove(shot!.s, bettor, shot!.m);
+      expect(after.pieces[rival].pig.inLimbo).toBe(true); // la captura ocurrió
+      expect(after.consolidatedAvatars[bettor].hungry_ghost).toBeFalsy();
+      expect(after.snakeBet?.roundsLeft).toBe(before - 1);
     });
 
     it("FANDANGO: las apostadas no se pueden ofrecer ni pedir; las demás sí", () => {

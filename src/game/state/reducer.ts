@@ -2422,8 +2422,13 @@ if (!didCapture) {
       if (state.snakeBet) {
         const bet = state.snakeBet;
         const isBettorMoving = me === bet.byPlayer;
+        // 20 nov 2026 — regla cerrada con Federico (tras simular partidas
+        // completas): la apuesta se gana capturando con la Serpiente un
+        // AVATAR rival, en cualquier reino. Capturar un Veneno ya no
+        // basta. Relación directa con el 777 (perdonar un Avatar).
         const capturedByThisSnake =
           didCapture &&
+          capturedWasAvatar &&
           (option.venomId === "snake" || option.pieceKind === "snake");
 
         if (isBettorMoving && capturedByThisSnake) {
