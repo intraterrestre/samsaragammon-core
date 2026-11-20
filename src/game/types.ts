@@ -410,14 +410,11 @@ export type GameState = {
   // activa, en curso de cacería).
   pendingSnakeBet: { byPlayer: PlayerId; targetAvatar: RealmPieceKind } | null;
 
-  // La apuesta activa, si el rival ya aceptó. roundsLeft se decrementa
-  // exactamente una vez por ciclo P1+P2 completo (ver reducer.ts,
-  // CONSCIOUS_MOVE: se decrementa cuando mueve el jugador QUE NO
-  // apostó, nunca cuando mueve el propio apostador — así un ciclo
-  // completo real, no el contador del Orquestador, que tiene otra
-  // semántica). stake identifica cuáles 2 Nidanas del apostador quedan
-  // en juego — el PAGO físico si pierde queda deliberadamente sin
-  // resolver en V0 (ver settleSnakeBetStake en reducer.ts).
+  // La apuesta activa, si el rival ya aceptó. roundsLeft = turnos que le
+  // quedan al apostador (solo sus turnos cuentan; ver consumeBettorTurn
+  // en reducer.ts). stake = las 2 Nidanas apostadas: no se pueden
+  // intercambiar mientras dure la apuesta y, si se pierde, las que el
+  // apostador todavía porta vuelven al tablero (resolveSnakeBetEnd).
   snakeBet: {
     byPlayer: PlayerId;
     targetAvatar: RealmPieceKind;

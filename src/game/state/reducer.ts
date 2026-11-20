@@ -19,7 +19,7 @@ import { makeGameId } from "../Vestigium";
 import { behaviorAfterMove } from "../behavior/behavior";
 import { recordMove } from "../behavior/patternEngine";
 import { realmFromPos, canonicalRealmFromPos } from "../../UI/realm";
-import { SNAKE_BET_ROUNDS, settleSnakeBetStake } from "../snakeBet";
+import { SNAKE_BET_ROUNDS } from "../snakeBet";
 import { getDharma777Opportunity, getDharma777EligibleTargets } from "../dharma777";
 import { updateDecisionSignature } from "../Karma/updateDecisionSignature";
 import { computeKarmaTurn } from "../engine/computeKarmaTurn";
@@ -243,6 +243,49 @@ const forwardStep = (player: PlayerId): 1 | -1 => (player === "P1" ? 1 : -1);
 // siempre) para los usos que no son "de un jugador" (nacimientos fijos,
 // Nidanas del tablero…). Las recolocaciones tras una captura pasan el
 // sentido de giro del dueño de la pieza (ver forwardStep).
+// 20 nov 2026 — Federico: "corrige el fallo que permite que una Nidana
+// nueva sobrescriba otra". findEmptySpawnPos solo mira piezas, no
+// Nidanas sueltas: una Nidana que aparecía (cada 3 lances, o por un
+// evento) o que caía al romperse un escudo podía caer encima de otra y
+// borrarla. Esta función busca una casilla sin pieza Y sin Nidana; si no
+// la hay, una sin Nidana aunque tenga pieza. Con 12 Nidanas como máximo
+// y 24 casillas siempre existe una casilla sin Nidana.
+function findNidanaDropPos(
+  state: Pick<GameState, "pieces" | "realmPieces" | "trackSize">,
+  boardNidanas: GameState["boardNidanas"],
+  preferredPos: number
+): number {
+  const size = state.trackSize;
+  const start = ((preferredPos % size) + size) % size;
+  const hasNidana = (pos: number) => Boolean(boardNidanas[pos]);
+  for (let offset = 0; offset < size; offset++) {
+    const pos = (start + offset) % size;
+    if (!hasNidana(pos) && !isCellOccupiedByPiece(state, pos)) return pos;
+  }
+  for (let offset = 0; offset < size; offset++) {
+    const pos = (start + offset) % size;
+    if (!hasNidana(pos)) return pos;
+  }
+  return start;
+}
+
+function isCellOccupiedByPiece(
+  state: Pick<GameState, "pieces" | "realmPieces">,
+  pos: number
+): boolean {
+  for (const player of ["P1", "P2"] as PlayerId[]) {
+    for (const kind of BASE_PIECES) {
+      const p = state.pieces[player][kind];
+      if (!p.inLimbo && p.pos === pos) return true;
+    }
+    for (const kind of REALM_PIECE_ORDER) {
+      const p = state.realmPieces[player]?.[kind];
+      if (p && p.unlocked && !p.inLimbo && p.pos === pos) return true;
+    }
+  }
+  return false;
+}
+
 function findEmptySpawnPos(
   state: GameState,
   preferredPos: number,
@@ -327,6 +370,10 @@ function pickMaraRebirthPos(state: GameState): number {
   return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
+function isStaked(state: GameState, id: NidanaId): boolean {
+  return Boolean(state.snakeBet?.stake.includes(id));
+}
+
 // Rule Canon Repair (30 septiembre 2026) — CANON DE SQUARE KARMA 666:
 // el apostador dispone de sus PRÓXIMOS 3 TURNOS tras la aceptación.
 // Cuenta el turno, no cómo terminó: una jugada, un PASS o un Round
@@ -342,13 +389,70 @@ function consumeBettorTurn(
   if (!bet || bet.byPlayer !== endingPlayer) return bet;
   const roundsLeft = bet.roundsLeft - 1;
   if (roundsLeft > 0) return { ...bet, roundsLeft };
-  console.log("SNAKE BET LOST", {
-    byPlayer: bet.byPlayer,
-    targetAvatar: bet.targetAvatar,
-    stake: bet.stake,
-  });
-  settleSnakeBetStake({ byPlayer: bet.byPlayer, stake: bet.stake });
+  // Se acabaron los turnos: la apuesta desaparece aquí y el reducer
+  // envolvente (resolveSnakeBetEnd) decide si se perdió o se canceló, y
+  // devuelve al tablero las Nidanas apostadas.
   return null;
+}
+
+// 20 nov 2026 — CIERRE DE SQUARE KARMA 666 (aprobado por Federico):
+//   · Ganar (la Serpiente captura en uno de los 3 turnos): sin cambios,
+//     el Avatar objetivo recibe su loto (CONSCIOUS_MOVE).
+//   · Perder (se acaban los 3 turnos): las Nidanas apostadas que el
+//     apostador TODAVÍA porta vuelven al tablero, cada una a una casilla
+//     libre al azar sin otra Nidana. No pasan al rival. La que ya no
+//     porta (robada al romperse un escudo, o suelta) ya la perdió.
+//   · Cancelar sin penalización: si el Avatar objetivo obtiene su loto
+//     por otra vía (Round Dharma 777) mientras dura la apuesta.
+// Se resuelve aquí, una sola vez después de cada acción, para no tocar
+// los cuatro sitios que terminan un turno (jugada, PASS, pase
+// automático, 777).
+function resolveSnakeBetEnd(prev: GameState, next: GameState, action: Action): GameState {
+  if (action.type === "SET_MULTIPLAYER_STATE" || action.type === "RESET") return next;
+  if (action.type.startsWith("DEV_")) return next;
+
+  // Cancelación: el objetivo ya tiene loto y la apuesta sigue viva.
+  if (next.snakeBet) {
+    const bet = next.snakeBet;
+    if (next.consolidatedAvatars[bet.byPlayer]?.[bet.targetAvatar]) {
+      console.log("SNAKE BET CANCELLED (target already has its lotus)", bet);
+      return { ...next, snakeBet: null };
+    }
+    return next;
+  }
+
+  const bet = prev.snakeBet;
+  if (!bet) return next;
+  // Desapareció en esta acción. Si el objetivo tiene loto, fue victoria
+  // (o cancelación en el último turno): nada que pagar.
+  if (next.consolidatedAvatars[bet.byPlayer]?.[bet.targetAvatar]) return next;
+
+  console.log("SNAKE BET LOST", bet);
+  return returnStakeToBoard(next, bet.byPlayer, bet.stake);
+}
+
+function returnStakeToBoard(
+  state: GameState,
+  bettor: PlayerId,
+  stake: readonly NidanaId[]
+): GameState {
+  const carried = { ...state.avatarNidana[bettor] };
+  let board = { ...state.boardNidanas };
+  let changed = false;
+  for (const id of stake) {
+    const realm = (Object.keys(carried) as RealmPieceKind[]).find((r) => carried[r] === id);
+    if (!realm) continue; // ya no la porta: nada que devolver
+    delete carried[realm];
+    const pos = findNidanaDropPos(state, board, Math.floor(Math.random() * state.trackSize));
+    board = { ...board, [pos]: id };
+    changed = true;
+  }
+  if (!changed) return state;
+  return {
+    ...state,
+    avatarNidana: { ...state.avatarNidana, [bettor]: carried },
+    boardNidanas: board,
+  };
 }
 
 function detectVenomTrio(
@@ -455,7 +559,11 @@ function applyCollapseIfNeeded(
 // (llega Marino) florecen los lotos pendientes, sea cual sea la acción
 // que cambió la era (jugada real, saltos de prueba, atajos dev).
 export function reducer(state: GameState, action: Action): GameState {
-  return revealHumansLotuses(state, reducerCore(state, action));
+  return resolveSnakeBetEnd(
+    state,
+    revealHumansLotuses(state, reducerCore(state, action)),
+    action
+  );
 }
 
 function reducerCore(state: GameState, action: Action): GameState {
@@ -882,10 +990,9 @@ function reducerCore(state: GameState, action: Action): GameState {
         return { ...state, pendingSnakeBet: null };
       }
 
-      // Identifica las 2 Nidanas que quedan en juego — V0: las 2
-      // primeras que se encuentren, sin selección del jugador (ver
-      // nota en types.ts sobre settleSnakeBetStake, deliberadamente
-      // sin resolver el pago físico todavía).
+      // Identifica las 2 Nidanas que quedan en juego: las 2 primeras que
+      // se encuentren, sin selección del jugador. Si pierde, vuelven al
+      // tablero (ver resolveSnakeBetEnd).
       const carried = Object.values(state.avatarNidana[pending.byPlayer]).filter(
         (id): id is NidanaId => !!id,
       );
@@ -1034,6 +1141,9 @@ function reducerCore(state: GameState, action: Action): GameState {
       // mismo — mismo criterio de "defensa en profundidad" que
       // FORM_LINK, no confía solo en que la UI ya filtró.
       if (!myCarried.has(offer) || !rivalCarried.has(want)) return state;
+      // 20 nov 2026 — las Nidanas apostadas en Square Karma 666 no se
+      // pueden ofrecer ni pedir mientras dure la apuesta.
+      if (isStaked(state, offer) || isStaked(state, want)) return state;
 
       const trade: PendingTrade = { fromPlayer: player, offer, want };
       return { ...state, pendingTrade: trade };
@@ -1059,8 +1169,13 @@ function reducerCore(state: GameState, action: Action): GameState {
       const toRealm = (Object.keys(toAvatarNidana) as RealmPieceKind[]).find(
         (r) => toAvatarNidana[r] === trade.want,
       );
-      if (!fromRealm || !toRealm) {
-        // Ya no es válida (alguna de las dos se movió o se perdió
+      if (
+        !fromRealm ||
+        !toRealm ||
+        isStaked(state, trade.offer) ||
+        isStaked(state, trade.want)
+      ) {
+        // Ya no es válida (o alguna quedó apostada en Square Karma 666) (alguna de las dos se movió o se perdió
         // desde que se mandó) — se cae sola, sin romper nada.
         return { ...state, pendingTrade: null };
       }
@@ -1276,12 +1391,13 @@ for (const player of ["P1", "P2"] as PlayerId[]) {
         nidanaToSpawnOnRoll
           ? {
               ...state.boardNidanas,
-              [findEmptySpawnPos(
+              [findNidanaDropPos(
                 {
                   pieces: releasedPieces,
                   realmPieces: releasedPiecesRealm,
                   trackSize: state.trackSize,
-                } as GameState,
+                },
+                state.boardNidanas,
                 Math.floor(Math.random() * state.trackSize)
               )]: nidanaToSpawnOnRoll,
             }
@@ -2158,9 +2274,18 @@ if (capturedAvatarVacatedPos !== null) {
         },
       };
     } else {
+      // 20 nov 2026 — si en la casilla ya hay otra Nidana, la robada cae
+      // en la siguiente casilla sin Nidana (antes la sobrescribía).
+      const dropPos = nextBoardNidanas[finalToPos]
+        ? findNidanaDropPos(
+            { pieces: nextPieces, realmPieces: nextPiecesRealm, trackSize: state.trackSize },
+            nextBoardNidanas,
+            finalToPos
+          )
+        : finalToPos;
       nextBoardNidanas = {
         ...nextBoardNidanas,
-        [finalToPos]: shieldedNidana,
+        [dropPos]: shieldedNidana,
       };
     }
   }
@@ -2452,12 +2577,13 @@ if (!didCapture) {
         // que ya está en juego.
         const randomNidana = pickUnusedNidana(nextBoardNidanas, nextAvatarNidana);
         if (randomNidana) {
-          const nidanaSpawnPos = findEmptySpawnPos(
+          const nidanaSpawnPos = findNidanaDropPos(
             {
               pieces: nextPieces,
               realmPieces: nextPiecesRealm,
               trackSize: state.trackSize,
-            } as GameState,
+            },
+            nextBoardNidanas,
             finalToPos
           );
           nextBoardNidanas = {

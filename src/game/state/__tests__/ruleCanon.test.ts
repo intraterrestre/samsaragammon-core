@@ -214,6 +214,10 @@ describe("Square Karma 666: 3 turnos propios del apostador", () => {
       pieces: { ...s.pieces, P1: { ...s.pieces.P1, pig: venom(20) } },
       realmPieces: {
         ...s.realmPieces,
+        // 20 nov 2026: el 777 da el loto a OTRO Avatar (Margot, en Humanos);
+        // si se lo diera al objetivo de la apuesta, la apuesta se cancela
+        // (ver squareKarma666.test.ts).
+        P1: { ...s.realmPieces.P1, hell: avatar("hell", 23, { everCaptured: true }) },
         P2: { ...s.realmPieces.P2, hungry_ghost: avatar("hungry_ghost", 21) },
       },
       realmProgress: {
@@ -230,9 +234,9 @@ describe("Square Karma 666: 3 turnos propios del apostador", () => {
       player: "P1",
       option,
       allOptions: getMoveOptionsForPlayer(s, "P1"),
-      targetAvatar: "hungry_ghost",
+      targetAvatar: "hell",
     });
-    expect(s.consolidatedAvatars.P1.hungry_ghost).toBe(true);
+    expect(s.consolidatedAvatars.P1.hell).toBe(true);
     expect(s.snakeBet?.roundsLeft).toBe(2);
   });
 });
