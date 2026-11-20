@@ -7,9 +7,9 @@
 //
 // UN selector global por dispositivo (localStorage, como el idioma; nunca
 // viaja por GameState):
-//   "both"  — texto + voz (por defecto)
+//   "both"  — texto + voz
 //   "voice" — voz; los carteles de lección se reducen a un botón 🔊 ⟳
-//   "text"  — solo texto: narración desactivada
+//   "text"  — solo texto: narración desactivada (por defecto desde 20 nov)
 //
 // Reglas para que el juego siga ágil:
 //   - Una sola voz a la vez. Lo nuevo corta lo anterior, salvo que lo
@@ -77,7 +77,8 @@ function loadMode(): NarratorMode {
   } catch {
     // sin almacenamiento: modo por defecto
   }
-  return "both";
+  // 20 nov 2026: apagada por defecto; quien quiera voz la elige.
+  return "text";
 }
 
 let mode: NarratorMode = loadMode();
@@ -104,7 +105,10 @@ export function getNarratorMode(): NarratorMode {
 export function setNarratorMode(next: NarratorMode): void {
   mode = next;
   // Elegir de nuevo una opción con voz es pedir otro intento.
-  if (next !== "text" && synth) voiceFailed = false;
+  if (next !== "text" && synth) {
+    voiceFailed = false;
+    unlockVoice();
+  }
   try {
     localStorage.setItem(STORAGE_KEY, next);
   } catch {
@@ -151,19 +155,52 @@ export function toSpeech(text: string): string {
     .trim();
 }
 
+// 20 nov 2026 — en el Mac de Federico sonaba "terriblemente fea": macOS e
+// iOS traen voces de broma también en español (Eddy, Flo, Grandma…) y la
+// regla anterior ("la primera voz local") elegía Eddy por orden alfabético.
+// Ahora se puntúa cada voz y las de broma quedan fuera.
+const NOVELTY = [
+  "albert", "bad news", "bahh", "bells", "boing", "bubbles", "cellos", "good news",
+  "jester", "organ", "superstar", "trinoids", "whisper", "wobble", "zarvox", "fred",
+  "junior", "ralph", "kathy", "eddy", "flo", "grandma", "grandpa", "reed", "rocko",
+  "sandy", "shelley",
+];
+// Voces de sistema que suenan bien (Apple, Google, Microsoft).
+const GOOD = [
+  "mónica", "monica", "paulina", "jorge", "juan", "diego", "marisol", "francisca",
+  "daniel", "samantha", "karen", "serena", "kate", "moira", "arthur", "martha",
+];
+
+function voiceScore(v: SpeechSynthesisVoice, nav: string): number {
+  const name = v.name.toLowerCase();
+  if (NOVELTY.some((n) => name === n || name.startsWith(`${n} `) || name.startsWith(`${n}(`))) {
+    return -1;
+  }
+  let score = 0;
+  if (/premium|enhanced|mejorad|natural|neural/.test(name)) score += 50;
+  if (name.startsWith("google")) score += 40;
+  if (GOOD.some((g) => name.startsWith(g))) score += 30;
+  if (v.lang.toLowerCase().replace("_", "-") === nav) score += 10; // misma variante que el teléfono
+  if (v.default) score += 5;
+  return score;
+}
+
 function pickVoice(lang: string): SpeechSynthesisVoice | undefined {
   if (!synth) return undefined;
-  const voices = synth.getVoices();
   const base = lang.slice(0, 2).toLowerCase();
   const nav = (typeof navigator !== "undefined" ? navigator.language : "").toLowerCase();
-  const sameBase = voices.filter((v) => v.lang.toLowerCase().startsWith(base));
-  // La variante del propio teléfono (es-AR, es-ES, en-GB…), si coincide
-  // con el idioma del juego; luego una voz local; luego cualquiera.
-  return (
-    sameBase.find((v) => nav.startsWith(base) && v.lang.toLowerCase() === nav) ??
-    sameBase.find((v) => v.localService) ??
-    sameBase[0]
-  );
+  let best: SpeechSynthesisVoice | undefined;
+  let bestScore = -1;
+  for (const v of synth.getVoices()) {
+    if (!v.lang.toLowerCase().startsWith(base)) continue;
+    const score = voiceScore(v, nav);
+    if (score > bestScore) {
+      best = v;
+      bestScore = score;
+    }
+  }
+  // Si solo hay voces de broma, ninguna: decide el navegador con u.lang.
+  return best;
 }
 
 // ---------------------------------------------------------------- voz
@@ -257,20 +294,32 @@ export function useNarration(text: string | null | undefined, opts: NarrateOptio
 // ---------------------------------------------------------------- iPhone
 
 // Safari en iPhone no deja hablar hasta que el jugador toca la pantalla, y
-// los mensajes aparecen después (no dentro del toque). Al primer toque se
-// desbloquea la voz con una frase muda.
-if (synth && typeof window !== "undefined") {
-  const unlock = () => {
-    try {
-      const u = new SpeechSynthesisUtterance(" ");
-      u.volume = 0;
-      synth.speak(u);
-    } catch {
-      // sin voz: el texto sigue ahí
-    }
-    window.removeEventListener("pointerdown", unlock, true);
+// los mensajes aparecen después (no dentro del toque). Se desbloquea con
+// una frase muda: al elegir VOZ/AMBOS (ese toque ya es el gesto) o, si ya
+// venía elegida, en el primer toque. Con TEXTO no se toca la voz para nada.
+let unlocked = false;
+function unlockVoice(): void {
+  if (!synth || unlocked) return;
+  unlocked = true;
+  try {
+    const u = new SpeechSynthesisUtterance(" ");
+    u.volume = 0;
+    synth.speak(u);
+  } catch {
+    // sin voz: el texto sigue ahí
+  }
+}
+
+if (synth && typeof window !== "undefined" && mode !== "text") {
+  const onFirstTouch = () => {
+    unlockVoice();
+    window.removeEventListener("pointerdown", onFirstTouch, true);
   };
-  window.addEventListener("pointerdown", unlock, true);
-  // Algunas voces cargan tarde; pedirlas una vez acelera la primera frase.
-  synth.getVoices();
+  window.addEventListener("pointerdown", onFirstTouch, true);
+  try {
+    // Algunas voces cargan tarde; pedirlas una vez acelera la primera frase.
+    synth.getVoices();
+  } catch {
+    // ignorar
+  }
 }
