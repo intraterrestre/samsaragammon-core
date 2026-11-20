@@ -175,10 +175,6 @@ actors: {
   },
   pendingSnakeBet: null,
   snakeBet: null,
-  formedLinks: {
-    P1: [],
-    P2: [],
-  },
   pendingTrade: null,
   // Señales del cielo (nov 2026) — campos de nivel superior, cubiertos
   // por el spread de makeInitialState, sin bloque de merge aparte.
@@ -403,12 +399,6 @@ export function makeInitialState(
         ...initialState.avatarNidana.P2,
         ...(overrides.avatarNidana?.P2 ?? {}),
       },
-    },
-    formedLinks: {
-      ...initialState.formedLinks,
-      ...(overrides.formedLinks ?? {}),
-      P1: overrides.formedLinks?.P1 ?? initialState.formedLinks.P1,
-      P2: overrides.formedLinks?.P2 ?? initialState.formedLinks.P2,
     },
   };
 }

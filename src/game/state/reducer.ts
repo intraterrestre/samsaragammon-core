@@ -20,6 +20,7 @@ import { behaviorAfterMove } from "../behavior/behavior";
 import { recordMove } from "../behavior/patternEngine";
 import { realmFromPos, canonicalRealmFromPos } from "../../UI/realm";
 import { SNAKE_BET_ROUNDS } from "../snakeBet";
+import { nidanaLinkLows, MARA_ROLLS, MARA_LINK_ROLLS } from "../rules/nidanaLink";
 import { getDharma777Opportunity, getDharma777EligibleTargets } from "../dharma777";
 import { updateDecisionSignature } from "../Karma/updateDecisionSignature";
 import { computeKarmaTurn } from "../engine/computeKarmaTurn";
@@ -80,16 +81,6 @@ type Action =
       type: "DEV_SET_ALL_AVATAR_NIDANAS";
       avatarNidana: Record<PlayerId, Partial<Record<RealmPieceKind, NidanaId>>>;
     }
-  // v76 (28 agosto 2026) — FORM LINK, pedido de Federico: primer gesto
-  // real de Fandango (ver types.ts, GameState.formedLinks). NO es
-  // dev-only — a diferencia de las acciones DEV_* de arriba, esta la
-  // dispara cualquier jugador desde la ventana real. "low" es el número
-  // bajo del par consecutivo (6 → el link 6-7). El reducer vuelve a
-  // validar que el jugador de verdad porte ambas mitades ahora mismo
-  // (defensa en profundidad: el botón en FandangoWindow.tsx ya solo
-  // aparece para links realmente disponibles, pero no hay que confiar
-  // solo en la UI).
-  | { type: "FORM_LINK"; player: PlayerId; low: number }
   | { type: "REQUEST_SNAKE_BET"; player: PlayerId; targetAvatar: RealmPieceKind }
   | { type: "ACCEPT_SNAKE_BET" }
   | { type: "REFUSE_SNAKE_BET"; skySign?: boolean }
@@ -907,37 +898,6 @@ function reducerCore(state: GameState, action: Action): GameState {
       };
     }
 
-    case "FORM_LINK": {
-      const { player, low } = action;
-      // Solo el jugador con el turno forma sus propios links — mismo
-      // criterio que ya usa FandangoWindow para decidir qué lado es
-      // "YOUR NIDANAS" (ver GameShell.tsx, state.turn).
-      if (player !== state.turn) return state;
-      if (low < 1 || low > 11) return state;
-      if (state.formedLinks[player].includes(low)) return state;
-
-      // Vuelve a comprobar acá, no solo confía en que el botón de la UI
-      // ya filtró — mismo par bajo/alto que computeOwnLinks (
-      // nidanaLinks.ts), recalculado con NIDANA_LIST (índice 0 = número
-      // 1) para no importar nada de src/fandango desde game/state.
-      const carriedNumbers = new Set(
-        Object.values(state.avatarNidana[player])
-          .filter((id): id is NidanaId => !!id)
-          .map((id) => NIDANA_LIST.indexOf(id) + 1),
-      );
-      if (!carriedNumbers.has(low) || !carriedNumbers.has(low + 1)) {
-        return state;
-      }
-
-      return {
-        ...state,
-        formedLinks: {
-          ...state.formedLinks,
-          [player]: [...state.formedLinks[player], low],
-        },
-      };
-    }
-
     case "REQUEST_SNAKE_BET": {
       const { player, targetAvatar } = action;
       if (player !== state.turn) return state;
@@ -1139,7 +1099,7 @@ function reducerCore(state: GameState, action: Action): GameState {
       // "offer" tiene que ser algo que YO porte de verdad ahora mismo;
       // "want" tiene que ser algo que el rival porte de verdad ahora
       // mismo — mismo criterio de "defensa en profundidad" que
-      // FORM_LINK, no confía solo en que la UI ya filtró.
+      // las demás acciones, no confía solo en que la UI ya filtró.
       if (!myCarried.has(offer) || !rivalCarried.has(want)) return state;
       // 20 nov 2026 — las Nidanas apostadas en Square Karma 666 no se
       // pueden ofrecer ni pedir mientras dure la apuesta.
@@ -2043,11 +2003,18 @@ if (enemyRefsAtTarget.length >= 1) {
       delete nextAvatarNidana[opp][enemyRef.kind];
     } else {
       const capturedRealmPiece = nextPiecesRealm[opp][enemyRef.kind]!;
+      const capturedLink = nidanaLinkLows(nextAvatarNidana[opp])[0] ?? null;
       nextPiecesRealm[opp][enemyRef.kind] = {
         ...capturedRealmPiece,
         pos: -1,
         inLimbo: true,
-        maraLevel: 1,
+        // 20 nov 2026 — enlace de Nidanas (rules/nidanaLink.ts): si en
+        // este instante el dueño tiene un enlace, 3 lances en Mara en vez
+        // de 6. Queda fijado aquí: perder o ganar Nidanas después no lo
+        // cambia. maraLevel cuenta hasta 6 (ver ROLL), así que empezar
+        // en 4 deja 3 lances.
+        maraLevel: capturedLink != null ? MARA_ROLLS - MARA_LINK_ROLLS + 1 : 1,
+        maraLink: capturedLink,
         // v84 (6 septiembre 2026) — ver types.ts: esta captura real
         // cierra el camino normal de consolidación para este Avatar;
         // de acá en más necesita Snake Bet/Dharma 777 para consolidar.

@@ -79,6 +79,10 @@ export type RealmPieceState = SinglePieceState & {
   // case CONSCIOUS_MOVE). Opcional a propósito: los sitios de creación
   // existentes no necesitan tocarse, undefined se trata como false.
   everCaptured?: boolean;
+  // 20 nov 2026 — enlace de Nidanas: si al capturarlo su jugador tenía un
+  // enlace, número bajo de ese enlace (3 = enlace 3–4) y el Avatar pasa 3
+  // lances en Mara en vez de 6. null/undefined = espera normal.
+  maraLink?: number | null;
 };
 
 export type VenomTrioState = {
@@ -422,20 +426,8 @@ export type GameState = {
     stake: [NidanaId, NidanaId];
   } | null;
 
-  // v76 (28 agosto 2026) — FORM LINK (Fandango), pedido de Federico tras
-  // ver LINK AVAILABLE/RIVAL HAS WHAT YOU NEED en el tablero real: el
-  // primer gesto de mercado, sin trade todavía. Por jugador, la lista de
-  // links propios ya "formados" — cada entrada es el número BAJO del
-  // par consecutivo (6 significa el link 6-7 formado). Se guarda el
-  // número, no el NidanaId: el número es la biyección fija de la
-  // partida (ver NIDANA_NUMBER, nidanaNumberAssets.ts), así este estado
-  // no depende de qué Avatar porta cada cual. Formar un link es
-  // puramente declarativo — no mueve ni quita ninguna Nidana de su
-  // Avatar (siguen "vivas": pueden perderse, negociarse, etc. más
-  // adelante); solo registra el evento para que Fandango lo muestre
-  // aparte ("YOUR LINKS", ver FandangoWindow.tsx) en vez de bajo LINK
-  // AVAILABLE. Ver reducer.ts, case "FORM_LINK".
-  formedLinks: Record<PlayerId, number[]>;
+  // 20 nov 2026 — formedLinks (registro histórico de enlaces) eliminado:
+  // los enlaces se calculan en vivo (ver rules/nidanaLink.ts).
 
   // v77 (28 agosto 2026) — Fandango: FORM DEAL. La oferta de trade
   // pendiente ahora mismo, si alguna — null cuando no hay ninguna en
