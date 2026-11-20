@@ -43,20 +43,11 @@ import {
   listCarriedNidanas,
   computeOwnLinks,
   computeRivalOpportunities,
-  nidanaIdForNumber,
   type CarriedNidana,
   type OwnLink,
   type RivalOpportunity,
 } from "./nidanaLinks";
 
-// v76 (28 agosto 2026) — FORM LINK, pedido de Federico tras destripar
-// el Preset A en el tablero real ("ya podemos pasar a FORM LINK. Pero
-// no implementaría todavía el intercambio. Primero probaría el gesto
-// más elemental"). myFormedLinks: los links que YO (state.turn) ya
-// formé (ver GameState.formedLinks, reducer.ts case "FORM_LINK") —
-// números bajos del par ("6" = link 6-7). onFormLink: pide formar el
-// link con ese número bajo; GameShell.tsx arma el player real y
-// también dispara el sonido de confirmación antes de despachar.
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -64,8 +55,6 @@ type Props = {
   rivalNidanas: Partial<Record<RealmPieceKind, NidanaId>>;
   myLabel: string;
   rivalLabel: string;
-  myFormedLinks: number[];
-  onFormLink: (low: number) => void;
 
   // v77 (28 agosto 2026) — Fandango: FORM DEAL, pedido de Federico tras
   // corregir el diseño: "RIVAL HAS WHAT YOU NEED" señala la oportunidad
@@ -378,81 +367,10 @@ function MiniCoin({ nidana }: { nidana: NidanaId }) {
   );
 }
 
-// LINK AVAILABLE — ambas Nidanas de la pareja consecutiva ya están en
-// tus propios Avatares. Nada que negociar, el link ya existe.
-//
-// v76 (28 agosto 2026) — se agrega el botón FORM LINK por pedido de
-// Federico: "pulsas. Pequeño evento visual/sonoro satisfactorio: LINK
-// FORMED 6 → 7." "links" acá ya viene filtrada (ver FandangoWindow más
-// abajo) para no repetir un link que YA está formado — ese pasa a
-// mostrarse bajo YourLinksBlock en su lugar.
-function LinkAvailableBlock({
-  links,
-  onFormLink,
-}: {
-  links: OwnLink[];
-  onFormLink: (link: OwnLink) => void;
-}) {
-  const { t } = useI18n();
-  return (
-    <div style={{ marginTop: 14 }}>
-      <div
-        style={{
-          fontSize: 12,
-          letterSpacing: "0.06em",
-          color: "#9fd88a",
-          textAlign: "center",
-          marginBottom: 8,
-        }}
-      >
-        {t("fan.linkAvailable")}
-      </div>
-      {links.length === 0 ? (
-        <EmptyNote>{t("fan.none")}</EmptyNote>
-      ) : (
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            justifyContent: "center",
-            gap: 14,
-          }}
-        >
-          {links.map((link) => (
-            <div
-              key={`${link.numA}-${link.numB}`}
-              style={{ display: "flex", alignItems: "center", gap: 8 }}
-            >
-              <MiniCoin nidana={link.a} />
-              <span style={{ opacity: 0.45, fontSize: 13 }}>──</span>
-              <MiniCoin nidana={link.b} />
-              <button
-                onClick={() => onFormLink(link)}
-                style={{
-                  marginLeft: 4,
-                  height: 26,
-                  padding: "0 10px",
-                  borderRadius: "50%",
-                  border: "1px solid rgba(159,216,138,0.45)",
-                  background: "rgba(159,216,138,0.12)",
-                  color: "#c8ecb8",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: "0.04em",
-                  cursor: "pointer",
-                }}
-              >
-                {t("fan.formLink")}
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
-// YOUR LINKS — links ya formados (ver GameState.formedLinks). Se
+// TUS ENLACES — 20 nov 2026: enlaces EN VIVO (dos Nidanas de números
+// seguidos que llevas ahora mismo; ver game/rules/nidanaLink.ts). Ya no
+// hay botón ni registro: si pierdes una, el enlace desaparece. Se
 // muestra "discretamente" (pedido de Federico): sin sección visible
 // cuando todavía no hay ninguno, para no repetir el "None yet." de
 // arriba con algo que todavía no aplica la primera vez que se abre
@@ -498,26 +416,6 @@ function YourLinksBlock({ links }: { links: OwnLink[] }) {
   );
 }
 
-// LINK FORMED — flash transitorio, puramente local a esta ventana (no
-// necesita estado de partida). Pedido de Federico: "pequeño evento
-// visual/sonoro satisfactorio."
-function LinkFormedFlash({ link }: { link: { numA: number; numB: number } }) {
-  const { t } = useI18n();
-  return (
-    <div
-      style={{
-        marginTop: 10,
-        fontSize: 13,
-        fontWeight: 700,
-        letterSpacing: "0.06em",
-        color: "#c8ecb8",
-        textAlign: "center",
-      }}
-    >
-      {t("fan.linkFormed", { a: String(link.numA), b: String(link.numB) })}
-    </div>
-  );
-}
 
 // RIVAL HAS WHAT YOU NEED — una mitad es tuya, la otra todavía es del
 // rival. Esto NO es un link, es una oportunidad de trade — se muestra
@@ -813,8 +711,6 @@ export function FandangoWindow({
   rivalNidanas,
   myLabel,
   rivalLabel,
-  myFormedLinks,
-  onFormLink,
   myPlayer,
   pendingTrade,
   onSendTradeOffer,
@@ -838,13 +734,6 @@ export function FandangoWindow({
     // Solo al abrir: si tour cambia con la ventana abierta, no reinicia.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
-  // v76 (28 agosto 2026) — flash local "LINK FORMED X → Y", ver
-  // LinkFormedFlash arriba. Vive en este componente (no en GameShell)
-  // porque es puramente decorativo, sin efecto en el estado de
-  // partida.
-  const [justFormed, setJustFormed] = useState<{ numA: number; numB: number } | null>(
-    null,
-  );
 
   // v77 (28 agosto 2026) — armador de oferta (DEAL), también local:
   // "para cuál oportunidad estoy armando una oferta" y "cuál de mis
@@ -870,19 +759,6 @@ export function FandangoWindow({
   const tradeMine = mine.filter((e) => !staked.has(e.nidana));
   const tradeOpportunities = rivalOpportunities.filter((o) => !staked.has(o.need));
 
-  // Ya formados (YOUR LINKS) vs. todavía no (LINK AVAILABLE) — un
-  // mismo link nunca aparece en las dos listas a la vez.
-  const formedSet = new Set(myFormedLinks);
-  const unformedLinks = allOwnLinks.filter((l) => !formedSet.has(l.numA));
-  const formedLinksDisplay: OwnLink[] = myFormedLinks
-    .slice()
-    .sort((a, b) => a - b)
-    .map((low) => ({
-      a: nidanaIdForNumber(low),
-      b: nidanaIdForNumber(low + 1),
-      numA: low,
-      numB: low + 1,
-    }));
 
   // El piso 666 solo existe en pantalla cuando SquareKarma666Block
   // dibuja algo (mismas condiciones que ese componente).
@@ -911,12 +787,6 @@ export function FandangoWindow({
     tourStep === z ? (
       <TourCallout step={z} last={tourIndex === tourSteps.length - 1} onNext={nextTour} />
     ) : null;
-
-  const handleFormLinkClick = (link: OwnLink) => {
-    onFormLink(link.numA);
-    setJustFormed({ numA: link.numA, numB: link.numB });
-    window.setTimeout(() => setJustFormed(null), 1600);
-  };
 
   const handleOpenDeal = (need: NidanaId) => {
     setDealFor(need);
@@ -994,9 +864,7 @@ export function FandangoWindow({
 
         <SectionTitle>{myLabel}</SectionTitle>
         <CoinRow entries={mine} />
-        <LinkAvailableBlock links={unformedLinks} onFormLink={handleFormLinkClick} />
-        {justFormed && <LinkFormedFlash link={justFormed} />}
-        <YourLinksBlock links={formedLinksDisplay} />
+        <YourLinksBlock links={allOwnLinks} />
         </div>
         {callout("mine")}
 

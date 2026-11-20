@@ -36,7 +36,7 @@ import { readySplashDone } from "./readySplashState";
 
 import watcherVideo from "../assets/video/jesus_watch.mp4";
 import skySignVideo from "../assets/video/sky-signals.mp4";
-import type { MoveOption, PieceKind, PlayerId, RealmPieceKind } from "../game/types";
+import type { MoveOption, PieceKind, PlayerId, RealmPieceKind, RealmPieceState } from "../game/types";
 import { REALM_PIECE_ORDER } from "../game/types";
 import bigHeadWhite from "../assets/master/bighead-school/bighead-school-white.png";
 import bigHeadBlack from "../assets/master/bighead-school/bighead-school-black.png";
@@ -100,12 +100,6 @@ import campanaFinalSound from "../assets/sounds/campana final.mp3";
 // patrón que el resto de audios de este archivo (prevFullFormationRef
 // etc.), no en cada render mientras la oportunidad sigue abierta.
 import fandangoSpraySound from "../assets/sounds/spray.mp3";
-// v76 (28 agosto 2026) — confirmación corta al pulsar FORM LINK (ver
-// handleFormLink más abajo). Reusa capture_black.mp3, el mismo "click"
-// que ya usa Board.tsx para las capturas — no hay un sonido dedicado
-// para esto todavía, es un import de una línea para cambiarlo si no
-// encaja.
-import linkFormedSound from "../assets/sounds/capture_black.mp3";
 import cascabelSound from "../assets/sounds/cascabel.mp3";
 // 20 nov 2026 — siseo de serpiente (generado, 1,5 s) que acompaña al
 // cascabel cuando la apuesta 666 queda aceptada.
@@ -227,14 +221,8 @@ nidanaCoinSide: "front" | "back";
     avatarNidana: Record<PlayerId, Partial<Record<RealmPieceKind, NidanaId>>>,
   ) => void;
 
-  // v76 (28 agosto 2026) — FORM LINK, pedido de Federico. A diferencia
-  // de los onDev* de arriba, esta NO es opcional-por-DEV: es la
-  // funcionalidad real de Fandango, siempre pasada desde App.tsx. Ver
-  // reducer.ts case "FORM_LINK" y FandangoWindow.tsx.
-  onFormLink: (player: PlayerId, low: number) => void;
-
   // v77 (28 agosto 2026) — Fandango: FORM DEAL, pedido de Federico.
-  // Mismo criterio que onFormLink (siempre pasadas, no opcionales). Ver
+  // Siempre pasadas, no opcionales. Ver
   // reducer.ts (SEND_TRADE_OFFER/ACCEPT_TRADE_OFFER/REFUSE_TRADE_OFFER)
   // y FandangoWindow.tsx.
   onSendTradeOffer: (player: PlayerId, offer: NidanaId, want: NidanaId) => void;
@@ -243,7 +231,7 @@ nidanaCoinSide: "front" | "back";
 
   // v84 (4 septiembre 2026) — interfaz real de Square Karma 666 (Snake
   // Bet) y Round Dharma 777, pedido de Federico. Mismo criterio que
-  // onFormLink/onSendTradeOffer arriba: siempre pasadas, no opcionales.
+  // onSendTradeOffer arriba: siempre pasadas, no opcionales.
   // Ver reducer.ts (REQUEST_SNAKE_BET/ACCEPT_SNAKE_BET/REFUSE_SNAKE_BET/
   // DECLARE_DHARMA_777).
   onRequestSnakeBet: (player: PlayerId, targetAvatar: RealmPieceKind) => void;
@@ -294,7 +282,6 @@ export function GameShell({
   onDevSkipTo5Humans,
   onDevSetAvatarNidana,
   onDevSetAllAvatarNidanas,
-  onFormLink,
   onSendTradeOffer,
   onAcceptTrade,
   onRefuseTrade,
@@ -358,22 +345,6 @@ const fandangoHasNotification = React.useMemo(() => {
   return fandangoIsCalling(state, state.turn);
 }, [state.avatarNidana, state.turn, state.pendingTrade]);
 
-// v76 (28 agosto 2026) — FORM LINK: los links que el jugador con el
-// turno YA formó (ver reducer.ts case "FORM_LINK"), para que
-// FandangoWindow los muestre aparte (YOUR LINKS) en vez de bajo LINK
-// AVAILABLE. state.formedLinks es por jugador, no por "yo/rival" —
-// mismo criterio que avatarNidana, se resuelve acá con state.turn.
-const myFormedLinks = React.useMemo(
-  () => state.formedLinks[state.turn],
-  [state.formedLinks, state.turn],
-);
-
-// v76 (28 agosto 2026) — pedido de Federico: "pequeño evento
-// visual/sonoro satisfactorio" al pulsar FORM LINK. El flash de texto
-// "LINK FORMED" vive dentro de FandangoWindow.tsx (puramente local a
-// ese componente, no necesita estado de partida) — acá solo el sonido,
-// mismo ref set up en el useEffect de audios de más abajo.
-const linkFormedAudio = React.useRef<HTMLAudioElement | null>(null);
 // v85 (6 septiembre 2026) — pedido de Federico: sonido de cascabel
 // para SQUARE KARMA 666 (Snake Bet). Suena al proponer la apuesta, al
 // aceptarla, y en cada lance del apostador mientras la apuesta sigue
@@ -456,17 +427,37 @@ React.useEffect(() => {
   narrate(t("narr.yourTurn"), { source: "event", priority: 1, repeat: true });
 }, [state.turn, state.winner, botPlayer, onlineRole]);
 
-const handleFormLink = (low: number) => {
-  onFormLink(state.turn, low);
-  const audio = linkFormedAudio.current;
-  if (audio) {
-    audio.currentTime = 0;
-    audio.play().catch(() => {});
+// 20 nov 2026 — enlace de Nidanas: cuando un Avatar entra en Mara con la
+// espera reducida (su jugador tenía un enlace al ser capturado), Buddha
+// lo dice en un cartel breve. Mismo cartel de Buddha que el resto de
+// avisos; con VOZ/AMBOS lo lee el narrador.
+const prevMaraLinkRef = React.useRef<Set<string>>(new Set());
+React.useEffect(() => {
+  const now = new Set<string>();
+  let fresh: { player: PlayerId; kind: RealmPieceKind; link: number } | null = null;
+  for (const pl of ["P1", "P2"] as PlayerId[]) {
+    for (const [kind, piece] of Object.entries(state.realmPieces[pl] ?? {}) as [string, RealmPieceState | undefined][]) {
+      if (!piece?.inLimbo || piece.maraLink == null) continue;
+      const key = `${pl}-${kind}`;
+      now.add(key);
+      if (!prevMaraLinkRef.current.has(key)) fresh = { player: pl, kind: kind as RealmPieceKind, link: piece.maraLink };
+    }
   }
-};
+  prevMaraLinkRef.current = now;
+  if (fresh) {
+    const msg = t("mara.linkShort", {
+      name: REALM_AVATAR_NAME[fresh.kind],
+      a: String(fresh.link),
+      b: String(fresh.link + 1),
+    });
+    if (getNarratorMode() !== "text") narrate(msg, { source: "event", priority: 1 });
+    fireDharmaEvent(msg, false);
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [state.realmPieces]);
 
 // v77 (28 agosto 2026) — Fandango: FORM DEAL. Arma "player" con
-// state.turn, mismo criterio que handleFormLink de arriba — quien
+// state.turn — quien
 // manda la oferta es siempre quien tiene el turno ahora mismo.
 const handleSendTradeOffer = (offer: NidanaId, want: NidanaId) => {
   onSendTradeOffer(state.turn, offer, want);
@@ -664,7 +655,6 @@ React.useEffect(() => {
   fanfarriaAudio.current = new Audio(fanfarriaSound);
   campanaFinalAudio.current = new Audio(campanaFinalSound);
   fandangoSprayAudio.current = new Audio(fandangoSpraySound);
-  linkFormedAudio.current = new Audio(linkFormedSound);
   cascabelAudio.current = new Audio(cascabelSound);
   round777Audio.current = new Audio(round777Sound);
   siseoAudio.current = new Audio(siseoSound);
@@ -683,7 +673,6 @@ React.useEffect(() => {
   if (fanfarriaAudio.current) fanfarriaAudio.current.volume = 0.5;
   if (campanaFinalAudio.current) campanaFinalAudio.current.volume = 0.5;
   if (fandangoSprayAudio.current) fandangoSprayAudio.current.volume = 0.5;
-  if (linkFormedAudio.current) linkFormedAudio.current.volume = 0.6;
   if (cascabelAudio.current) cascabelAudio.current.volume = 0.7;
   if (round777Audio.current) round777Audio.current.volume = 0.6;
   if (siseoAudio.current) siseoAudio.current.volume = 0.8;
@@ -3114,8 +3103,6 @@ return (
   }
   myLabel={t("fan.yourNidanas", { color: t(state.turn === "P1" ? "color.P1" : "color.P2") })}
   rivalLabel={t("fan.rivalNidanas", { color: t(state.turn === "P1" ? "color.P2" : "color.P1") })}
-  myFormedLinks={myFormedLinks}
-  onFormLink={handleFormLink}
   myPlayer={state.turn}
   pendingTrade={state.pendingTrade}
   onSendTradeOffer={handleSendTradeOffer}

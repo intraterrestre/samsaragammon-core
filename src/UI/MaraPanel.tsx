@@ -68,6 +68,7 @@ if (piece?.player && (REALM_TOKEN_MAP as any)[piece.kind]) {
   return (
     <div
       style={{
+        position: "relative",
         width: 34,
         height: 34,
         display: "flex",
@@ -75,6 +76,23 @@ if (piece?.player && (REALM_TOKEN_MAP as any)[piece.kind]) {
         justifyContent: "center",
       }}
     >
+      {/* 20 nov 2026 — enlace de Nidanas: este Avatar pasa 3 lances en
+          Mara en vez de 6 (ver game/rules/nidanaLink.ts). */}
+      {piece?.link != null && (
+        <span
+          title={`${piece.link}–${piece.link + 1}`}
+          style={{
+            position: "absolute",
+            right: -6,
+            top: -6,
+            fontSize: 13,
+            lineHeight: 1,
+            filter: "drop-shadow(0 0 2px rgba(0,0,0,0.9))",
+          }}
+        >
+          🔗
+        </span>
+      )}
       {image && (
         <img
           src={image}
@@ -175,7 +193,7 @@ function buildMaraCells(state: any, player: "P1" | "P2") {
 
     const index = 6 - level;
 
-    if (!cells[index]) cells[index] = { player, kind };
+    if (!cells[index]) cells[index] = { player, kind, link: piece.maraLink ?? null };
 
   }
 

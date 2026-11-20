@@ -1513,13 +1513,6 @@ nidanaCoinSide={nidanaSide}
       onDevSetAllAvatarNidanas={(avatarNidana) =>
         dispatch({ type: "DEV_SET_ALL_AVATAR_NIDANAS", avatarNidana })
       }
-      // v76 (28 agosto 2026) — FORM LINK, pedido de Federico: primer
-      // gesto real de Fandango, ya no dev-only (ver reducer.ts, case
-      // "FORM_LINK"). GameShell arma "player" con state.turn antes de
-      // llamar acá (ver GameShell.tsx, handleFormLink).
-      onFormLink={(player, low) =>
-        !botBlocks() && dispatch({ type: "FORM_LINK", player, low })
-      }
       // v77 (28 agosto 2026) — Fandango: FORM DEAL, pedido de Federico.
       // Ver reducer.ts (SEND_TRADE_OFFER/ACCEPT_TRADE_OFFER/
       // REFUSE_TRADE_OFFER) y FandangoWindow.tsx.
