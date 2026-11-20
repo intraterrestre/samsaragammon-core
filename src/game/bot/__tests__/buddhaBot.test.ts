@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { reducer } from "../../state/reducer";
 import { initialState } from "../../state/state";
 import { chooseBotMove, applyBotAction, type BotLevel } from "../buddhaBot";
@@ -8,12 +8,21 @@ import type { GameState, PlayerId } from "../../types";
 const report = (msg: string) =>
   (globalThis as unknown as { process: { stdout: { write: (m: string) => void } } }).process.stdout.write(msg);
 
+// 20 nov 2026 — silenciar SIN espiar: vi.spyOn guarda los argumentos de
+// cada llamada, y el motor registra estados completos (unas 40.000 veces
+// por partida). En 10 partidas eso retenía cientos de miles de estados y
+// agotaba la memoria del ordenador de pruebas.
+const original = { log: console.log, warn: console.warn, info: console.info };
 beforeAll(() => {
-  vi.spyOn(console, "log").mockImplementation(() => {});
-  vi.spyOn(console, "warn").mockImplementation(() => {});
-  vi.spyOn(console, "info").mockImplementation(() => {});
+  console.log = () => {};
+  console.warn = () => {};
+  console.info = () => {};
 });
-afterAll(() => vi.restoreAllMocks());
+afterAll(() => {
+  console.log = original.log;
+  console.warn = original.warn;
+  console.info = original.info;
+});
 
 function start(): GameState {
   let s = { ...initialState, gameStartedAt: 1, gameId: "bot-sim" } as GameState;
