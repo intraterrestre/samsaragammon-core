@@ -216,10 +216,10 @@ export const es: Dictionary = {
   "fan.waiting": "Esperando respuesta.",
   "fan.answerOnYourTurn": "Contestas en tu turno.",
   // 20 nov 2026 — Fandango con picardía. Variantes separadas por "|".
-  "fan.fx.toBuddha": "¡Pssss! ¿Quieres hacer negocios conmigo? ¡Veamos qué me ofreces!|¡Pssss! ¿Negocios con Buddha? ¡A ver qué traes!|¡Pssss! Interesante… muy interesante.",
+  "fan.fx.toBuddha": "🐍 ¿Quieres hacer negocios conmigo? ¡Veamos qué me ofreces!|🐍 ¿Negocios con Buddha? ¡A ver qué traes!|🐍 Interesante… muy interesante.",
   "fan.fx.buddhaAccepts": "¡CLIN, CLIN! ¡Trato hecho!|¡CLIN, CLIN! Hecho… ¿quién engañó a quién?|¡CLIN, CLIN! Trato hecho. El karma lo apunta.",
   "fan.fx.buddhaRefuses": "¡JA! ¡Conmigo no es tan fácil!|¡JA! Esa Nidana se queda conmigo.|¡JA! Buen intento.",
-  "fan.fx.buddhaOffers": "¡Pssss! Tengo un negocio para ti. ¿Te atreves?|¡Pssss! Te cambio una Nidana… si eres valiente.|¡Pssss! Mira en Chat Fandango: te hice una oferta.",
+  "fan.fx.buddhaOffers": "🐍 Tengo un negocio para ti. ¿Te atreves?|🐍 Te cambio una Nidana… si eres valiente.|🐍 Mira en Chat Fandango: te hice una oferta.",
   "fan.fx.youAcceptBuddha": "¡CLIN, CLIN! ¡Sabia decisión!|¡CLIN, CLIN! Bien negociado.",
   "fan.fx.youRefuseBuddha": "¿No? ¡Qué desapego tan sospechoso!|Está bien… pero el karma lo apunta.|Ofendido estoy. Un poco.",
   "fan.fx.annulled": "¡Ese negocio se nos escapó!",

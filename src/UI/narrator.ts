@@ -143,6 +143,9 @@ export function useNarrator() {
 export function toSpeech(text: string): string {
   return text
     .replace(/\p{Extended_Pictographic}/gu, "")
+    // 20 nov 2026 — onomatopeyas tipo "Pssss" / "Psst": las voces las
+    // deletrean ("pe, ese, ese…"). Nunca se dicen en voz alta.
+    .replace(/¡?\bps+t?\b[!…. ]*/giu, "")
     .replace(/\s*·\s*/g, ", ")
     .replace(/[™↗☸]/g, " ")
     .split("\n")
