@@ -171,12 +171,33 @@ const GOOD = [
   "daniel", "samantha", "karen", "serena", "kate", "moira", "arthur", "martha",
 ];
 
+// 20 nov 2026 — Federico: en inglés salía Samantha (voz de mujer) y "no
+// suena a Buddha". La Web Speech API no dice si una voz es de hombre o de
+// mujer, así que en inglés se decide por el nombre: primero las voces
+// masculinas serias conocidas (Apple, Google, Microsoft), las femeninas
+// quedan solo de respaldo. El español no cambia.
+const MALE_EN = [
+  "daniel", "arthur", "oliver", "aaron", "gordon", "rishi", "evan", "nathan", "tom",
+  "alex", "lee", "google uk english male", "microsoft george", "microsoft ryan",
+  "microsoft guy", "microsoft david", "microsoft mark", "microsoft andrew",
+  "microsoft brian", "microsoft christopher", "microsoft eric", "microsoft thomas",
+];
+// Orden de preferencia dentro de las masculinas (Daniel: británico, sereno).
+function maleRank(name: string): number {
+  const i = MALE_EN.findIndex((m) => name === m || name.startsWith(`${m} `) || name.startsWith(`${m}(`));
+  return i < 0 ? -1 : MALE_EN.length - i;
+}
+
 function voiceScore(v: SpeechSynthesisVoice, nav: string): number {
   const name = v.name.toLowerCase();
   if (NOVELTY.some((n) => name === n || name.startsWith(`${n} `) || name.startsWith(`${n}(`))) {
     return -1;
   }
   let score = 0;
+  if (v.lang.toLowerCase().startsWith("en")) {
+    const rank = maleRank(name);
+    if (rank >= 0) score += 200 + rank;
+  }
   if (/premium|enhanced|mejorad|natural|neural/.test(name)) score += 50;
   if (name.startsWith("google")) score += 40;
   if (GOOD.some((g) => name.startsWith(g))) score += 30;
