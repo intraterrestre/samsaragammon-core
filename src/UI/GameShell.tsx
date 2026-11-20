@@ -107,6 +107,9 @@ import fandangoSpraySound from "../assets/sounds/spray.mp3";
 // encaja.
 import linkFormedSound from "../assets/sounds/capture_black.mp3";
 import cascabelSound from "../assets/sounds/cascabel.mp3";
+// 20 nov 2026 — siseo de serpiente (generado, 1,5 s) que acompaña al
+// cascabel cuando la apuesta 666 queda aceptada.
+import siseoSound from "../assets/sounds/siseo.mp3";
 import round777Sound from "../assets/sounds/round777.mp3";
 import { SacredProgress } from "./SacredProgress";
 import { countNirvanaFormationProgress } from "../game/victory/nirvana";
@@ -382,6 +385,14 @@ const cascabelAudio = React.useRef<HTMLAudioElement | null>(null);
 // el jugador confirma que va a perdonar la captura y consolidar en su
 // lugar.
 const round777Audio = React.useRef<HTMLAudioElement | null>(null);
+const siseoAudio = React.useRef<HTMLAudioElement | null>(null);
+const playSiseo = () => {
+  const audio = siseoAudio.current;
+  if (audio) {
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  }
+};
 const playCascabel = () => {
   const audio = cascabelAudio.current;
   if (audio) {
@@ -412,6 +423,22 @@ React.useEffect(() => {
     playCascabel();
   }
 }, [state.globalRollCount, state.snakeBet, state.turn]);
+
+// 20 nov 2026 — el cascabel de "apuesta propuesta" y "apuesta aceptada"
+// sonaba solo en el aparato de quien tocaba el botón: si aceptaba Buddha
+// (bot) no sonaba nada, y a distancia el apostador no lo oía. Ahora suena
+// cuando el ESTADO cambia (aparece la propuesta / la apuesta queda
+// activa), en todos los aparatos y también cuando responde Buddha.
+const prevPendingBetRef = React.useRef(!!state.pendingSnakeBet);
+const prevActiveBetRef = React.useRef(!!state.snakeBet);
+React.useEffect(() => {
+  const proposedNow = !!state.pendingSnakeBet && !prevPendingBetRef.current;
+  const acceptedNow = !!state.snakeBet && !prevActiveBetRef.current;
+  prevPendingBetRef.current = !!state.pendingSnakeBet;
+  prevActiveBetRef.current = !!state.snakeBet;
+  if (proposedNow || acceptedNow) playCascabel();
+  if (acceptedNow) playSiseo();
+}, [state.pendingSnakeBet, state.snakeBet]);
 
 const handleFormLink = (low: number) => {
   onFormLink(state.turn, low);
@@ -624,6 +651,7 @@ React.useEffect(() => {
   linkFormedAudio.current = new Audio(linkFormedSound);
   cascabelAudio.current = new Audio(cascabelSound);
   round777Audio.current = new Audio(round777Sound);
+  siseoAudio.current = new Audio(siseoSound);
 
   if (cheeringAudio.current) cheeringAudio.current.volume = 0.18;
   if (fireworksAudio.current) fireworksAudio.current.volume = 0.12;
@@ -642,6 +670,7 @@ React.useEffect(() => {
   if (linkFormedAudio.current) linkFormedAudio.current.volume = 0.6;
   if (cascabelAudio.current) cascabelAudio.current.volume = 0.7;
   if (round777Audio.current) round777Audio.current.volume = 0.6;
+  if (siseoAudio.current) siseoAudio.current.volume = 0.8;
 
   // v55 (17 agosto 2026) — pedido de Federico, coreografía correcta
   // (corrige v53): la fanfarria NO suena cuando termina el video de
@@ -3034,11 +3063,9 @@ return (
   pendingSnakeBet={state.pendingSnakeBet}
   activeSnakeBet={state.snakeBet}
   onRequestSnakeBet={(targetAvatar) => {
-    playCascabel();
     onRequestSnakeBet(state.turn, targetAvatar);
   }}
   onAcceptSnakeBet={() => {
-    playCascabel();
     onAcceptSnakeBet();
   }}
   onRefuseSnakeBet={onRefuseSnakeBet}
