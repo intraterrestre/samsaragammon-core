@@ -388,3 +388,20 @@ describe("recordatorio de Venenos (Bruno y Margot)", () => {
     expect(venomReminder.repeat ?? 1).toBe(1);
   });
 });
+
+// 20 nov 2026 — la moneda grande (espejo): dice qué se vio y de quién.
+describe("cartel de la moneda grande (espejo)", () => {
+  const mirror = LESSONS.find((l) => l.id === "nidanaMirror")!;
+  const tk = (k: string) => k;
+  const at = (lastNidanaAtTurn: number) =>
+    ({ ...initialState, currentNidana: "CRAVING", lastNidanaAtTurn, turnIndex: lastNidanaAtTurn + 1 }) as unknown as GameState;
+  it("si la jugada fue de Buddha (Negras), habla de Buddha", () => {
+    expect(mirror.vars!(at(5), "P1", tk as never).why).toBe("mirror.why.CRAVING.rival");
+  });
+  it("si la jugada fue tuya (Blancas), habla de ti", () => {
+    expect(mirror.vars!(at(4), "P1", tk as never).why).toBe("mirror.why.CRAVING.me");
+  });
+  it("nombra el número de la Nidana", () => {
+    expect(mirror.vars!(at(4), "P1", tk as never).n).toBe("8");
+  });
+});

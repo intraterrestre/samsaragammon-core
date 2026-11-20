@@ -11,6 +11,7 @@
 //
 // Todo son lecturas del GameState: ninguna lección cambia el juego.
 
+import { NIDANA_LIST, type NidanaId } from "../nidanas";
 import { humansRevealed } from "../rules/humansReveal";
 import type { GameState, PlayerId, RealmPieceKind } from "../types";
 import { REALM_PIECE_ORDER } from "../types";
@@ -337,13 +338,31 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "nidanaMirror",
+    // 20 nov 2026 — Federico: "esta explicación ni yo la entiendo". La
+    // moneda grande es un ESPEJO del Pattern Engine: no cambia reglas.
+    // Ahora el cartel dice qué se vio, de quién (la moneda salía casi
+    // siempre por la jugada de Buddha, pero el texto decía "tu forma de
+    // jugar") y que no se recoge ni cambia nada. Quién: turnIndex par =
+    // Blancas, impar = Negras (cada turno suma uno, empieza Blancas).
     holds: (s) =>
       oriolEntered(s) &&
       !!s.currentNidana &&
-      s.turnIndex - s.lastNidanaAtTurn <= 1,
+      s.turnIndex - s.lastNidanaAtTurn <= 2,
     repeat: 2,
     eventKey: (s) => String(s.lastNidanaAtTurn),
+    vars: (s, p, t) => {
+      const id = s.currentNidana as NidanaId;
+      const mover: PlayerId = s.lastNidanaAtTurn % 2 === 0 ? "P1" : "P2";
+      const who = mover === p ? "me" : "rival";
+      const n = NIDANA_LIST.indexOf(id) + 1;
+      return {
+        why: t(`mirror.why.${id}.${who}` as MessageKey),
+        n: String(n),
+        name: t(`nidana.name.${n}` as MessageKey),
+      };
+    },
   },
+
   {
     id: "firstAvatar",
     holds: (s) => anyPlayer((pl) => !!s.realmPieces[pl]?.hungry_ghost?.unlocked),
