@@ -340,3 +340,37 @@ describe("bienvenida al Avatar del rival", () => {
     expect(l.vars!(s, "P1", (k) => k).welcome).toBe("lesson.welcomeF");
   });
 });
+
+// 20 nov 2026 — recordatorio de cómo se mueve un Avatar (Fase 1).
+describe("recordatorio de Venenos (Bruno y Margot)", () => {
+  const venomReminder = LESSONS.find((l) => l.id === "venomReminder")!;
+  const av = (kind: string, pos: number) => ({ id: `P1-${kind}`, kind, pos, inLimbo: false, maraLevel: null, unlocked: true });
+  const withStep = (step: number, rollsSince: number, phase: "idle" | "rolled") =>
+    ({
+      ...initialState,
+      brunoRevealed: true,
+      genesisUIComplete: true,
+      phase,
+      rollOptions: phase === "rolled" ? [2, 5] : null,
+      globalRollCount: 40 + rollsSince,
+      realmProgress: {
+        ...initialState.realmProgress,
+        P1: { ...initialState.realmProgress.P1, currentRealmStep: step, stageStartedAtRoll: 40 },
+      },
+      realmPieces: { P1: { hungry_ghost: av("hungry_ghost", 6), hell: av("hell", 9) }, P2: {} },
+    }) as unknown as GameState;
+
+  it("sale con Bruno y Margot, ya tirados los dados, pasado un poco de juego", () => {
+    expect(venomReminder.holds(withStep(2, 2, "rolled"), "P1")).toBe(true);
+  });
+  it("no sale recién nacida Margot, ni antes de tirar", () => {
+    expect(venomReminder.holds(withStep(2, 1, "rolled"), "P1")).toBe(false);
+    expect(venomReminder.holds(withStep(2, 3, "idle"), "P1")).toBe(false);
+  });
+  it("no sale desde Oriol (Fase 2: ahí lo explica MUEVE A BRUNO)", () => {
+    expect(venomReminder.holds(withStep(3, 3, "rolled"), "P1")).toBe(false);
+  });
+  it("sale una sola vez por partida", () => {
+    expect(venomReminder.repeat ?? 1).toBe(1);
+  });
+});

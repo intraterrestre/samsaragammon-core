@@ -245,6 +245,7 @@ export const en = {
   "evo.tip": "THE EVOLUTION CLOCK\nEvery roll brings you closer to your next Avatar.\nTop: White · Bottom: Black",
   "evo.help": "THE EVOLUTION CLOCK\nTop: White · Bottom: Black.\n\nEach digit is an Avatar already born:\n6 · 6 · 6 = Bruno, Margot and Oriol\n7 · 7 · 7 = Marino, Rufus and Whitman\n\nThe number that keeps rising counts the rolls (yours and your rival's). When it reaches 6 —or 7 in the second half— your next Avatar is born. Each dash _ is an Avatar that hasn't arrived yet.\n\nExample: 666 → 3 · _ · _\nYou already have Bruno, Margot and Oriol. You are 3 of 7 rolls into Marino's birth.\n\n666 → 777: all your Avatars have been born.",
   "evo.helpClose": "Tap to close",
+  "lesson.venomReminder": "Remember: tap each Avatar to see how far it can go. Each line comes from one of its three animals, the Venoms. Choose a line: that Venom will travel with your Avatar!",
   "lesson.optionsPanel": "WHERE CAN {name} GO?\nTap {name} and try your 3 animals.\nTheir possible destinations appear at the top left.",
   "moveopt.cell": "Square {n}",
   "moveopt.capture": "Capture!",

@@ -3036,6 +3036,14 @@ return (
               ? { player: djCeremony.player, kind: djCeremony.kind }
               : null
           }
+          highlightAvatars={
+            lessonOnScreen && lessonShowingRef.current?.id === "venomReminder"
+              ? [
+                  { player: state.turn, kind: "hungry_ghost" },
+                  { player: state.turn, kind: "hell" },
+                ]
+              : []
+          }
           onSelectPiece={onSelectPiece}
           hoveredOption={hoveredOption}
           moveOptions={moveOptions}

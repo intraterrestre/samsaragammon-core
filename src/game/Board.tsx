@@ -153,6 +153,10 @@ type Props = {
   // 6 oct 2026 — Avatar que pulsa en dorado (el que falta en la
   // ceremonia del Buddha DJ). Mientras hay uno, no pulsa nada más.
   highlightAvatar?: { player: "P1" | "P2"; kind: RealmPieceKind } | null;
+  // 20 nov 2026 — brillo dorado sobre varios Avatares a la vez, solo
+  // visual (no bloquea nada): p. ej. Bruno y Margot mientras Buddha
+  // recuerda cómo se mueven.
+  highlightAvatars?: { player: "P1" | "P2"; kind: RealmPieceKind }[];
   // 6 oct 2026 — el Buddha Azul pulsa (EL ESPEJO SE ABRE: "tócalo").
   pulseBuddha?: boolean;
   onHoverOption?: (option: MoveOption | null) => void;
@@ -261,6 +265,7 @@ export function Board({
   budaConsultationActive = false,
   beginnerMode = false,
   highlightAvatar = null,
+  highlightAvatars = [],
   pulseBuddha = false,
   onHoverOption,
 }: Props){
@@ -1114,7 +1119,8 @@ const carriedNidana = state.avatarNidana[player][piece.kind];
             ? " bwbPulsePiece"
             : ""
         }${
-          highlightAvatar?.player === player && highlightAvatar.kind === piece.kind
+          (highlightAvatar?.player === player && highlightAvatar.kind === piece.kind) ||
+          highlightAvatars.some((h) => h.player === player && h.kind === piece.kind)
             ? " bwbPulsePiece bwbPulseGold"
             : ""
         }`}

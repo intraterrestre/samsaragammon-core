@@ -239,6 +239,7 @@ export const es: Dictionary = {
   "evo.tip": "EL RELOJ DE LA EVOLUCIÓN\nCada tirada te acerca al próximo Avatar.\nArriba: Blancas · Abajo: Negras",
   "evo.help": "EL RELOJ DE LA EVOLUCIÓN\nArriba: Blancas · Abajo: Negras.\n\nCada cifra es un Avatar que ya nació:\n6 · 6 · 6 = Bruno, Margot y Oriol\n7 · 7 · 7 = Marino, Rufus y Whitman\n\nEl número que va subiendo cuenta las tiradas (tuyas y del rival). Al llegar a 6 —o a 7 en la segunda mitad— nace tu siguiente Avatar. Cada raya _ es un Avatar que aún no ha llegado.\n\nEjemplo: 666 → 3 · _ · _\nYa tienes a Bruno, Margot y Oriol. Llevas 3 de 7 tiradas para que nazca Marino.\n\n666 → 777: ya nacieron todos tus Avatares.",
   "evo.helpClose": "Toca para cerrar",
+  "lesson.venomReminder": "Recuerda: toca cada Avatar para ver hasta dónde puede llegar. Cada línea sale de uno de sus tres animales, los Venenos. Elige una línea: ¡ese Veneno viajará con tu Avatar!",
   "lesson.optionsPanel": "¿DÓNDE PUEDE IR {name}?\nPulsa a {name} y prueba tus 3 animales.\nArriba a la izquierda verás sus posibles destinos.",
   "moveopt.cell": "Casilla {n}",
   "moveopt.capture": "¡Captura!",

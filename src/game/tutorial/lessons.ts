@@ -49,6 +49,7 @@ export type LessonId =
   | "firstAvatar"
   | "evoClock"
   | "secondAvatar"
+  | "venomReminder"
   | "rivalAvatar"
   | "phase2"
   | "optionsPanel"
@@ -374,6 +375,23 @@ export const LESSONS: Lesson[] = [
         // 7 oct 2026 — Federico: "¡BIENVENIDA, MARGOT!" (femenino).
         welcome: t(kind && FEMININE_AVATARS.has(kind) ? "lesson.welcomeF" : "lesson.welcomeM"),
       };
+    },
+  },
+  // 20 nov 2026 — Federico: recordatorio cuando Bruno y Margot ya están y
+  // ha pasado un poco de juego. Texto ajustado a la Fase 1 (antes de
+  // Oriol): al tocar un Avatar aparecen a la vez las líneas de sus tres
+  // animales; la línea elegida decide qué Veneno viaja con él. Sale en
+  // tu turno, ya tirados los dados, si Bruno o Margot pueden moverse.
+  {
+    id: "venomReminder",
+    holds: (s, p) => {
+      const prog = s.realmProgress[p];
+      if (!prog || prog.currentRealmStep !== 2) return false;
+      if (s.globalRollCount - (prog.stageStartedAtRoll ?? 0) < 2) return false;
+      return (
+        rolled(s) &&
+        getAllLegalMoves(s, p).some((m) => m.option.pieceKind === "hungry_ghost" || m.option.pieceKind === "hell")
+      );
     },
   },
   {
