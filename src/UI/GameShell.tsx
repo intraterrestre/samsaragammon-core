@@ -489,24 +489,34 @@ const handleSendTradeOffer = (offer: NidanaId, want: NidanaId) => {
 // suena una sola vez cuando la oportunidad ACABA de aparecer, no en
 // cada re-render mientras fandangoHasNotification sigue en true.
 const prevFandangoNotificationRef = React.useRef(false);
-React.useEffect(() => {
-  if (fandangoHasNotification && !prevFandangoNotificationRef.current) {
-    const audio = fandangoSprayAudio.current;
-    if (audio) {
+// 20 nov 2026 — Federico: "el seseo del sonido no funciona". Una sola
+// función para el siseo, con pausa anti-doble (el aviso del icono y el
+// cartel de la lección llegan casi juntos) y volumen alto: a 0.5 y con la
+// voz del narrador arrancando a la vez, en el iPad no se oía.
+const lastSprayAtRef = React.useRef(0);
+const playFandangoSpray = React.useCallback(() => {
+  const audio = fandangoSprayAudio.current;
+  if (!audio) return;
+  const now = Date.now();
+  if (now - lastSprayAtRef.current < 2500) return;
+  lastSprayAtRef.current = now;
+  audio.currentTime = 0;
+  audio.play().catch(() => {
+    console.warn("[fandango] spray falló al reproducir, reintentando...");
+    window.setTimeout(() => {
       audio.currentTime = 0;
       audio.play().catch(() => {
-        console.warn("[fandango] spray falló al reproducir, reintentando...");
-        window.setTimeout(() => {
-          audio.currentTime = 0;
-          audio.play().catch(() => {
-            console.warn("[fandango] spray falló también en el reintento.");
-          });
-        }, 120);
+        console.warn("[fandango] spray falló también en el reintento.");
       });
-    }
+    }, 120);
+  });
+}, []);
+React.useEffect(() => {
+  if (fandangoHasNotification && !prevFandangoNotificationRef.current) {
+    playFandangoSpray();
   }
   prevFandangoNotificationRef.current = fandangoHasNotification;
-}, [fandangoHasNotification]);
+}, [fandangoHasNotification, playFandangoSpray]);
 
 const [diceRolling, setDiceRolling] = React.useState(false);
 
@@ -693,7 +703,7 @@ React.useEffect(() => {
   if (scratchAudio.current) scratchAudio.current.volume = 1.0;
   if (fanfarriaAudio.current) fanfarriaAudio.current.volume = 0.5;
   if (campanaFinalAudio.current) campanaFinalAudio.current.volume = 0.5;
-  if (fandangoSprayAudio.current) fandangoSprayAudio.current.volume = 0.5;
+  if (fandangoSprayAudio.current) fandangoSprayAudio.current.volume = 1;
   if (cascabelAudio.current) cascabelAudio.current.volume = 0.7;
   if (round777Audio.current) round777Audio.current.volume = 0.6;
   if (siseoAudio.current) siseoAudio.current.volume = 0.8;
@@ -2099,6 +2109,12 @@ React.useEffect(() => {
 const lessonOnScreen =
   !!transientDharma &&
   lessonShowingRef.current?.message === transientDharma.message;
+const fandangoLessonOnScreen = lessonOnScreen && lessonShowingRef.current?.id === "fandango";
+// 20 nov 2026 — el cartel "Chat Fandango te llama" suena con su siseo
+// primero; la voz espera a que termine (ver narrationDelayMs abajo).
+React.useEffect(() => {
+  if (fandangoLessonOnScreen) playFandangoSpray();
+}, [fandangoLessonOnScreen, playFandangoSpray]);
 
 // 20 nov 2026 — ANTIZOMBIES: la moneda grande (espejo) ya no se explica
 // sola; al tocarla, un cartel breve: qué es, qué acaba de ver y de quién
@@ -2746,6 +2762,7 @@ return (
             nidanas={lessonNidanas}
             onDisableHelps={onDisableHelps}
             disableHelpsLabel={t("helps.disable")}
+            narrationDelayMs={fandangoLessonOnScreen ? 1500 : 0}
             placement={
               lessonShowingRef.current?.id === "evoClock"
                 ? "left"

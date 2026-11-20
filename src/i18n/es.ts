@@ -100,7 +100,7 @@ export const es: Dictionary = {
   "lesson.unsealed": "NO FLORECE EL LOTO\n{name} llegó a Humanos, pero antes fue {captured}.\nSolo florece quien llega sin haber sido capturado nunca.\nTendrás que negociar un Fandango.",
   "lesson.capturedM": "capturado",
   "lesson.capturedF": "capturada",
-  "lesson.fandango": "PSSSS… PSSSS… 👀\nTe llaman del Karma Chat Fandango.\nHay una propuesta esperándote.\nVe a verla.",
+  "lesson.fandango": "Chat Fandango te llama.\nToca su icono: puede haber un trato que te convenga.",
   "lesson.mirrorTouch": "EL ESPEJO SE ABRE\nTienes 4 miradas al espejo durante la partida.\nToca al Buddha Azul cuando quieras mirarte.",
   "bighead.clues": "THE BIG HEAD SCHOOL™\nBig Head no te dará respuestas.\nTe dará pistas.",
   "consult.oracleTitle": "Lo que acabas de hacer",

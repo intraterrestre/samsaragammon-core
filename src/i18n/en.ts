@@ -106,7 +106,7 @@ export const en = {
   "lesson.unsealed": "NO LOTUS BLOOMS\n{name} reached Humans, but was {captured} once.\nOnly an Avatar that was never captured blooms on arrival.\nYou will have to negotiate a Fandango.",
   "lesson.capturedM": "captured",
   "lesson.capturedF": "captured",
-  "lesson.fandango": "PSSSS… PSSSS… 👀\nKarma Chat Fandango is calling.\nThere’s an offer waiting for you.\nGo check it out.",
+  "lesson.fandango": "Chat Fandango is calling you.\nTap its icon: there may be a deal worth making.",
   "lesson.mirrorTouch": "THE MIRROR OPENS\nYou have 4 looks in the mirror this game.\nTap the Blue Buddha whenever you want to look at yourself.",
   "bighead.clues": "THE BIG HEAD SCHOOL™\nBig Head won't give you answers.\nIt will give you clues.",
   "consult.oracleTitle": "What you just did",

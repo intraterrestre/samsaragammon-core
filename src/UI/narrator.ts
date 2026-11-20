@@ -310,14 +310,26 @@ export function stopNarration(id?: number | null): void {
 
 // Para componentes: narra `text` cuando aparece o cambia, y lo calla al
 // desmontarse. text null/"" = nada que decir.
-export function useNarration(text: string | null | undefined, opts: NarrateOptions): void {
+export function useNarration(
+  text: string | null | undefined,
+  opts: NarrateOptions & { delayMs?: number },
+): void {
   const { mode: chosen } = useNarrator();
   const idRef = useRef<number | null>(null);
-  const { source, priority } = opts;
+  const { source, priority, delayMs = 0 } = opts;
   useEffect(() => {
     if (!text || chosen === "text") return;
-    idRef.current = narrate(text, { source, priority });
-  }, [text, chosen, source, priority]);
+    // 20 nov 2026 — delayMs: deja sonar antes un efecto corto (el siseo de
+    // Chat Fandango). En iPad la voz que arranca a la vez lo tapaba.
+    if (delayMs <= 0) {
+      idRef.current = narrate(text, { source, priority });
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      idRef.current = narrate(text, { source, priority });
+    }, delayMs);
+    return () => window.clearTimeout(timer);
+  }, [text, chosen, source, priority, delayMs]);
   useEffect(() => () => stopNarration(idRef.current), []);
 }
 

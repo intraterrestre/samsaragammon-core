@@ -28,6 +28,8 @@ type Props = {
   // 16 nov 2026 — enlace "No mostrar más ayudas" (jugadores expertos).
   onDisableHelps?: () => void;
   disableHelpsLabel?: string;
+  // 20 nov 2026 — espera antes de hablar (deja oír un sonido corto antes).
+  narrationDelayMs?: number;
 };
 
 const SWIPE_PX = 60;
@@ -63,7 +65,7 @@ function useSceneColumn() {
   } as React.CSSProperties;
 }
 
-export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, icon, iconLarge = false, onDisableHelps, disableHelpsLabel }: Props) {
+export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, icon, iconLarge = false, onDisableHelps, disableHelpsLabel, narrationDelayMs = 0 }: Props) {
   // `placement` y `plain` se siguen aceptando (no rompen a quien los pasa)
   // pero ya no cambian nada: todos los carteles van a la columna izquierda.
   const column = useSceneColumn();
@@ -98,7 +100,7 @@ export function LessonCard({ message, fading, onDismiss, dismissLabel, nidanas, 
   // dice en voz alta y se calla al cerrarse. En modo VOZ el texto se
   // reduce a un botón de repetir; si la voz falla, el texto vuelve solo.
   const { t } = useI18n();
-  useNarration(message, { source: "lesson" });
+  useNarration(message, { source: "lesson", delayMs: narrationDelayMs });
   const narrator = useNarrator();
   const voiceOnly = narrator.effective === "voice";
   // 20 nov 2026 — botón "repetir" también en AMBOS (si alguien se distrae).
