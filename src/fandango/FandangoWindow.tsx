@@ -39,8 +39,8 @@ import { NIDANAS } from "../game/nidanas";
 import type { PendingTrade, PlayerId, RealmPieceKind } from "../game/types";
 import { NIDANA_NUMBER_IMAGE } from "../game/nidanaNumberAssets";
 import { REALM_AVATAR_NAME } from "../game/realmAvatarNames";
-import { nidanaLinkLows, nidanaNumber } from "../game/rules/nidanaLink";
-import { narrate, getNarratorMode } from "../UI/narrator";
+import { nidanaLinkLows, nidanaNumber, analyzeTrade, linkLabel } from "../game/rules/nidanaLink";
+import { narrate, getNarratorMode, useNarration } from "../UI/narrator";
 import {
   listCarriedNidanas,
   computeOwnLinks,
@@ -99,6 +99,11 @@ type Props = {
   // a GameShell para no repetirlo en esta partida.
   tour?: boolean;
   onTourDone?: () => void;
+  // 20 nov 2026 — ayuda de Fandango: Buddha lee en voz alta (solo en
+  // JUEGA CON BUDDHA, con VOZ/AMBOS); adviceKey identifica la partida para
+  // abrir sola la explicación de la PRIMERA oferta recibida.
+  voiceHelp?: boolean;
+  adviceKey?: string;
 };
 
 type TourStep = "welcome" | "mine" | "rival" | "bet";
@@ -116,13 +121,16 @@ function TourCallout({
   step,
   last,
   onNext,
+  voice = false,
 }: {
   step: TourStep;
   last: boolean;
   onNext: () => void;
+  voice?: boolean;
 }) {
   const { t } = useI18n();
   const [title, ...rest] = t(TOUR_TEXT[step]).split("\n");
+  useNarration(voice ? t(TOUR_TEXT[step]) : null, { source: "fandango", priority: 2 });
   return (
     <div
       className="fandangoTourCallout"
@@ -540,7 +548,11 @@ function RivalHasWhatYouNeedBlock({
   onSelectOffer,
   onSendOffer,
   onCancelDeal,
+  myMap,
+  rivalMap,
 }: {
+  myMap: NidanaMap;
+  rivalMap: NidanaMap;
   opportunities: RivalOpportunity[];
   mine: CarriedNidana[];
   disabled: boolean;
@@ -661,6 +673,7 @@ function RivalHasWhatYouNeedBlock({
                           <span style={{ opacity: 0.6, fontSize: 13 }}>⇄</span>
                           <MiniCoin nidana={op.need} />
                         </div>
+                        <DealAdvice myMap={myMap} rivalMap={rivalMap} give={selectedOffer} receive={op.need} />
                         <button
                           onClick={onSendOffer}
                           style={{
@@ -691,6 +704,44 @@ function RivalHasWhatYouNeedBlock({
   );
 }
 
+// 20 nov 2026 — "¿Me conviene?": consecuencias de un trato para los dos
+// jugadores, con sus Nidanas reales. Describe; nunca recomienda.
+type NidanaMap = Partial<Record<RealmPieceKind, NidanaId>>;
+function useAdviceLines(mine: NidanaMap, theirs: NidanaMap, give: NidanaId, receive: NidanaId): string[] {
+  const { t } = useI18n();
+  const fx = analyzeTrade(mine, theirs, give, receive);
+  const list = (ls: number[]) => ls.map(linkLabel).join(", ");
+  const lines: string[] = [];
+  lines.push(fx.myGain.length ? t("fan.adv.gain", { links: list(fx.myGain) }) : t("fan.adv.noGain"));
+  if (fx.myLoss.length) lines.push(t("fan.adv.loss", { links: list(fx.myLoss) }));
+  if (fx.rivalGain.length) lines.push(t("fan.adv.rivalGain", { links: list(fx.rivalGain) }));
+  if (fx.rivalLoss.length) lines.push(t("fan.adv.rivalLoss", { links: list(fx.rivalLoss) }));
+  if (!fx.rivalGain.length && !fx.rivalLoss.length) lines.push(t("fan.adv.rivalNone"));
+  return lines;
+}
+function TradeAdvice({ lines }: { lines: string[] }) {
+  return (
+    <div
+      style={{
+        marginTop: 8,
+        fontSize: 12,
+        lineHeight: 1.35,
+        color: "#f2e8d4",
+        opacity: 0.92,
+        textAlign: "center",
+      }}
+    >
+      {lines.map((l, i) => (
+        <div key={i}>{l}</div>
+      ))}
+    </div>
+  );
+}
+
+function DealAdvice(props: { myMap: NidanaMap; rivalMap: NidanaMap; give: NidanaId; receive: NidanaId }) {
+  return <TradeAdvice lines={useAdviceLines(props.myMap, props.rivalMap, props.give, props.receive)} />;
+}
+
 // v77 (28 agosto 2026) — banner de trade, pedido de Federico. Cuando
 // hay una pendingTrade, es lo primero que se ve al abrir Fandango (ver
 // FandangoWindow más abajo) — si te la mandaron a ti, podés
@@ -702,15 +753,27 @@ function TradeOfferPanel({
   onAccept,
   onRefuse,
   onRefuseSky,
+  myMap,
+  rivalMap,
+  autoAdvice = false,
+  voiceHelp = false,
 }: {
   pendingTrade: PendingTrade;
   myPlayer: PlayerId;
   onAccept: () => void;
   onRefuse: () => void;
   onRefuseSky?: () => void;
+  myMap: NidanaMap;
+  rivalMap: NidanaMap;
+  autoAdvice?: boolean;
+  voiceHelp?: boolean;
 }) {
   const { t } = useI18n();
   const incoming = pendingTrade.fromPlayer !== myPlayer;
+  // Si la oferta es para mí: entrego `want`, recibo `offer`.
+  const adviceLines = useAdviceLines(myMap, rivalMap, pendingTrade.want, pendingTrade.offer);
+  const [adviceOpen, setAdviceOpen] = useState(autoAdvice);
+  useNarration(incoming && adviceOpen && voiceHelp ? adviceLines.join(" ") : null, { source: "fandango", priority: 2 });
   return (
     <div
       style={{
@@ -738,6 +801,27 @@ function TradeOfferPanel({
         <span style={{ opacity: 0.6 }}>⇄</span>
         {incoming ? t("fan.forYour") : t("fan.forTheir")} <MiniCoin nidana={pendingTrade.want} />
       </div>
+      {incoming && adviceOpen && <TradeAdvice lines={adviceLines} />}
+      {incoming && !adviceOpen && (
+        <button
+          type="button"
+          onClick={() => setAdviceOpen(true)}
+          style={{
+            marginTop: 8,
+            height: 24,
+            padding: "0 12px",
+            borderRadius: "50%",
+            border: "1px solid rgba(232,176,106,0.45)",
+            background: "rgba(232,176,106,0.12)",
+            color: "#f2d19a",
+            fontSize: 11,
+            fontWeight: 700,
+            cursor: "pointer",
+          }}
+        >
+          {t("fan.adv.ask")}
+        </button>
+      )}
       {incoming ? (
         <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 12 }}>
           <button
@@ -826,6 +910,8 @@ export function FandangoWindow({
   skySignAvailable = false,
   tour = false,
   onTourDone,
+  voiceHelp = false,
+  adviceKey = "",
 }: Props) {
   const { t } = useI18n();
   const [tourIndex, setTourIndex] = useState<number | null>(null);
@@ -855,6 +941,17 @@ export function FandangoWindow({
   // 20 nov 2026 — las Nidanas apostadas en Square Karma 666 no se pueden
   // ofrecer ni pedir mientras dure la apuesta (el reducer también lo
   // impide; aquí solo se dejan de ofrecer).
+  // Primera oferta recibida en esta partida: la explicación se abre sola.
+  const incomingNow = !!pendingTrade && pendingTrade.fromPlayer !== myPlayer;
+  let autoAdviceNow = false;
+  if (incomingNow) {
+    try {
+      autoAdviceNow = localStorage.getItem("sg.fanAdviceShown") !== adviceKey;
+      if (autoAdviceNow) localStorage.setItem("sg.fanAdviceShown", adviceKey);
+    } catch {
+      autoAdviceNow = false;
+    }
+  }
   const staked = new Set<NidanaId>([...(activeSnakeBet?.stake ?? []), ...(pendingSnakeBet?.stake ?? [])]);
   const tradeMine = mine.filter((e) => !staked.has(e.nidana));
   const tradeOpportunities = rivalOpportunities.filter((o) => !staked.has(o.need));
@@ -885,7 +982,7 @@ export function FandangoWindow({
       : tourStep === z ? "fandangoZone fandangoZoneFocus" : "fandangoZone fandangoZoneDim";
   const callout = (z: TourStep) =>
     tourStep === z ? (
-      <TourCallout step={z} last={tourIndex === tourSteps.length - 1} onNext={nextTour} />
+      <TourCallout step={z} last={tourIndex === tourSteps.length - 1} onNext={nextTour} voice={voiceHelp} />
     ) : null;
 
   const handleOpenDeal = (need: NidanaId) => {
@@ -954,8 +1051,13 @@ export function FandangoWindow({
         <div className={zone("mine")}>
         {pendingTrade && (
           <TradeOfferPanel
+            key={`${pendingTrade.fromPlayer}|${pendingTrade.offer}|${pendingTrade.want}`}
             pendingTrade={pendingTrade}
             myPlayer={myPlayer}
+            myMap={myNidanas}
+            rivalMap={rivalNidanas}
+            autoAdvice={autoAdviceNow}
+            voiceHelp={voiceHelp}
             onAccept={onAcceptTrade}
             onRefuse={() => onRefuseTrade()}
             onRefuseSky={skySignAvailable ? () => onRefuseTrade(true) : undefined}
@@ -979,6 +1081,8 @@ export function FandangoWindow({
         <SectionTitle>{rivalLabel}</SectionTitle>
         <CoinRow entries={rival} />
         <RivalHasWhatYouNeedBlock
+          myMap={myNidanas}
+          rivalMap={rivalNidanas}
           opportunities={tradeOpportunities}
           mine={tradeMine}
           disabled={!!pendingTrade}
