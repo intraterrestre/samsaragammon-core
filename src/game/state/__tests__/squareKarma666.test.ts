@@ -421,3 +421,69 @@ describe("Nidanas devueltas: se pueden recuperar con las reglas de siempre", () 
     }
   });
 });
+
+// 20 nov 2026 — el apostador ELIGE sus 2 Nidanas (Federico).
+const N4 = NIDANA_LIST[9];
+function withThird(bettor: PlayerId): GameState {
+  const s = template(bettor);
+  return {
+    ...s,
+    // Tres Nidanas en tres Avatares distintos: Bruno N1, Margot N2, Oriol N4.
+    avatarNidana: { ...s.avatarNidana, [bettor]: { ...s.avatarNidana[bettor], animals: N4 } },
+  } as GameState;
+}
+function acceptedWith(bettor: PlayerId, stake: [NidanaId, NidanaId]): GameState {
+  let s = act(withThird(bettor), { type: "REQUEST_SNAKE_BET", player: bettor, targetAvatar: "hungry_ghost", stake });
+  expect(s.pendingSnakeBet?.stake).toEqual(stake);
+  s = quiet(s);
+  s = act(s, { type: "ACCEPT_SNAKE_BET" });
+  return s;
+}
+
+for (const bettor of ["P1", "P2"] as PlayerId[]) {
+  const rival = other(bettor);
+  const color = bettor === "P1" ? "Blancas" : "Negras";
+  describe(`666 — Nidanas elegidas por el apostador (${color})`, () => {
+    it("la apuesta guarda exactamente las 2 elegidas, aunque no sean las primeras", () => {
+      const s = acceptedWith(bettor, [N4, N2]);
+      expect(s.snakeBet?.stake).toEqual([N4, N2]);
+    });
+
+    it("se rechaza una elección inválida: repetida o una que no lleva", () => {
+      const base = withThird(bettor);
+      expect(act(base, { type: "REQUEST_SNAKE_BET", player: bettor, targetAvatar: "hungry_ghost", stake: [N2, N2] }).pendingSnakeBet).toBeNull();
+      expect(act(base, { type: "REQUEST_SNAKE_BET", player: bettor, targetAvatar: "hungry_ghost", stake: [N2, N3] }).pendingSnakeBet).toBeNull();
+    });
+
+    it("si una elegida ya no está al aceptar, la propuesta se cae (no se apuesta otra)", () => {
+      let s = act(withThird(bettor), { type: "REQUEST_SNAKE_BET", player: bettor, targetAvatar: "hungry_ghost", stake: [N4, N2] });
+      s = quiet(s);
+      const an = { ...s.avatarNidana[bettor] };
+      delete an.animals; // N4 perdida
+      s = act({ ...s, avatarNidana: { ...s.avatarNidana, [bettor]: an } } as GameState, { type: "ACCEPT_SNAKE_BET" });
+      expect(s.snakeBet).toBeNull();
+      expect(s.pendingSnakeBet).toBeNull();
+    });
+
+    it("las elegidas quedan bloqueadas para intercambios ya en la propuesta; las otras no", () => {
+      const s = act(withThird(bettor), { type: "REQUEST_SNAKE_BET", player: bettor, targetAvatar: "hungry_ghost", stake: [N4, N2] });
+      expect(act(s, { type: "SEND_TRADE_OFFER", player: bettor, offer: N4, want: N3 }).pendingTrade).toBeNull();
+      expect(act(s, { type: "SEND_TRADE_OFFER", player: bettor, offer: N1, want: N3 }).pendingTrade).not.toBeNull();
+    });
+
+    it("al perder vuelven solo las elegidas que conserva; la no apostada sigue en su Avatar", () => {
+      let s = acceptedWith(bettor, [N4, N2]);
+      s = runOut(s);
+      expect(onBoard(s)).toEqual(expect.arrayContaining([N4, N2]));
+      expect(carried(s, bettor)).toContain(N1);
+      expect(carried(s, rival)).not.toContain(N4);
+    });
+
+    it("sin elección (laboratorio, partidas antiguas): se apuestan las 2 primeras, como antes", () => {
+      let s = act(withThird(bettor), { type: "REQUEST_SNAKE_BET", player: bettor, targetAvatar: "hungry_ghost" });
+      s = quiet(s);
+      s = act(s, { type: "ACCEPT_SNAKE_BET" });
+      expect(s.snakeBet?.stake.length).toBe(2);
+    });
+  });
+}

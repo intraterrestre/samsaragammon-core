@@ -81,7 +81,7 @@ type Action =
       type: "DEV_SET_ALL_AVATAR_NIDANAS";
       avatarNidana: Record<PlayerId, Partial<Record<RealmPieceKind, NidanaId>>>;
     }
-  | { type: "REQUEST_SNAKE_BET"; player: PlayerId; targetAvatar: RealmPieceKind }
+  | { type: "REQUEST_SNAKE_BET"; player: PlayerId; targetAvatar: RealmPieceKind; stake?: [NidanaId, NidanaId] }
   | { type: "ACCEPT_SNAKE_BET" }
   | { type: "REFUSE_SNAKE_BET"; skySign?: boolean }
   | {
@@ -362,7 +362,8 @@ function pickMaraRebirthPos(state: GameState): number {
 }
 
 function isStaked(state: GameState, id: NidanaId): boolean {
-  return Boolean(state.snakeBet?.stake.includes(id));
+  // También las elegidas en una propuesta que espera respuesta.
+  return Boolean(state.snakeBet?.stake.includes(id) || state.pendingSnakeBet?.stake?.includes(id));
 }
 
 // Rule Canon Repair (30 septiembre 2026) — CANON DE SQUARE KARMA 666:
@@ -923,9 +924,20 @@ function reducerCore(state: GameState, action: Action): GameState {
       ).length;
       if (carriedCount < 2) return state;
 
+      // 20 nov 2026 — el apostador elige sus 2 Nidanas (Federico: con los
+      // enlaces, ya no da igual cuáles). Tienen que ser dos distintas que
+      // lleve ahora mismo, en cualquiera de sus Avatares.
+      const chosen = action.stake;
+      if (chosen) {
+        const mine = new Set(Object.values(state.avatarNidana[player]).filter(Boolean));
+        if (chosen[0] === chosen[1] || !mine.has(chosen[0]) || !mine.has(chosen[1])) return state;
+      }
+
       return {
         ...state,
-        pendingSnakeBet: { byPlayer: player, targetAvatar },
+        pendingSnakeBet: chosen
+          ? { byPlayer: player, targetAvatar, stake: [chosen[0], chosen[1]] }
+          : { byPlayer: player, targetAvatar },
       };
     }
 
@@ -950,16 +962,26 @@ function reducerCore(state: GameState, action: Action): GameState {
         return { ...state, pendingSnakeBet: null };
       }
 
-      // Identifica las 2 Nidanas que quedan en juego: las 2 primeras que
-      // se encuentren, sin selección del jugador. Si pierde, vuelven al
-      // tablero (ver resolveSnakeBetEnd).
+      // Las 2 Nidanas en juego: las que eligió el apostador (stake de la
+      // propuesta). Si pierde, las que aún conserve vuelven al tablero
+      // (ver resolveSnakeBetEnd).
       const carried = Object.values(state.avatarNidana[pending.byPlayer]).filter(
         (id): id is NidanaId => !!id,
       );
       if (carried.length < 2) {
         return { ...state, pendingSnakeBet: null };
       }
-      const stake: [NidanaId, NidanaId] = [carried[0], carried[1]];
+      // Las elegidas, si las hay; si alguna ya no está en sus Avatares, la
+      // propuesta se cae (nunca se apuesta otra en su lugar sin preguntar).
+      let stake: [NidanaId, NidanaId];
+      if (pending.stake) {
+        if (!pending.stake.every((id) => carried.includes(id))) {
+          return { ...state, pendingSnakeBet: null };
+        }
+        stake = [pending.stake[0], pending.stake[1]];
+      } else {
+        stake = [carried[0], carried[1]];
+      }
 
       return {
         ...state,

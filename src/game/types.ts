@@ -412,7 +412,14 @@ export type GameState = {
   // Oferta de Snake Bet pendiente de ACCEPT/REFUSE del rival — null
   // cuando no hay ninguna en curso. Distinto de `snakeBet` (la apuesta ya
   // activa, en curso de cacería).
-  pendingSnakeBet: { byPlayer: PlayerId; targetAvatar: RealmPieceKind } | null;
+  // 20 nov 2026 — stake: las 2 Nidanas que el apostador ELIGIÓ. Opcional
+  // por compatibilidad (partidas guardadas, laboratorio): sin stake se
+  // apuestan las 2 primeras que lleve, como antes.
+  pendingSnakeBet: {
+    byPlayer: PlayerId;
+    targetAvatar: RealmPieceKind;
+    stake?: [NidanaId, NidanaId];
+  } | null;
 
   // La apuesta activa, si el rival ya aceptó. roundsLeft = turnos que le
   // quedan al apostador (solo sus turnos cuentan; ver consumeBettorTurn
