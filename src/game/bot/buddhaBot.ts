@@ -14,6 +14,8 @@
 //   hard   — siempre lo mejor que encuentra, y mira qué te deja a ti
 //            (la mejor respuesta del rival con cada tirada posible).
 
+import { analyzeTrade, nidanaLinkLows, nidanaNumber } from "../rules/nidanaLink";
+import type { NidanaId } from "../nidanas";
 import { reducer } from "../state/reducer";
 import { getMoveOptionsForPlayer } from "../rules/getMoveOptionsForPlayer";
 import { getAllLegalMoves, type LegalMove } from "../rules/legalMoves";
@@ -243,7 +245,60 @@ export function botAnswersSnakeBet(): "accept" {
   return "accept";
 }
 
-/** Buddha ante un trato de Nidanas en el Karma Chat Fandango. */
-export function botAnswersTrade(level: BotLevel): "accept" | "refuse" {
-  return level === "hard" ? "refuse" : "accept";
+/**
+ * Buddha ante un trato de Nidanas en el Karma Chat Fandango (20 nov 2026,
+ * estrategia sencilla aprobada por Federico; la misma de la simulación):
+ *   Fácil   acepta todo.
+ *   Normal  acepta si el trato no le rompe un enlace.
+ *   Difícil además rechaza si el trato te da un enlace a ti y a él no.
+ */
+export function botAnswersTrade(
+  level: BotLevel,
+  s?: GameState,
+  bot?: PlayerId
+): "accept" | "refuse" {
+  if (level === "easy" || !s || !bot || !s.pendingTrade) return "accept";
+  const trade = s.pendingTrade;
+  const human: PlayerId = bot === "P1" ? "P2" : "P1";
+  // Buddha entrega trade.want y recibe trade.offer.
+  const fx = analyzeTrade(s.avatarNidana[bot], s.avatarNidana[human], trade.want, trade.offer);
+  if (fx.myLoss.length > 0) return "refuse";
+  if (level === "hard" && fx.rivalGain.length > 0 && fx.myGain.length === 0) return "refuse";
+  return "accept";
+}
+
+/**
+ * Buddha propone un trato (en su turno, si no hay ninguno pendiente):
+ * pide una Nidana tuya que le complete un enlace y que no forme parte de
+ * uno tuyo, y ofrece una suya que no esté en ningún enlace suyo ni
+ * apostada. null = no propone nada. `refused` = pares ya rechazados en
+ * esta partida (no insiste con lo mismo).
+ */
+export function botProposeTrade(
+  s: GameState,
+  bot: PlayerId,
+  refused: ReadonlySet<string> = new Set()
+): { offer: NidanaId; want: NidanaId } | null {
+  if (s.pendingTrade) return null;
+  const human: PlayerId = bot === "P1" ? "P2" : "P1";
+  const staked = new Set<NidanaId>([...(s.snakeBet?.stake ?? []), ...(s.pendingSnakeBet?.stake ?? [])]);
+  const mine = Object.values(s.avatarNidana[bot] ?? {}).filter(Boolean) as NidanaId[];
+  const theirs = Object.values(s.avatarNidana[human] ?? {}).filter(Boolean) as NidanaId[];
+  const inLinks = (lows: number[], id: NidanaId) => lows.some((l) => nidanaNumber(id) === l || nidanaNumber(id) === l + 1);
+  const myLows = nidanaLinkLows(s.avatarNidana[bot]);
+  const theirLows = nidanaLinkLows(s.avatarNidana[human]);
+  const myNums = new Set(mine.map(nidanaNumber));
+  for (const want of theirs) {
+    const wn = nidanaNumber(want);
+    if (!(myNums.has(wn - 1) || myNums.has(wn + 1))) continue;
+    if (inLinks(theirLows, want) || staked.has(want)) continue;
+    for (const offer of mine) {
+      const on = nidanaNumber(offer);
+      if (inLinks(myLows, offer) || staked.has(offer)) continue;
+      if (on === wn - 1 || on === wn + 1) continue;
+      if (refused.has(`${offer}|${want}`)) continue;
+      return { offer, want };
+    }
+  }
+  return null;
 }

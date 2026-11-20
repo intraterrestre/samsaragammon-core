@@ -40,7 +40,8 @@ import type { MoveOption, PieceKind, PlayerId, RealmPieceKind, RealmPieceState }
 import { REALM_PIECE_ORDER } from "../game/types";
 import bigHeadWhite from "../assets/master/bighead-school/bighead-school-white.png";
 import bigHeadBlack from "../assets/master/bighead-school/bighead-school-black.png";
-import { chooseBotMove, botAnswersSnakeBet, botAnswersTrade, type BotLevel } from "../game/bot/buddhaBot";
+import { chooseBotMove, botAnswersSnakeBet, botAnswersTrade,
+  botProposeTrade, type BotLevel } from "../game/bot/buddhaBot";
 import { AVATAR_ORDER } from "../game/historicalClock";
 import { ACTOR_PROFILES } from "../game/actors/actorProfiles";
 
@@ -1271,6 +1272,19 @@ const botLater = (ms: number, fn: () => void) => {
   botTimersRef.current.push(window.setTimeout(() => onBotAct?.(fn), ms));
 };
 const isBotTurn = !!botPlayer && state.turn === botPlayer && !state.winner;
+// 20 nov 2026 — negociación de Buddha: cuándo propuso por última vez y qué
+// tratos suyos rechazaste (para no insistir).
+const lastBotProposalRef = React.useRef(-99);
+const botRefusedTradesRef = React.useRef<Set<string>>(new Set());
+const prevTradeRef = React.useRef(state.pendingTrade);
+React.useEffect(() => {
+  const prev = prevTradeRef.current;
+  prevTradeRef.current = state.pendingTrade;
+  if (!botPlayer || !prev || state.pendingTrade || prev.fromPlayer !== botPlayer) return;
+  // El trato de Buddha desapareció: si Buddha aún tiene lo que ofrecía, no se hizo.
+  const stillHas = Object.values(state.avatarNidana[botPlayer] ?? {}).includes(prev.offer);
+  if (stillHas) botRefusedTradesRef.current.add(`${prev.offer}|${prev.want}`);
+}, [state.pendingTrade, state.avatarNidana, botPlayer]);
 const botPaused =
   !genesisComplete ||
   splashOpen ||
@@ -1297,15 +1311,29 @@ React.useEffect(() => {
   }
   if (state.pendingTrade && state.pendingTrade.fromPlayer !== me) {
     botLater(1200, () => {
-      if (botAnswersTrade(botLevel) === "accept") onAcceptTrade();
+      if (botAnswersTrade(botLevel, botStateRef.current, me) === "accept") onAcceptTrade();
       else onRefuseTrade(false);
     });
     return;
   }
 
-  // 2. Tirar.
+  // 2. Tirar. 20 nov 2026 — antes de tirar, Buddha puede proponer un trato
+  // de Nidanas (estrategia sencilla, ver botProposeTrade): como mucho uno
+  // cada 3 turnos suyos, y nunca repite uno que ya le rechazaste. Se
+  // propone y se tira en el mismo momento: no detiene la partida; tú
+  // contestas en tu turno, cuando quieras.
   if (state.phase === "idle") {
-    botLater(1100, () => handleRollWithPopup());
+    botLater(1100, () => {
+      const s = botStateRef.current;
+      if (s.turn === me && s.phase === "idle" && s.turnIndex - lastBotProposalRef.current >= 6) {
+        const prop = botProposeTrade(s, me, botRefusedTradesRef.current);
+        if (prop) {
+          lastBotProposalRef.current = s.turnIndex;
+          onSendTradeOffer(me, prop.offer, prop.want);
+        }
+      }
+      handleRollWithPopup();
+    });
     return;
   }
 
@@ -3122,7 +3150,9 @@ return (
   }}
   onRefuseSnakeBet={onRefuseSnakeBet}
   skySignAvailable={!(state.skySignsUsed ?? []).includes(state.turn)}
-  tour={beginnerMode && !seenLessonsRef.current.has("fandangoTour")}
+  tour={(beginnerMode || !!onlineRole) && !seenLessonsRef.current.has("fandangoTour")}
+  voiceHelp={beginnerMode && !onlineRole}
+  adviceKey={state.gameId ?? ""}
   onTourDone={() => {
     seenLessonsRef.current.set("fandangoTour", 1);
     saveSeenLessons(seenLessonsRef.current);
