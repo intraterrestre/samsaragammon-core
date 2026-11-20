@@ -93,6 +93,7 @@ type Props = {
     byPlayer: PlayerId;
     targetAvatar: RealmPieceKind;
     roundsLeft: number;
+    stake?: readonly NidanaId[];
   } | null;
   onRequestSnakeBet: (targetAvatar: RealmPieceKind) => void;
   onAcceptSnakeBet: () => void;
@@ -176,6 +177,7 @@ function SquareKarma666Block({
     byPlayer: PlayerId;
     targetAvatar: RealmPieceKind;
     roundsLeft: number;
+    stake?: readonly NidanaId[];
   } | null;
   onRequest: (targetAvatar: RealmPieceKind) => void;
   onAccept: () => void;
@@ -211,6 +213,15 @@ function SquareKarma666Block({
           name: REALM_AVATAR_NAME[activeSnakeBet.targetAvatar],
           n: String(activeSnakeBet.roundsLeft),
         })}
+        {/* 20 nov 2026 — qué 2 Nidanas están en juego. */}
+        {activeSnakeBet.stake && activeSnakeBet.stake.length > 0 && (
+          <div style={{ marginTop: 6, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <span style={{ fontSize: 12, opacity: 0.85 }}>{t("fan.betStake")}</span>
+            {activeSnakeBet.stake.map((id) => (
+              <MiniCoin key={id} nidana={id} />
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -850,6 +861,12 @@ export function FandangoWindow({
     mine.map((e) => e.nidana),
     rival.map((e) => e.nidana),
   );
+  // 20 nov 2026 — las Nidanas apostadas en Square Karma 666 no se pueden
+  // ofrecer ni pedir mientras dure la apuesta (el reducer también lo
+  // impide; aquí solo se dejan de ofrecer).
+  const staked = new Set<NidanaId>(activeSnakeBet?.stake ?? []);
+  const tradeMine = mine.filter((e) => !staked.has(e.nidana));
+  const tradeOpportunities = rivalOpportunities.filter((o) => !staked.has(o.need));
 
   // Ya formados (YOUR LINKS) vs. todavía no (LINK AVAILABLE) — un
   // mismo link nunca aparece en las dos listas a la vez.
@@ -992,8 +1009,8 @@ export function FandangoWindow({
         <SectionTitle>{rivalLabel}</SectionTitle>
         <CoinRow entries={rival} />
         <RivalHasWhatYouNeedBlock
-          opportunities={rivalOpportunities}
-          mine={mine}
+          opportunities={tradeOpportunities}
+          mine={tradeMine}
           disabled={!!pendingTrade}
           dealFor={dealFor}
           selectedOffer={selectedOffer}
