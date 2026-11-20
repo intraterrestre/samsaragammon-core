@@ -57,6 +57,9 @@ export type NarrateOptions = {
   priority?: number;
   // Ignora el modo "text" y la regla anti-repetición (botón repetir).
   force?: boolean;
+  // Avisos cortos que SÍ deben repetirse (p. ej. "Tu turno"): se salta
+  // solo la regla anti-repetición, no el modo elegido.
+  repeat?: boolean;
 };
 
 const STORAGE_KEY = "samsara_narrator_v1";
@@ -244,7 +247,7 @@ export function narrate(text: string, opts: NarrateOptions): number | null {
   if (!speech) return null;
 
   const now = Date.now();
-  if (!opts.force && last && last.speech === speech && now - last.at < REPEAT_GAP_MS) {
+  if (!opts.force && !opts.repeat && last && last.speech === speech && now - last.at < REPEAT_GAP_MS) {
     return null;
   }
 

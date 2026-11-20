@@ -128,7 +128,7 @@ import { getBuddhaHelp, type HelpTopic } from "../game/tutorial/help";
 import { useI18n, translate } from "../i18n";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { Narrate, NarratorSwitch } from "./NarratorSwitch";
-import { isNarrating } from "./narrator";
+import { isNarrating, narrate } from "./narrator";
 import { LessonCard } from "./LessonCard";
 import lotusSeal from "../assets/lotus_seal.webp";
 import {
@@ -439,6 +439,21 @@ React.useEffect(() => {
   if (proposedNow || acceptedNow) playCascabel();
   if (acceptedNow) playSiseo();
 }, [state.pendingSnakeBet, state.snakeBet]);
+
+// 20 nov 2026 — Federico: "apenas mueva Buddha, que el narrador diga es
+// tu turno". Cuando el turno vuelve a ti después de Buddha (o del rival a
+// distancia), el narrador lo dice. Solo si elegiste VOZ o AMBOS.
+const prevTurnRef = React.useRef(state.turn);
+React.useEffect(() => {
+  const prev = prevTurnRef.current;
+  prevTurnRef.current = state.turn;
+  if (prev === state.turn || state.winner) return;
+  const me: PlayerId | null = botPlayer
+    ? (botPlayer === "P1" ? "P2" : "P1")
+    : onlineRole ?? null;
+  if (!me || state.turn !== me) return;
+  narrate(t("narr.yourTurn"), { source: "event", priority: 1, repeat: true });
+}, [state.turn, state.winner, botPlayer, onlineRole]);
 
 const handleFormLink = (low: number) => {
   onFormLink(state.turn, low);
