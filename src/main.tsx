@@ -1,3 +1,5 @@
+// Antes que nada: registra los sonidos para desbloquearlos en el iPad.
+import "./UI/audioUnlock";
 import ReactDOM from "react-dom/client";
 import AppBoot from "./AppBoot";
 import "./index.css";
