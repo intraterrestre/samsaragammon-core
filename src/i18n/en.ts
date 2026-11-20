@@ -136,6 +136,7 @@ export const en = {
   "fan.betRivals": "rival's",
   "lesson.replay": "Repeat explanation",
   "narr.yourTurn": "Your turn.",
+  "fan.betRule": "The bettor has 3 turns to capture a rival Avatar with the Snake, in any realm. If they do, their Avatar receives its lotus. If not, their 2 staked Nidanas go back to the board.",
   "fan.betStake": "At stake:",
   "fan.betProposed": "🐍 SQUARE KARMA 666 proposed on {name}: waiting for the rival's reply.",
   "fan.betIncoming": "🐍 Rival proposes SQUARE KARMA 666 on your {name}.",

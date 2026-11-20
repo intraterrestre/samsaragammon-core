@@ -239,6 +239,7 @@ function SquareKarma666Block({
       <div style={boxStyle}>
         <div style={{ marginBottom: 8 }}>
           {t("fan.betIncoming", { name: REALM_AVATAR_NAME[pendingSnakeBet.targetAvatar] })}
+          <div style={{ marginTop: 6, fontSize: 12, opacity: 0.85 }}>{t("fan.betRule")}</div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button type="button" onClick={onAccept} style={buttonStyle}>
@@ -261,7 +262,8 @@ function SquareKarma666Block({
 
   return (
     <div style={boxStyle}>
-      <div style={{ marginBottom: 8 }}>{t("fan.betPropose")}</div>
+      <div style={{ marginBottom: 4 }}>{t("fan.betPropose")}</div>
+      <div style={{ marginBottom: 8, fontSize: 12, opacity: 0.85 }}>{t("fan.betRule")}</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {eligibleTargets.map((kind) => (
           <button

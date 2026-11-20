@@ -130,6 +130,7 @@ export const es: Dictionary = {
   "fan.betRivals": "del rival",
   "lesson.replay": "Repetir explicación",
   "narr.yourTurn": "Tu turno.",
+  "fan.betRule": "Quien apuesta tiene 3 turnos para capturar con la Serpiente un Avatar rival, en cualquier reino. Si lo logra, su Avatar recibe el loto. Si no, sus 2 Nidanas apostadas vuelven al tablero.",
   "fan.betStake": "En juego:",
   "fan.betProposed": "🐍 SQUARE KARMA 666 propuesta sobre {name}: esperando la respuesta del rival.",
   "fan.betIncoming": "🐍 El rival propone SQUARE KARMA 666 sobre tu {name}.",
