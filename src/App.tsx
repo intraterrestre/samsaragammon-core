@@ -1,5 +1,6 @@
 // src/App.tsx
 import { isBrunoEraDone, setVideoPending } from "./UI/lessonGate";
+import type { TesterScenario } from "./game/tester/scenarios";
 import { isNarrating } from "./UI/narrator";
 import React, {
   useCallback,
@@ -405,15 +406,64 @@ const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
   const [showLogin, setShowLogin] = useState(false);
   // 4 oct 2026 — modo de prueba de Federico: añadir ?saltos a la
   // dirección muestra botones para saltar a cada Avatar (partidas locales).
-  const testerSkips =
-    typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).has("saltos");
+  // 20 nov 2026 — se recuerda en este aparato: basta abrir una vez con
+  // ?saltos; ?saltos=no lo apaga. Nunca en partidas a distancia (ver abajo).
+  const testerSkips = (() => {
+    if (typeof window === "undefined") return false;
+    const q = new URLSearchParams(window.location.search).get("saltos");
+    try {
+      if (q === "no") {
+        localStorage.removeItem("sg.tester");
+        return false;
+      }
+      if (q !== null) {
+        localStorage.setItem("sg.tester", "1");
+        return true;
+      }
+      return localStorage.getItem("sg.tester") === "1";
+    } catch {
+      return q !== null && q !== "no";
+    }
+  })();
+  // Modo de pruebas: saltar videos y carteles (se recuerda en el aparato).
+  const [testerQuiet, setTesterQuietState] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("sg.testerQuiet") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const setTesterQuiet = (on: boolean) => {
+    setTesterQuietState(on);
+    try {
+      localStorage.setItem("sg.testerQuiet", on ? "1" : "0");
+    } catch {
+      // dura hasta recargar
+    }
+  };
 
   // 3 oct 2026 — el reducer necesita saber si la partida es de tutorial
   // (Bruno llega antes). Se sincroniza al elegir el modo y en cada reinicio.
   useEffect(() => {
     dispatchBase({ type: "SET_TUTORIAL_MODE", on: beginnerMode } as never);
   }, [beginnerMode, genesisResetSeq]);
+  // 20 nov 2026 — ANTIZOMBIES: la PRIMERA visita en este aparato entra
+  // directo a JUEGA CON BUDDHA después de la bienvenida, sin pasar por el
+  // lobby. Las siguientes visitas (y quien llega con una invitación ?partida)
+  // ven el lobby como siempre.
+  useEffect(() => {
+    try {
+      if (new URLSearchParams(window.location.search).has("partida")) return;
+      if (localStorage.getItem("sg.visited")) return;
+      localStorage.setItem("sg.visited", "1");
+    } catch {
+      return;
+    }
+    resetSeenLessons();
+    setBeginnerMode(true);
+    setGameMode("local");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [multiplayerGame, setMultiplayerGame] = useState<Game | null>(null);
   const [myRole, setMyRole] = useState<"P1" | "P2" | null>(null);
   const [lobbyCode, setLobbyCode] = useState<string | null>(null);
@@ -599,6 +649,11 @@ useEffect(() => {
 
 
   if (playedRealmIntrosRef.current[introId]) return;
+  // Modo de pruebas silencioso: sin videos de Avatar.
+  if (testerSkips && testerQuiet && gameMode !== "multiplayer") {
+    playedRealmIntrosRef.current[introId] = true;
+    return;
+  }
 
   const introSrc = REALM_INTRO_MAP[realmKey];
 
@@ -1496,6 +1551,13 @@ nidanaCoinSide={nidanaSide}
           ? (step: number) => dispatch({ type: "TESTER_SKIP_TO_STEP", step })
           : undefined
       }
+      onTesterScenario={
+        (import.meta.env.DEV || testerSkips) && gameMode !== "multiplayer"
+          ? (name: TesterScenario) => dispatch({ type: "TESTER_SCENARIO", name })
+          : undefined
+      }
+      testerQuiet={testerSkips && gameMode !== "multiplayer" && testerQuiet}
+      onTesterQuiet={setTesterQuiet}
       // v69 (27 agosto 2026) — atajo pedido por Federico: deja al
       // jugador activo en 5/6 fichas en Humans (ver reducer.ts, case
       // "DEV_SKIP_TO_5_HUMANS") para probar el aviso "ONE MORE TO GET

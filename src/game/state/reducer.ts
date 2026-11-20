@@ -20,6 +20,7 @@ import { behaviorAfterMove } from "../behavior/behavior";
 import { recordMove } from "../behavior/patternEngine";
 import { realmFromPos, canonicalRealmFromPos } from "../../UI/realm";
 import { SNAKE_BET_ROUNDS } from "../snakeBet";
+import { buildTesterScenario, type TesterScenario } from "../tester/scenarios";
 import { nidanaLinkLows, MARA_ROLLS, MARA_LINK_ROLLS } from "../rules/nidanaLink";
 import { getDharma777Opportunity, getDharma777EligibleTargets } from "../dharma777";
 import { updateDecisionSignature } from "../Karma/updateDecisionSignature";
@@ -63,6 +64,7 @@ type Action =
   | { type: "SET_TUTORIAL_MODE"; on: boolean }
   | { type: "DEV_SKIP_TO_RUFUS" }
   | { type: "TESTER_SKIP_TO_STEP"; step: number }
+  | { type: "TESTER_SCENARIO"; name: TesterScenario }
   | { type: "DEV_SKIP_TO_5_HUMANS" }
   // v74 (28 agosto 2026) — dev-tool de Federico/Chaty para probar
   // Fandango/Nidanas sin depender del azar (ver DevNidanaTool.tsx).
@@ -608,9 +610,14 @@ function reducerCore(state: GameState, action: Action): GameState {
     // pidió en v54). Solo se ofrece en partidas locales con ?saltos en
     // la dirección (ver App.tsx). Misma lógica: escribe el estado final
     // que el Orquestador produciría y arranca una etapa nueva.
+    // 20 nov 2026 — escenarios fijos del modo de pruebas (tester/scenarios.ts).
+    case "TESTER_SCENARIO":
+      return buildTesterScenario(state, action.name);
+
     case "TESTER_SKIP_TO_STEP": {
-      const step = Math.max(1, Math.min(5, Math.floor(action.step)));
-      const ERAS = ["bruno", "margot", "oriol", "marino", "rufus"] as const;
+      // 20 nov 2026 — Federico: también Whitman (6).
+      const step = Math.max(1, Math.min(6, Math.floor(action.step)));
+      const ERAS = ["bruno", "margot", "oriol", "marino", "rufus", "whitman"] as const;
       const kinds = REALM_PIECE_ORDER.slice(0, step);
       let working: GameState = {
         ...state,

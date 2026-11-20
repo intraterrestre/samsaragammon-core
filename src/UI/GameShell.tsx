@@ -202,6 +202,11 @@ nidanaCoinSide: "front" | "back";
   // romper otros usos de GameShell que no la pasen.
   onDevSkipToRufus?: () => void;
   onTesterSkip?: (step: number) => void;
+  // 20 nov 2026 — modo de pruebas: escenarios fijos y "silencio" (sin
+  // videos ni carteles de Buddha).
+  onTesterScenario?: (name: "final" | "666" | "777" | "fandango") => void;
+  testerQuiet?: boolean;
+  onTesterQuiet?: (on: boolean) => void;
   // DEV ONLY (27 agosto 2026) — atajo pedido por Federico, ver reducer.ts
   // case "DEV_SKIP_TO_5_HUMANS": deja al jugador activo en 5/6 fichas en
   // Humans con Whitman ya desbloqueado (dispara "ONE MORE TO GET OUT" +
@@ -264,6 +269,16 @@ nidanaCoinSide: "front" | "back";
   onDisableHelps?: () => void;
 };
 
+const testerBtn: React.CSSProperties = {
+  fontSize: 11,
+  padding: "3px 6px",
+  borderRadius: 6,
+  background: "rgba(245,215,110,0.12)",
+  color: "#f5d76e",
+  border: "1px solid rgba(245,215,110,0.35)",
+  cursor: "pointer",
+};
+
 export function GameShell({
   state,
   a,
@@ -280,6 +295,9 @@ export function GameShell({
   onReset,
   onDevSkipToRufus,
   onTesterSkip,
+  onTesterScenario,
+  testerQuiet = false,
+  onTesterQuiet,
   onDevSkipTo5Humans,
   onDevSetAvatarNidana,
   onDevSetAllAvatarNidanas,
@@ -1736,8 +1754,8 @@ React.useEffect(() => {
 React.useEffect(() => {
   if (!beginnerMode || !genesisComplete || state.winner) return;
   if (splashOpen) return;
-  // Ayudas apagadas: Buddha no da lecciones.
-  if (helpsOff) return;
+  // Ayudas apagadas (o modo de pruebas silencioso): Buddha no da lecciones.
+  if (helpsOff || testerQuiet) return;
   // Las lecciones son para ti: en el turno de Buddha no habla el maestro.
   if (botPlayer && state.turn === botPlayer) return;
   if (avatarVideoPlaying || budaConsultationActive || pendingDharmaChoice) return;
@@ -2218,11 +2236,13 @@ return (
           style={{
             position: "absolute",
             left: 8,
-            bottom: 8,
+            top: 8,
             zIndex: 20000,
             display: "flex",
+            flexWrap: "wrap",
             gap: 4,
             alignItems: "center",
+            maxWidth: 420,
             padding: "4px 6px",
             borderRadius: 8,
             background: "rgba(0,0,0,0.6)",
@@ -2232,24 +2252,36 @@ return (
           }}
         >
           <span style={{ marginRight: 2 }}>⏩</span>
-          {["Bruno", "Margot", "Oriol", "Marino", "Rufus"].map((name, i) => (
-            <button
-              key={name}
-              type="button"
-              onClick={() => onTesterSkip(i + 1)}
-              style={{
-                fontSize: 11,
-                padding: "3px 6px",
-                borderRadius: 6,
-                background: "rgba(245,215,110,0.12)",
-                color: "#f5d76e",
-                border: "1px solid rgba(245,215,110,0.35)",
-                cursor: "pointer",
-              }}
-            >
+          {["Bruno", "Margot", "Oriol", "Marino", "Rufus", "Whitman"].map((name, i) => (
+            <button key={name} type="button" onClick={() => onTesterSkip(i + 1)} style={testerBtn}>
               {name}
             </button>
           ))}
+          {onTesterScenario && (
+            <>
+              <span style={{ margin: "0 2px 0 6px" }}>🧪</span>
+              {([
+                ["final", "Final"],
+                ["666", "666"],
+                ["777", "777"],
+                ["fandango", "Fandango"],
+              ] as const).map(([key, label]) => (
+                <button key={key} type="button" onClick={() => onTesterScenario(key)} style={testerBtn}>
+                  {label}
+                </button>
+              ))}
+            </>
+          )}
+          {onTesterQuiet && (
+            <button
+              type="button"
+              onClick={() => onTesterQuiet(!testerQuiet)}
+              title="Saltar videos y carteles"
+              style={{ ...testerBtn, background: testerQuiet ? "rgba(245,215,110,0.45)" : testerBtn.background }}
+            >
+              {testerQuiet ? "🔇 sin videos/carteles" : "🎬 con videos/carteles"}
+            </button>
+          )}
         </div>
       )}
 
