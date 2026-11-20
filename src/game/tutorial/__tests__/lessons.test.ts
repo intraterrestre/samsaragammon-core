@@ -15,10 +15,24 @@ afterAll(() => vi.restoreAllMocks());
 const none = new Set<LessonId>();
 
 describe("lecciones de Buddha", () => {
-  it("al empezar, primero los tres animales y después tirar", () => {
-    expect(pickLesson(initialState, "P1", none)?.id).toBe("threePoisons");
-    expect(pickLesson(initialState, "P1", new Set<LessonId>(["threePoisons"]))?.id).toBe("sixRealms");
-    expect(pickLesson(initialState, "P1", new Set<LessonId>(["threePoisons", "sixRealms"]))?.id).toBe("roll");
+  // 20 nov 2026 — ANTIZOMBIES: primero tirar; tras el primer movimiento,
+  // felicitación + anticipo de Bruno; tras el segundo, los tres animales;
+  // los seis reinos, cuando llega Bruno.
+  it("al empezar solo se pide tirar; los animales y Bruno se explican al moverlos", () => {
+    expect(pickLesson(initialState, "P1", none)?.id).toBe("roll");
+    const moved = (n: number) =>
+      ({
+        ...initialState,
+        decisionSignature: {
+          ...initialState.decisionSignature,
+          P1: { ...initialState.decisionSignature.P1, totalMoves: n },
+        },
+      }) as GameState;
+    const seenRoll = new Set<LessonId>(["roll"]);
+    expect(pickLesson(moved(1), "P1", seenRoll)?.id).toBe("firstMove");
+    expect(pickLesson(moved(2), "P1", new Set<LessonId>(["roll", "firstMove"]))?.id).toBe("threePoisons");
+    const bruno = { ...moved(3), brunoRevealed: true } as GameState;
+    expect(pickLesson(bruno, "P1", new Set<LessonId>(["roll", "firstMove", "threePoisons", "brunoEra"]))?.id).toBe("sixRealms");
   });
 
   it("al llegar Bruno, primero cuánto tiempo pasó", () => {
@@ -58,7 +72,7 @@ describe("lecciones de Buddha", () => {
         P2: {},
       },
     } as GameState;
-    expect(pickLesson(s, "P1", new Set<LessonId>(["brunoEra"]))?.id).toBe("firstAvatar");
+    expect(pickLesson(s, "P1", new Set<LessonId>(["brunoEra", "sixRealms"]))?.id).toBe("firstAvatar");
   });
 
   it("en partidas reales aparecen casi todas las lecciones y ninguna falla", () => {
@@ -131,7 +145,7 @@ describe("lecciones que se repiten (playtest 3 oct 2026)", () => {
 
   it("la moneda de Nidana se explica cuando aparece en el tablero", () => {
     const s = { ...initialState, brunoRevealed: true, boardNidanas: { 9: "CRAVING" } } as unknown as GameState;
-    expect(pickLesson(s, "P1", new Map([["brunoEra", 1]]))?.id).toBe("nidanaSpawn");
+    expect(pickLesson(s, "P1", new Map([["brunoEra", 1], ["sixRealms", 1]]))?.id).toBe("nidanaSpawn");
   });
 
   it("el formato viejo de lecciones vistas sigue sirviendo", () => {
@@ -165,8 +179,8 @@ describe("el espejo del Buda azul", () => {
       brunoRevealed: true,
       cosmicClock: { ...initialState.cosmicClock, era: "oriol" },
     } as unknown as GameState;
-    expect(pickLesson(s, "P1", new Set<LessonId>(["brunoEra"]))?.id).toBe("oriol");
-    expect(pickLesson(s, "P1", new Set<LessonId>(["brunoEra", "oriol"]))?.id).toBe("mirror");
+    expect(pickLesson(s, "P1", new Set<LessonId>(["brunoEra", "sixRealms"]))?.id).toBe("oriol");
+    expect(pickLesson(s, "P1", new Set<LessonId>(["brunoEra", "sixRealms", "oriol"]))?.id).toBe("mirror");
   });
 });
 
@@ -200,7 +214,7 @@ describe("nacimientos en hot-seat", () => {
         P2: { hell: { id: "P2-hell", kind: "hell", pos: 3, inLimbo: false, maraLevel: null, unlocked: true } },
       },
     } as unknown as GameState;
-    const seen = new Set<LessonId>(["brunoEra", "evoClock"]);
+    const seen = new Set<LessonId>(["brunoEra", "sixRealms", "sixRealms", "evoClock"]);
     expect(pickLesson(s, "P1", seen)?.id).toBe("secondAvatar");
   });
 });
@@ -208,7 +222,7 @@ describe("nacimientos en hot-seat", () => {
 describe("el loto", () => {
   it("el cartel nombra al Avatar que recibió su loto", () => {
     const s = { ...initialState, brunoRevealed: true, consolidatedAvatars: { P1: {}, P2: { hell: true } } } as unknown as GameState;
-    const l = pickLesson(s, "P1", new Set<LessonId>(["brunoEra", "evoClock"]));
+    const l = pickLesson(s, "P1", new Set<LessonId>(["brunoEra", "sixRealms", "evoClock"]));
     expect(l?.id).toBe("sealed");
     expect(l!.vars!(s, "P1", (k) => k).name).toBe("Margot");
   });
@@ -221,7 +235,7 @@ describe("el reloj de la evolución", () => {
       brunoRevealed: true,
       realmPieces: { P1: { hungry_ghost: { id: "x", kind: "hungry_ghost", pos: 3, inLimbo: false, maraLevel: null, unlocked: true } }, P2: {} },
     } as unknown as GameState;
-    expect(pickLesson(s, "P1", new Set<LessonId>(["brunoEra", "firstAvatar"]))?.id).toBe("evoClock");
+    expect(pickLesson(s, "P1", new Set<LessonId>(["brunoEra", "sixRealms", "firstAvatar"]))?.id).toBe("evoClock");
   });
 });
 
@@ -237,7 +251,7 @@ describe("bienvenida al Avatar del adversario", () => {
         P2: { ...initialState.realmProgress.P2, stageStartedAtRoll: 14 },
       },
     } as unknown as GameState;
-    const seen = new Set<LessonId>(["brunoEra", "evoClock", "firstAvatar", "secondAvatar"]);
+    const seen = new Set<LessonId>(["brunoEra", "sixRealms", "sixRealms", "evoClock", "firstAvatar", "secondAvatar"]);
     const l = pickLesson(s, "P1", seen);
     expect(l?.id).toBe("rivalAvatar");
     expect(l!.vars!(s, "P1", (k) => (k === "color.P2" ? "Negras" : k))).toEqual({ name: "Margot", color: "Negras", welcome: "lesson.welcomeF" });
@@ -286,7 +300,7 @@ describe("Mara: experiencia → misterio → nombre → significado", () => {
   const era = (e: string) => ({ era: e, progress: 0, transitionSequence: 3 });
   it("la pista sale con el mural de Margot, sin nombrar a Mara", () => {
     const s = { ...initialState, brunoRevealed: true, cosmicClock: era("margot") } as unknown as GameState;
-    const seen = new Set<LessonId>(["brunoEra", "evoClock", "firstAvatar", "secondAvatar", "nidanaCarry", "nidanaSpawn"]);
+    const seen = new Set<LessonId>(["brunoEra", "sixRealms", "sixRealms", "evoClock", "firstAvatar", "secondAvatar", "nidanaCarry", "nidanaSpawn"]);
     expect(pickLesson(s, "P1", seen)?.id).toBe("maraClue");
   });
   it("con Whitman: nombre y, justo después, MARA TE ATRAPA", () => {

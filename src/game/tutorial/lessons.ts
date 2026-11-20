@@ -40,6 +40,7 @@ export type LessonId =
   | "mirrorTouch"
   | "threePoisons"
   | "sixRealms"
+  | "firstMove"
   | "brunoEra"
   | "oriol"
   | "mirror"
@@ -264,21 +265,32 @@ export const LESSONS: Lesson[] = [
     holds: (s, p) => rolled(s) && getAllLegalMoves(s, p).length === 0,
     urgent: true,
   },
-  // 3 oct 2026, pedido de Federico: lo primero que oye un principiante
-  // es qué son los tres animales, antes de tirar.
+  // 20 nov 2026 — ANTIZOMBIES (Federico): primero jugar, después explicar.
+  // Ya no hay carteles antes de la primera tirada (solo "Tu turno. Tira las
+  // piedras", la lección "roll" de abajo). Tras tu primer movimiento,
+  // Buddha te felicita y anticipa a Bruno: así se entiende por qué hay que
+  // mover los tres animales.
+  {
+    id: "firstMove",
+    holds: (s, p) =>
+      s.phase === "idle" && !s.brunoRevealed && (s.decisionSignature?.[p]?.totalMoves ?? 0) >= 1,
+  },
+  // Qué son los tres animales: después del segundo movimiento, no antes.
   {
     id: "threePoisons",
-    holds: (s) => s.phase === "idle" && !s.brunoRevealed,
-  },
-  // 3 oct 2026, Federico: sin saber que el tablero se vuelve seis reinos,
-  // "renace en cualquier sitio menos Humanos" no le dice nada al novato.
-  {
-    id: "sixRealms",
-    holds: (s) => s.phase === "idle" && !s.brunoRevealed,
+    holds: (s, p) =>
+      s.phase === "idle" && !s.brunoRevealed && (s.decisionSignature?.[p]?.totalMoves ?? 0) >= 2,
   },
   // ...y al llegar Bruno, cuánto tiempo pasó en esa introducción rápida.
   {
     id: "brunoEra",
+    holds: (s) => s.brunoRevealed,
+  },
+  // 3 oct 2026, Federico: sin saber que el tablero se vuelve seis reinos,
+  // "renace en cualquier sitio menos Humanos" no le dice nada al novato.
+  // 20 nov 2026 — sale cuando ya está Bruno (antes, en la primera tirada).
+  {
+    id: "sixRealms",
     holds: (s) => s.brunoRevealed,
   },
   // 3 oct 2026 — semilla de Oriol (Curvismo sin nombrarlo): el
