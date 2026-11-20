@@ -67,6 +67,9 @@ type Props = {
   // mandaron a mí (puedo aceptarla/rechazarla) — mismo dato que ya usa
   // GameShell.tsx (state.turn) para decidir "YOUR NIDANAS".
   myPlayer: PlayerId;
+  // 20 nov 2026 — false a distancia cuando no es tu turno: ves lo tuyo,
+  // pero no puedes ofrecer, apostar ni contestar hasta tu turno.
+  canAct?: boolean;
   pendingTrade: PendingTrade | null;
   onSendTradeOffer: (offer: NidanaId, want: NidanaId) => void;
   onAcceptTrade: () => void;
@@ -159,6 +162,7 @@ function TourCallout({
 // reducer, ver reducer.ts case REQUEST_SNAKE_BET).
 function SquareKarma666Block({
   myPlayer,
+  canAct = true,
   eligibleTargets,
   carriedNidanaCount,
   pendingSnakeBet,
@@ -170,6 +174,7 @@ function SquareKarma666Block({
   onRefuseSky,
 }: {
   myPlayer: PlayerId;
+  canAct?: boolean;
   eligibleTargets: RealmPieceKind[];
   carriedNidanaCount: number;
   pendingSnakeBet: { byPlayer: PlayerId; targetAvatar: RealmPieceKind; stake?: readonly NidanaId[] } | null;
@@ -279,6 +284,9 @@ function SquareKarma666Block({
           {t("fan.betIncoming", { name: REALM_AVATAR_NAME[pendingSnakeBet.targetAvatar] })}
           <div style={{ marginTop: 6, fontSize: 12, opacity: 0.85 }}>{t("fan.betRule")}</div>
         </div>
+        {!canAct ? (
+          <div style={{ fontSize: 12, opacity: 0.75, fontStyle: "italic" }}>{t("fan.answerOnYourTurn")}</div>
+        ) : (
         <div style={{ display: "flex", gap: 8 }}>
           <button type="button" onClick={onAccept} style={buttonStyle}>
             {t("fan.accept")}
@@ -292,11 +300,12 @@ function SquareKarma666Block({
             </button>
           )}
         </div>
+        )}
       </div>
     );
   }
 
-  if (eligibleTargets.length === 0 || carriedNidanaCount < 2) return null;
+  if (!canAct || eligibleTargets.length === 0 || carriedNidanaCount < 2) return null;
 
   return (
     <div style={boxStyle}>
@@ -750,6 +759,7 @@ function DealAdvice(props: { myMap: NidanaMap; rivalMap: NidanaMap; give: Nidana
 function TradeOfferPanel({
   pendingTrade,
   myPlayer,
+  canAct = true,
   onAccept,
   onRefuse,
   onRefuseSky,
@@ -760,6 +770,7 @@ function TradeOfferPanel({
 }: {
   pendingTrade: PendingTrade;
   myPlayer: PlayerId;
+  canAct?: boolean;
   onAccept: () => void;
   onRefuse: () => void;
   onRefuseSky?: () => void;
@@ -822,7 +833,11 @@ function TradeOfferPanel({
           {t("fan.adv.ask")}
         </button>
       )}
-      {incoming ? (
+      {incoming && !canAct ? (
+        <div style={{ marginTop: 8, fontSize: 12, opacity: 0.75, fontStyle: "italic" }}>
+          {t("fan.answerOnYourTurn")}
+        </div>
+      ) : incoming ? (
         <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 12 }}>
           <button
             onClick={onAccept}
@@ -896,6 +911,7 @@ export function FandangoWindow({
   myLabel,
   rivalLabel,
   myPlayer,
+  canAct = true,
   pendingTrade,
   onSendTradeOffer,
   onAcceptTrade,
@@ -1054,6 +1070,7 @@ export function FandangoWindow({
             key={`${pendingTrade.fromPlayer}|${pendingTrade.offer}|${pendingTrade.want}`}
             pendingTrade={pendingTrade}
             myPlayer={myPlayer}
+            canAct={canAct}
             myMap={myNidanas}
             rivalMap={rivalNidanas}
             autoAdvice={autoAdviceNow}
@@ -1085,7 +1102,7 @@ export function FandangoWindow({
           rivalMap={rivalNidanas}
           opportunities={tradeOpportunities}
           mine={tradeMine}
-          disabled={!!pendingTrade}
+          disabled={!!pendingTrade || !canAct}
           dealFor={dealFor}
           selectedOffer={selectedOffer}
           onOpenDeal={handleOpenDeal}
@@ -1094,12 +1111,14 @@ export function FandangoWindow({
           onCancelDeal={handleCancelDeal}
         />
 
+        {!canAct && <EmptyNote>{t("fan.negotiateOnYourTurn")}</EmptyNote>}
         </div>
         {callout("rival")}
 
         <div className={zone("bet")}>
         <SquareKarma666Block
           myPlayer={myPlayer}
+          canAct={canAct}
           eligibleTargets={mySnakeBetEligibleTargets}
           carriedNidanaCount={myCarriedNidanaCount}
           pendingSnakeBet={pendingSnakeBet}

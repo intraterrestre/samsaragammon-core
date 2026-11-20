@@ -220,6 +220,8 @@ export const en = {
   "fan.forYour": "your",
   "fan.forTheir": "their",
   "fan.waiting": "Waiting for reply.",
+  "fan.answerOnYourTurn": "You answer on your turn.",
+  "fan.negotiateOnYourTurn": "You can trade and bet on your turn.",
   "fan.subtitle": "Messages, suspicious offers, and karmic arrangements.",
   "fan.close": "Close",
   "fan.yourNidanas": "YOUR NIDANAS ({color})",

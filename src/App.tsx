@@ -16,6 +16,7 @@ import type { PieceKind } from "./game/types";
 import { findNewlySpawnedNidana, findNewlyCarriedNidana } from "./game/nidanaDiff";
 import { NIDANA_LIST } from "./game/nidanas";
 import { reducer } from "./game/state/reducer";
+import { onlineActionAllowed } from "./game/state/onlineGuard";
 import { initialState } from "./game/state/state";
 import { saveVestigium, makeGameId } from "./game/Vestigium";
 
@@ -398,6 +399,10 @@ const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
   const botPlayer: "P1" | "P2" | null =
     beginnerMode && gameMode === "local" ? "P2" : null;
   // ¿Es turno de Buddha y quien llama NO es el bot? Entonces se ignora.
+  // 20 nov 2026 — quién pulsa: a distancia, el dueño de este aparato; en
+  // la misma pantalla (o con Buddha), quien tiene el turno.
+  const actingPlayer = (): "P1" | "P2" =>
+    gameMode === "multiplayer" && myRole ? myRole : state.turn;
   const botBlocks = () =>
     botPlayer !== null && state.turn === botPlayer && !botActingRef.current;
   // 3 oct 2026 — pedido de Federico: JUEGA CON BUDDHA (y el local) son
@@ -1084,8 +1089,17 @@ useEffect(() => {
   /** =========================
    *  Dispatch wrapper
    *  ========================= */
+  // 20 nov 2026 — partidas a distancia: este aparato solo negocia por SU
+  // jugador (ver game/state/onlineGuard.ts). Refs para no rehacer dispatch.
+  const onlineRoleRef = useRef<"P1" | "P2" | null>(null);
+  onlineRoleRef.current = gameMode === "multiplayer" ? myRole : null;
   const dispatch = useCallback(
     (action: any) => {
+   const role = onlineRoleRef.current;
+   if (role && !onlineActionAllowed(latestStateRef.current, action, role)) {
+     console.warn("[online] acción descartada: no le toca a este jugador", action?.type);
+     return;
+   }
    if (action?.type === "RESET") {
 
   playedRealmIntrosRef.current = {};
@@ -1581,8 +1595,8 @@ nidanaCoinSide={nidanaSide}
       onSendTradeOffer={(player, offer, want) =>
         !botBlocks() && dispatch({ type: "SEND_TRADE_OFFER", player, offer, want })
       }
-      onAcceptTrade={() => { if (botBlocks()) return; dispatch({ type: "ACCEPT_TRADE_OFFER" }); }}
-      onRefuseTrade={(skySign?: boolean) => { if (botBlocks()) return; dispatch({ type: "REFUSE_TRADE_OFFER", skySign }); }}
+      onAcceptTrade={() => { if (botBlocks()) return; dispatch({ type: "ACCEPT_TRADE_OFFER", by: actingPlayer() }); }}
+      onRefuseTrade={(skySign?: boolean) => { if (botBlocks()) return; dispatch({ type: "REFUSE_TRADE_OFFER", skySign, by: actingPlayer() }); }}
       // v84 (4 septiembre 2026) — Square Karma 666 (Snake Bet) y Round
       // Dharma 777, pedido de Federico. Ver reducer.ts
       // (REQUEST_SNAKE_BET/ACCEPT_SNAKE_BET/REFUSE_SNAKE_BET/
@@ -1590,8 +1604,8 @@ nidanaCoinSide={nidanaSide}
       onRequestSnakeBet={(player, targetAvatar, stake) =>
         !botBlocks() && dispatch({ type: "REQUEST_SNAKE_BET", player, targetAvatar, stake })
       }
-      onAcceptSnakeBet={() => { if (botBlocks()) return; dispatch({ type: "ACCEPT_SNAKE_BET" }); }}
-      onRefuseSnakeBet={(skySign?: boolean) => { if (botBlocks()) return; dispatch({ type: "REFUSE_SNAKE_BET", skySign }); }}
+      onAcceptSnakeBet={() => { if (botBlocks()) return; dispatch({ type: "ACCEPT_SNAKE_BET", by: actingPlayer() }); }}
+      onRefuseSnakeBet={(skySign?: boolean) => { if (botBlocks()) return; dispatch({ type: "REFUSE_SNAKE_BET", skySign, by: actingPlayer() }); }}
       onDeclareDharma777={(player, option, allOptions, targetAvatar) =>
         !botBlocks() && dispatch({
           type: "DECLARE_DHARMA_777",

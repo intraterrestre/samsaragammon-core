@@ -41,7 +41,7 @@ function clampCurvature(value: number): number {
   return Math.max(0, Math.min(100, value));
 }
 
-type Action =
+export type Action =
   | { type: "RESET" }
   | { type: "ROLL" }
   | { type: "SELECT_PIECE"; player: PlayerId; piece: PieceKind }
@@ -84,8 +84,8 @@ type Action =
       avatarNidana: Record<PlayerId, Partial<Record<RealmPieceKind, NidanaId>>>;
     }
   | { type: "REQUEST_SNAKE_BET"; player: PlayerId; targetAvatar: RealmPieceKind; stake?: [NidanaId, NidanaId] }
-  | { type: "ACCEPT_SNAKE_BET" }
-  | { type: "REFUSE_SNAKE_BET"; skySign?: boolean }
+  | { type: "ACCEPT_SNAKE_BET"; by?: PlayerId }
+  | { type: "REFUSE_SNAKE_BET"; skySign?: boolean; by?: PlayerId }
   | {
       type: "DECLARE_DHARMA_777";
       player: PlayerId;
@@ -101,8 +101,8 @@ type Action =
   // recibió la oferta, y solo en su propio turno (mismo criterio que
   // ya usa FandangoWindow para decidir de quién son "YOUR NIDANAS").
   | { type: "SEND_TRADE_OFFER"; player: PlayerId; offer: NidanaId; want: NidanaId }
-  | { type: "ACCEPT_TRADE_OFFER" }
-  | { type: "REFUSE_TRADE_OFFER"; skySign?: boolean }
+  | { type: "ACCEPT_TRADE_OFFER"; by?: PlayerId }
+  | { type: "REFUSE_TRADE_OFFER"; skySign?: boolean; by?: PlayerId }
   // Fase 1 — Buda Azul (6 septiembre 2026), pedido de Federico: consumir
   // una consulta. "player" viaja EXPLÍCITO en la acción a propósito — el
   // reducer no lee state.turn para esto. Motivo: a futuro (fase
@@ -954,7 +954,9 @@ function reducerCore(state: GameState, action: Action): GameState {
       const rival = otherPlayer(pending.byPlayer);
       // Solo el rival (a quien se le pidió la apuesta) puede aceptarla,
       // y solo en su propio turno — mismo criterio que ACCEPT_TRADE_OFFER.
+      // 20 nov 2026 — `by`: quien pulsa tiene que ser ese rival.
       if (state.turn !== rival) return state;
+      if (action.by && action.by !== rival) return state;
 
       // Revalida las mismas condiciones que REQUEST_SNAKE_BET — pudo
       // pasar tiempo entre la solicitud y este ACCEPT.
@@ -1006,6 +1008,7 @@ function reducerCore(state: GameState, action: Action): GameState {
       if (!state.pendingSnakeBet) return state;
       const rival = otherPlayer(state.pendingSnakeBet.byPlayer);
       if (state.turn !== rival) return state;
+      if (action.by && action.by !== rival) return state;
       return withSkySign({ ...state, pendingSnakeBet: null }, rival, action.skySign);
     }
 
@@ -1145,7 +1148,9 @@ function reducerCore(state: GameState, action: Action): GameState {
       // Solo quien RECIBIÓ la oferta puede aceptarla, y solo estando en
       // su propio turno — mismo momento en el que FandangoWindow ya le
       // muestra "YOUR NIDANAS" a él (ver GameShell.tsx, state.turn).
+      // 20 nov 2026 — `by`: quien pulsa tiene que ser ese jugador.
       if (state.turn !== toPlayer) return state;
+      if (action.by && action.by !== toPlayer) return state;
 
       // Revalida que las dos Nidanas se sigan portando exactamente
       // como cuando se mandó la oferta — pudo pasar tiempo (y turnos)
@@ -1188,6 +1193,7 @@ function reducerCore(state: GameState, action: Action): GameState {
       if (!trade) return state;
       const toPlayer = otherPlayer(trade.fromPlayer);
       if (state.turn !== toPlayer) return state;
+      if (action.by && action.by !== toPlayer) return state;
       return withSkySign({ ...state, pendingTrade: null }, toPlayer, action.skySign);
     }
 

@@ -214,6 +214,8 @@ export const es: Dictionary = {
   "fan.forYour": "por tu",
   "fan.forTheir": "por su",
   "fan.waiting": "Esperando respuesta.",
+  "fan.answerOnYourTurn": "Contestas en tu turno.",
+  "fan.negotiateOnYourTurn": "Puedes negociar y apostar en tu turno.",
   "fan.subtitle": "Mensajes, ofertas sospechosas y arreglos kármicos.",
   "fan.close": "Cerrar",
   "fan.yourNidanas": "TUS NIDANAS ({color})",

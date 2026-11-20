@@ -362,9 +362,15 @@ const [fandangoOpen, setFandangoOpen] = React.useState(false);
 // propio, o el rival tiene lo que te falta), en vez de abrirse solo.
 // Mismas funciones que ya usa FandangoWindow para calcular esas dos
 // categorías — una sola fuente de verdad, no un chequeo aparte.
+// 20 nov 2026 — a distancia, Fandango es siempre del dueño de este
+// aparato (antes seguía a state.turn y, desde el aparato del que espera,
+// se veían y se podían usar las Nidanas del rival). En la misma pantalla
+// o con Buddha, sigue siendo de quien tiene el turno.
+const fandangoViewer: PlayerId = onlineRole ?? state.turn;
+const fandangoCanAct = !onlineRole || state.turn === onlineRole;
 const fandangoHasNotification = React.useMemo(() => {
-  return fandangoIsCalling(state, state.turn);
-}, [state.avatarNidana, state.turn, state.pendingTrade]);
+  return fandangoIsCalling(state, fandangoViewer);
+}, [state.avatarNidana, state.turn, state.pendingTrade, fandangoViewer]);
 
 // v85 (6 septiembre 2026) — pedido de Federico: sonido de cascabel
 // para SQUARE KARMA 666 (Snake Bet). Suena al proponer la apuesta, al
@@ -481,7 +487,7 @@ React.useEffect(() => {
 // state.turn — quien
 // manda la oferta es siempre quien tiene el turno ahora mismo.
 const handleSendTradeOffer = (offer: NidanaId, want: NidanaId) => {
-  onSendTradeOffer(state.turn, offer, want);
+  onSendTradeOffer(fandangoViewer, offer, want);
 };
 
 // v75 (28 agosto 2026) — pedido de Federico: mismo patrón de flanco
@@ -3190,31 +3196,32 @@ return (
 <FandangoWindow
   open={fandangoOpen}
   onClose={() => setFandangoOpen(false)}
-  myNidanas={state.avatarNidana[state.turn]}
+  myNidanas={state.avatarNidana[fandangoViewer]}
   rivalNidanas={
-    state.avatarNidana[state.turn === "P1" ? "P2" : "P1"]
+    state.avatarNidana[fandangoViewer === "P1" ? "P2" : "P1"]
   }
-  myLabel={t("fan.yourNidanas", { color: t(state.turn === "P1" ? "color.P1" : "color.P2") })}
-  rivalLabel={t("fan.rivalNidanas", { color: t(state.turn === "P1" ? "color.P2" : "color.P1") })}
-  myPlayer={state.turn}
+  myLabel={t("fan.yourNidanas", { color: t(fandangoViewer === "P1" ? "color.P1" : "color.P2") })}
+  rivalLabel={t("fan.rivalNidanas", { color: t(fandangoViewer === "P1" ? "color.P2" : "color.P1") })}
+  myPlayer={fandangoViewer}
+  canAct={fandangoCanAct}
   pendingTrade={state.pendingTrade}
   onSendTradeOffer={handleSendTradeOffer}
   onAcceptTrade={onAcceptTrade}
   onRefuseTrade={onRefuseTrade}
-  mySnakeBetEligibleTargets={getDharma777EligibleTargets(state, state.turn)}
+  mySnakeBetEligibleTargets={getDharma777EligibleTargets(state, fandangoViewer)}
   myCarriedNidanaCount={
-    Object.values(state.avatarNidana[state.turn]).filter(Boolean).length
+    Object.values(state.avatarNidana[fandangoViewer]).filter(Boolean).length
   }
   pendingSnakeBet={state.pendingSnakeBet}
   activeSnakeBet={state.snakeBet}
   onRequestSnakeBet={(targetAvatar, stake) => {
-    onRequestSnakeBet(state.turn, targetAvatar, stake);
+    onRequestSnakeBet(fandangoViewer, targetAvatar, stake);
   }}
   onAcceptSnakeBet={() => {
     onAcceptSnakeBet();
   }}
   onRefuseSnakeBet={onRefuseSnakeBet}
-  skySignAvailable={!(state.skySignsUsed ?? []).includes(state.turn)}
+  skySignAvailable={!(state.skySignsUsed ?? []).includes(fandangoViewer)}
   tour={(beginnerMode || !!onlineRole) && !seenLessonsRef.current.has("fandangoTour")}
   voiceHelp={beginnerMode && !onlineRole}
   adviceKey={state.gameId ?? ""}
