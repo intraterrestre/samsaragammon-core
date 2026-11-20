@@ -901,3 +901,10 @@ body.bwb-hl-options .moveOptionsPanel::after { font-size: 30px; }
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
+
+/* 20 nov 2026 — reacciones de Chat Fandango: mismo globo que los avisos a
+   distancia, un poco más abajo para no taparse con ellos. */
+.fandangoToast {
+  top: calc(max(8px, env(safe-area-inset-top)) + 84px);
+  border-color: #e8b06a;
+}

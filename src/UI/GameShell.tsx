@@ -125,6 +125,7 @@ import { LanguageSwitch } from "./LanguageSwitch";
 import type { MessageKey } from "../i18n/en";
 import { Narrate, NarratorSwitch } from "./NarratorSwitch";
 import { isNarrating, narrate, getNarratorMode } from "./narrator";
+import { playCoinClink } from "./coinClink";
 import { markBrunoEraDone, resetLessonGate, isVideoPending } from "./lessonGate";
 import { LessonCard } from "./LessonCard";
 import lotusSeal from "../assets/lotus_seal.webp";
@@ -1311,6 +1312,7 @@ const isBotTurn = !!botPlayer && state.turn === botPlayer && !state.winner;
 // 20 nov 2026 — negociación de Buddha: cuándo propuso por última vez y qué
 // tratos suyos rechazaste (para no insistir).
 const lastBotProposalRef = React.useRef(-99);
+const botAnsweredTradeAtRef = React.useRef(0);
 const botRefusedTradesRef = React.useRef<Set<string>>(new Set());
 const prevTradeRef = React.useRef(state.pendingTrade);
 React.useEffect(() => {
@@ -1346,6 +1348,8 @@ React.useEffect(() => {
     return;
   }
   if (state.pendingTrade && state.pendingTrade.fromPlayer !== me) {
+    // 20 nov 2026 — deja oír su reacción (¡CLIN, CLIN! / ¡JA!) antes de tirar.
+    botAnsweredTradeAtRef.current = Date.now();
     botLater(1200, () => {
       if (botAnswersTrade(botLevel, botStateRef.current, me) === "accept") onAcceptTrade();
       else onRefuseTrade(false);
@@ -1359,7 +1363,8 @@ React.useEffect(() => {
   // propone y se tira en el mismo momento: no detiene la partida; tú
   // contestas en tu turno, cuando quieras.
   if (state.phase === "idle") {
-    botLater(1100, () => {
+    const afterTrade = Date.now() - botAnsweredTradeAtRef.current < 4000;
+    botLater(afterTrade ? 2600 : 1100, () => {
       const s = botStateRef.current;
       if (s.turn === me && s.phase === "idle" && s.turnIndex - lastBotProposalRef.current >= 6) {
         const prop = botProposeTrade(s, me, botRefusedTradesRef.current);
@@ -2122,6 +2127,134 @@ React.useEffect(() => {
   if (fandangoLessonOnScreen) playFandangoSpray();
 }, [fandangoLessonOnScreen, playFandangoSpray]);
 
+// ===================================================================
+// 20 nov 2026 — FANDANGO CON PICARDÍA (aprobado por Federico).
+// Cada aparato deduce qué pasó con un trato comparando la partida antes
+// y después — no hace falta mandar mensajes nuevos, y a distancia llega
+// igual a los dos (Realtime trae la partida entera):
+//   · aparece pendingTrade                       → oferta
+//   · desaparece y las monedas se cruzaron       → aceptado
+//   · desaparece y cada uno conserva la suya     → rechazado
+//   · desaparece con una señal del cielo nueva   → RECHAZAR ⚡ (solo el vídeo)
+//   · desaparece y alguna ya no está donde estaba → anulado
+// Con Buddha: Buddha habla como rival (globo + voz según VOZ/TEXTO/AMBOS).
+// A distancia o en la misma pantalla: Buddha DJ presenta, solo texto.
+// Nunca pisa vídeos ni carteles del tutorial: si hay uno, solo el globo,
+// sin voz ni sonido.
+// ===================================================================
+const [fandangoToast, setFandangoToast] = React.useState<string | null>(null);
+const fandangoToastTimer = React.useRef<number | null>(null);
+const fandangoScratchAudio = React.useRef<HTMLAudioElement | null>(null);
+React.useEffect(() => {
+  const a = new Audio(scratchSound);
+  a.volume = 0.9;
+  fandangoScratchAudio.current = a;
+}, []);
+const lastFxRef = React.useRef<Record<string, number>>({});
+const pickFx = (key: MessageKey): string => {
+  const options = t(key).split("|").map((x) => x.trim()).filter(Boolean);
+  if (options.length <= 1) return options[0] ?? "";
+  let i = Math.floor(Math.random() * options.length);
+  if (i === lastFxRef.current[key]) i = (i + 1) % options.length;
+  lastFxRef.current[key] = i;
+  return options[i];
+};
+const playFandangoScratch = () => {
+  const a = fandangoScratchAudio.current;
+  if (!a) return;
+  a.currentTime = 0;
+  a.volume = 0.9;
+  a.play().catch(() => {});
+  // El scratch del DJ dura 4,5 s: aquí solo el primer rasgueo.
+  window.setTimeout(() => {
+    a.pause();
+    a.currentTime = 0;
+  }, 1300);
+};
+const fandangoQuietRef = React.useRef(false);
+fandangoQuietRef.current = avatarVideoPlaying || lessonOnScreen;
+const showFandangoFx = (text: string, sound: "spray" | "clink" | "scratch" | null, speak: boolean) => {
+  if (!text) return;
+  const quiet = fandangoQuietRef.current;
+  setFandangoToast(text);
+  if (fandangoToastTimer.current) window.clearTimeout(fandangoToastTimer.current);
+  fandangoToastTimer.current = window.setTimeout(() => setFandangoToast(null), 4200);
+  if (quiet) return;
+  if (sound === "spray") playFandangoSpray();
+  else if (sound === "clink") playCoinClink();
+  else if (sound === "scratch") playFandangoScratch();
+  if (speak && getNarratorMode() !== "text") {
+    // "¡Pssss!" no se lee en voz alta (el narrador lo deletrea): el siseo
+    // ya lo dice. Tampoco el emoji.
+    // Las palabras en MAYÚSCULAS (CLIN, JA) algunas voces las deletrean.
+    const spoken = text
+      .replace(/^(¡?\s*Ps+!?\s*)/i, "")
+      .replace(/\p{Lu}{2,}/gu, (w) => w.toLowerCase());
+    const delay = sound === "spray" ? 1400 : sound ? 500 : 0;
+    window.setTimeout(() => narrate(spoken, { source: "fandango", priority: 1 }), delay);
+  }
+};
+const prevTradeFxRef = React.useRef<{ trade: typeof state.pendingTrade; nidanas: typeof state.avatarNidana; skyAt: number | null; gameId: string | undefined }>({
+  trade: state.pendingTrade,
+  nidanas: state.avatarNidana,
+  skyAt: state.skySign?.at ?? null,
+  gameId: state.gameId,
+});
+React.useEffect(() => {
+  const prev = prevTradeFxRef.current;
+  const now = {
+    trade: state.pendingTrade,
+    nidanas: state.avatarNidana,
+    skyAt: state.skySign?.at ?? null,
+    gameId: state.gameId,
+  };
+  prevTradeFxRef.current = now;
+  if (prev.gameId !== now.gameId) return; // partida nueva o recién cargada
+  const withBuddha = !!botPlayer;
+  const viewer = fandangoViewer;
+
+  // Oferta nueva.
+  if (!prev.trade && now.trade) {
+    const from = now.trade.fromPlayer;
+    if (withBuddha) {
+      if (from === botPlayer) showFandangoFx(pickFx("fan.fx.buddhaOffers"), "spray", true);
+      else showFandangoFx(pickFx("fan.fx.toBuddha"), "spray", true);
+    } else if (onlineRole && from !== viewer) {
+      showFandangoFx(pickFx("fan.dj.offerIn"), "spray", false);
+    } else {
+      showFandangoFx(pickFx("fan.dj.offerOut"), onlineRole ? null : "spray", false);
+    }
+    return;
+  }
+
+  // Oferta resuelta.
+  if (prev.trade && !now.trade) {
+    if (now.skyAt !== prev.skyAt) return; // RECHAZAR ⚡: lo cuenta el vídeo
+    const { fromPlayer: from, offer, want } = prev.trade;
+    const to: PlayerId = from === "P1" ? "P2" : "P1";
+    const has = (pl: PlayerId, id: NidanaId) => Object.values(now.nidanas[pl] ?? {}).includes(id);
+    const outcome =
+      has(to, offer) && has(from, want)
+        ? "accept"
+        : has(from, offer) && has(to, want)
+          ? "refuse"
+          : "annulled";
+    if (withBuddha) {
+      const buddhaAnswered = to === botPlayer;
+      if (outcome === "accept")
+        showFandangoFx(pickFx(buddhaAnswered ? "fan.fx.buddhaAccepts" : "fan.fx.youAcceptBuddha"), "clink", true);
+      else if (outcome === "refuse")
+        showFandangoFx(pickFx(buddhaAnswered ? "fan.fx.buddhaRefuses" : "fan.fx.youRefuseBuddha"), "scratch", true);
+      else showFandangoFx(pickFx("fan.fx.annulled"), null, true);
+    } else {
+      if (outcome === "accept") showFandangoFx(pickFx("fan.dj.accept"), "clink", false);
+      else if (outcome === "refuse") showFandangoFx(pickFx("fan.dj.refuse"), "scratch", false);
+      else showFandangoFx(pickFx("fan.dj.annulled"), null, false);
+    }
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [state.pendingTrade, state.avatarNidana, state.skySign, state.gameId]);
+
 // 20 nov 2026 — ANTIZOMBIES: la moneda grande (espejo) ya no se explica
 // sola; al tocarla, un cartel breve: qué es, qué acaba de ver y de quién
 // (vars de la lección nidanaMirror), y que los detalles están en el Buda
@@ -2737,6 +2870,8 @@ return (
       })()}
       {isOnline && onlineToast &&
         createPortal(<div className="onlineToast" role="status">{onlineToast}</div>, document.body)}
+      {fandangoToast &&
+        createPortal(<div className="onlineToast fandangoToast" role="status">{fandangoToast}</div>, document.body)}
 
       {/* 15 nov 2026 — aviso discreto: es el turno de Buddha (tus clics esperan). */}
       {isBotTurn && !botPaused &&
