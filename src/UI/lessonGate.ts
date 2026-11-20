@@ -10,7 +10,20 @@ export function markBrunoEraDone(): void {
 }
 export function resetLessonGate(): void {
   brunoEraDone = false;
+  videoPending = false;
 }
 export function isBrunoEraDone(): boolean {
   return brunoEraDone;
+}
+
+// 20 nov 2026 — Federico: "el video de Margot volvió a aparecer mientras
+// Buddha todavía estaba hablando". Mientras un video de Avatar espera su
+// turno (a que Buddha calle), no empieza ninguna lección nueva: si no, una
+// lección podía colarse justo antes y el video la cortaba a media frase.
+let videoPending = false;
+export function setVideoPending(on: boolean): void {
+  videoPending = on;
+}
+export function isVideoPending(): boolean {
+  return videoPending;
 }

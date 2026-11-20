@@ -129,7 +129,7 @@ import { useI18n, translate } from "../i18n";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { Narrate, NarratorSwitch } from "./NarratorSwitch";
 import { isNarrating, narrate, getNarratorMode } from "./narrator";
-import { markBrunoEraDone, resetLessonGate } from "./lessonGate";
+import { markBrunoEraDone, resetLessonGate, isVideoPending } from "./lessonGate";
 import { LessonCard } from "./LessonCard";
 import lotusSeal from "../assets/lotus_seal.webp";
 import {
@@ -1725,6 +1725,8 @@ React.useEffect(() => {
   if (botPlayer && state.turn === botPlayer) return;
   if (avatarVideoPlaying || budaConsultationActive || pendingDharmaChoice) return;
   if (djCeremony) return;
+  // Un video de Avatar espera a que Buddha calle: no empezar otra lección.
+  if (isVideoPending()) return;
 
   // 3 oct 2026 — playtest de Federico: la línea roja apuntaba a un rival
   // y la lección de captura no salió, porque el globo seguía ocupado con

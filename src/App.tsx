@@ -1,5 +1,5 @@
 // src/App.tsx
-import { isBrunoEraDone } from "./UI/lessonGate";
+import { isBrunoEraDone, setVideoPending } from "./UI/lessonGate";
 import { isNarrating } from "./UI/narrator";
 import React, {
   useCallback,
@@ -620,34 +620,43 @@ useEffect(() => {
   // medio de años..."). Con 800 ms el video lo tapaba enseguida y no se
   // alcanzaba a leer: en el modo principiante, Bruno espera unos
   // segundos con el cartel en pantalla antes de arrancar.
-  const introDelayMs =
-    beginnerMode && realmKey === "hungry_ghost" ? 9000 : 800;
+  // 20 nov 2026 — sin los 9 s fijos de antes para Bruno: ahora espera al
+  // cartel y a la voz (ver más abajo). 800 ms de aire para la fanfarria.
+  const introDelayMs = 800;
   const startIntro = () => {
+    setVideoPending(false);
     setRealmIntroMuted(false);
     setActiveRealmIntro(introSrc);
   };
-  // 20 nov 2026 — Federico: "otra vez el video de Bruno se disparó antes
-  // de que terminara la explicación de Buddha". Los 9 s no bastaban si el
-  // cartel salía tarde (turno de Buddha, otro cartel hablando) o si la voz
-  // tardaba más. Ahora, en JUEGA CON BUDDHA con ayudas, después de esos
-  // 9 s el video espera a que el cartel de Bruno haya salido y Buddha haya
-  // terminado de hablar (máximo 60 s, por si algo falla).
-  const waitForBuddha = beginnerMode && !helpsOff && realmKey === "hungry_ghost";
+  // 20 nov 2026 — Federico: los videos de Bruno y Margot cortaban a Buddha
+  // a media frase. Nada de suponer cuánto tarda la voz (cada dispositivo
+  // y cada voz van a su ritmo): TODOS los videos de Avatar esperan a que
+  // el narrador lleve un momento callado (máximo 60 s, por si algo falla).
+  // Bruno en JUEGA CON BUDDHA, además, espera antes a que salga el cartel
+  // de su llegada ("más de dos millones y medio de años..."): ese cartel
+  // tiene que verse antes del video.
+  const brunoFirst = beginnerMode && !helpsOff && realmKey === "hungry_ghost";
+  const startedAt = Date.now();
+  const timedOut = () => Date.now() - startedAt > 60_000;
+  let quietSince = 0;
+  const waitVoice = () => {
+    if (isNarrating()) quietSince = 0;
+    else quietSince = quietSince || Date.now();
+    if ((quietSince && Date.now() - quietSince >= 800) || timedOut()) startIntro();
+    else window.setTimeout(waitVoice, 300);
+  };
+  const waitBrunoEra = () => {
+    if (isBrunoEraDone() || timedOut()) {
+      setVideoPending(true);
+      waitVoice();
+    } else window.setTimeout(waitBrunoEra, 400);
+  };
   window.setTimeout(() => {
-    if (!waitForBuddha) return startIntro();
-    const startedAt = Date.now();
-    let idleSince = 0;
-    const poll = () => {
-      const idle = isBrunoEraDone() && !isNarrating();
-      if (idle) idleSince = idleSince || Date.now();
-      else idleSince = 0;
-      if ((idle && Date.now() - idleSince >= 800) || Date.now() - startedAt > 60_000) {
-        startIntro();
-      } else {
-        window.setTimeout(poll, 400);
-      }
-    };
-    poll();
+    if (brunoFirst) waitBrunoEra();
+    else {
+      setVideoPending(true);
+      waitVoice();
+    }
   }, introDelayMs);
 
 }, [state.realmAscension]);
