@@ -1878,11 +1878,9 @@ React.useEffect(() => {
     return;
   }
 
-  // Nov 2026 — pedido de Federico: quitado el 35% al azar. Jesús FBI
-  // sale solo cuando debe: captura, o Serpiente 2 veces seguidas (arriba).
-  if (state.lastMove.didCapture) {
-    triggerWatcher();
-  }
+  // 21 nov 2026 — Federico: "a Jesús solo con dobles usos de la
+  // serpiente, nada más". Ya no sale en las capturas (en una clase era
+  // invasivo, "muy mandón"); solo la Serpiente 2 veces seguidas, arriba.
 }, [state.lastMove, oriolEntered]);
 
 React.useEffect(() => {

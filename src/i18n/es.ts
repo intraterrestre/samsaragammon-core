@@ -243,7 +243,7 @@ export const es: Dictionary = {
   "watcher.4": "Cuidado.",
   "watcher.5": "Tú elegiste eso.",
   "watcher.6": "Te veo.",
-  "watcher.anger": "¿Ira, otra vez?",
+  "watcher.anger": "Estoy viendo tu ira…",
   "venomBanner.pig": "IGNORANCIA",
   "venomBanner.snake": "IRA",
   "venomBanner.rooster": "IMPULSO",

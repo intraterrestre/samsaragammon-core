@@ -248,7 +248,7 @@ export const en = {
   "watcher.4": "Careful.",
   "watcher.5": "You chose that.",
   "watcher.6": "I see you.",
-  "watcher.anger": "Anger, again?",
+  "watcher.anger": "I see your anger…",
   "venomBanner.pig": "IGNORANCE",
   "venomBanner.snake": "ANGER",
   "venomBanner.rooster": "IMPULSE",
