@@ -2702,113 +2702,120 @@ return (
           Federico — mismo criterio "Curvismo" que ya se usó en
           FandangoWindow y el popup de Nidana ampliada (borderRadius
           elíptico, no una caja rectangular). */}
-      {pendingDharmaChoice && (
-        <div
-          onClick={confirmDharmaCapture}
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 999998,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "rgba(4,4,8,0.3)",
-          }}
-        >
+      {pendingDharmaChoice && (() => {
+        // 21 nov 2026 — Federico: "primero la consecuencia, después la
+        // filosofía". El cartel dice a quién capturas, qué pasa con cada
+        // botón y cuántos lotos llevas. Tocar fuera ya NO captura: hay que
+        // elegir uno de los dos botones.
+        const me = state.turn;
+        const rivalPl: PlayerId = me === "P1" ? "P2" : "P1";
+        const rivalKind = getDharma777Opportunity(state, me, pendingDharmaChoice.option);
+        const rivalName = rivalKind ? REALM_AVATAR_NAME[rivalKind] : "";
+        const shielded = !!(rivalKind && state.avatarNidana[rivalPl]?.[rivalKind]);
+        const mover = pendingDharmaChoice.option.pieceKind as RealmPieceKind;
+        const attackerTakes =
+          (REALM_PIECE_ORDER as readonly string[]).includes(mover) && !state.avatarNidana[me]?.[mover];
+        const captureText = !shielded
+          ? t("d777.captureWhat", { rival: rivalName })
+          : t(attackerTakes ? "d777.captureShieldTake" : "d777.captureShieldDrop", { rival: rivalName });
+        const targets = pendingDharmaChoice.eligibleTargets;
+        const lotuses = Object.values(state.consolidatedAvatars[me] ?? {}).filter(Boolean).length;
+        const col: React.CSSProperties = {
+          flex: "1 1 160px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 8,
+          padding: "12px 10px",
+          borderRadius: 18,
+          background: "rgba(255,255,255,0.05)",
+        };
+        const btn = (accent: string): React.CSSProperties => ({
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: `2px solid ${accent}`,
+          background: "rgba(255,255,255,0.08)",
+          color: "#f2e8d4",
+          fontWeight: 800,
+          fontSize: 14,
+          letterSpacing: "0.04em",
+          cursor: "pointer",
+        });
+        const explain: React.CSSProperties = { fontSize: 13, lineHeight: 1.35, opacity: 0.9 };
+        return (
           <div
-            onClick={(e) => e.stopPropagation()}
             style={{
-              width: "min(420px, 90vw)",
-              padding: "12% 14%",
-              borderRadius: "50%",
-              background: "rgba(20, 16, 10, 0.62)",
-              backdropFilter: "blur(3px)",
-              textShadow: "0 1px 3px rgba(0,0,0,0.9)",
-              border: "1px solid rgba(216,196,138,0.28)",
-              boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
-              color: "#f2e8d4",
-              textAlign: "center",
+              position: "fixed",
+              inset: 0,
+              zIndex: 999998,
               display: "flex",
-              flexDirection: "column",
               alignItems: "center",
-              gap: 14,
+              justifyContent: "center",
+              background: "rgba(4,4,8,0.45)",
+              padding: 12,
             }}
           >
-            <div style={{ fontSize: 13, letterSpacing: 2, opacity: 0.65 }}>
-              {beginnerMode ? t("dharma777.alreadyCaptured") : t("d777.mara")}
-            </div>
-            <div style={{ display: "flex", gap: 12 }}>
-              <button
-                type="button"
-                onClick={confirmDharmaCapture}
-                style={{
-                  padding: "10px 20px",
-                  borderRadius: "50%",
-                  border: "2px solid rgba(216,196,138,0.5)",
-                  background: "rgba(255,255,255,0.06)",
-                  color: "#f2e8d4",
-                  fontWeight: 800,
-                  cursor: "pointer",
-                }}
-              >
-                {t("d777.capture")}
-              </button>
-              {pendingDharmaChoice.eligibleTargets.length === 1 ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    confirmDharmaSpare(pendingDharmaChoice.eligibleTargets[0])
-                  }
-                  style={{
-                    padding: "10px 20px",
-                    borderRadius: "50%",
-                    border: "2px solid rgba(150,200,255,0.6)",
-                    background: "rgba(150,200,255,0.08)",
-                    color: "#f2e8d4",
-                    fontWeight: 800,
-                    cursor: "pointer",
-                  }}
-                >
-                  ○ ROUND DHARMA 777
-                </button>
-              ) : (
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 8,
-                    alignItems: "center",
-                  }}
-                >
-                  <div style={{ fontSize: 12, opacity: 0.7 }}>
-                    {t("d777.which")}
-                  </div>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {pendingDharmaChoice.eligibleTargets.map((kind) => (
-                      <button
-                        key={kind}
-                        type="button"
-                        onClick={() => confirmDharmaSpare(kind)}
-                        style={{
-                          padding: "8px 14px",
-                          borderRadius: "50%",
-                          border: "2px solid rgba(150,200,255,0.6)",
-                          background: "rgba(150,200,255,0.08)",
-                          color: "#f2e8d4",
-                          fontWeight: 700,
-                          cursor: "pointer",
-                        }}
-                      >
-                        {REALM_AVATAR_NAME[kind]}
-                      </button>
-                    ))}
-                  </div>
+            <div
+              role="dialog"
+              aria-label={t("d777.title")}
+              style={{
+                width: "min(560px, 94vw)",
+                maxHeight: "92vh",
+                overflowY: "auto",
+                padding: "18px 18px 14px",
+                borderRadius: 28,
+                background: "rgba(20, 16, 10, 0.92)",
+                border: "1px solid rgba(216,196,138,0.35)",
+                boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+                color: "#f2e8d4",
+                textAlign: "center",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 10,
+              }}
+            >
+              <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "0.05em", color: "#f5d76e" }}>
+                {t("d777.title")}
+              </div>
+              <div style={{ fontSize: 15 }}>{t("d777.intro", { rival: rivalName })}</div>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", width: "100%" }}>
+                <div style={col}>
+                  <button type="button" onClick={confirmDharmaCapture} style={btn("rgba(255,120,100,0.7)")}>
+                    {t("d777.capture", { rival: rivalName.toUpperCase() })}
+                  </button>
+                  <div style={explain}>{captureText}</div>
                 </div>
-              )}
+                <div style={col}>
+                  {targets.length === 1 ? (
+                    <>
+                      <button type="button" onClick={() => confirmDharmaSpare(targets[0])} style={btn("rgba(150,200,255,0.75)")}>
+                        {t("d777.spare", { rival: rivalName.toUpperCase() })}
+                      </button>
+                      <div style={explain}>
+                        {t("d777.spareWhat", { rival: rivalName, mine: REALM_AVATAR_NAME[targets[0]] })}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={explain}>{t("d777.spareWhatMany", { rival: rivalName })}</div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+                        {targets.map((kind) => (
+                          <button key={kind} type="button" onClick={() => confirmDharmaSpare(kind)} style={btn("rgba(150,200,255,0.75)")}>
+                            {t("d777.spareTo", { mine: REALM_AVATAR_NAME[kind] })}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div style={{ fontSize: 13, opacity: 0.85 }}>{t("d777.lotus", { n: String(lotuses) })}</div>
+              <div style={{ fontSize: 11, letterSpacing: "0.18em", opacity: 0.55 }}>{t("d777.subtitle")}</div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Fase 2B — Buda Azul (7 septiembre 2026), pedido de Federico: panel
           PROVISIONAL de diagnóstico (no es diseño final) para poder jugar y

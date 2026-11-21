@@ -243,10 +243,14 @@ function SquareKarma666Block({
     const isMine = activeSnakeBet.byPlayer === myPlayer;
     return (
       <div style={boxStyle}>
-        {t("fan.betActive", {
-          who: t(isMine ? "fan.betYours" : "fan.betRivals"),
+        {/* 21 nov 2026 — qué gana quién y cuántos turnos quedan. */}
+        {t(isMine ? "fan.betActiveMine" : "fan.betActiveRival", {
           name: REALM_AVATAR_NAME[activeSnakeBet.targetAvatar],
-          n: String(activeSnakeBet.roundsLeft),
+          color: t(activeSnakeBet.byPlayer === "P1" ? "color.P1" : "color.P2"),
+          turns:
+            activeSnakeBet.roundsLeft === 1
+              ? t("fan.turn1")
+              : t("fan.turnN", { n: String(activeSnakeBet.roundsLeft) }),
         })}
         {/* 20 nov 2026 — qué 2 Nidanas están en juego. */}
         {activeSnakeBet.stake && activeSnakeBet.stake.length > 0 && (
@@ -281,15 +285,32 @@ function SquareKarma666Block({
     return (
       <div style={boxStyle}>
         <div style={{ marginBottom: 8 }}>
-          {t("fan.betIncoming", { name: REALM_AVATAR_NAME[pendingSnakeBet.targetAvatar] })}
-          <div style={{ marginTop: 6, fontSize: 12, opacity: 0.85 }}>{t("fan.betRule")}</div>
+          {/* 21 nov 2026 — el Avatar que gana el loto es el del RIVAL (antes
+              decía "tu"). Se ven las 2 Nidanas apostadas y qué pasa al
+              aceptar o al rechazar, antes de pulsar. */}
+          <div style={{ fontWeight: 800 }}>
+            {t("fan.betIncoming", {
+              color: t(pendingSnakeBet.byPlayer === "P1" ? "color.P1" : "color.P2").toUpperCase(),
+            })}
+          </div>
+          {pendingSnakeBet.stake && (
+            <div style={{ marginTop: 6, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+              <span style={{ fontSize: 12, opacity: 0.85 }}>{t("fan.betStake")}</span>
+              {pendingSnakeBet.stake.map((id) => (
+                <MiniCoin key={id} nidana={id} />
+              ))}
+            </div>
+          )}
+          <div style={{ marginTop: 6, fontSize: 12, opacity: 0.9, whiteSpace: "pre-line" }}>
+            {t("fan.betIncomingBody", { name: REALM_AVATAR_NAME[pendingSnakeBet.targetAvatar] })}
+          </div>
         </div>
         {!canAct ? (
           <div style={{ fontSize: 12, opacity: 0.75, fontStyle: "italic" }}>{t("fan.answerOnYourTurn")}</div>
         ) : (
         <div style={{ display: "flex", gap: 8 }}>
           <button type="button" onClick={onAccept} style={buttonStyle}>
-            {t("fan.accept")}
+            {t("fan.betAccept")}
           </button>
           <button type="button" onClick={onRefuse} style={buttonStyle}>
             {t("fan.refuse")}
@@ -310,7 +331,7 @@ function SquareKarma666Block({
   return (
     <div style={boxStyle}>
       <div style={{ marginBottom: 4 }}>{t("fan.betPropose")}</div>
-      <div style={{ marginBottom: 8, fontSize: 12, opacity: 0.85 }}>{t("fan.betRule")}</div>
+      <div style={{ marginBottom: 8, fontSize: 12, opacity: 0.9, whiteSpace: "pre-line" }}>{t("fan.betRuleMine")}</div>
       <div style={{ marginBottom: 6, fontSize: 12 }}>{t("fan.betPickAvatar")}</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
         {eligibleTargets.map((kind) => (
@@ -698,7 +719,10 @@ function RivalHasWhatYouNeedBlock({
                             cursor: "pointer",
                           }}
                         >
-                          {t("fan.sendOffer")}
+                          {t("fan.offerTrade", {
+                            give: String(nidanaNumber(selectedOffer)),
+                            get: String(nidanaNumber(op.need)),
+                          })}
                         </button>
                       </>
                     )}
@@ -854,7 +878,7 @@ function TradeOfferPanel({
               cursor: "pointer",
             }}
           >
-            {t("fan.accept")}
+            {t("fan.acceptTrade", { give: String(nidanaNumber(pendingTrade.want)), get: String(nidanaNumber(pendingTrade.offer)) })}
           </button>
           <button
             onClick={onRefuse}

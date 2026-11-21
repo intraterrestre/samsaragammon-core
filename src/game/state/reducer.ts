@@ -1004,6 +1004,9 @@ function reducerCore(state: GameState, action: Action): GameState {
       };
     }
 
+    // PENDIENTE DE DISEÑO (21 nov 2026, ver docs/PENDIENTES_DISENO.md):
+    // rechazar un 666 no cuesta nada; entre personas puede no haber
+    // motivo para aceptar. Federico: no cambiar la regla todavía.
     case "REFUSE_SNAKE_BET": {
       if (!state.pendingSnakeBet) return state;
       const rival = otherPlayer(state.pendingSnakeBet.byPlayer);
