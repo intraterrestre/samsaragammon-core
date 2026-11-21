@@ -56,12 +56,30 @@ export default function Intro({ onEnd }: { onEnd: () => void }) {
           <div style={{ marginBottom: 18 }}>
             <LanguageSwitch />
           </div>
+          {/* 21 nov 2026 — Federico: "A PAINTING YOU CAN PLAY". El texto vive
+              en welcome.body: una línea por párrafo; **...** = destacada,
+              ~ al principio = nota más suave. */}
+          <div style={styles.kicker}>{t("welcome.kicker")}</div>
           <h1 style={styles.title}>{t("welcome.title")}</h1>
-          <p style={styles.line}>{t("welcome.l1")}</p>
-          <p style={styles.line}>
-            <strong>{t("welcome.l2")}</strong>
-          </p>
-          <p style={{ ...styles.line, opacity: 0.85 }}>{t("welcome.l3")}</p>
+          {t("welcome.body")
+            .split("\n")
+            .filter(Boolean)
+            .map((line, i) => {
+              const strong = /^\*\*(.*)\*\*$/.exec(line);
+              const soft = line.startsWith("~");
+              return (
+                <p
+                  key={i}
+                  style={{
+                    ...styles.line,
+                    ...(strong ? styles.strongLine : null),
+                    ...(soft ? { opacity: 0.8, marginTop: 16 } : null),
+                  }}
+                >
+                  {strong ? strong[1] : soft ? line.slice(1) : line}
+                </p>
+              );
+            })}
 
           <button type="button" onClick={start} style={styles.button}>
             {t("welcome.go")}
@@ -83,13 +101,19 @@ const styles = {
     inset: 0,
     background: "black",
     display: "flex",
-    justifyContent: "center",
+    // 21 nov 2026 — el texto de bienvenida es más largo: en un iPhone
+    // horizontal no cabe. Con justifyContent:center la parte de arriba
+    // quedaba cortada y sin poder subir; margin:auto en los hijos centra
+    // cuando hay sitio y deja desplazar cuando no.
+    justifyContent: "flex-start",
     alignItems: "center",
     flexDirection: "column" as const,
     zIndex: 9999,
     overflowY: "auto" as const,
+    WebkitOverflowScrolling: "touch" as const,
   },
   video: {
+    margin: "auto 0",
     width: "55%",
     height: "auto",
     maxHeight: "70%",
@@ -97,31 +121,49 @@ const styles = {
     cursor: "pointer",
   },
   card: {
+    margin: "auto 0",
     maxWidth: 520,
     padding: "24px 22px",
     textAlign: "center" as const,
     color: "#efe6d2",
     fontFamily: "Georgia, 'Times New Roman', serif",
   },
+  kicker: {
+    fontSize: 13,
+    letterSpacing: "0.32em",
+    color: "rgba(245,215,110,0.75)",
+    margin: "0 0 6px",
+  },
+  strongLine: {
+    color: "#f5d76e",
+    fontWeight: 700,
+    letterSpacing: "0.03em",
+  },
   title: {
-    fontSize: "clamp(22px, 6vw, 34px)",
+    fontSize: "clamp(20px, min(6vw, 7vh), 34px)",
     lineHeight: 1.15,
-    margin: "0 0 18px",
+    margin: "0 0 16px",
     color: "#f5d76e",
     letterSpacing: "0.02em",
   },
   line: {
-    fontSize: "clamp(15px, 4.2vw, 18px)",
-    lineHeight: 1.4,
-    margin: "0 0 12px",
+    fontSize: "clamp(13px, min(3.8vw, 4.2vh), 17px)",
+    lineHeight: 1.35,
+    margin: "0 0 8px",
   },
   button: {
+    // 21 nov 2026 — en un iPhone horizontal el texto no cabe entero: el
+    // botón se queda pegado abajo mientras se lee, siempre a mano.
+    position: "sticky" as const,
+    bottom: "max(12px, env(safe-area-inset-bottom))",
+    zIndex: 1,
+    boxShadow: "0 0 0 10px rgba(0,0,0,0.9), 0 -16px 26px rgba(0,0,0,0.95), 0 16px 26px rgba(0,0,0,0.95)",
     marginTop: 14,
     height: 56,
     padding: "0 28px",
     borderRadius: 999,
     border: "1px solid rgba(245,215,110,0.7)",
-    background: "rgba(245,215,110,0.16)",
+    background: "#2a2412",
     color: "#ffe9a8",
     fontSize: 17,
     fontWeight: 700,
