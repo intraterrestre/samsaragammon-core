@@ -3,6 +3,7 @@ import "./UI/audioUnlock";
 import ReactDOM from "react-dom/client";
 import AppBoot from "./AppBoot";
 import "./index.css";
+import { startUpdateCheck } from "./UI/updateCheck";
 
 const rootElement = document.getElementById("root");
 
@@ -22,3 +23,6 @@ if (import.meta.env.PROD && "serviceWorker" in navigator) {
     navigator.serviceWorker.register("/sw.js").catch(() => {});
   });
 }
+
+// 21 nov 2026 — aviso "Hay una versión nueva · Actualizar" (app web).
+if (import.meta.env.PROD) startUpdateCheck();
