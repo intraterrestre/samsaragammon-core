@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import "./mara.css";
+import { preloadImage, preloadWithin } from "../UI/preloadArt";
 // 2026-08-05: el mural NO es una sola imagen — son 7 etapas, una por cada
 // avatar que entra de verdad (Bruno→Margot→Oriol→Marino→Rufus→Whitman→
 // Nirvana), cada una más pintada que la anterior (confirmado por el
@@ -60,6 +61,18 @@ const ERA_MURALS: Record<EraKey, string> = {
   none: boardBaseMural,
 };
 
+// 21 nov 2026 — el mural base y el de Bruno empiezan a bajar en cuanto
+// se abre la página (bienvenida, Génesis): al pintarse el tablero ya
+// están listos. Cada mural siguiente se baja en cuanto entra el anterior.
+const ERA_ORDER: EraKey[] = ["none", "bruno", "margot", "oriol", "marino", "rufus", "whitman", "nirvana"];
+if (typeof window !== "undefined") {
+  void preloadImage(ERA_MURALS.none).then(() => preloadImage(ERA_MURALS.bruno));
+}
+/** Espera (como mucho `ms`) a que el mural de esa era esté listo. */
+export function waitForMural(era: string, ms = 10000): Promise<void> {
+  return preloadWithin(ERA_MURALS[era as EraKey] ?? fallbackMural, ms);
+}
+
 import DharmaBubble from "../components/DharmaBubble";
 import DharmaConnector from "../components/DharmaConnector";
 import { GenesisReveal } from "./GenesisReveal";
@@ -97,7 +110,23 @@ export function MaraLayer({
   onGenesisSkip,
 }: MaraLayerProps) {
   const isBoardPainted = boardPainted ?? genesisComplete;
-  const currentMural = ERA_MURALS[(era as EraKey)] ?? fallbackMural;
+  const wantedMural = ERA_MURALS[(era as EraKey)] ?? fallbackMural;
+  // 21 nov 2026 — se muestra un mural solo cuando ya bajó entero; hasta
+  // entonces sigue el anterior (nunca un hueco ni una imagen a medias).
+  const [currentMural, setCurrentMural] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void preloadImage(wantedMural).then(() => {
+      if (alive) setCurrentMural(wantedMural);
+    });
+    // Y el siguiente, para cuando toque.
+    const i = ERA_ORDER.indexOf(era as EraKey);
+    const next = i >= 0 ? ERA_ORDER[i + 1] : undefined;
+    if (next) void preloadImage(ERA_MURALS[next]);
+    return () => {
+      alive = false;
+    };
+  }, [wantedMural, era]);
   const layerRef = useRef<HTMLDivElement | null>(null);
   const bubbleRef = useRef<HTMLDivElement | null>(null);
 
@@ -123,21 +152,28 @@ export function MaraLayer({
   return (
     <>
       <div ref={layerRef} className="maraLayer">
-        <img
-          src={currentMural}
-          alt="Samsara Painting"
-          className="maraPainting"
-          style={{ opacity: isBoardPainted ? 1 : 0, transition: "opacity 0.8s ease" }}
-        />
+        {currentMural && (
+          <img
+            src={currentMural}
+            alt="Samsara Painting"
+            className="maraPainting"
+            style={{ opacity: isBoardPainted ? 1 : 0, transition: "opacity 0.8s ease" }}
+          />
+        )}
 
         {/* v2: Genesis — import.meta.glob resuelve assets en build y runtime */}
         {!genesisComplete && (
           <GenesisReveal
             globalRollCount={globalRollCount}
             realmStep={realmStep}
-            onComplete={onGenesisComplete}
+            // 21 nov 2026 — el Génesis no se retira hasta que el mural esté
+            // listo (máx. 10 s): así nunca queda el tablero sin fondo.
+            onComplete={() => {
+              void waitForMural(era).then(() => onGenesisComplete?.());
+            }}
             onPhaseChange={onGenesisPhaseChange}
             onSkip={onGenesisSkip}
+            holdLastFrame={currentMural !== wantedMural}
           />
         )}
       </div>

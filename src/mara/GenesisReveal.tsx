@@ -60,6 +60,9 @@ type Props = {
   onComplete?: () => void;
   onPhaseChange?: (phase: GenesisPhase) => void;
   onSkip?: () => void;
+  // 21 nov 2026 — mientras el mural del tablero no termina de bajar, el
+  // Génesis deja su última casilla en pantalla (nunca tablero sin fondo).
+  holdLastFrame?: boolean;
 };
 
 export function GenesisReveal({
@@ -67,6 +70,7 @@ export function GenesisReveal({
   onComplete,
   onPhaseChange,
   onSkip,
+  holdLastFrame = false,
 }: Props) {
   const [phase, setPhase] = useState<GenesisPhase>(
     VIDEO_SRC ? "VIDEO" : CASILLAS_FRAMES.length > 0 ? "CASILLAS" : "COMPLETE"
@@ -421,6 +425,15 @@ export function GenesisReveal({
             transition: "opacity 0.5s ease",
           }}
         />
+      </div>
+    );
+  }
+
+  if (holdLastFrame && CASILLAS_FRAMES.length > 0) {
+    const img = CASILLAS_FRAMES[CASILLAS_FRAMES.length - 1];
+    return (
+      <div style={{ position: "absolute", inset: 0, zIndex: 100, pointerEvents: "none" }}>
+        <img src={img} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
       </div>
     );
   }
