@@ -615,6 +615,13 @@ const cheeringAudio = React.useRef<HTMLAudioElement | null>(null);
 const fireworksAudio = React.useRef<HTMLAudioElement | null>(null);
 const scratchAudio = React.useRef<HTMLAudioElement | null>(null);
 const fanfarriaAudio = React.useRef<HTMLAudioElement | null>(null);
+// 22 nov 2026 — Federico (iPhone): al empezar la partida salía el mural
+// de Nirvana (tablero totalmente destapado). El desbloqueo de sonidos de
+// iOS (audioUnlock.ts) reproduce TODOS los audios en silencio con cada
+// toque; si la fanfarria llegaba a su 'ended' así, se destapaba el
+// tablero. Ahora el 'ended' solo cuenta si el propio juego pidió la
+// fanfarria (6/6 en Humanos).
+const fanfarriaRequestedRef = React.useRef(false);
 const campanaFinalAudio = React.useRef<HTMLAudioElement | null>(null);
 const fandangoSprayAudio = React.useRef<HTMLAudioElement | null>(null);
 const [, setShowNidanaTitle] = React.useState(false);
@@ -729,6 +736,8 @@ React.useEffect(() => {
   // el .play() que puede fallar en silencio.
   const fanfarria = fanfarriaAudio.current;
   const onFanfarriaEnded = () => {
+    if (!fanfarriaRequestedRef.current) return;
+    fanfarriaRequestedRef.current = false;
     setNirvanaMuralRevealed(true);
     const campana = campanaFinalAudio.current;
     if (!campana) return;
@@ -2094,6 +2103,7 @@ React.useEffect(() => {
   ) {
     const audio = fanfarriaAudio.current;
     if (audio) {
+      fanfarriaRequestedRef.current = true;
       audio.currentTime = 0;
       audio.play().catch(() => {
         console.warn("[whitman] fanfarria falló al reproducir, reintentando...");
