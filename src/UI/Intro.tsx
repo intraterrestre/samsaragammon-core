@@ -9,6 +9,7 @@
 // El botón ¡DESPIERTA LA RUEDA! es además el toque que Safari necesita
 // para dejar sonar el audio: con él arranca el video corto de la rueda
 // (4 s, se puede saltar tocando) y después el juego.
+import BrandWordmark from "./BrandWordmark";
 import React from "react";
 import introShort from "../assets/video/intro_short.mp4";
 import { useI18n } from "../i18n";
@@ -59,7 +60,9 @@ export default function Intro({ onEnd }: { onEnd: () => void }) {
           {/* 21 nov 2026 — Federico: "A PAINTING YOU CAN PLAY". El texto vive
               en welcome.body: una línea por párrafo; **...** = destacada,
               ~ al principio = nota más suave. */}
-          <div style={styles.kicker}>{t("welcome.kicker")}</div>
+          <div style={styles.kicker}>
+            <BrandWordmark size={17} />
+          </div>
           <h1 style={styles.title}>{t("welcome.title")}</h1>
           {t("welcome.body")
             .split("\n")
@@ -129,10 +132,9 @@ const styles = {
     fontFamily: "Georgia, 'Times New Roman', serif",
   },
   kicker: {
-    fontSize: 13,
-    letterSpacing: "0.32em",
-    color: "rgba(245,215,110,0.75)",
-    margin: "0 0 6px",
+    display: "flex",
+    justifyContent: "center",
+    margin: "0 0 10px",
   },
   strongLine: {
     color: "#f5d76e",

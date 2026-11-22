@@ -1,3 +1,4 @@
+import BrandWordmark from "./BrandWordmark";
 import React, { useState } from "react";
 import introImage from "../assets/intro/intro_samsaragammon.webp";
 import { useI18n } from "../i18n";
@@ -87,6 +88,9 @@ export function Lobby({
             borderRadius: 12,
           }}
         />
+        <div style={{ marginTop: 14, display: "flex", justifyContent: "center" }}>
+          <BrandWordmark size={18} />
+        </div>
       </div>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
