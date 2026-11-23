@@ -89,6 +89,10 @@ export const en = {
   "ask.happened": "WHAT JUST HAPPENED?",
   "ask.mirror": "LOOK IN THE MIRROR ({n} LEFT)",
   "ask.close": "CLOSE",
+  "ask.menu": "← Main menu (group, online, voice or text)",
+  "ask.menuSure": "Leave? This game will be lost.",
+  "ask.menuYes": "YES, LEAVE",
+  "ask.menuNo": "Keep playing",
   // ---- narrador (voz del teléfono, ver src/UI/narrator.ts)
   "narrator.label": "Buddha's voice",
   "narrator.voice": "VOICE",

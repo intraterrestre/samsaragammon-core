@@ -166,6 +166,8 @@ nidanaCoinSide: "front" | "back";
   onLogout: () => void;
   onRoll: () => void;
   onReset: () => void;
+  // 23 nov 2026 — volver al menú principal (partidas en este aparato).
+  onExitToLobby?: () => void;
   // v11 — sonido de dados durante los clics decorativos de Genesis
   // (10 agosto 2026). onRoll solo se llama tras genesisComplete, así que
   // el sonido real (playDiceSound, App.tsx) nunca sonaba en los clics
@@ -296,6 +298,7 @@ export function GameShell({
   onVestigiumDone,
   onRoll,
   onReset,
+  onExitToLobby,
   onDevSkipToRufus,
   onTesterSkip,
   onTesterScenario,
@@ -1701,6 +1704,7 @@ React.useEffect(() => {
 // local de UI, nunca en GameState: no se sincroniza, no gasta consultas
 // y no es una jugada. Las respuestas salen de game/tutorial/help.ts.
 const [buddhaHelpOpen, setBuddhaHelpOpen] = React.useState(false);
+const [exitAsk, setExitAsk] = React.useState(false);
 const [buddhaHelpTopic, setBuddhaHelpTopic] = React.useState<HelpTopic>("now");
 
 const seenLessonsRef = React.useRef<SeenLessons>(loadSeenLessons());
@@ -3092,6 +3096,45 @@ return (
                 {t("ask.close")}
               </button>
             </div>
+            {/* 23 nov 2026 — Federico: en la primera visita el juego entra
+                directo en JUEGA CON BUDDHA y no había forma de volver al menú
+                (jugar en grupo, a distancia, voz/texto…). Dos pasos, porque
+                salir pierde la partida. Solo en partidas en este aparato. */}
+            {onExitToLobby && !onlineRole && (
+              <div style={{ marginTop: 18, fontSize: 13 }}>
+                {!exitAsk ? (
+                  <button
+                    type="button"
+                    onClick={() => setExitAsk(true)}
+                    style={{ background: "none", border: "none", color: "#c9d6f5", textDecoration: "underline", cursor: "pointer", fontSize: 13 }}
+                  >
+                    {t("ask.menu")}
+                  </button>
+                ) : (
+                  <div style={{ display: "flex", gap: 10, justifyContent: "center", alignItems: "center", flexWrap: "wrap" }}>
+                    <span style={{ opacity: 0.85 }}>{t("ask.menuSure")}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExitAsk(false);
+                        setBuddhaHelpOpen(false);
+                        onExitToLobby();
+                      }}
+                      style={{ padding: "6px 14px", borderRadius: 999, border: "2px solid rgba(255,140,120,0.7)", background: "transparent", color: "#f2e8d4", fontWeight: 800, cursor: "pointer" }}
+                    >
+                      {t("ask.menuYes")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setExitAsk(false)}
+                      style={{ background: "none", border: "none", color: "#c9d6f5", textDecoration: "underline", cursor: "pointer", fontSize: 13 }}
+                    >
+                      {t("ask.menuNo")}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

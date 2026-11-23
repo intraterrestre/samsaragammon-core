@@ -1697,6 +1697,10 @@ if (shouldTriggerNidana) {
 }}
 playDiceSound={playDiceSound}
 onReset={() => dispatch({ type: "RESET" })}
+onExitToLobby={() => {
+  dispatch({ type: "RESET" });
+  setGameMode("lobby");
+}}
 
 onPass={() => {
   // Rule Canon Repair (30 sept 2026): PASS cuando no hay ninguna jugada
