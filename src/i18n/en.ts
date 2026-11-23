@@ -89,6 +89,7 @@ export const en = {
   "ask.happened": "WHAT JUST HAPPENED?",
   "ask.mirror": "LOOK IN THE MIRROR ({n} LEFT)",
   "ask.close": "CLOSE",
+  "tester.on": "TEST MODE ON",
   "ask.menu": "← Main menu (group, online, voice or text)",
   "ask.menuSure": "Leave? This game will be lost.",
   "ask.menuYes": "YES, LEAVE",

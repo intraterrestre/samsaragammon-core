@@ -84,6 +84,7 @@ export const es: Dictionary = {
   "ask.happened": "¿QUÉ ACABA DE PASAR?",
   "ask.mirror": "MIRAR EN EL ESPEJO (QUEDAN {n})",
   "ask.close": "CERRAR",
+  "tester.on": "MODO PRUEBAS ACTIVADO",
   "ask.menu": "← Menú principal (jugar en grupo, a distancia, voz o texto)",
   "ask.menuSure": "¿Salir? Se pierde esta partida.",
   "ask.menuYes": "SÍ, SALIR",

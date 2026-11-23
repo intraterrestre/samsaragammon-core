@@ -31,6 +31,11 @@ type Props = {
   // 16 nov 2026 — partida online sin terminar a la que se puede volver.
   resume?: { code: string; role: "P1" | "P2"; waiting: boolean } | null;
   onResume?: () => void;
+  // 23 nov 2026 — modo de pruebas de Federico: 5 toques seguidos sobre el
+  // nombre del juego lo activan o lo apagan (en la app de la pantalla de
+  // inicio no se puede escribir ?saltos en la dirección).
+  testerOn?: boolean;
+  onToggleTester?: () => void;
 };
 
 export function Lobby({
@@ -48,7 +53,19 @@ export function Lobby({
   error,
   resume,
   onResume,
+  testerOn = false,
+  onToggleTester,
 }: Props) {
+  const tapsRef = React.useRef<number[]>([]);
+  const onWordmarkTap = () => {
+    if (!onToggleTester) return;
+    const now = Date.now();
+    tapsRef.current = [...tapsRef.current.filter((t0) => now - t0 < 2500), now];
+    if (tapsRef.current.length >= 5) {
+      tapsRef.current = [];
+      onToggleTester();
+    }
+  };
   const [joinCode, setJoinCode] = useState("");
   const { t } = useI18n();
 
@@ -88,8 +105,14 @@ export function Lobby({
             borderRadius: 12,
           }}
         />
-        <div style={{ marginTop: 14, display: "flex", justifyContent: "center" }}>
+        <div
+          onClick={onWordmarkTap}
+          style={{ marginTop: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, userSelect: "none", WebkitUserSelect: "none" }}
+        >
           <BrandWordmark size={18} />
+          {testerOn && (
+            <span style={{ fontSize: 11, letterSpacing: "0.12em", color: "#9fd88a" }}>{t("tester.on")}</span>
+          )}
         </div>
       </div>
 

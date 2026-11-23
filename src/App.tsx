@@ -413,7 +413,7 @@ const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
   // dirección muestra botones para saltar a cada Avatar (partidas locales).
   // 20 nov 2026 — se recuerda en este aparato: basta abrir una vez con
   // ?saltos; ?saltos=no lo apaga. Nunca en partidas a distancia (ver abajo).
-  const testerSkips = (() => {
+  const [testerSkips, setTesterSkips] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     const q = new URLSearchParams(window.location.search).get("saltos");
     try {
@@ -429,7 +429,21 @@ const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
     } catch {
       return q !== null && q !== "no";
     }
-  })();
+  });
+  // 23 nov 2026 — 5 toques sobre el nombre del juego en el menú (para la
+  // app de la pantalla de inicio, donde no se puede escribir ?saltos).
+  const toggleTester = () => {
+    setTesterSkips((on) => {
+      const next = !on;
+      try {
+        if (next) localStorage.setItem("sg.tester", "1");
+        else localStorage.removeItem("sg.tester");
+      } catch {
+        // dura hasta cerrar la app
+      }
+      return next;
+    });
+  };
   // Modo de pruebas: saltar videos y carteles (se recuerda en el aparato).
   const [testerQuiet, setTesterQuietState] = useState<boolean>(() => {
     try {
@@ -1450,6 +1464,8 @@ useEffect(() => {
       busyText={joiningInvite ? t("lobby.joining") : null}
       helpsOff={helpsOff}
       onHelpsOff={setHelpsOff}
+      testerOn={testerSkips}
+      onToggleTester={toggleTester}
       onPlayWithBuddha={() => {
         // 3 oct 2026 — Federico: "no están saliendo los carteles". Cada
         // lección salía una sola vez POR DISPOSITIVO, así que en la
