@@ -2388,6 +2388,11 @@ return (
   <div className="rotateHint">
     <span>↺</span>
     {t("rotate.hint")}
+    {/* 23 nov 2026 — en la app del iPhone, con el bloqueo de rotación
+        puesto, la pantalla no gira y el jugador se quedaba atascado aquí. */}
+    <small style={{ display: "block", maxWidth: 300, marginTop: 18, fontSize: 15, fontWeight: 400, opacity: 0.75, lineHeight: 1.4 }}>
+      {t("rotate.lock")}
+    </small>
   </div>
 
   <div className="samsaraStage">

@@ -250,6 +250,7 @@ export const es: Dictionary = {
   "fan.rivalNidanas": "NIDANAS DEL RIVAL ({color})",
   "d777.capture": "CAPTURAR A {rival}",
   "rotate.hint": "Gira el dispositivo para jugar",
+  "rotate.lock": "¿No gira? Desliza desde la esquina superior derecha y desactiva el bloqueo de rotación (el candado con la flecha).",
   "watcher.1": "Lo vi.",
   "watcher.2": "No es azar.",
   "watcher.3": "¿Otra vez?",

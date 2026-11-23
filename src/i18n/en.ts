@@ -255,6 +255,7 @@ export const en = {
   "fan.rivalNidanas": "RIVAL NIDANAS ({color})",
   "d777.capture": "CAPTURE {rival}",
   "rotate.hint": "Rotate your device to play",
+  "rotate.lock": "Not turning? Swipe down from the top-right corner and switch off Rotation Lock (the padlock with an arrow).",
   "watcher.1": "I saw that.",
   "watcher.2": "Not random.",
   "watcher.3": "Again?",
