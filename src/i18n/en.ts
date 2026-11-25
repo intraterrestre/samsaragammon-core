@@ -106,7 +106,7 @@ export const en = {
   "lesson.firstAvatar": "BRUNO, YOUR FIRST AVATAR\nHe moves through ignorance, impulse or anger.\nThere are 6 Avatars, and each one has its own realm of 4 squares.",
   "lesson.secondAvatar": "MARGOT HAS ARRIVED\nSometimes we learn through curiosity.\nSometimes, because it hurts.\nLiving things learn to bend.",
   "lesson.phase2": "MOVE BRUNO\nFirst tap Bruno.\nThen choose Pig, Rooster or Snake.\nThey drive Bruno around the Wheel of Samsara.",
-  "lesson.whitman": "SIX AVATARS. SIX LOTUSES.\nGather them in Humans.\nAnd break the Wheel.",
+  "lesson.whitman": "SIX AVATARS. SIX LOTUSES.\nGather them in Humans.\nAnd escape the Wheel of Samsara.",
   "lesson.sealed": "A LOTUS BLOOMS!\n{name} has received its lotus, and it is theirs forever.\nAn Avatar blooms when it reaches Humans without ever being captured.",
   "lesson.unsealed": "NO LOTUS BLOOMS\n{name} reached Humans, but was {captured} once.\nIt can still win its lotus: by betting (666) in Chat Fandango, or by forgiving a capture (777).",
   "lesson.capturedM": "captured",

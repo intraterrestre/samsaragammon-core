@@ -100,7 +100,7 @@ export const es: Dictionary = {
   "lesson.firstAvatar": "BRUNO, TU PRIMER AVATAR\nSe mueve por ignorancia, impulsividad o rabia.\nSon 6 Avatares, y cada uno tiene su propio reino de 4 casillas.",
   "lesson.secondAvatar": "MARGOT HA LLEGADO\nA veces aprendemos por curiosidad.\nA veces, porque duele.\nLo vivo aprende a curvarse.",
   "lesson.phase2": "MUEVE A BRUNO\nPrimero toca a Bruno.\nLuego elige Cerdo, Gallo o Serpiente.\nEllos impulsan a Bruno por la Rueda del Samsara.",
-  "lesson.whitman": "SEIS AVATARES. SEIS LOTOS.\nReúnelos en Humanos.\nY rompe la Rueda.",
+  "lesson.whitman": "SEIS AVATARES. SEIS LOTOS.\nReúnelos en Humanos.\nY escapa de la Rueda del Samsara.",
   "lesson.sealed": "¡FLORECE UN LOTO!\n{name} recibió su loto, y es suyo para siempre.\nUn Avatar florece cuando llega a Humanos sin haber sido capturado nunca.",
   "lesson.unsealed": "NO FLORECE EL LOTO\n{name} llegó a Humanos, pero antes fue {captured}.\nAún puede ganar su loto: apostando (666) en Chat Fandango o perdonando una captura (777).",
   "lesson.capturedM": "capturado",

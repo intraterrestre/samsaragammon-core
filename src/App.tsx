@@ -246,6 +246,33 @@ const [genesisResetSeq, setGenesisResetSeq] = useState(0);
 // activar sonido con un tap explícito.
 const [realmIntroMuted, setRealmIntroMuted] = useState(true);
 const realmIntroVideoRef = useRef<HTMLVideoElement | null>(null);
+// 25 nov 2026 — Federico, en el iPad: "los videos de los Avatares cuestan
+// cargar; tengo que tocar la cornetita para que avance". Safari no deja
+// arrancar un video CON sonido si no viene de un toque, y el video se
+// quedaba parado esperando. Ahora: se intenta con sonido; si Safari lo
+// bloquea, arranca igual sin sonido (la cornetita sigue para activarlo).
+useEffect(() => {
+  if (!activeRealmIntro) return;
+  const v = realmIntroVideoRef.current;
+  if (!v) return;
+  v.muted = realmIntroMuted;
+  v.play().catch(() => {
+    v.muted = true;
+    setRealmIntroMuted(true);
+    v.play().catch(() => {});
+  });
+  // Y se va bajando el video del Avatar siguiente, para que no tarde.
+  const order = ["hungry_ghost", "hell", "animals", "humans", "asura", "deva"] as const;
+  const i = order.findIndex((k) => REALM_INTRO_MAP[k] === activeRealmIntro);
+  const next = i >= 0 ? order[i + 1] : undefined;
+  if (next) void fetch(REALM_INTRO_MAP[next]).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [activeRealmIntro]);
+// El de Bruno, el primero, se baja ya al empezar.
+useEffect(() => {
+  const id = window.setTimeout(() => void fetch(REALM_INTRO_MAP.hungry_ghost).catch(() => {}), 4000);
+  return () => window.clearTimeout(id);
+}, []);
   const karmaRef = useRef<KarmaEngine | null>(null);
   // 2026-08-22: karmaSnap (el valor) solo se pasaba a GameShell, que
   // nunca lo declaró en Props ni lo leyó — se deja de leer ese slot;
