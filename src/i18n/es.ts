@@ -150,6 +150,7 @@ export const es: Dictionary = {
   "welcome.beyond": "Samsaragammon te lleva más allá.",
   "welcome.more": "Descubre la experiencia",
   "welcome.archive": "Descubre cómo evolucionó la pintura ↗",
+  "welcome.menu": "Otras formas de jugar: en grupo, a distancia…",
   "welcome.close": "Cerrar",
   "welcome.go": "¡DESPIERTA LA RUEDA!",
   "nidana.name.1": "Ignorancia",

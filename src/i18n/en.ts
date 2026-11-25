@@ -156,6 +156,7 @@ export const en = {
   "welcome.beyond": "Samsaragammon takes you beyond.",
   "welcome.more": "Discover the experience",
   "welcome.archive": "Discover how the painting evolved ↗",
+  "welcome.menu": "Other ways to play: group, online…",
   "welcome.close": "Close",
   "welcome.go": "WAKE THE WHEEL!",
   "nidana.name.1": "Ignorance",

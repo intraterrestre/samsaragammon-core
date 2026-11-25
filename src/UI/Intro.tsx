@@ -21,6 +21,7 @@ import React from "react";
 import introShort from "../assets/video/intro_short.mp4";
 import { useI18n } from "../i18n";
 import { LanguageSwitch } from "./LanguageSwitch";
+import { NarratorSwitch } from "./NarratorSwitch";
 import { markReadySplashDone } from "./readySplashState";
 
 const PHOTOS = Object.values(
@@ -111,6 +112,18 @@ export default function Intro({ onEnd }: { onEnd: () => void }) {
     }
   };
 
+  // 25 nov 2026 — Federico: "no vi las opciones de jugar con Buddha". La
+  // primera visita entra directa en JUEGA CON BUDDHA; este enlace lleva en
+  // cambio al menú completo (en grupo, a distancia, nivel de Buddha…).
+  const startMenu = () => {
+    try {
+      localStorage.setItem("sg.visited", "1");
+    } catch {
+      // sin almacenamiento: entra igual que siempre
+    }
+    void start();
+  };
+
   const bodyLines = t("welcome.body").split("\n").filter(Boolean);
 
   return (
@@ -146,8 +159,10 @@ export default function Intro({ onEnd }: { onEnd: () => void }) {
 
       {!started && (
         <>
+          {/* Idioma y VOZ / TEXTO / AMBOS, antes de empezar. */}
           <div className="sgw-lang">
-            <LanguageSwitch />
+            <div><LanguageSwitch /></div>
+            <div><NarratorSwitch /></div>
           </div>
 
           {animate && (
@@ -173,6 +188,9 @@ export default function Intro({ onEnd }: { onEnd: () => void }) {
             <nav className="sgw-links">
               <button type="button" onClick={() => setSheetOpen(true)}>
                 {t("welcome.more")}
+              </button>
+              <button type="button" onClick={startMenu}>
+                {t("welcome.menu")}
               </button>
               <a href={ARCHIVE_URL} target="_blank" rel="noopener noreferrer">
                 {t("welcome.archive")}
@@ -223,7 +241,8 @@ const CSS = `
 .sgw-waking .sgw-photo.cur { animation: none; transform: scale(1); transition: transform 1s ease, opacity .3s; }
 
 .sgw-lang { position: absolute; z-index: 3; top: max(12px, env(safe-area-inset-top)); right: max(14px, env(safe-area-inset-right));
-  background: rgba(0,0,0,.45); border-radius: 999px; }
+  display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.sgw-lang > * { background: rgba(0,0,0,.5); border-radius: 999px; }
 .sgw-trail { position: absolute; z-index: 2; display: flex; gap: 4px; }
 .sgw-trail i { display: block; width: 12px; height: 2px; background: rgba(239,230,210,.25); transition: background .6s; }
 .sgw-trail i.done { background: rgba(245,215,110,.8); }
@@ -265,6 +284,8 @@ const CSS = `
   .sgw-title { font-size: clamp(24px, min(4.6vw, 9vh), 56px); }
   .sgw-tag { font-size: clamp(14px, min(1.6vw, 3.8vh), 20px); }
   .sgw-trail { left: max(18px, env(safe-area-inset-left)); bottom: max(14px, env(safe-area-inset-bottom)); }
+  /* Las pastillas arriba a la izquierda: a la derecha chocaban con el título. */
+  .sgw-lang { right: auto; left: max(14px, env(safe-area-inset-left)); align-items: flex-start; }
   .sgw-sheet { right: 0; top: 0; bottom: 0; width: min(460px, 54vw); border-width: 0 0 0 1px; }
 }
 /* Teléfono horizontal: poca altura */
