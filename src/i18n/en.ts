@@ -151,6 +151,12 @@ export const en = {
   "fan.adv.rivalLoss": "Your rival would lose their link {links}.",
   "fan.adv.rivalNone": "Your rival gains or loses no link.",
   "welcome.body": "What if a painting could challenge the way you play?\nWelcome to a Curvist artwork brought to life.\nHere, the dice offer possibilities. Your decisions shape the journey.\n**Take risks. Negotiate. Protect. Forgive.**\nAnd when the wheel stops, discover the traces you’ve left behind.\n**YOUR VESTIGIUM.**\nYou don’t just challenge your opponent.\n**YOU CHALLENGE YOURSELF.**\n~Don’t worry about the rules. Buddha will guide you as you play.",
+  // 27 nov 2026 — el lema de la bienvenida ahora se traduce (amiga de
+  // Ecuador no probó el juego porque la portada estaba en inglés).
+  "welcome.title": "A PAINTING YOU CAN PLAY.",
+  "welcome.back": "Some games take you back.",
+  "welcome.beyond": "Samsaragammon takes you beyond.",
+  "welcome.go": "WAKE UP THE WHEEL!",
   "welcome.more": "Discover the experience",
   "welcome.archive": "Discover how the painting evolved ↗",
   "welcome.menu": "Other ways to play: group, online…",

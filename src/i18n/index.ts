@@ -18,6 +18,21 @@ export const LANGS: Lang[] = ["en", "es"];
 const STORAGE_KEY = "samsara_lang_v1";
 
 function detectLang(): Lang {
+  // 27 nov 2026 — enlace para compartir: ?lang=es o ?lang=en abre el
+  // juego en ese idioma y lo recuerda, sea cual sea el del dispositivo.
+  try {
+    const fromUrl = new URLSearchParams(window.location.search).get("lang");
+    if (fromUrl && (LANGS as string[]).includes(fromUrl)) {
+      try {
+        localStorage.setItem(STORAGE_KEY, fromUrl);
+      } catch {
+        // sin almacenamiento: vale solo para esta visita
+      }
+      return fromUrl as Lang;
+    }
+  } catch {
+    // sin window (pruebas): se sigue con lo de siempre
+  }
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved && (LANGS as string[]).includes(saved)) return saved as Lang;

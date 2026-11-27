@@ -33,14 +33,9 @@ const PHOTOS = Object.values(
 const LAST = PHOTOS.length - 1;
 const SEEN_KEY = "sg.welcomeSeen";
 const STEP_MS = 1900;
-// 25 nov 2026 — Federico: el lema es el original, en inglés y literal, en
-// todos los idiomas (marca, como en el Kickstarter). Lo demás sí se traduce.
-const MOTTO = {
-  title: "A PAINTING YOU CAN PLAY.",
-  back: "Some games take you back.",
-  beyond: "Samsaragammon takes you beyond.",
-  go: "WAKE UP THE WHEEL!",
-};
+// 27 nov 2026 — Federico: el lema ya NO queda fijo en inglés; se traduce
+// como el resto (una amiga hispanohablante no probó el juego porque la
+// portada estaba en inglés). Claves welcome.title/back/beyond/go.
 const ARCHIVE_URL = "https://federicogarcia.art/curvism-art-archive#from-painting-to-participation";
 
 function firstTime(): boolean {
@@ -185,13 +180,13 @@ export default function Intro({ onEnd }: { onEnd: () => void }) {
             <div className="sgw-name">
               <BrandWordmark size={17} />
             </div>
-            <h1 className="sgw-title">{MOTTO.title}</h1>
+            <h1 className="sgw-title">{t("welcome.title")}</h1>
             <p className="sgw-tag">
-              <span>{MOTTO.back}</span>
-              <span className="sgw-beyond">{MOTTO.beyond}</span>
+              <span>{t("welcome.back")}</span>
+              <span className="sgw-beyond">{t("welcome.beyond")}</span>
             </p>
             <button type="button" onClick={start} className="sgw-wake">
-              {MOTTO.go}
+              {t("welcome.go")}
             </button>
             <nav className="sgw-links">
               <button type="button" onClick={() => setSheetOpen(true)}>
@@ -220,7 +215,7 @@ export default function Intro({ onEnd }: { onEnd: () => void }) {
             </div>
             <div className="sgw-foot">
               <button type="button" onClick={start} className="sgw-wake">
-                {MOTTO.go}
+                {t("welcome.go")}
               </button>
               <button type="button" onClick={() => setSheetOpen(false)} className="sgw-close">
                 {t("welcome.close")}
